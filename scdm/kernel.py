@@ -290,6 +290,37 @@ def replace_face(solid, src_face, dst_face):
     return fuse(solid, extrude)
 
 
+def align_faces(moving, moving_face, target_face):
+    """Assembly Mate: transform the moving shape so its face coincides with the target.
+
+    Rotates the moving shape so its face normal opposes the target normal, then
+    translates so the face centres coincide. Returns the transformed shape.
+    """
+    o = _occ()
+    n1, c1 = face_normal_center(moving_face)
+    n2, c2 = face_normal_center(target_face)
+    desired = (-n2[0], -n2[1], -n2[2])
+    tr = o["gp"].gp_Trsf()
+    dot = n1[0] * desired[0] + n1[1] * desired[1] + n1[2] * desired[2]
+    if dot < 1.0 - 1e-12:
+        axis = (
+            n1[1] * desired[2] - n1[2] * desired[1],
+            n1[2] * desired[0] - n1[0] * desired[2],
+            n1[0] * desired[1] - n1[1] * desired[0],
+        )
+        mag = math.sqrt(axis[0] ** 2 + axis[1] ** 2 + axis[2] ** 2)
+        if mag > 1e-12:
+            ang = math.acos(max(-1.0, min(1.0, dot)))
+            ax = o["gp"].gp_Ax1(o["gp"].gp_Pnt(*c1),
+                                o["gp"].gp_Dir(axis[0] / mag, axis[1] / mag, axis[2] / mag))
+            tr.SetRotation(ax, ang)
+    shifted = o["bapi"].BRepBuilderAPI_Transform(moving, tr, True).Shape()
+    # NOTE: the rotation is about c1, so the moving face centre stays at c1;
+    # translate by the centre delta to land on the target centre.
+    vec = (c2[0] - c1[0], c2[1] - c1[1], c2[2] - c1[2])
+    return translate(shifted, vec)
+
+
 def fill_faces(solid, faces: Sequence):
     """SpaceClaim Fill: remove faces and heal (OCCT Defeaturing)."""
     try:

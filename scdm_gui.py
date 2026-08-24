@@ -743,6 +743,85 @@ else:
         def _do_repair_small(self):
             self._do_repair_extra()
 
+        def _selected_component(self):
+            ses = self.session()
+            for kind, sid in reversed(self.sel.items):
+                if kind == "body":
+                    for c in ses.kdoc.components:
+                        if sid in c.body_ids:
+                            return c
+            return ses.kdoc.components[0] if ses.kdoc.components else None
+
+        def _do_asm_create(self):
+            ses = self.session()
+            if not ses.kdoc or not ses.kdoc.bodies:
+                return
+            ids = [sid for k, sid in self.sel.items if k == "body"] or [ses.kdoc.bodies[0].id]
+            comp = ses.kdoc.add_component(body_ids=ids)
+            self._rebuild(f"已创建组件 {comp.name}")
+
+        def _do_asm_insert(self):
+            self._do_asm_create()
+
+        def _do_asm_move(self):
+            comp = self._selected_component()
+            if comp is None:
+                self._set_status("请先创建/选择组件")
+                return
+            ses = self.session()
+            vec = (10 / ses.scale, 0, 0)
+            n = 0
+            for b in ses.kdoc.bodies_of_component(comp.id):
+                if comp.anchored:
+                    continue
+                b.shape = K.translate(b.shape, vec)
+                n += 1
+            self._commit(f"移动组件 ×{n} (10mm X)")
+
+        def _do_asm_anchor(self):
+            comp = self._selected_component()
+            if comp is None:
+                self._set_status("请先创建/选择组件")
+                return
+            comp.anchored = not comp.anchored
+            self._rebuild(f"组件{'已锚定' if comp.anchored else '已解除锚定'}")
+
+        def _do_asm_mate(self):
+            ses = self.session()
+            faces = [sid for k, sid in self.sel.items if k == "face"]
+            if len(faces) < 2:
+                self._set_status("配合需要两个面")
+                return
+            bid1, fi1 = faces[0].split(":", 1)
+            bid2, fi2 = faces[1].split(":", 1)
+            b1 = ses.kdoc.body_by_id(bid1)
+            b2 = ses.kdoc.body_by_id(bid2)
+            if b1 is None or b2 is None or b1 is b2:
+                self._set_status("配合需要不同实体上的两个面")
+                return
+            try:
+                f1 = K.explore(b1.shape, "face")
+                f2 = K.explore(b2.shape, "face")
+                b1.shape = K.align_faces(b1.shape, f1[int(fi1)], f2[int(fi2)])
+                self._commit("已配合（面重合）")
+            except Exception as exc:
+                self._set_status(f"配合失败: {exc}")
+
+        def _do_asm_explode(self):
+            ses = self.session()
+            if not ses.kdoc.components:
+                return
+            for i, comp in enumerate(ses.kdoc.components, 1):
+                vec = (0.02 * i, 0, 0)
+                for b in ses.kdoc.bodies_of_component(comp.id):
+                    if comp.anchored:
+                        continue
+                    b.shape = K.translate(b.shape, vec)
+            self._commit("已爆炸组件")
+
+        def _do_asm_light(self):
+            self._set_status("轻量化：占位（分面近似展示）")
+
         def _do_facet_convert(self):
             """STL -> session facet body (sew triangles into a shell/solid)."""
             if not self._need_kernel():

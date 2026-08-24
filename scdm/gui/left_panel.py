@@ -197,6 +197,20 @@ class LeftPanel(QWidget):
 
         doc = session.design_doc
         if session.kdoc is not None and session.kdoc.bodies:
+            if session.kdoc.components:
+                for comp in session.kdoc.components:
+                    label = comp.name + ("（锚定）" if comp.anchored else "")
+                    it = QTreeWidgetItem([label])
+                    it.setData(0, Qt.UserRole, ("component", comp.id))
+                    it.setCheckState(0, Qt.Checked if comp.visible else Qt.Unchecked)
+                    root.addChild(it)
+                    for bid in comp.body_ids:
+                        body = session.kdoc.body_by_id(bid)
+                        if body is not None:
+                            sub = QTreeWidgetItem([body.name])
+                            sub.setData(0, Qt.UserRole, ("body", bid))
+                            sub.setCheckState(0, Qt.Checked if body.visible else Qt.Unchecked)
+                            it.addChild(sub)
             for body in session.kdoc.bodies:
                 it = QTreeWidgetItem([body.name])
                 it.setData(0, Qt.UserRole, ("body", body.id))

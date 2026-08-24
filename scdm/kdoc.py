@@ -27,12 +27,50 @@ class Sketch:
     construction: List[tuple] = field(default_factory=list)
 
 
+@dataclass
+class Component:
+    """Assembly component: a named group of bodies with anchored/lock state."""
+    id: str
+    name: str
+    body_ids: List[str] = field(default_factory=list)
+    anchored: bool = False
+    visible: bool = True
+
+
 class KernelDoc:
     def __init__(self):
         self.bodies: List[KBody] = []
         self.sketches: List[Sketch] = []
+        self.components: List[Component] = []
         self._n = 1
         self._sk = 1
+        self._c = 1
+
+    def add_component(self, name: Optional[str] = None, body_ids: Optional[List[str]] = None) -> Component:
+        cid = f"C{self._c}"
+        self._c += 1
+        comp = Component(id=cid, name=name or f"组件 {self._c - 1}",
+                         body_ids=list(body_ids or []))
+        self.components.append(comp)
+        return comp
+
+    def component_by_id(self, cid: str) -> Optional[Component]:
+        for c in self.components:
+            if c.id == cid:
+                return c
+        return None
+
+    def remove_component(self, cid: str) -> Optional[Component]:
+        c = self.component_by_id(cid)
+        if c:
+            self.components.remove(c)
+        return c
+
+    def bodies_of_component(self, cid: str) -> List[KBody]:
+        c = self.component_by_id(cid)
+        if c is None:
+            return []
+        return [b for b in self.bodies if b.id in c.body_ids]
 
     def add_body(self, shape, name: Optional[str] = None, color: Vec3 = (0.62, 0.66, 0.70)) -> KBody:
         bid = f"B{self._n}"

@@ -286,6 +286,8 @@ M4_LIVE = {
     "repair.stitch", "repair.solidify", "repair.gaps", "repair.missing",
     "repair.extra", "repair.small",
     "measure.interfere", "prep.named",
+    "asm.insert", "asm.create", "asm.move", "asm.anchor", "asm.mate",
+    "asm.explode", "asm.light",
 }
 
 M5_LIVE = {
