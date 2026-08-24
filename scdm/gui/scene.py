@@ -181,6 +181,9 @@ class Scene:
                 self.renderer.RemoveActor(act)
         self._sketch_actor = None
         self._sketch_pts_actor = None
+        for act in getattr(self, "_light_actors", []):
+            self.renderer.RemoveActor(act)
+        self._light_actors = []
         self.clear_preview()
 
     def build(self, session: Session):
@@ -247,9 +250,16 @@ class Scene:
     def _build_kdoc(self, session: Session):
         from scdm.kernel import tessellate_faces
         kdoc = session.kdoc
+        light_ids = set()
+        for comp in getattr(kdoc, "components", []):
+            light_ids |= comp.lightweight_body_ids()
         lines, verts = [], []
+        self._light_actors = []
         for body in kdoc.bodies:
             if not body.visible:
+                continue
+            if body.id in light_ids:
+                self._add_lightweight_body(body)
                 continue
             try:
                 faces = tessellate_faces(body.shape, deflection=max(0.0005, 0.02 / max(session.scale, 1)))
@@ -294,6 +304,23 @@ class Scene:
         self.apply_visibility(session)
         self.apply_style(session.style)
         self.fit()
+
+    def _add_lightweight_body(self, body):
+        """Draw a lightweight body as a bounding-box wireframe (no tessellation)."""
+        from scdm import additive as A
+        lo, hi = A.shape_bbox(body.shape)
+        def pt(x, y, z):
+            return [x, y, z]
+        c = [pt(lo[0], lo[1], lo[2]), pt(hi[0], lo[1], lo[2]), pt(hi[0], hi[1], lo[2]),
+             pt(lo[0], hi[1], lo[2]), pt(lo[0], lo[1], hi[0] * 0 + hi[2]),
+             pt(hi[0], lo[1], hi[2]), pt(hi[0], hi[1], hi[2]), pt(lo[0], hi[1], hi[2])]
+        segs = [(c[0], c[1]), (c[1], c[2]), (c[2], c[3]), (c[3], c[0]),
+                (c[4], c[5]), (c[5], c[6]), (c[6], c[7]), (c[7], c[4]),
+                (c[0], c[4]), (c[1], c[5]), (c[2], c[6]), (c[3], c[7])]
+        act = _lines_actor([[list(a), list(b)] for a, b in segs],
+                           tuple(body.color), 1.8)
+        self.renderer.AddActor(act)
+        self._light_actors.append(act)
 
     def _build_sketches(self, kdoc):
         """Render sketch curves as on-plane 2D line/polygon actors."""

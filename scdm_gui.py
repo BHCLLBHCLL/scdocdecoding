@@ -831,7 +831,17 @@ else:
             self._commit("已爆炸组件")
 
         def _do_asm_light(self):
-            self._set_status("轻量化：占位（分面近似展示）")
+            comp = self._selected_component()
+            ses = self.session()
+            if comp is not None:
+                comp.lightweight = not comp.lightweight
+                self._rebuild(f"组件{'已轻量化' if comp.lightweight else '已恢复完整显示'}")
+            else:
+                # no component: toggle a global lightweight session flag
+                ses.lightweight = not getattr(ses, "lightweight", False)
+                for c in ses.kdoc.components:
+                    c.lightweight = ses.lightweight
+                self._rebuild("已切换全局轻量化")
 
         def _do_wb_params(self):
             from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QDoubleSpinBox,
@@ -1003,6 +1013,23 @@ else:
 
         def _do_tools_customize(self):
             self._set_status("自定义功能区：预留（命令显隐配置持久化）")
+
+        def _do_ks_render(self):
+            """Own-renderer entry on the KeyShot tab: export the current view as PNG."""
+            fn, _ = QFileDialog.getSaveFileName(
+                self, "导出渲染图", "", "PNG (*.png);;JPG (*.jpg)")
+            if not fn:
+                return
+            if not fn.lower().endswith((".png", ".jpg", ".jpeg")):
+                fn += ".png"
+            try:
+                if self.scene is None:
+                    self._set_status("3D 视图不可用")
+                    return
+                self.scene.export_png(fn)
+                self._set_status(f"已导出当前视图 → {fn}")
+            except Exception as exc:
+                self._set_status(f"渲染导出失败: {exc}")
 
         def _do_facet_convert(self):
             """STL -> session facet body (sew triangles into a shell/solid)."""

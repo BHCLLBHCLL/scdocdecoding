@@ -35,6 +35,16 @@ class Component:
     body_ids: List[str] = field(default_factory=list)
     anchored: bool = False
     visible: bool = True
+    lightweight: bool = False
+    # lightweight bodies are drawn as a bounding-box wireframe (no full tessellation)
+
+    def lightweight_body_ids(self) -> set:
+        return set(self.body_ids) if self.lightweight else set()
+    lightweight: bool = False
+    # lightweight bodies are drawn as a bounding-box wireframe (no full tessellation)
+
+    def lightweight_body_ids(self) -> set:
+        return set(self.body_ids) if self.lightweight else set()
 
 
 class KernelDoc:

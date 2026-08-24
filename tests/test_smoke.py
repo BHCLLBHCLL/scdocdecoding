@@ -108,6 +108,14 @@ class GuiSmokeTests(unittest.TestCase):
         scene.build(ses)
         self.assertIsNotNone(scene._sketch_actor)
         self.assertIsNotNone(scene._sketch_pts_actor)
+        # lightweight component -> bbox wireframe instead of tessellated faces
+        b1 = ses.kdoc.bodies[0]
+        comp = ses.kdoc.add_component("轻量化件", [b1.id])
+        comp.lightweight = True
+        before = len(scene._face_actors)
+        scene.build(ses)
+        self.assertGreaterEqual(len(getattr(scene, "_light_actors", [])), 1)
+        self.assertLess(len(scene._face_actors), before)
         # drag preview: translucent actor appears and clears
         scene.show_preview(K.make_box(0.01, 0.012, 0.01))
         self.assertIsNotNone(scene._preview_actor)

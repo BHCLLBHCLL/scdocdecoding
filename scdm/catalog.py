@@ -297,6 +297,7 @@ M5_LIVE = {
     "wb.params", "wb.publish",
     "add.build", "add.orient", "add.support", "add.lattice",
     "det.view", "det.dim", "det.note", "det.bom",
+    "ks.render",
 }
 
 
