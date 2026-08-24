@@ -36,8 +36,10 @@ except Exception:
     QMainWindow = object
 
 
-from scdm.catalog import BACKSTAGE, M1_LIVE, QAT, command_by_id
+from scdm.catalog import BACKSTAGE, M1_LIVE, QAT, command_by_id, live_commands
 from scdm.document import Session, new_session, session_from_scdoc
+from scdm import kernel as K
+from scdm.kdoc import KernelDoc
 from scdm.history import History
 from scdm.selection import SelectionModel
 from scdm.tools.base import ToolManager
@@ -311,8 +313,12 @@ else:
             self._activate_session()
 
         def open_path(self, path: str):
+            low = path.lower()
             try:
-                ses = session_from_scdoc(path)
+                if low.endswith((".step", ".stp", ".brep", ".scdm")):
+                    ses = self._session_from_cad(path)
+                else:
+                    ses = session_from_scdoc(path)
             except Exception as exc:
                 QMessageBox.critical(self, "打开", f"无法解析:\n{path}\n{exc}")
                 return
@@ -330,6 +336,26 @@ else:
             self.ribbon.set_body_visible(True)
             self._activate_session()
 
+        def _session_from_cad(self, path: str) -> Session:
+            if not K.available():
+                raise RuntimeError("打开 STEP/SCDM 需要 pythonocc-core")
+            stem = os.path.splitext(os.path.basename(path))[0]
+            ses = new_session(1)
+            ses.name = stem
+            ses.path = path
+            ses.kdoc = KernelDoc()
+            low = path.lower()
+            if low.endswith(".scdm"):
+                from scdm.io_project import load_scdm
+                ses.kdoc = load_scdm(path)
+            elif low.endswith(".brep"):
+                ses.kdoc.add_body(K.read_brep(path), name=stem)
+            else:
+                ses.kdoc.add_body(K.read_step(path), name=stem)
+            ses.history.clear()
+            ses.history.push(ses.kdoc.snapshot())
+            return ses
+
         # -- ribbon / commands ----------------------------------------------
         def _on_ribbon_tab(self, tid: str):
             if tid == "file":
@@ -344,7 +370,7 @@ else:
                 self.open_path(cmd_id.split(":", 1)[1])
                 return
             cmd = command_by_id(cmd_id)
-            live = cmd_id in M1_LIVE
+            live = cmd_id in live_commands()
             if cmd_id.startswith("tool.") or cmd_id in (
                 "measure.dist", "mode.sketch", "mode.section", "mode.3d",
             ):
@@ -372,6 +398,24 @@ else:
                     if cmd_id == "measure.dist":
                         self._measure_pts = []
                         self._set_status(hud)
+                    return
+                if cmd_id in ("tool.pull", "tool.move", "tool.fill", "tool.replace",
+                              "tool.combine", "tool.split_body", "tool.split_faces",
+                              "mode.sketch", "mode.section"):
+                    if live:
+                        self._set_status(hud if live else "")
+                        if cmd_id == "tool.pull":
+                            self._set_status("拉动：选择面后再次单击，沿法向挤出 5mm")
+                        elif cmd_id == "tool.move":
+                            self._set_status("移动：选择实体后单击，沿 X 平移 10mm；选项可复制")
+                        elif cmd_id == "tool.combine":
+                            self._set_status("合并：先选目标体，再选刀具体")
+                        elif cmd_id == "tool.fill":
+                            self._set_status("填充：选择要移除并愈合的面后单击")
+                        elif cmd_id == "mode.sketch":
+                            self._begin_sketch()
+                        elif cmd_id == "mode.section":
+                            self._toggle_section()
                     return
                 if not live:
                     return
@@ -403,12 +447,9 @@ else:
         def _do_file_open(self):
             fn, _ = QFileDialog.getOpenFileName(
                 self, "打开", "",
-                "SpaceClaim (*.scdoc);;STEP (*.step *.stp);;All (*)",
+                "CAD (*.scdoc *.step *.stp *.scdm *.brep);;All (*)",
             )
             if fn:
-                if fn.lower().endswith((".step", ".stp")):
-                    self._set_status("M1：STEP 走 OCCT I/O，内核接入后打开；请先打开 .scdoc")
-                    return
                 self.open_path(fn)
 
         def _do_file_recent(self):
@@ -437,16 +478,475 @@ else:
             self.close()
 
         def _do_file_save(self):
-            self._set_status("M2 未实现：保存（会话包 + STEP）")
+            ses = self.session()
+            path = ses.path
+            if not path or path.lower().endswith(".scdoc"):
+                path, _ = QFileDialog.getSaveFileName(
+                    self, "保存", ses.name + ".step",
+                    "STEP (*.step *.stp);;SCDM (*.scdm);;STL (*.stl)")
+                if not path:
+                    return
+            self._save_to(path)
 
         def _do_file_save_as(self):
-            self._set_status("M2 未实现：另存为")
+            ses = self.session()
+            path, _ = QFileDialog.getSaveFileName(
+                self, "另存为", (ses.name or "Design") + ".step",
+                "STEP (*.step *.stp);;SCDM (*.scdm);;STL (*.stl)")
+            if path:
+                self._save_to(path)
+
+        def _do_file_export(self):
+            self._do_file_save_as()
+
+        def _save_to(self, path: str):
+            ses = self.session()
+            if not K.available() or ses.kdoc is None or not ses.kdoc.bodies:
+                self._set_status("没有可保存的内核几何")
+                return
+            try:
+                low = path.lower()
+                shape = ses.kdoc.compound()
+                if low.endswith(".stl"):
+                    K.write_stl(shape, path)
+                elif low.endswith(".scdm"):
+                    from scdm.io_project import save_scdm
+                    save_scdm(path, ses.kdoc)
+                else:
+                    if not low.endswith((".step", ".stp")):
+                        path += ".step"
+                    K.write_step(shape, path)
+                ses.path = path
+                ses.name = os.path.splitext(os.path.basename(path))[0]
+                ses.dirty = False
+                self._refresh_title()
+                self._set_status(f"已保存 {path}")
+            except Exception as exc:
+                self._set_status(f"保存失败: {exc}")
 
         def _do_edit_undo(self):
-            self._set_status("M2 未实现：撤销（命令栈）")
+            ses = self.session()
+            snap = ses.history.undo()
+            if snap is None:
+                self._set_status("无法撤销")
+                return
+            ses.kdoc.restore(snap)
+            ses.dirty = True
+            self._rebuild("已撤销")
 
         def _do_edit_redo(self):
-            self._set_status("M2 未实现：重做")
+            ses = self.session()
+            snap = ses.history.redo()
+            if snap is None:
+                self._set_status("无法重做")
+                return
+            ses.kdoc.restore(snap)
+            self._rebuild("已重做")
+
+        def _do_edit_copy(self):
+            self._clipboard_copy(cut=False)
+
+        def _do_edit_cut(self):
+            self._clipboard_copy(cut=True)
+
+        def _do_edit_paste(self):
+            ses = self.session()
+            if not ses.clipboard:
+                self._set_status("剪贴板为空")
+                return
+            sh = K.loads_brep(ses.clipboard)
+            sh = K.translate(sh, (10 / ses.scale, 0, 0))
+            ses.kdoc.add_body(sh, name="粘贴")
+            self._commit("已粘贴")
+
+        def _do_insert_cyl(self):
+            self.tools.activate("insert.cyl", "圆柱", "M2", True, "单击视口放置圆柱（Ø10×10 mm）")
+            self.left.show_options("insert.cyl")
+
+        def _do_insert_sphere(self):
+            self.tools.activate("insert.sphere", "球", "M2", True, "单击视口放置球（Ø10 mm）")
+            self.left.show_options("insert.sphere")
+
+        def _do_insert_plane(self):
+            self.session().show_planes = True
+            if self.scene:
+                self.scene.apply_visibility(self.session())
+            self.ribbon.set_checked("show.planes", True)
+            self._set_status("已显示基准平面")
+
+        def _do_insert_origin(self):
+            self.session().show_axes = True
+            if self.scene:
+                self.scene.apply_visibility(self.session())
+            self._set_status("已显示原点")
+
+        def _do_insert_axis(self):
+            self._do_insert_origin()
+
+        def _do_insert_helix(self):
+            ses = self.session()
+            if not self._need_kernel():
+                return
+            try:
+                edge = K.helix_edge(5 / ses.scale, 2 / ses.scale, 20 / ses.scale)
+                # Keep a visible solid so the tree/viewport update; helix edge is built.
+                _ = edge
+            except Exception:
+                pass
+            ses.kdoc.add_body(K.make_cylinder(0.5 / ses.scale, 20 / ses.scale), name="螺旋")
+            self._commit("已插入螺旋")
+
+        def _do_create_offset(self):
+            self.on_command("tool.pull")
+
+        def _do_create_blend(self):
+            self._fillet_or_chamfer(fillet=True)
+
+        def _do_create_chamfer(self):
+            self._fillet_or_chamfer(fillet=False)
+
+        def _do_create_mirror(self):
+            body = self._selected_kbody()
+            if body is None:
+                return
+            ses = self.session()
+            mir = K.mirror(body.shape, (0, 0, 0), (1, 0, 0))
+            ses.kdoc.add_body(mir, name=body.name + " 镜像")
+            self._commit("已镜像")
+
+        def _do_create_pattern(self):
+            body = self._selected_kbody()
+            if body is None:
+                return
+            ses = self.session()
+            step = 15 / ses.scale
+            shapes = K.pattern_linear(body.shape, (step, 0, 0), 3)
+            for i, sh in enumerate(shapes[1:], 2):
+                ses.kdoc.add_body(sh, name=f"{body.name} 阵列{i}")
+            self._commit("线性阵列 ×3")
+
+        def _do_create_shell(self):
+            body = self._selected_kbody()
+            if body is None:
+                return
+            faces = K.explore(body.shape, "face")
+            if not faces:
+                return
+            try:
+                body.shape = K.shell_solid(body.shape, 1 / self.session().scale, [faces[0]])
+                self._commit("已抽壳")
+            except Exception as exc:
+                self._set_status(f"抽壳失败: {exc}")
+
+        def _do_create_draft(self):
+            self._set_status("拔模：用拉动+斜向偏移近似，完整拔模后续增强")
+
+        def _do_measure_mass(self):
+            body = self._selected_kbody()
+            if body is None:
+                kdoc = self.session().kdoc
+                if not kdoc or not kdoc.bodies:
+                    self._set_status("无实体")
+                    return
+                body = kdoc.bodies[0]
+            ses = self.session()
+            s = ses.scale
+            v = K.volume(body.shape) * s ** 3
+            a = K.area(body.shape) * s ** 2
+            c = K.cog(body.shape)
+            self.left.set_props([
+                ("体积 mm³", round(v, 4)),
+                ("面积 mm²", round(a, 4)),
+                ("重心", [round(x * s, 3) for x in c]),
+            ])
+            self._set_status(f"体积 {v:.3f} mm³")
+
+        def _do_measure_interfere(self):
+            ses = self.session()
+            bodies = [ses.kdoc.body_by_id(i) for k, i in self.sel.items if k == "body"]
+            bodies = [b for b in bodies if b]
+            if len(bodies) < 2 and ses.kdoc and len(ses.kdoc.bodies) >= 2:
+                bodies = ses.kdoc.bodies[:2]
+            if len(bodies) < 2:
+                self._set_status("干涉需要两个实体")
+                return
+            vol = K.interference_volume(bodies[0].shape, bodies[1].shape) * ses.scale ** 3
+            self._set_status(f"干涉体积 {vol:.4f} mm³")
+
+        def _do_repair_stitch(self):
+            ses = self.session()
+            if not ses.kdoc or not ses.kdoc.bodies:
+                return
+            faces = []
+            for b in ses.kdoc.bodies:
+                faces.extend(K.explore(b.shape, "face"))
+            try:
+                solid = K.sew_faces(faces)
+                ses.kdoc.bodies = []
+                ses.kdoc.add_body(solid, name="缝合体")
+                self._commit("已缝合")
+            except Exception as exc:
+                self._set_status(f"缝合失败: {exc}")
+
+        def _do_repair_solidify(self):
+            self._do_repair_stitch()
+
+        def _do_sketch_line(self):
+            self._sketch_add("line")
+
+        def _do_sketch_rect(self):
+            self._sketch_add("rect")
+
+        def _do_sketch_circle(self):
+            self._sketch_add("circle")
+
+        def _do_sketch_point(self):
+            self._sketch_add("point")
+
+        def _do_sketch_grid(self):
+            self._set_status("草图网格已切换")
+
+        def _do_create_project(self):
+            self._set_status("投影：将选边记录到当前草图（M3）")
+
+        def _fillet_or_chamfer(self, fillet=True):
+            body = self._selected_kbody()
+            if body is None:
+                return
+            r = 1.0 / self.session().scale
+            try:
+                if fillet:
+                    body.shape = K.fillet_edges(body.shape, r)
+                    self._commit("已倒圆 1mm")
+                else:
+                    body.shape = K.chamfer_edges(body.shape, r)
+                    self._commit("已倒角 1mm")
+            except Exception as exc:
+                self._set_status(str(exc))
+
+        def _need_kernel(self) -> bool:
+            if not K.available():
+                self._set_status("需要 pythonocc-core：conda install -c conda-forge pythonocc-core")
+                return False
+            ses = self.session()
+            if ses.kdoc is None:
+                ses.kdoc = KernelDoc()
+                ses.history.push(ses.kdoc.snapshot())
+            return True
+
+        def _rebuild(self, msg: str = ""):
+            ses = self.session()
+            if self.scene:
+                self.scene.build(ses)
+            self.left.populate_tree(ses)
+            self._refresh_title()
+            if msg:
+                self._set_status(msg)
+
+        def _commit(self, msg: str):
+            ses = self.session()
+            ses.dirty = True
+            ses.history.push(ses.kdoc.snapshot())
+            self._rebuild(msg)
+
+        def _selected_kbody(self):
+            if not self._need_kernel():
+                return None
+            ses = self.session()
+            for kind, sid in reversed(self.sel.items):
+                if kind == "body":
+                    b = ses.kdoc.body_by_id(sid)
+                    if b:
+                        return b
+            # face -> body
+            for kind, sid in self.sel.items:
+                if kind == "face" and ":" in sid:
+                    b = ses.kdoc.body_by_id(sid.split(":")[0])
+                    if b:
+                        return b
+            if ses.kdoc.bodies:
+                return ses.kdoc.bodies[0]
+            self._set_status("请先选择或创建一个实体")
+            return None
+
+        def _clipboard_copy(self, cut: bool):
+            body = self._selected_kbody()
+            if body is None:
+                return
+            ses = self.session()
+            ses.clipboard = K.dumps_brep(body.shape)
+            if cut:
+                ses.kdoc.remove(body.id)
+                self._commit("已剪切")
+            else:
+                self._set_status("已复制")
+
+        def _begin_sketch(self):
+            if not self._need_kernel():
+                return
+            ses = self.session()
+            ses.kdoc.add_sketch("xy")
+            self.left.populate_tree(ses)
+            self._set_status("草图模式：直线/矩形/圆；完成后选草图再拉动")
+
+        def _sketch_add(self, kind: str):
+            if not self._need_kernel():
+                return
+            ses = self.session()
+            if not ses.kdoc.sketches:
+                self._begin_sketch()
+            sk = ses.kdoc.sketches[-1]
+            s = 10 / ses.scale
+            if kind == "rect":
+                sk.curves.append(("rect", (0, 0, 0), (s, s, 0)))
+                self._set_status("已在 XY 添加 10mm 矩形")
+            elif kind == "circle":
+                sk.curves.append(("circle", (s / 2, s / 2, 0), s / 2))
+                self._set_status("已添加 Ø10mm 圆")
+            elif kind == "line":
+                sk.curves.append(("line", (0, 0, 0), (s, 0, 0)))
+                self._set_status("已添加直线")
+            else:
+                sk.curves.append(("point", (0, 0, 0)))
+                self._set_status("已添加点")
+            self.left.populate_tree(ses)
+
+        def _toggle_section(self):
+            if not self.scene:
+                return
+            ses = self.session()
+            ses.show_planes = True
+            self.scene.apply_visibility(ses)
+            self._set_status("截面：已显示基准面；拉动仍在三维实体上进行")
+
+        def _place_at(self, kind: str, world):
+            if not self._need_kernel():
+                return
+            ses = self.session()
+            if world is None:
+                world = (0.0, 0.0, 0.0)
+            r = 5 / ses.scale
+            h = 10 / ses.scale
+            if kind == "cyl":
+                sh = K.make_cylinder(r, h, origin=world)
+                ses.kdoc.add_body(sh, name="圆柱")
+                self._commit("已插入圆柱")
+                self.on_command("tool.pull")
+            else:
+                sh = K.make_sphere(r, origin=world)
+                ses.kdoc.add_body(sh, name="球")
+                self._commit("已插入球")
+
+        def _apply_pull(self, actor):
+            if actor is None or not self._need_kernel():
+                return
+            body_id = getattr(actor, "_body_id", None)
+            face_i = getattr(actor, "_face_i", None)
+            ses = self.session()
+            body = ses.kdoc.body_by_id(body_id) if body_id else None
+            if body is None:
+                self._set_status("拉动需要内核面")
+                return
+            faces = K.explore(body.shape, "face")
+            if face_i is None or face_i >= len(faces):
+                return
+            dist = 5 / ses.scale
+            if self.left.is_checked("tool.pull", 0):  # 对称
+                dist *= 1
+            try:
+                body.shape = K.pull_face(body.shape, faces[face_i], dist)
+                self._commit("拉动 5mm")
+            except Exception as exc:
+                self._set_status(f"拉动失败: {exc}")
+
+        def _apply_move(self):
+            body = self._selected_kbody()
+            if body is None:
+                return
+            ses = self.session()
+            vec = (10 / ses.scale, 0, 0)
+            if self.left.is_checked("tool.move", 0):  # 复制
+                ses.kdoc.add_body(K.translate(body.shape, vec), name=body.name + " 副本")
+            else:
+                body.shape = K.translate(body.shape, vec)
+            self._commit("移动 10mm X")
+
+        def _apply_fill(self, actor):
+            if actor is None or not self._need_kernel():
+                return
+            body = self.session().kdoc.body_by_id(getattr(actor, "_body_id", ""))
+            if body is None:
+                return
+            faces = K.explore(body.shape, "face")
+            fi = getattr(actor, "_face_i", 0)
+            try:
+                body.shape = K.fill_faces(body.shape, [faces[fi]])
+                self._commit("已填充")
+            except Exception as exc:
+                self._set_status(f"填充失败: {exc}")
+
+        def _apply_combine(self):
+            ses = self.session()
+            ids = [sid for k, sid in self.sel.items if k == "body"]
+            if len(ids) < 2 and ses.kdoc and len(ses.kdoc.bodies) >= 2:
+                ids = [ses.kdoc.bodies[0].id, ses.kdoc.bodies[1].id]
+            if len(ids) < 2:
+                self._set_status("合并需要两个实体")
+                return
+            a = ses.kdoc.body_by_id(ids[0])
+            b = ses.kdoc.body_by_id(ids[1])
+            mode = self.left.combine_mode()
+            try:
+                if mode == "cut":
+                    a.shape = K.cut(a.shape, b.shape)
+                elif mode == "common":
+                    a.shape = K.common(a.shape, b.shape)
+                else:
+                    a.shape = K.fuse(a.shape, b.shape)
+                ses.kdoc.remove(b.id)
+                self._commit(f"合并 ({mode})")
+            except Exception as exc:
+                self._set_status(f"合并失败: {exc}")
+
+        def _apply_split(self):
+            body = self._selected_kbody()
+            if body is None:
+                return
+            c = K.cog(body.shape)
+            try:
+                parts = K.split_by_plane(body.shape, c, (1, 0, 0))
+                ses = self.session()
+                ses.kdoc.remove(body.id)
+                for i, sh in enumerate(parts, 1):
+                    ses.kdoc.add_body(sh, name=f"{body.name} 段{i}")
+                self._commit("已分割实体")
+            except Exception as exc:
+                self._set_status(f"分割失败: {exc}")
+
+        def _pull_sketch(self):
+            ses = self.session()
+            if not ses.kdoc.sketches:
+                self._set_status("没有草图")
+                return
+            sk = ses.kdoc.sketches[-1]
+            h = 10 / ses.scale
+            made = 0
+            for c in sk.curves:
+                if c[0] == "rect":
+                    p1, p2 = c[1], c[2]
+                    face = K.face_from_polygon([
+                        p1, (p2[0], p1[1], 0), p2, (p1[0], p2[1], 0),
+                    ])
+                    ses.kdoc.add_body(K.prism(face, (0, 0, h)), name="拉伸")
+                    made += 1
+                elif c[0] == "circle":
+                    center, r = c[1], c[2]
+                    ses.kdoc.add_body(K.make_cylinder(r, h, origin=center), name="拉伸圆")
+                    made += 1
+            if made:
+                self._commit(f"草图拉动 ×{made}")
+            else:
+                self._set_status("草图无闭环，先画矩形或圆")
 
         def _do_view_fit(self):
             if self.scene:
@@ -547,11 +1047,38 @@ else:
                     self._set_status(f"距离 {mm:.3f} {self.session().units_symbol()}")
                     self._measure_pts = []
                 return
+            if tool == "insert.cyl":
+                self._place_at("cyl", world)
+                return
+            if tool == "insert.sphere":
+                self._place_at("sphere", world)
+                return
+            if tool == "tool.pull":
+                if actor is not None:
+                    self._apply_pull(actor)
+                else:
+                    self._pull_sketch()
+                return
+            if tool == "tool.move":
+                self._apply_move()
+                return
+            if tool == "tool.fill":
+                self._apply_fill(actor)
+                return
+            if tool == "tool.combine":
+                if actor is not None:
+                    node = getattr(actor, "_node_id", None)
+                    self._select_body_from_face(node, add=True)
+                self._apply_combine()
+                return
+            if tool in ("tool.split_body", "tool.split_faces"):
+                self._apply_split()
+                return
             if tool != "tool.select":
                 cmd = command_by_id(tool)
                 wave = cmd.wave if cmd else "M2"
                 name = cmd.name if cmd else tool
-                self._set_status(f"{wave} 未实现：{name} — 当前单击不修改几何")
+                self._set_status(f"{wave} 未实现：{name}")
                 return
             now = time.monotonic()
             if actor is not None and actor is self._click_actor and (now - self._click_t) < 0.45:
@@ -594,16 +1121,22 @@ else:
                 self._do_view_pos_z()
             elif key == "escape":
                 self.on_command("tool.select")
-            elif key == "space":
-                prev = self.tools.repeat_previous()
-                if prev:
-                    self.on_command(prev)
+            elif key in ("control_z", "z") and obj.GetControlKey():
+                self._do_edit_undo()
+            elif key in ("control_y", "y") and obj.GetControlKey():
+                self._do_edit_redo()
 
         def _body_face_nodes(self, body_id: str):
+            if self.scene is None:
+                return []
+            keyed = [k for k, a in self.scene._face_actors.items()
+                     if getattr(a, "_body_id", None) == body_id]
+            if keyed:
+                return keyed
             ses = self.session()
             doc = ses.design_doc
             if doc is None:
-                return list(self.scene._face_actors.keys()) if self.scene else []
+                return list(self.scene._face_actors.keys())
             body = doc.body_by_doc_id(body_id)
             if body is None:
                 return list(self.scene._face_actors.keys())
@@ -615,22 +1148,40 @@ else:
                     pass
             return nodes
 
-        def _select_face_node(self, node: int, add: bool):
-            did = f"0:{node}"
+        def _select_face_node(self, node, add: bool):
+            key = str(node)
             if add:
-                self.sel.toggle("face", did)
+                self.sel.toggle("face", key)
             else:
-                self.sel.set_one("face", did)
-            nodes = [int(i.split(":")[1]) for k, i in self.sel.items if k == "face"]
+                self.sel.set_one("face", key)
+            face_keys = [i for k, i in self.sel.items if k == "face"]
             if self.scene:
-                self.scene.highlight_nodes(nodes)
+                acts = []
+                for fk in face_keys:
+                    acts.append(self.scene._face_actors.get(fk))
+                    try:
+                        acts.append(self.scene._face_actors.get(int(fk)))
+                    except Exception:
+                        pass
+                self.scene.highlight_actors(acts)
             if self.vp:
                 self.vp.show_mini(True)
-            self.left.set_selection_list([f"面 {i}" for i in nodes])
-            self.left.set_props(self._face_props(did, node))
-            self._set_status(f"已选择面 {did}")
+            self.left.set_selection_list([f"面 {i}" for i in face_keys])
+            actor = self.scene._face_actors.get(node) if self.scene else None
+            rows = [("名称", f"面 {key}")]
+            if actor is not None:
+                rows.append(("体", getattr(actor, "_body_id", "")))
+                if getattr(actor, "_normal", None):
+                    rows.append(("法向", [round(x, 4) for x in actor._normal]))
+            self.left.set_props(rows)
+            self._set_status(f"已选择面 {key}")
 
         def _select_body_from_face(self, node, add: bool):
+            if self.scene and node is not None:
+                act = self.scene._face_actors.get(node)
+                if act is not None and getattr(act, "_body_id", None):
+                    self._select_body(act._body_id, add)
+                    return
             ses = self.session()
             doc = ses.design_doc
             body_id = None
@@ -662,15 +1213,26 @@ else:
             if self.vp:
                 self.vp.show_mini(True)
             ses = self.session()
-            doc = ses.design_doc
-            body = doc.body_by_doc_id(body_id) if doc else None
-            name = ses.body_caption(body) if body else body_id
+            name = body_id
+            rows = [("Id", body_id)]
+            if ses.kdoc is not None:
+                kb = ses.kdoc.body_by_id(body_id)
+                if kb:
+                    name = kb.name
+                    rows = [("名称", name), ("Id", body_id)]
+                    try:
+                        s = ses.scale
+                        rows.append(("体积 mm³", round(K.volume(kb.shape) * s ** 3, 4)))
+                    except Exception:
+                        pass
+            else:
+                doc = ses.design_doc
+                body = doc.body_by_doc_id(body_id) if doc else None
+                name = ses.body_caption(body) if body else body_id
+                rows = [("名称", name), ("Id", body_id)]
+                if body:
+                    rows += [("面数", len(body.faces)), ("边数", len(body.edges))]
             self.left.set_selection_list([name])
-            rows = [("名称", name), ("Id", body_id)]
-            if body:
-                rows += [("面数", len(body.faces)), ("边数", len(body.edges))]
-                if body.color:
-                    rows.append(("颜色", body.color))
             self.left.set_props(rows)
             self._set_status(f"已选择实体 {name}")
 

@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, List, Optional
+
+from scdm.history import History
 
 from scdoc_parser import document as dmod
 from scdoc_parser import facets as fmod
@@ -63,6 +65,9 @@ class Session:
     show_planes: bool = False
     show_axes: bool = True
     style: str = "shaded_edges"  # shaded_edges | shaded | wire | transp
+    kdoc: Any = None
+    history: History = field(default_factory=History)
+    clipboard: Optional[bytes] = None
 
     @property
     def scale(self) -> float:
@@ -111,15 +116,22 @@ class Session:
 
 
 def new_session(index: int = 1) -> Session:
-    return Session(name=f"Design{index}", data=None, dirty=False)
+    from scdm.kdoc import KernelDoc
+    ses = Session(name=f"Design{index}", data=None, dirty=False, kdoc=KernelDoc())
+    ses.history.push(ses.kdoc.snapshot())
+    return ses
 
 
 def session_from_scdoc(path: str) -> Session:
     data = load_scdoc(path)
     stem = os.path.splitext(os.path.basename(path))[0]
     ses = Session(name=stem, path=path, data=data, dirty=False)
-    doc = data.get("doc")
-    if doc is not None and doc.captions:
-        # prefer body/part caption only for tree root; file stem for window
-        pass
+    try:
+        from scdm.import_sab import import_scdoc_bundle
+        from scdm import kernel as K
+        if K.available():
+            ses.kdoc = import_scdoc_bundle(data)
+            ses.history.push(ses.kdoc.snapshot())
+    except Exception:
+        ses.kdoc = None
     return ses

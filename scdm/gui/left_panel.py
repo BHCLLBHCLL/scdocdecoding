@@ -138,7 +138,25 @@ class LeftPanel(QWidget):
         checks("insert.cyl", [("创建后进入拉动", True)])
         checks("insert.sphere", [("创建后进入拉动", True)])
 
-    def show_options(self, cmd_id: str):
+    def combine_mode(self) -> str:
+        page = self._opt_pages.get("tool.combine")
+        if not page:
+            return "fuse"
+        _w, buttons = page
+        labels = ["fuse", "cut", "common"]
+        for i, b in enumerate(buttons):
+            if b.isChecked():
+                return labels[i]
+        return "fuse"
+
+    def is_checked(self, cmd: str, index: int) -> bool:
+        page = self._opt_pages.get(cmd)
+        if not page:
+            return False
+        _w, boxes = page
+        if 0 <= index < len(boxes):
+            return bool(boxes[index].isChecked())
+        return False
         page = self._opt_pages.get(cmd_id) or self._opt_pages.get("none")
         self.opt_stack.setCurrentWidget(page[0])
 
@@ -175,7 +193,18 @@ class LeftPanel(QWidget):
             root.addChild(it)
 
         doc = session.design_doc
-        if doc is not None:
+        if session.kdoc is not None and session.kdoc.bodies:
+            for body in session.kdoc.bodies:
+                it = QTreeWidgetItem([body.name])
+                it.setData(0, Qt.UserRole, ("body", body.id))
+                it.setCheckState(0, Qt.Checked if body.visible else Qt.Unchecked)
+                root.addChild(it)
+            for sk in session.kdoc.sketches:
+                it = QTreeWidgetItem([sk.name])
+                it.setData(0, Qt.UserRole, ("sketch", sk.id))
+                it.setCheckState(0, Qt.Checked)
+                root.addChild(it)
+        elif doc is not None:
             for i, body in enumerate(doc.bodies):
                 caption = session.body_caption(body)
                 it = QTreeWidgetItem([caption])

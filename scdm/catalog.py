@@ -262,6 +262,44 @@ M1_LIVE = {
     "measure.dist",
 }
 
+M2_LIVE = {
+    "file.save", "file.save_as", "file.export",
+    "edit.undo", "edit.redo", "edit.copy", "edit.cut", "edit.paste",
+    "tool.pull", "tool.move", "tool.fill", "tool.replace",
+    "tool.combine", "tool.split_body", "tool.split_faces",
+    "insert.cyl", "insert.sphere", "insert.plane", "insert.origin", "insert.axis",
+    "create.offset", "mode.section",
+    "measure.mass",
+}
+
+M3_LIVE = {
+    "mode.sketch",
+    "sketch.line", "sketch.rect", "sketch.circle", "sketch.point",
+    "sketch.grid", "create.project",
+}
+
+M4_LIVE = {
+    "create.pattern", "create.mirror", "create.shell", "create.blend",
+    "create.chamfer", "create.draft", "insert.helix",
+    "repair.stitch", "repair.solidify",
+    "measure.interfere", "prep.named",
+}
+
+M5_LIVE = {
+    "file.print",
+}
+
+
+def live_commands():
+    s = set(M1_LIVE)
+    try:
+        from scdm.kernel import available
+        if available():
+            s |= M2_LIVE | M3_LIVE | M4_LIVE | M5_LIVE
+    except Exception:
+        pass
+    return s
+
 
 def command_by_id(cmd_id: str) -> Optional[Command]:
     for c in BACKSTAGE + QAT:

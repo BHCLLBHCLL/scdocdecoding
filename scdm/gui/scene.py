@@ -142,6 +142,10 @@ class Scene:
 
     def build(self, session: Session):
         self.clear_bodies()
+        kdoc = getattr(session, "kdoc", None)
+        if kdoc is not None and getattr(kdoc, "bodies", None):
+            self._build_kdoc(session)
+            return
         data = session.data
         if not data or data.get("fac") is None or self.renderer is None:
             self.render()
@@ -193,6 +197,56 @@ class Scene:
             if verts:
                 self._vert_actor = _points_actor(verts, (0.05, 0.05, 0.05), 6)
                 self.renderer.AddActor(self._vert_actor)
+        self.apply_visibility(session)
+        self.apply_style(session.style)
+        self.fit()
+
+    def _build_kdoc(self, session: Session):
+        from scdm.kernel import tessellate_faces
+        kdoc = session.kdoc
+        lines, verts = [], []
+        for body in kdoc.bodies:
+            if not body.visible:
+                continue
+            try:
+                faces = tessellate_faces(body.shape, deflection=max(0.0005, 0.02 / max(session.scale, 1)))
+            except Exception:
+                continue
+            col = list(body.color)
+            for fd in faces:
+                pts = np.array(fd["vertices"], dtype=np.float64)
+                tris = fd["triangles"]
+                if len(pts) == 0 or not tris:
+                    continue
+                pd = _polys(pts, tris)
+                mapper = vtk.vtkPolyDataMapper()
+                mapper.SetInputData(pd)
+                act = vtk.vtkActor()
+                act.SetMapper(mapper)
+                act.GetProperty().SetColor(*col)
+                act.GetProperty().SetDiffuse(0.8)
+                act.GetProperty().SetSpecular(0.2)
+                act.GetProperty().SetAmbient(0.2)
+                act._base_color = list(col)
+                act._base_opacity = 1.0
+                key = f"{body.id}:{fd['index']}"
+                act._node_id = key
+                act._body_id = body.id
+                act._face_i = fd["index"]
+                act._normal = fd["normal"]
+                act._center = fd["center"]
+                self.renderer.AddActor(act)
+                self._face_actors[key] = act
+                for a, b, c in tris:
+                    for u, v in ((a, b), (b, c), (c, a)):
+                        lines.append([list(pts[u]), list(pts[v])])
+                        verts.append(list(pts[u]))
+        if lines:
+            self._edge_actor = _lines_actor(lines, (0.12, 0.12, 0.15), 1.2)
+            self.renderer.AddActor(self._edge_actor)
+        if verts:
+            self._vert_actor = _points_actor(verts, (0.05, 0.05, 0.05), 5)
+            self.renderer.AddActor(self._vert_actor)
         self.apply_visibility(session)
         self.apply_style(session.style)
         self.fit()
