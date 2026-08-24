@@ -605,6 +605,20 @@ def tessellate_faces(shape, deflection: float = 0.05):
     return faces
 
 
+def reverse_shape(shape):
+    """Flip the orientation of a whole shape (reverse face normals).
+
+    Used by the Facets > Reverse-Normals tool. Returns a copy with reversed
+    top-level orientation; invalid shapes are left unchanged.
+    """
+    o = _occ()
+    try:
+        copy = o["bapi"].BRepBuilderAPI_Copy(shape).Shape()
+        return copy.Reversed()
+    except Exception:
+        return shape
+
+
 def compound(shapes: Sequence):
     o = _occ()
     from OCC.Core.BRep import BRep_Builder

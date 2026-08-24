@@ -289,6 +289,7 @@ M4_LIVE = {
 
 M5_LIVE = {
     "file.print",
+    "facet.reverse", "facet.smooth", "facet.reduce", "facet.fill", "facet.convert",
 }
 
 

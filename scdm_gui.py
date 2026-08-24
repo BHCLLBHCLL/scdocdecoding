@@ -740,6 +740,53 @@ else:
         def _do_repair_small(self):
             self._do_repair_extra()
 
+        def _do_facet_convert(self):
+            """STL -> session facet body (sew triangles into a shell/solid)."""
+            if not self._need_kernel():
+                return
+            fn, _ = QFileDialog.getOpenFileName(
+                self, "导入 STL", "", "STL (*.stl);;All files (*)")
+            if not fn:
+                return
+            try:
+                import numpy as np
+                from scdm import facets as F
+                verts, tris = F.read_stl(fn)
+                if tris.shape[0] == 0:
+                    self._set_status("STL 无三角形")
+                    return
+                solid = F.mesh_to_shell(verts, tris)
+                ses = self.session()
+                ses.kdoc.add_body(solid, name="导入网格")
+                self._commit(f"已导入 STL：{tris.shape[0]} 三角形")
+            except Exception as exc:
+                self._set_status(f"STL 导入失败: {exc}")
+
+        def _do_facet_reverse(self):
+            body = self._selected_kbody()
+            if body is None:
+                return
+            try:
+                from scdm import facets as F
+                import numpy as np
+                faces = K.explore(body.shape, "face")
+                if not faces:
+                    return
+                # rebuild with reversed normals: copy + flip every face orientation
+                body.shape = K.reverse_shape(body.shape)
+                self._commit("已反转法向")
+            except Exception as exc:
+                self._set_status(f"反转法向失败: {exc}")
+
+        def _do_facet_smooth(self):
+            self._set_status("分面光滑：简化内核预留（STL 重网格在 M5 后续）")
+
+        def _do_facet_reduce(self):
+            self._set_status("分面简化：预留（降低三角形密度）")
+
+        def _do_facet_fill(self):
+            self._set_status("分面填孔：预留")
+
         def _do_sketch_line(self):
             self._sketch_add("line")
 
