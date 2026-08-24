@@ -108,6 +108,11 @@ class GuiSmokeTests(unittest.TestCase):
         scene.build(ses)
         self.assertIsNotNone(scene._sketch_actor)
         self.assertIsNotNone(scene._sketch_pts_actor)
+        # drag preview: translucent actor appears and clears
+        scene.show_preview(K.make_box(0.01, 0.012, 0.01))
+        self.assertIsNotNone(scene._preview_actor)
+        scene.clear_preview()
+        self.assertIsNone(scene._preview_actor)
 
 
 if __name__ == "__main__":

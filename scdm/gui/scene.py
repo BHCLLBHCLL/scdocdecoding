@@ -15,19 +15,53 @@ BASE = (0.62, 0.66, 0.70)
 
 
 class CadStyle(vtk.vtkInteractorStyleTrackballCamera):
-    """LMB select, MMB rotate, Shift+MMB pan, RMB context, wheel zoom."""
+    """LMB select, MMB rotate, Shift+MMB pan, RMB context, wheel zoom.
+
+    When drag_start_cb/drag_end_cb are set, an LMB press starts a drag gesture:
+    the click_cb fires only if the button is released without moving (plain click);
+    otherwise drag_move_cb streams pixel deltas and drag_end_cb fires once with the
+    total delta. Used by Pull/Move for interactive drag preview.
+    """
 
     def __init__(self):
         super().__init__()
         self.click_cb = None
         self.right_cb = None
+        self.drag_start_cb = None   # callable() at LMB down
+        self.drag_move_cb = None    # callable(dx, dy) during drag
+        self.drag_end_cb = None     # callable(total_dx, total_dy) at release
+        self._drag_start = None
+        self._dragging = False
+        self._last = None
 
     def OnLeftButtonDown(self):
+        iren = self.GetInteractor()
+        if iren and self.drag_start_cb:
+            self._drag_start = iren.GetEventPosition()
+            self._last = self._drag_start
+            self._dragging = True
+            self.drag_start_cb()
+            return
         if self.click_cb:
             self.click_cb()
 
+    def OnMouseMove(self):
+        iren = self.GetInteractor()
+        if self._dragging and iren and self.drag_move_cb:
+            pos = iren.GetEventPosition()
+            self.drag_move_cb(pos[0] - self._last[0], pos[1] - self._last[1])
+            self._last = pos
+            return
+        vtk.vtkInteractorStyleTrackballCamera.OnMouseMove(self)
+
     def OnLeftButtonUp(self):
-        return
+        if self._dragging and self.drag_end_cb:
+            iren = self.GetInteractor()
+            pos = iren.GetEventPosition() if iren else self._drag_start
+            self.drag_end_cb(pos[0] - self._drag_start[0], pos[1] - self._drag_start[1])
+            self._dragging = False
+            return
+        vtk.vtkInteractorStyleTrackballCamera.OnLeftButtonUp(self)
 
     def OnMiddleButtonDown(self):
         iren = self.GetInteractor()
@@ -63,6 +97,7 @@ class Scene:
         self._vert_actor = None
         self._sketch_actor = None
         self._sketch_pts_actor = None
+        self._preview_actor = None
         self._highlight = []
         self._origin_actor = None
         self._plane_actors = {}
@@ -146,6 +181,7 @@ class Scene:
                 self.renderer.RemoveActor(act)
         self._sketch_actor = None
         self._sketch_pts_actor = None
+        self.clear_preview()
 
     def build(self, session: Session):
         self.clear_bodies()
@@ -293,6 +329,42 @@ class Scene:
         if pts:
             self._sketch_pts_actor = _points_actor(pts, (0.10, 0.30, 0.65), 8)
             self.renderer.AddActor(self._sketch_pts_actor)
+
+    def show_preview(self, shape, color=PRE, opacity=0.45):
+        """Show a translucent orange preview of a candidate shape (not committed)."""
+        from scdm.kernel import tessellate_faces
+        self.clear_preview()
+        try:
+            faces = tessellate_faces(shape, deflection=0.001)
+        except Exception:
+            return
+        app = vtk.vtkAppendPolyData()
+        for fd in faces:
+            pts = np.array(fd["vertices"], dtype=np.float64)
+            if len(pts) == 0 or not fd["triangles"]:
+                continue
+            app.AddInputData(_polys(pts, fd["triangles"]))
+        if app.GetTotalNumberOfInputConnections() == 0:
+            return
+        app.Update()
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(app.GetOutputPort())
+        act = vtk.vtkActor()
+        act.SetMapper(mapper)
+        act.GetProperty().SetColor(*color)
+        act.GetProperty().SetOpacity(opacity)
+        act.GetProperty().SetDiffuse(0.9)
+        act.GetProperty().SetSpecular(0.2)
+        act.GetProperty().SetAmbient(0.2)
+        self._preview_actor = act
+        self.renderer.AddActor(act)
+        self.render()
+
+    def clear_preview(self):
+        if self._preview_actor is not None:
+            self.renderer.RemoveActor(self._preview_actor)
+            self._preview_actor = None
+            self.render()
 
     def apply_visibility(self, session: Session):
         face_on = session.show_faces and session.style != "wire"

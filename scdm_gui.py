@@ -224,6 +224,7 @@ else:
             for cid in ("show.faces", "show.edges", "show.vertices", "show.axes"):
                 self.ribbon.set_checked(cid, True)
             self.left.show_options("tool.select")
+            self._set_drag_hooks("tool.select")
             self._refresh_recent()
 
         def session(self) -> Session:
@@ -392,6 +393,7 @@ else:
                     "mode.sketch", "mode.section", "measure.dist",
                     "insert.cyl", "insert.sphere",
                 ) else "none")
+                self._set_drag_hooks(cmd_id)
                 if cmd_id == "tool.select":
                     self._set_status(hud)
                 if live and cmd_id in ("mode.3d", "tool.select", "measure.dist"):
@@ -1139,6 +1141,86 @@ else:
                 self._set_status(str(exc))
             except Exception as exc:
                 self._set_status(f"分割失败: {exc}")
+
+        def _set_drag_hooks(self, tool_id: str):
+            """Enable drag preview only for Pull/Move; other tools keep plain clicks."""
+            if self.scene is None:
+                return
+            if tool_id in ("tool.pull", "tool.move"):
+                self.scene.style.drag_start_cb = self._on_drag_start
+                self.scene.style.drag_move_cb = self._on_drag_move
+                self.scene.style.drag_end_cb = self._on_drag_end
+            else:
+                self.scene.style.drag_start_cb = None
+                self.scene.style.drag_move_cb = None
+                self.scene.style.drag_end_cb = None
+            self.scene.clear_preview()
+
+        def _on_drag_start(self):
+            """Pick the face at drag start and stash the entry snapshot."""
+            self._drag = None
+            if not self.scene:
+                return
+            tool = self.tools.active
+            if tool not in ("tool.pull", "tool.move"):
+                return
+            actor, _world = self.scene.pick_actor()
+            if actor is None:
+                return
+            body_id = getattr(actor, "_body_id", None)
+            face_i = getattr(actor, "_face_i", None)
+            ses = self.session()
+            body = ses.kdoc.body_by_id(body_id) if body_id else None
+            if body is None or face_i is None:
+                return
+            faces = K.explore(body.shape, "face")
+            if face_i >= len(faces):
+                return
+            n, _c = K.face_normal_center(faces[face_i])
+            self._drag = {"tool": tool, "body": body, "face_i": face_i,
+                          "orig": body.shape, "normal": n, "dist": 0.0}
+
+        def _world_per_px(self):
+            if not self.scene:
+                return 1e-4
+            cam = self.scene.renderer.GetActiveCamera()
+            height = max(1, self.vtk_widget.height())
+            return 2.0 * cam.GetParallelScale() / height
+
+        def _on_drag_move(self, dx, dy):
+            d = self._drag
+            if d is None or not self.scene:
+                return
+            d["dist"] = -dy * self._world_per_px()
+            faces = K.explore(d["orig"], "face")
+            if d["tool"] == "tool.pull":
+                preview = K.pull_face(d["orig"], faces[d["face_i"]], d["dist"])
+            else:
+                vec = tuple(d["normal"][k] * d["dist"] for k in range(3))
+                preview = K.translate(d["orig"], vec)
+            self.scene.show_preview(preview)
+
+        def _on_drag_end(self, dx, dy):
+            d = self._drag
+            self._drag = None
+            if self.scene:
+                self.scene.clear_preview()
+            # a tiny movement counts as a plain click (fixed 5mm behaviour)
+            if d is None or max(abs(dx), abs(dy)) < 4:
+                self._on_vtk_click()
+                return
+            if abs(d["dist"]) < 1e-7:
+                return
+            body = d["body"]
+            mm = abs(d["dist"]) * self.session().scale
+            if d["tool"] == "tool.pull":
+                faces = K.explore(d["orig"], "face")
+                body.shape = K.pull_face(d["orig"], faces[d["face_i"]], d["dist"])
+                self._commit(f"拉动 {mm:.1f}mm")
+            else:
+                vec = tuple(d["normal"][k] * d["dist"] for k in range(3))
+                body.shape = K.translate(d["orig"], vec)
+                self._commit(f"移动 {mm:.1f}mm")
 
         def _apply_replace(self, actor):
             """SpaceClaim Replace: first click picks a source face, second the target face."""
