@@ -11,6 +11,7 @@ import unittest
 
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, _ROOT)
+K_AVAIL = __import__("importlib").util.find_spec("OCC") is not None
 
 
 @unittest.skipUnless(
@@ -54,6 +55,20 @@ class GuiSmokeTests(unittest.TestCase):
         cmds = live_commands()
         self.assertIn("file.new", cmds)
         self.assertIn("mode.3d", cmds)
+
+    @unittest.skipUnless(K_AVAIL, "pythonocc-core not installed")
+    def test_open_box_yields_body_when_kernel_present(self):
+        from scdm.kdoc import KernelDoc
+
+        v = self.gui.ScdmViewer(path=os.path.join(_ROOT, "box.scdoc"))
+        ses = v.session()
+        self.assertIsNotNone(ses.kdoc)
+        self.assertGreaterEqual(len(ses.kdoc.bodies), 1)
+        # inserting a cylinder marks the session dirty and grows the body count
+        body_count_0 = len(ses.kdoc.bodies)
+        v._place_at("cyl", (0.0, 0.0, 0.0))
+        self.assertEqual(len(ses.kdoc.bodies), body_count_0 + 1)
+        self.assertTrue(ses.dirty)
 
 
 if __name__ == "__main__":
