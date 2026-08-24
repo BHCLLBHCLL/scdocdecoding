@@ -294,6 +294,8 @@ M5_LIVE = {
     "file.print",
     "facet.reverse", "facet.smooth", "facet.reduce", "facet.fill", "facet.convert",
     "wb.params", "wb.publish",
+    "add.build", "add.orient", "add.support", "add.lattice",
+    "det.view", "det.dim", "det.note", "det.bom",
 }
 
 

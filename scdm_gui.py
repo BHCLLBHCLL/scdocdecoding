@@ -870,6 +870,94 @@ else:
             else:
                 self._set_status("无参数可发布（先点「参数」创建参数盒）")
 
+        def _do_add_build(self):
+            body = self._selected_kbody()
+            if body is None:
+                return
+            from scdm import additive as A
+            vol = A.build_volume(body.shape, 1.0, self.session().scale)
+            self.session().kdoc.add_body(vol, name="构建体")
+            self._commit("已创建构建体")
+
+        def _do_add_orient(self):
+            body = self._selected_kbody()
+            if body is None:
+                return
+            from scdm import additive as A
+            body.shape = A.orient_min_height(body.shape)
+            self._commit("已取向（最短边朝 Z）")
+
+        def _do_add_support(self):
+            body = self._selected_kbody()
+            if body is None:
+                return
+            from scdm import additive as A
+            ses = self.session()
+            made = 0
+            for s in A.support_blocks(body.shape, scale=ses.scale):
+                ses.kdoc.add_body(s, name="支撑")
+                made += 1
+            if made:
+                self._commit(f"已生成支撑 ×{made}")
+            else:
+                self._set_status("底面无悬空，无需支撑")
+
+        def _do_add_lattice(self):
+            body = self._selected_kbody()
+            if body is None:
+                return
+            from scdm import additive as A
+            ses = self.session()
+            vol = A.build_volume(body.shape, 0.5, ses.scale)
+            made = 0
+            for s in A.lattice(vol, 5.0, 0.5, ses.scale):
+                ses.kdoc.add_body(s, name="点阵杆")
+                made += 1
+            if made:
+                self._commit(f"已生成点阵 ×{made}")
+            else:
+                self._set_status("构建体太小，无法布点阵")
+
+        def _do_det_bom(self):
+            from PyQt5.QtWidgets import QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout
+            ses = self.session()
+            if not ses.kdoc or not ses.kdoc.bodies:
+                return
+            dlg = QDialog(self)
+            dlg.setWindowTitle("BOM")
+            lay = QVBoxLayout(dlg)
+            tab = QTableWidget(len(ses.kdoc.bodies), 4)
+            tab.setHorizontalHeaderLabels(["名称", "体积 mm³", "面积 mm²", "重心 mm"])
+            scale = ses.scale
+            for i, b in enumerate(ses.kdoc.bodies):
+                vol = K.volume(b.shape) * scale ** 3
+                area = K.area(b.shape) * scale ** 2
+                c = K.cog(b.shape)
+                row = [b.name, f"{vol:.2f}", f"{area:.2f}",
+                       f"{c[0]*scale:.2f}, {c[1]*scale:.2f}, {c[2]*scale:.2f}"]
+                for j, txt in enumerate(row):
+                    tab.setItem(i, j, QTableWidgetItem(txt))
+            lay.addWidget(tab)
+            dlg.resize(520, 320)
+            dlg.exec_()
+
+        def _do_det_dim(self):
+            body = self._selected_kbody()
+            if body is None:
+                return
+            from scdm import additive as A
+            lo, hi = A.shape_bbox(body.shape)
+            scale = self.session().scale
+            self._set_status(
+                f"尺寸: {(hi[0]-lo[0])*scale:.2f} × {(hi[1]-lo[1])*scale:.2f} × "
+                f"{(hi[2]-lo[2])*scale:.2f} mm")
+
+        def _do_det_view(self):
+            self._do_file_image()
+
+        def _do_det_note(self):
+            self._set_status("注释：占位（M5 后续）")
+
         def _do_facet_convert(self):
             """STL -> session facet body (sew triangles into a shell/solid)."""
             if not self._need_kernel():

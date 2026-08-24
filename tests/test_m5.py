@@ -113,6 +113,46 @@ class ParamsTests(unittest.TestCase):
 
 @unittest.skipUnless(
     bool(importlib.util.find_spec("OCC")), "pythonocc-core not installed")
+class AdditiveTests(unittest.TestCase):
+    def test_build_volume_contains_body(self):
+        from scdm import additive as A
+        from scdm import kernel as K
+        box = K.make_box(0.01, 0.01, 0.01, origin=(0.02, 0.02, 0.02))
+        vol = A.build_volume(box, 1.0, 1000.0)
+        blo, bhi = A.shape_bbox(box)
+        vlo, vhi = A.shape_bbox(vol)
+        self.assertLessEqual(vlo[0], blo[0])
+        self.assertLessEqual(vlo[1], blo[1])
+        self.assertLessEqual(vlo[2], blo[2])
+        self.assertGreaterEqual(vhi[0], bhi[0])
+        self.assertGreaterEqual(vhi[1], bhi[1])
+        self.assertGreaterEqual(vhi[2], bhi[2])
+
+    def test_orient_min_height(self):
+        from scdm import additive as A
+        from scdm import kernel as K
+        # a long slab along X: 30 x 10 x 10 mm
+        slab = K.make_box(0.03, 0.01, 0.01)
+        out = A.orient_min_height(slab)
+        _lo, hi = A.shape_bbox(out)
+        # after rotation the height along Z is the short side (10mm)
+        self.assertAlmostEqual(hi[2] - 0.0, 0.01, places=6)
+
+    def test_supports_and_lattice(self):
+        from scdm import additive as A
+        from scdm import kernel as K
+        box = K.make_box(0.01, 0.01, 0.01, origin=(0.01, 0.01, 0.005))
+        sups = A.support_blocks(box, count=4, scale=1000.0)
+        self.assertGreaterEqual(len(sups), 1)
+        vol = A.build_volume(box, 0.5, 1000.0)
+        lat = A.lattice(vol, 5.0, 0.5, 1000.0)
+        self.assertGreaterEqual(len(lat), 1)
+        for s in lat:
+            self.assertGreater(K.volume(s), 0)
+
+
+@unittest.skipUnless(
+    bool(importlib.util.find_spec("OCC")), "pythonocc-core not installed")
 class FacetOcctTests(unittest.TestCase):
     def test_mesh_to_shell_yields_shape(self):
         from scdm import kernel as K
