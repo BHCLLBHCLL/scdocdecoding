@@ -5,3 +5,8 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
+
+# generated reports / scratch
+box_report.json
+_*.py
+*.report.json

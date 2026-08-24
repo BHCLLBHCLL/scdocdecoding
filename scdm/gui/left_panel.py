@@ -157,7 +157,10 @@ class LeftPanel(QWidget):
         if 0 <= index < len(boxes):
             return bool(boxes[index].isChecked())
         return False
-        page = self._opt_pages.get(cmd_id) or self._opt_pages.get("none")
+
+    def show_options(self, cmd: str) -> None:
+        """Show the option page for the active tool/command (defaults to 'none')."""
+        page = self._opt_pages.get(cmd) or self._opt_pages.get("none")
         self.opt_stack.setCurrentWidget(page[0])
 
     def set_props(self, rows):
