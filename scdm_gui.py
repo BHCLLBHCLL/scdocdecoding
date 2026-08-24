@@ -824,6 +824,52 @@ else:
         def _do_asm_light(self):
             self._set_status("轻量化：占位（分面近似展示）")
 
+        def _do_wb_params(self):
+            from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QDoubleSpinBox,
+                                        QFormLayout, QLabel, QVBoxLayout)
+            ses = self.session()
+            if not ses.kdoc or not ses.kdoc.parametrics:
+                from scdm.params import param_box
+                ses.kdoc.add_parametric(param_box(), ses.scale)
+                self._commit("已创建参数盒（W/H/D）")
+                self._set_status("参数盒已创建；再次点击「参数」编辑尺寸")
+                return
+            dlg = QDialog(self)
+            dlg.setWindowTitle("参数")
+            lay = QVBoxLayout(dlg)
+            spins = []
+            for p in ses.kdoc.parametrics:
+                lay.addWidget(QLabel(p.body_name))
+                f = QFormLayout()
+                for k, v in p.params.items():
+                    sp = QDoubleSpinBox()
+                    sp.setRange(0.1, 100000.0)
+                    sp.setValue(float(v))
+                    f.addRow(k, sp)
+                    spins.append((p, k, sp))
+                lay.addLayout(f)
+            bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+            bb.accepted.connect(dlg.accept)
+            bb.rejected.connect(dlg.reject)
+            lay.addWidget(bb)
+            if dlg.exec_() != QDialog.Accepted:
+                return
+            for p, k, sp in spins:
+                p.set(**{k: sp.value()})
+            for p in ses.kdoc.parametrics:
+                ses.kdoc.rebuild_parametric(p, ses.scale)
+            self._commit("参数已更新并重建")
+
+        def _do_wb_publish(self):
+            ses = self.session()
+            if ses.kdoc and ses.kdoc.parametrics:
+                names = ", ".join(f"{p.body_name}(" + ", ".join(
+                    f"{k}={v:g}" for k, v in p.params.items()) + ")"
+                    for p in ses.kdoc.parametrics)
+                self._set_status(f"参数已发布：{names}")
+            else:
+                self._set_status("无参数可发布（先点「参数」创建参数盒）")
+
         def _do_facet_convert(self):
             """STL -> session facet body (sew triangles into a shell/solid)."""
             if not self._need_kernel():

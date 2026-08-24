@@ -42,9 +42,26 @@ class KernelDoc:
         self.bodies: List[KBody] = []
         self.sketches: List[Sketch] = []
         self.components: List[Component] = []
+        self.parametrics: List[Any] = []  # scdm.params.Parametric
         self._n = 1
         self._sk = 1
         self._c = 1
+
+    def add_parametric(self, parametric, scale: float = 1000.0) -> KBody:
+        """Build the parametric body now and register it for parameter edits."""
+        body = self.add_body(parametric.build(scale), name=parametric.body_name)
+        parametric.body_id = body.id
+        self.parametrics.append(parametric)
+        return body
+
+    def rebuild_parametric(self, parametric, scale: float = 1000.0) -> Optional[KBody]:
+        """Re-run a parametric's builder into its body."""
+        bid = getattr(parametric, "body_id", None)
+        body = self.body_by_id(bid) if bid else None
+        if body is None:
+            return self.add_parametric(parametric, scale)
+        body.shape = parametric.build(scale)
+        return body
 
     def add_component(self, name: Optional[str] = None, body_ids: Optional[List[str]] = None) -> Component:
         cid = f"C{self._c}"
