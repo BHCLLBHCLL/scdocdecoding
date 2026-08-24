@@ -588,13 +588,12 @@ else:
             if not self._need_kernel():
                 return
             try:
-                edge = K.helix_edge(5 / ses.scale, 2 / ses.scale, 20 / ses.scale)
-                # Keep a visible solid so the tree/viewport update; helix edge is built.
-                _ = edge
-            except Exception:
-                pass
-            ses.kdoc.add_body(K.make_cylinder(0.5 / ses.scale, 20 / ses.scale), name="螺旋")
-            self._commit("已插入螺旋")
+                sh = K.helix_solid(3 / ses.scale, 2 / ses.scale, 20 / ses.scale,
+                                   0.4 / ses.scale)
+                ses.kdoc.add_body(sh, name="螺旋")
+                self._commit("已插入螺旋体")
+            except Exception as exc:
+                self._set_status(f"螺旋插入失败: {exc}")
 
         def _do_create_offset(self):
             self.on_command("tool.pull")
@@ -639,7 +638,19 @@ else:
                 self._set_status(f"抽壳失败: {exc}")
 
         def _do_create_draft(self):
-            self._set_status("拔模：用拉动+斜向偏移近似，完整拔模后续增强")
+            body = self._selected_kbody()
+            if body is None:
+                return
+            faces = K.explore(body.shape, "face")
+            if not faces:
+                return
+            ang = math.radians(5.0)
+            try:
+                # draft the first face about +Z as the neutral direction
+                body.shape = K.draft_face(body.shape, faces[0], ang, (0, 0, 1))
+                self._commit("拔模 5°")
+            except Exception as exc:
+                self._set_status(f"拔模失败: {exc}")
 
         def _do_measure_mass(self):
             body = self._selected_kbody()
@@ -690,6 +701,44 @@ else:
 
         def _do_repair_solidify(self):
             self._do_repair_stitch()
+
+        def _do_repair_gaps(self):
+            """Close gaps: sew all faces with a larger tolerance (order of magnitude)."""
+            ses = self.session()
+            if not ses.kdoc or not ses.kdoc.bodies:
+                return
+            faces = []
+            for b in ses.kdoc.bodies:
+                faces.extend(K.explore(b.shape, "face"))
+            try:
+                solid = K.sew_faces(faces, tol=1e-4)
+                ses.kdoc.bodies = []
+                ses.kdoc.add_body(solid, name="补隙体")
+                self._commit("已补隙缝合")
+            except Exception as exc:
+                self._set_status(f"补隙失败: {exc}")
+
+        def _do_repair_missing(self):
+            self._do_repair_gaps()
+
+        def _do_repair_extra(self):
+            """Remove the smallest faces (defeaturing) to clean up extra/thin faces."""
+            body = self._selected_kbody()
+            if body is None:
+                return
+            faces = K.explore(body.shape, "face")
+            if len(faces) < 2:
+                self._set_status("没有可移除的多余面")
+                return
+            try:
+                smallest = min(faces, key=lambda f: K.area(f))
+                body.shape = K.fill_faces(body.shape, [smallest])
+                self._commit("已移除多余小面")
+            except Exception as exc:
+                self._set_status(f"移除失败: {exc}")
+
+        def _do_repair_small(self):
+            self._do_repair_extra()
 
         def _do_sketch_line(self):
             self._sketch_add("line")

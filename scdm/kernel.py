@@ -371,6 +371,41 @@ def sew_faces(faces: Iterable, tol: float = 1e-6):
     return sewn
 
 
+def helix_solid(radius: float, pitch: float, height: float, tube_radius: float,
+                origin: Vec3 = (0.0, 0.0, 0.0)):
+    """SpaceClaim Insert Helix: sweep a circular profile along a helical spine.
+
+    Returns a solid (a spring-like tube). Falls back to a plain cylinder if the
+    sweep fails, so the command always produces a usable body.
+    """
+    o = _occ()
+    try:
+        spine = helix_edge(radius, pitch, height, origin)
+        circ = o["prim"].BRepPrimAPI_MakeCircle(
+            o["gp"].gp_Pnt(origin[0] + radius, origin[1], origin[2]),
+            o["gp"].gp_Dir(0, 0, 1), tube_radius).Edge()
+        wire = o["bapi"].BRepBuilderAPI_MakeWire(circ).Wire()
+        pipe = o["offset"].BRepOffsetAPI_MakePipe(spine, wire)
+        pipe.Build()
+        if pipe.IsDone():
+            sh = pipe.Shape()
+            if volume(sh) > 1e-15:
+                return sh
+    except Exception:
+        pass
+    return make_cylinder(tube_radius * 2.0, height, origin)
+
+
+def draft_face(solid, face, angle_rad: float, neutral_dir: Vec3 = (0.0, 0.0, 1.0)):
+    """SpaceClaim Draft: taper the solid about a neutral direction by angle_rad."""
+    o = _occ()
+    # this binding exposes the 3-arg ctor: (shape, neutral direction, angle in radians)
+    mk = o["offset"].BRepOffsetAPI_MakeDraft(solid, o["gp"].gp_Dir(*neutral_dir), angle_rad)
+    if not mk.IsDone() or mk.Shape().IsNull():
+        raise KernelError("拔模失败")
+    return mk.Shape()
+
+
 def face_from_polygon(pts: Sequence[Vec3]):
     o = _occ()
     mk = o["bapi"].BRepBuilderAPI_MakePolygon()

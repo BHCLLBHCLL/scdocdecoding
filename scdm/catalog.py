@@ -282,7 +282,8 @@ M3_LIVE = {
 M4_LIVE = {
     "create.pattern", "create.mirror", "create.shell", "create.blend",
     "create.chamfer", "create.draft", "insert.helix",
-    "repair.stitch", "repair.solidify",
+    "repair.stitch", "repair.solidify", "repair.gaps", "repair.missing",
+    "repair.extra", "repair.small",
     "measure.interfere", "prep.named",
 }
 
