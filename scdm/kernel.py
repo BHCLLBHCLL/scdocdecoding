@@ -6,6 +6,7 @@ No SpaceClaim binaries are used.
 """
 from __future__ import annotations
 
+import math
 import os
 import tempfile
 from typing import Any, Iterable, List, Optional, Sequence, Tuple
@@ -246,6 +247,47 @@ def pull_face(solid, face, distance: float):
     if distance >= 0:
         return fuse(solid, prism)
     return cut(solid, prism)
+
+
+def pull_face_symmetric(solid, face, distance: float):
+    """SpaceClaim Pull > symmetric: extrude the face an equal amount both ways.
+
+    Build a prism centred on the face plane (extends distance/2 on each side of the
+    original face) and fuse it into the solid.
+    """
+    o = _occ()
+    n, c = face_normal_center(face)
+    half = distance / 2.0
+    prism = o["prim"].BRepPrimAPI_MakePrism(
+        face, o["gp"].gp_Vec(n[0] * distance, n[1] * distance, n[2] * distance)
+    ).Shape()
+    # Shift the prism back by half so it straddles the original face.
+    prism = translate(prism, (-n[0] * half, -n[1] * half, -n[2] * half))
+    if distance >= 0:
+        return fuse(solid, prism)
+    return cut(solid, prism)
+
+
+def replace_face(solid, src_face, dst_face):
+    """SpaceClaim Replace (limited, planar): move src_face material flush to dst_face.
+
+    Both faces must be planar. The source face is extruded along the vector from its
+    centre to the destination centre and then, if that overlaps the target plane, the
+    resulting wedge is fused; the original source face is left in place. This gives the
+    practical "make this face meet that face" effect for Box/prism-style geometry.
+    """
+    o = _occ()
+    sn, sc = face_normal_center(src_face)
+    dn, dc = face_normal_center(dst_face)
+    vec = (dc[0] - sc[0], dc[1] - sc[1], dc[2] - sc[2])
+    mag = math.sqrt(sum(v * v for v in vec))
+    if mag < 1e-12:
+        return solid
+    direction = (vec[0] / mag, vec[1] / mag, vec[2] / mag)
+    extrude = o["prim"].BRepPrimAPI_MakePrism(
+        src_face, o["gp"].gp_Vec(direction[0] * mag, direction[1] * mag, direction[2] * mag)
+    ).Shape()
+    return fuse(solid, extrude)
 
 
 def fill_faces(solid, faces: Sequence):

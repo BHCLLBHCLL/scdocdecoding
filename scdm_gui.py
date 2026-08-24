@@ -837,25 +837,39 @@ else:
                 ses.kdoc.add_body(sh, name="球")
                 self._commit("已插入球")
 
+        def _opts_for(self, cmd: str) -> dict:
+            """Read the active option page checkboxes/radios into a plain dict."""
+            named = {
+                "symmetric": 0, "both_sides": 1, "copy": 2, "to_face": 3,
+            }
+            opts = {}
+            for key, idx in named.items():
+                try:
+                    opts[key] = self.left.is_checked(cmd, idx)
+                except Exception:
+                    opts[key] = False
+            if cmd == "tool.combine":
+                opts["mode"] = self.left.combine_mode()
+            if cmd == "tool.move":
+                # default pull axis = X; replaced with a picked face normal when available
+                opts["axis"] = (1.0, 0.0, 0.0)
+            return opts
+
         def _apply_pull(self, actor):
             if actor is None or not self._need_kernel():
                 return
             body_id = getattr(actor, "_body_id", None)
             face_i = getattr(actor, "_face_i", None)
-            ses = self.session()
-            body = ses.kdoc.body_by_id(body_id) if body_id else None
-            if body is None:
-                self._set_status("拉动需要内核面")
-                return
-            faces = K.explore(body.shape, "face")
-            if face_i is None or face_i >= len(faces):
-                return
-            dist = 5 / ses.scale
-            if self.left.is_checked("tool.pull", 0):  # 对称
-                dist *= 1
+            from scdm.tools.direct import get_tool, ToolError
             try:
-                body.shape = K.pull_face(body.shape, faces[face_i], dist)
-                self._commit("拉动 5mm")
+                msg = get_tool("tool.pull").apply(
+                    self.session(),
+                    {"body_id": body_id, "face_i": face_i},
+                    self._opts_for("tool.pull"),
+                )
+                self._commit(msg)
+            except ToolError as exc:
+                self._set_status(str(exc))
             except Exception as exc:
                 self._set_status(f"拉动失败: {exc}")
 
@@ -863,48 +877,61 @@ else:
             body = self._selected_kbody()
             if body is None:
                 return
-            ses = self.session()
-            vec = (10 / ses.scale, 0, 0)
-            if self.left.is_checked("tool.move", 0):  # 复制
-                ses.kdoc.add_body(K.translate(body.shape, vec), name=body.name + " 副本")
-            else:
-                body.shape = K.translate(body.shape, vec)
-            self._commit("移动 10mm X")
+            from scdm.tools.direct import get_tool, ToolError
+            opts = self._opts_for("tool.move")
+            # Use the picked face normal as the move axis when a face is selected.
+            if self.sel.items and self.sel.items[-1][0] == "face":
+                sid = self.sel.items[-1][1]
+                if ":" in sid:
+                    bid, fi = sid.split(":", 1)
+                    b = self.session().kdoc.body_by_id(bid)
+                    if b is not None:
+                        faces = K.explore(b.shape, "face")
+                        if int(fi) < len(faces):
+                            n, _c = K.face_normal_center(faces[int(fi)])
+                            opts["axis"] = n
+            try:
+                msg = get_tool("tool.move").apply(
+                    self.session(),
+                    {"body_id": body.id},
+                    opts,
+                )
+                self._commit(msg)
+            except ToolError as exc:
+                self._set_status(str(exc))
+            except Exception as exc:
+                self._set_status(f"移动失败: {exc}")
 
         def _apply_fill(self, actor):
             if actor is None or not self._need_kernel():
                 return
-            body = self.session().kdoc.body_by_id(getattr(actor, "_body_id", ""))
-            if body is None:
-                return
-            faces = K.explore(body.shape, "face")
-            fi = getattr(actor, "_face_i", 0)
+            from scdm.tools.direct import get_tool, ToolError
             try:
-                body.shape = K.fill_faces(body.shape, [faces[fi]])
-                self._commit("已填充")
+                msg = get_tool("tool.fill").apply(
+                    self.session(),
+                    {"body_id": getattr(actor, "_body_id", None),
+                     "face_i": getattr(actor, "_face_i", None)},
+                    self._opts_for("tool.fill"),
+                )
+                self._commit(msg)
+            except ToolError as exc:
+                self._set_status(str(exc))
             except Exception as exc:
                 self._set_status(f"填充失败: {exc}")
 
         def _apply_combine(self):
             ses = self.session()
             ids = [sid for k, sid in self.sel.items if k == "body"]
-            if len(ids) < 2 and ses.kdoc and len(ses.kdoc.bodies) >= 2:
-                ids = [ses.kdoc.bodies[0].id, ses.kdoc.bodies[1].id]
-            if len(ids) < 2:
-                self._set_status("合并需要两个实体")
-                return
-            a = ses.kdoc.body_by_id(ids[0])
-            b = ses.kdoc.body_by_id(ids[1])
-            mode = self.left.combine_mode()
+            from scdm.tools.direct import get_tool, ToolError
             try:
-                if mode == "cut":
-                    a.shape = K.cut(a.shape, b.shape)
-                elif mode == "common":
-                    a.shape = K.common(a.shape, b.shape)
-                else:
-                    a.shape = K.fuse(a.shape, b.shape)
-                ses.kdoc.remove(b.id)
-                self._commit(f"合并 ({mode})")
+                msg = get_tool("tool.combine").apply(
+                    ses,
+                    {"sel_ids": ids},
+                    self._opts_for("tool.combine"),
+                )
+                self._commit(msg)
+            except ToolError as exc:
+                self._set_status(str(exc))
             except Exception as exc:
                 self._set_status(f"合并失败: {exc}")
 
@@ -912,16 +939,62 @@ else:
             body = self._selected_kbody()
             if body is None:
                 return
-            c = K.cog(body.shape)
+            from scdm.tools.direct import get_tool, ToolError
+            ctx = {"body_id": body.id}
+            # Use the picked face's plane as the splitter when available.
+            for kind, sid in reversed(self.sel.items):
+                if kind == "face" and ":" in sid:
+                    bid, fi = sid.split(":", 1)
+                    b = self.session().kdoc.body_by_id(bid)
+                    if b is not None:
+                        faces = K.explore(b.shape, "face")
+                        if int(fi) < len(faces):
+                            n, cc = K.face_normal_center(faces[int(fi)])
+                            ctx["origin"] = cc
+                            ctx["normal"] = n
+                    break
             try:
-                parts = K.split_by_plane(body.shape, c, (1, 0, 0))
-                ses = self.session()
-                ses.kdoc.remove(body.id)
-                for i, sh in enumerate(parts, 1):
-                    ses.kdoc.add_body(sh, name=f"{body.name} 段{i}")
-                self._commit("已分割实体")
+                msg = get_tool("tool.split_body").apply(
+                    self.session(), ctx, self._opts_for("tool.split_body"))
+                self._commit(msg)
+            except ToolError as exc:
+                self._set_status(str(exc))
             except Exception as exc:
                 self._set_status(f"分割失败: {exc}")
+
+        def _apply_replace(self, actor):
+            """SpaceClaim Replace: first click picks a source face, second the target face."""
+            if actor is None or not self._need_kernel():
+                return
+            bid = getattr(actor, "_body_id", None)
+            fi = getattr(actor, "_face_i", None)
+            if bid is None or fi is None:
+                return
+            if getattr(self, "_replace_src", None) is None:
+                self._replace_src = (bid, fi)
+                self._set_status("替换：已选源面，请再选目标面")
+                return
+            src_bid, src_fi = self._replace_src
+            self._replace_src = None
+            if (src_bid, src_fi) == (bid, fi):
+                self._set_status("替换：目标面与源面相同，请重选")
+                return
+            ses = self.session()
+            a = ses.kdoc.body_by_id(src_bid)
+            b = ses.kdoc.body_by_id(bid)
+            if a is None or b is None:
+                self._set_status("替换失败：实体不存在")
+                return
+            faces_a = K.explore(a.shape, "face")
+            faces_b = K.explore(b.shape, "face")
+            if src_fi >= len(faces_a) or fi >= len(faces_b):
+                self._set_status("替换失败：面索引越界")
+                return
+            try:
+                a.shape = K.replace_face(a.shape, faces_a[src_fi], faces_b[fi])
+                self._commit("已替换面")
+            except Exception as exc:
+                self._set_status(f"替换失败: {exc}")
 
         def _pull_sketch(self):
             ses = self.session()
@@ -1073,6 +1146,9 @@ else:
                 return
             if tool in ("tool.split_body", "tool.split_faces"):
                 self._apply_split()
+                return
+            if tool == "tool.replace":
+                self._apply_replace(actor)
                 return
             if tool != "tool.select":
                 cmd = command_by_id(tool)
