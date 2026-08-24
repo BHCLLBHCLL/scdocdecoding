@@ -70,6 +70,45 @@ class GuiSmokeTests(unittest.TestCase):
         self.assertEqual(len(ses.kdoc.bodies), body_count_0 + 1)
         self.assertTrue(ses.dirty)
 
+    @unittest.skipUnless(K_AVAIL, "pythonocc-core not installed")
+    def test_sketch_rendering_builds_actors(self):
+        import vtk
+        from scdm import kernel as K
+        from scdm.document import Session
+        from scdm.gui.scene import Scene
+        from scdm.kdoc import KernelDoc
+
+        class _FakeWidget:
+            def __init__(self):
+                self.rw = vtk.vtkRenderWindow()
+                self.iren = vtk.vtkRenderWindowInteractor()
+                self.iren.SetRenderWindow(self.rw)
+
+            def GetRenderWindow(self):
+                return self.rw
+
+            def GetInteractor(self):
+                return self.iren
+
+            def Initialize(self):
+                pass
+
+            def Start(self):
+                pass
+
+        scene = Scene(_FakeWidget())
+        scene.render = lambda: None  # skip OpenGL in headless runs
+        ses = Session(name="t")
+        ses.kdoc = KernelDoc()
+        ses.kdoc.add_body(K.make_box(0.01, 0.01, 0.01), name="box")
+        sk = ses.kdoc.add_sketch("xy", "草图 1")
+        sk.curves.append(("rect", (0, 0, 0), (0.01, 0.01, 0)))
+        sk.curves.append(("circle", (0.005, 0.005, 0), 0.003))
+        sk.curves.append(("point", (0.001, 0.001, 0)))
+        scene.build(ses)
+        self.assertIsNotNone(scene._sketch_actor)
+        self.assertIsNotNone(scene._sketch_pts_actor)
+
 
 if __name__ == "__main__":
     unittest.main()

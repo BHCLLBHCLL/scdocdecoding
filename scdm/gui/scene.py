@@ -61,6 +61,8 @@ class Scene:
         self._face_actors = {}
         self._edge_actor = None
         self._vert_actor = None
+        self._sketch_actor = None
+        self._sketch_pts_actor = None
         self._highlight = []
         self._origin_actor = None
         self._plane_actors = {}
@@ -139,6 +141,11 @@ class Scene:
         self._face_actors.clear()
         self._edge_actor = None
         self._vert_actor = None
+        for act in (self._sketch_actor, self._sketch_pts_actor):
+            if act:
+                self.renderer.RemoveActor(act)
+        self._sketch_actor = None
+        self._sketch_pts_actor = None
 
     def build(self, session: Session):
         self.clear_bodies()
@@ -247,9 +254,45 @@ class Scene:
         if verts:
             self._vert_actor = _points_actor(verts, (0.05, 0.05, 0.05), 5)
             self.renderer.AddActor(self._vert_actor)
+        self._build_sketches(kdoc)
         self.apply_visibility(session)
         self.apply_style(session.style)
         self.fit()
+
+    def _build_sketches(self, kdoc):
+        """Render sketch curves as on-plane 2D line/polygon actors."""
+        import math as _math
+        segs, pts = [], []
+        for sk in getattr(kdoc, "sketches", []):
+            for c in sk.curves:
+                if c[0] == "rect":
+                    x0, y0 = c[1][0], c[1][1]
+                    x1, y1 = c[2][0], c[2][1]
+                    loop = [(x0, y0, c[1][2]), (x1, y0, c[1][2]),
+                            (x1, y1, c[1][2]), (x0, y1, c[1][2]), (x0, y0, c[1][2])]
+                    for a, b in zip(loop, loop[1:]):
+                        segs.append([list(a), list(b)])
+                elif c[0] == "line":
+                    segs.append([list(c[1]), list(c[2])])
+                elif c[0] == "circle":
+                    cx, cy, cz = c[1]
+                    r = c[2]
+                    ring = [(cx + r * _math.cos(t), cy + r * _math.sin(t), cz)
+                            for t in [_math.tau * i / 32 for i in range(32)]]
+                    ring.append(ring[0])
+                    for a, b in zip(ring, ring[1:]):
+                        segs.append([list(a), list(b)])
+                elif c[0] == "point":
+                    pts.append(list(c[1]))
+            for c in getattr(sk, "construction", []):
+                if c and c[0] in ("line",):
+                    segs.append([list(c[1]), list(c[2])])
+        if segs:
+            self._sketch_actor = _lines_actor(segs, (0.10, 0.30, 0.65), 2.2)
+            self.renderer.AddActor(self._sketch_actor)
+        if pts:
+            self._sketch_pts_actor = _points_actor(pts, (0.10, 0.30, 0.65), 8)
+            self.renderer.AddActor(self._sketch_pts_actor)
 
     def apply_visibility(self, session: Session):
         face_on = session.show_faces and session.style != "wire"
