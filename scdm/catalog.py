@@ -277,6 +277,7 @@ M3_LIVE = {
     "sketch.line", "sketch.rect", "sketch.circle", "sketch.point",
     "sketch.grid", "create.project",
     "con.dim", "con.hv", "con.coin", "con.perp",
+    "con.eq", "con.par", "con.tan", "con.mid", "con.fix",
 }
 
 M4_LIVE = {

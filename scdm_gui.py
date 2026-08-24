@@ -1125,13 +1125,12 @@ else:
             sk = ses.kdoc.sketches[-1]
             try:
                 from scdm import sketch as S
-                # build mutable point list from curve endpoints
-                pts, pairs = self._sketch_points(sk)
+                pts, segments = self._sketch_points(sk)
                 if not pts:
                     self._set_status("草图无曲线可约束")
                     return
+                segs = segments or []
                 if kind == "dim":
-                    # dimension = keep the first segment's current length
                     d = math.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]) if len(pts) > 1 else 10.0
                     consts = [(S.DIST, 0, 1, d)]
                 elif kind == "h":
@@ -1141,11 +1140,45 @@ else:
                 elif kind == "coin":
                     consts = [(S.COINCIDENT, 0, 1, None)]
                 elif kind == "perp":
+                    if len(segs) < 2:
+                        self._set_status("垂直约束需要两条线段")
+                        return
                     consts = [(S.PERPENDICULAR, 0, 1, None)]
+                elif kind == "eq":
+                    if len(segs) < 2:
+                        self._set_status("相等约束需要两条线段")
+                        return
+                    consts = [(S.EQUAL, 0, 1, None)]
+                elif kind == "par":
+                    if len(segs) < 2:
+                        self._set_status("平行约束需要两条线段")
+                        return
+                    consts = [(S.PARALLEL, 0, 1, None)]
+                elif kind == "mid":
+                    if not segs or len(pts) < 3:
+                        self._set_status("中点约束需要线段和一个点")
+                        return
+                    consts = [(S.MIDPOINT, len(pts) - 1, 0, None)]
+                elif kind == "tan":
+                    if not segs:
+                        self._set_status("相切约束需要线段与圆")
+                        return
+                    # circle centre = last point, radius from the sketch's circle curve
+                    r = 5 / ses.scale
+                    for c in sk.curves:
+                        if c[0] == "circle":
+                            r = c[2]
+                            break
+                    consts = [(S.TANGENT, 0, len(pts) - 1, r)]
+                elif kind == "fix":
+                    if not pts:
+                        return
+                    x, y = pts[0][0], pts[0][1]
+                    consts = [(S.FIXED, 0, x, y)]
                 else:
                     self._set_status(f"约束 {kind} 预留")
                     return
-                S.solve_constraints(pts, consts, iters=25)
+                S.solve_constraints(pts, consts, segments=segs, iters=40)
                 self._write_sketch_points(sk, pts)
                 self.left.populate_tree(ses)
                 self._set_status(f"已解算约束 [{kind}]")
@@ -1165,19 +1198,34 @@ else:
         def _do_con_perp(self):
             self._apply_sketch_constraint("perp")
 
+        def _do_con_eq(self):
+            self._apply_sketch_constraint("eq")
+
+        def _do_con_par(self):
+            self._apply_sketch_constraint("par")
+
         def _do_con_tan(self):
-            self._set_status("相切约束预留（M3 后续）")
+            self._apply_sketch_constraint("tan")
+
+        def _do_con_mid(self):
+            self._apply_sketch_constraint("mid")
+
+        def _do_con_fix(self):
+            self._apply_sketch_constraint("fix")
 
         def _sketch_points(self, sk):
             pts = []
+            segments = []
             for c in sk.curves:
                 if c[0] in ("line", "rect"):
+                    base = len(pts)
                     for p in (c[1], c[2]):
                         pts.append([float(p[0]), float(p[1]), float(p[2])])
+                    segments.append((base, base + 1))
                 elif c[0] == "circle":
                     pts.append([float(c[1][0]), float(c[1][1]), float(c[1][2])])
                     pts.append([float(c[1][0] + c[2]), float(c[1][1]), float(c[1][2])])
-            return pts, None
+            return pts, segments
 
         def _write_sketch_points(self, sk, pts):
             idx = 0
