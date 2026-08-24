@@ -119,6 +119,8 @@ else:
             self._cam_prev = None
             self._nav_mode = None  # spin|pan|zoom or None
             self.settings = QSettings("scdocdecoding", "scdm")
+            from scdm.scripting import Recorder
+            self.recorder = Recorder()
 
             self._build_chrome()
             self.tools = ToolManager(self._set_status)
@@ -234,6 +236,10 @@ else:
             self._prompt.setText(text)
             if self.vp:
                 self.vp.set_hud(text)
+
+        def _record(self, cmd_id: str, **opts):
+            """Note a successful geometry step when the recorder is enabled."""
+            self.recorder.note(cmd_id, **opts)
 
         def _refresh_title(self):
             if self.cur < 0:
@@ -616,6 +622,7 @@ else:
             ses = self.session()
             mir = K.mirror(body.shape, (0, 0, 0), (1, 0, 0))
             ses.kdoc.add_body(mir, name=body.name + " 镜像")
+            self._record("create.mirror")
             self._commit("已镜像")
 
         def _do_create_pattern(self):
@@ -627,6 +634,7 @@ else:
             shapes = K.pattern_linear(body.shape, (step, 0, 0), 3)
             for i, sh in enumerate(shapes[1:], 2):
                 ses.kdoc.add_body(sh, name=f"{body.name} 阵列{i}")
+            self._record("create.pattern", step=15.0, count=3)
             self._commit("线性阵列 ×3")
 
         def _do_create_shell(self):
@@ -638,6 +646,7 @@ else:
                 return
             try:
                 body.shape = K.shell_solid(body.shape, 1 / self.session().scale, [faces[0]])
+                self._record("create.shell", thickness=1.0)
                 self._commit("已抽壳")
             except Exception as exc:
                 self._set_status(f"抽壳失败: {exc}")
@@ -958,6 +967,43 @@ else:
         def _do_det_note(self):
             self._set_status("注释：占位（M5 后续）")
 
+        def _do_tools_record(self):
+            if self.recorder.enabled:
+                steps = self.recorder.stop()
+                fn, _ = QFileDialog.getSaveFileName(
+                    self, "保存脚本", "", "SCDM 脚本 (*.json)")
+                if fn:
+                    if not fn.lower().endswith(".json"):
+                        fn += ".json"
+                    self.recorder.save(fn)
+                    self._set_status(f"脚本已保存：{len(steps)} 步 → {fn}")
+                else:
+                    self._set_status(f"录制已停止（{len(steps)} 步未保存）")
+            else:
+                self.recorder.start()
+                self._set_status("录制已开始：接下来执行的几何操作将被记录")
+
+        def _do_tools_script(self):
+            fn, _ = QFileDialog.getOpenFileName(
+                self, "运行脚本", "", "SCDM 脚本 (*.json)")
+            if not fn:
+                return
+            try:
+                from scdm.scripting import load_script, replay
+                steps = load_script(fn)
+                ses = self.session()
+                if not ses.kdoc:
+                    ses.kdoc = KernelDoc()
+                msgs = replay(steps, ses.kdoc, ses.scale)
+                self._commit(f"脚本回放完成：{len(msgs)} 步")
+                for m in msgs:
+                    self._set_status(m)
+            except Exception as exc:
+                self._set_status(f"脚本回放失败: {exc}")
+
+        def _do_tools_customize(self):
+            self._set_status("自定义功能区：预留（命令显隐配置持久化）")
+
         def _do_facet_convert(self):
             """STL -> session facet body (sew triangles into a shell/solid)."""
             if not self._need_kernel():
@@ -1031,9 +1077,11 @@ else:
             try:
                 if fillet:
                     body.shape = K.fillet_edges(body.shape, r)
+                    self._record("create.blend", radius=1.0)
                     self._commit("已倒圆 1mm")
                 else:
                     body.shape = K.chamfer_edges(body.shape, r)
+                    self._record("create.chamfer", distance=1.0)
                     self._commit("已倒角 1mm")
             except Exception as exc:
                 self._set_status(str(exc))
@@ -1144,11 +1192,13 @@ else:
             if kind == "cyl":
                 sh = K.make_cylinder(r, h, origin=world)
                 ses.kdoc.add_body(sh, name="圆柱")
+                self._record("insert.cyl", r=5, h=10)
                 self._commit("已插入圆柱")
                 self.on_command("tool.pull")
             else:
                 sh = K.make_sphere(r, origin=world)
                 ses.kdoc.add_body(sh, name="球")
+                self._record("insert.sphere", r=5)
                 self._commit("已插入球")
 
         def _opts_for(self, cmd: str) -> dict:
@@ -1181,6 +1231,8 @@ else:
                     {"body_id": body_id, "face_i": face_i},
                     self._opts_for("tool.pull"),
                 )
+                self._record("tool.pull", face_i=int(face_i or 0), distance=5.0,
+                             symmetric=self.left.is_checked("tool.pull", 0))
                 self._commit(msg)
             except ToolError as exc:
                 self._set_status(str(exc))
@@ -1210,6 +1262,9 @@ else:
                     {"body_id": body.id},
                     opts,
                 )
+                self._record("tool.move", distance=10.0,
+                             axis=list(opts.get("axis", (1.0, 0.0, 0.0))),
+                             copy=bool(opts.get("copy", False)))
                 self._commit(msg)
             except ToolError as exc:
                 self._set_status(str(exc))
@@ -1227,6 +1282,7 @@ else:
                      "face_i": getattr(actor, "_face_i", None)},
                     self._opts_for("tool.fill"),
                 )
+                self._record("tool.fill", face_i=int(getattr(actor, "_face_i", 0) or 0))
                 self._commit(msg)
             except ToolError as exc:
                 self._set_status(str(exc))
@@ -1243,6 +1299,7 @@ else:
                     {"sel_ids": ids},
                     self._opts_for("tool.combine"),
                 )
+                self._record("tool.combine", mode=self.left.combine_mode())
                 self._commit(msg)
             except ToolError as exc:
                 self._set_status(str(exc))
@@ -1270,6 +1327,7 @@ else:
             try:
                 msg = get_tool("tool.split_body").apply(
                     self.session(), ctx, self._opts_for("tool.split_body"))
+                self._record("tool.split_body")
                 self._commit(msg)
             except ToolError as exc:
                 self._set_status(str(exc))

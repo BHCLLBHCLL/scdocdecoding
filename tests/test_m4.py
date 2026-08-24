@@ -76,6 +76,54 @@ class M4KernelTests(unittest.TestCase):
                 break
 
 
+@unittest.skipUnless(K.available(), "pythonocc-core not installed")
+class ScriptingTests(unittest.TestCase):
+    def test_record_replay_roundtrip(self):
+        import os
+        import tempfile
+        from scdm.kdoc import KernelDoc
+        from scdm.scripting import Recorder, load_script, replay
+
+        rec = Recorder()
+        rec.start()
+        rec.note("insert.cyl", r=5, h=10)
+        rec.note("insert.sphere", r=5)
+        rec.note("tool.move", distance=10.0, axis=[1.0, 0.0, 0.0], copy=True)
+        rec.note("tool.combine", mode="fuse")
+        steps = rec.stop()
+
+        fd, path = tempfile.mkstemp(suffix=".json")
+        os.close(fd)
+        try:
+            rec.save(path)
+            loaded = load_script(path)
+            self.assertEqual(loaded, steps)
+
+            doc = KernelDoc()
+            msgs = replay(loaded, doc, scale=1000.0)
+            self.assertEqual(len(msgs), len(steps))
+            # cyl + sphere + moved-copy, then fuse(first=fused cyl, last=copy)
+            self.assertEqual(len(doc.bodies), 2)
+            for b in doc.bodies:
+                self.assertGreater(K.volume(b.shape), 0)
+        finally:
+            os.remove(path)
+
+    def test_replay_pull_combine(self):
+        from scdm.kdoc import KernelDoc
+        from scdm.scripting import replay
+        doc = KernelDoc()
+        steps = [
+            {"cmd": "insert.cyl", "opts": {"r": 5, "h": 20}},
+            {"cmd": "tool.pull", "opts": {"face_i": 0, "distance": 5.0}},
+            {"cmd": "insert.sphere", "opts": {"r": 5}},
+            {"cmd": "tool.combine", "opts": {"mode": "fuse"}},
+        ]
+        msgs = replay(steps, doc, scale=1000.0)
+        self.assertEqual(len(doc.bodies), 1)
+        self.assertTrue(all(m.startswith("OK") for m in msgs))
+
+
 class AssemblyTests(unittest.TestCase):
     def test_component_lifecycle(self):
         from scdm.kdoc import KernelDoc

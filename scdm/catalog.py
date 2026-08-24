@@ -288,6 +288,7 @@ M4_LIVE = {
     "measure.interfere", "prep.named",
     "asm.insert", "asm.create", "asm.move", "asm.anchor", "asm.mate",
     "asm.explode", "asm.light",
+    "tools.script", "tools.record", "tools.customize",
 }
 
 M5_LIVE = {
