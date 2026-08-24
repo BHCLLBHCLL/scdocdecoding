@@ -33,6 +33,55 @@ class FacetIOTests(unittest.TestCase):
 
 @unittest.skipUnless(
     bool(importlib.util.find_spec("OCC")), "pythonocc-core not installed")
+class ScdocWriteTests(unittest.TestCase):
+    def test_box_roundtrip(self):
+        from scdm import kernel as K
+        from scdm.kdoc import KernelDoc
+        from scdm.scdoc_write import write_scdoc
+        from scdm.document import load_scdoc
+        from scdm.import_sab import import_scdoc_bundle
+
+        doc = KernelDoc()
+        doc.add_body(K.make_box(0.01, 0.01, 0.01), name="Solid1")
+        fd, path = tempfile.mkstemp(suffix=".scdoc")
+        os.close(fd)
+        try:
+            write_scdoc(path, doc, name="box")
+            from scdoc_parser.report import build_report
+            rep = build_report(path)
+            self.assertTrue(rep.get("validation", {}).get("all_ok"),
+                            f"validation failed: {rep.get('validation')}")
+            data = load_scdoc(path)
+            out = import_scdoc_bundle(data)
+            self.assertTrue(out.bodies)
+            self.assertAlmostEqual(K.volume(out.bodies[0].shape), 1e-6, places=8)
+        finally:
+            os.remove(path)
+
+    def test_extruded_sketch_roundtrip(self):
+        from scdm import kernel as K, sketch as S
+        from scdm.kdoc import KernelDoc
+        from scdm.scdoc_write import write_scdoc
+        from scdm.document import load_scdoc
+        from scdm.import_sab import import_scdoc_bundle
+
+        doc = KernelDoc()
+        # a 6-face prism from a rectangle sketch (not a cube: 2 rect + 4 side faces)
+        doc.add_body(S.extrude_sketch([("rect", (0, 0, 0), (0.01, 0.01, 0))], 0.02, "xy"))
+        fd, path = tempfile.mkstemp(suffix=".scdoc")
+        os.close(fd)
+        try:
+            write_scdoc(path, doc, name="prism")
+            data = load_scdoc(path)
+            out = import_scdoc_bundle(data)
+            self.assertTrue(out.bodies)
+            self.assertAlmostEqual(K.volume(out.bodies[0].shape), 2e-6, places=7)
+        finally:
+            os.remove(path)
+
+
+@unittest.skipUnless(
+    bool(importlib.util.find_spec("OCC")), "pythonocc-core not installed")
 class FacetOcctTests(unittest.TestCase):
     def test_mesh_to_shell_yields_shape(self):
         from scdm import kernel as K

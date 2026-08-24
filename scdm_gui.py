@@ -512,6 +512,9 @@ else:
                 elif low.endswith(".scdm"):
                     from scdm.io_project import save_scdm
                     save_scdm(path, ses.kdoc)
+                elif low.endswith(".scdoc"):
+                    from scdm.scdoc_write import write_scdoc
+                    write_scdoc(path, ses.kdoc, name=ses.name)
                 else:
                     if not low.endswith((".step", ".stp")):
                         path += ".step"
