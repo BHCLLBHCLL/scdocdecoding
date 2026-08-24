@@ -1004,22 +1004,95 @@ else:
             sk = ses.kdoc.sketches[-1]
             h = 10 / ses.scale
             made = 0
+            try:
+                from scdm import sketch as S
+                solid = S.extrude_sketch(sk.curves, h, sk.plane)
+                ses.kdoc.add_body(solid, name="拉伸")
+                made += 1
+            except (ValueError, Exception) as exc:
+                # fall back to circles -> cylinder
+                for c in sk.curves:
+                    if c[0] == "circle":
+                        center, r = c[1], c[2]
+                        ses.kdoc.add_body(K.make_cylinder(r, h, origin=center), name="拉伸圆")
+                        made += 1
+                if not made:
+                    self._set_status(f"草图无闭环：{exc}")
+                    return
+            self._commit(f"草图拉动 ×{made}")
+
+        def _apply_sketch_constraint(self, kind: str):
+            """Resolve a constraint against the active sketch using scdm.sketch."""
+            ses = self.session()
+            if not ses.kdoc.sketches:
+                self._begin_sketch()
+            sk = ses.kdoc.sketches[-1]
+            try:
+                from scdm import sketch as S
+                # build mutable point list from curve endpoints
+                pts, pairs = self._sketch_points(sk)
+                if not pts:
+                    self._set_status("草图无曲线可约束")
+                    return
+                if kind == "dim":
+                    # dimension = keep the first segment's current length
+                    d = math.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]) if len(pts) > 1 else 10.0
+                    consts = [(S.DIST, 0, 1, d)]
+                elif kind == "h":
+                    consts = [(S.HORIZONTAL, 0, 1, None)]
+                elif kind == "v":
+                    consts = [(S.VERTICAL, 0, 1, None)]
+                elif kind == "coin":
+                    consts = [(S.COINCIDENT, 0, 1, None)]
+                elif kind == "perp":
+                    consts = [(S.PERPENDICULAR, 0, 1, None)]
+                else:
+                    self._set_status(f"约束 {kind} 预留")
+                    return
+                S.solve_constraints(pts, consts, iters=25)
+                self._write_sketch_points(sk, pts)
+                self.left.populate_tree(ses)
+                self._set_status(f"已解算约束 [{kind}]")
+                self._rebuild("约束已应用")
+            except Exception as exc:
+                self._set_status(f"约束失败: {exc}")
+
+        def _do_con_dim(self):
+            self._apply_sketch_constraint("dim")
+
+        def _do_con_hv(self):
+            self._apply_sketch_constraint("h")
+
+        def _do_con_coin(self):
+            self._apply_sketch_constraint("coin")
+
+        def _do_con_perp(self):
+            self._apply_sketch_constraint("perp")
+
+        def _do_con_tan(self):
+            self._set_status("相切约束预留（M3 后续）")
+
+        def _sketch_points(self, sk):
+            pts = []
             for c in sk.curves:
-                if c[0] == "rect":
-                    p1, p2 = c[1], c[2]
-                    face = K.face_from_polygon([
-                        p1, (p2[0], p1[1], 0), p2, (p1[0], p2[1], 0),
-                    ])
-                    ses.kdoc.add_body(K.prism(face, (0, 0, h)), name="拉伸")
-                    made += 1
+                if c[0] in ("line", "rect"):
+                    for p in (c[1], c[2]):
+                        pts.append([float(p[0]), float(p[1]), float(p[2])])
                 elif c[0] == "circle":
-                    center, r = c[1], c[2]
-                    ses.kdoc.add_body(K.make_cylinder(r, h, origin=center), name="拉伸圆")
-                    made += 1
-            if made:
-                self._commit(f"草图拉动 ×{made}")
-            else:
-                self._set_status("草图无闭环，先画矩形或圆")
+                    pts.append([float(c[1][0]), float(c[1][1]), float(c[1][2])])
+                    pts.append([float(c[1][0] + c[2]), float(c[1][1]), float(c[1][2])])
+            return pts, None
+
+        def _write_sketch_points(self, sk, pts):
+            idx = 0
+            for c in sk.curves:
+                if c[0] in ("line", "rect"):
+                    p1 = tuple(pts[idx]); p2 = tuple(pts[idx + 1]) if idx + 1 < len(pts) else c[2]
+                    sk.curves[sk.curves.index(c)] = (c[0], p1, p2)
+                    idx += 2
+                elif c[0] == "circle":
+                    sk.curves[sk.curves.index(c)] = (c[0], tuple(pts[idx])[:2] + (c[1][2],), c[2])
+                    idx += 2
 
         def _do_view_fit(self):
             if self.scene:
