@@ -64,6 +64,7 @@ class Session:
     show_vertices: bool = True
     show_planes: bool = False
     show_axes: bool = True
+    show_grid: bool = False  # sketch grid on the active sketch plane
     style: str = "shaded_edges"  # shaded_edges | shaded | wire | transp
     kdoc: Any = None
     history: History = field(default_factory=History)

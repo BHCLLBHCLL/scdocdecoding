@@ -404,6 +404,8 @@ else:
                     if cmd_id == "measure.dist":
                         self._measure_pts = []
                         self._set_status(hud)
+                    elif cmd_id == "mode.3d":
+                        self._set_sketch_grid(False)
                     return
                 if cmd_id in ("tool.pull", "tool.move", "tool.fill", "tool.replace",
                               "tool.combine", "tool.split_body", "tool.split_faces",
@@ -1099,7 +1101,9 @@ else:
             self._sketch_add("point")
 
         def _do_sketch_grid(self):
-            self._set_status("草图网格已切换")
+            ses = self.session()
+            self._set_sketch_grid(not ses.show_grid)
+            self._set_status(f"草图网格已{'开启' if ses.show_grid else '关闭'}")
 
         def _do_create_project(self):
             self._set_status("投影：将选边记录到当前草图（M3）")
@@ -1178,11 +1182,18 @@ else:
             else:
                 self._set_status("已复制")
 
+        def _set_sketch_grid(self, on: bool):
+            ses = self.session()
+            ses.show_grid = on
+            if self.scene:
+                self.scene.update_grid(ses)
+
         def _begin_sketch(self):
             if not self._need_kernel():
                 return
             ses = self.session()
             ses.kdoc.add_sketch("xy")
+            self._set_sketch_grid(True)
             self.left.populate_tree(ses)
             self._set_status("草图模式：直线/矩形/圆；完成后选草图再拉动")
 

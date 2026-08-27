@@ -101,6 +101,7 @@ class Scene:
         self._highlight = []
         self._origin_actor = None
         self._plane_actors = {}
+        self._grid_actor = None
         self._gizmo = None
         self._install_gizmo()
         self._install_origin()
@@ -423,6 +424,37 @@ class Scene:
                 lab.SetVisibility(vis)
         for a in self._plane_actors.values():
             a.SetVisibility(1 if session.show_planes else 0)
+        self.update_grid(session)
+        self.render()
+
+    def update_grid(self, session: Session):
+        """Sketch grid on the active sketch's plane (session.show_grid)."""
+        if self._grid_actor is not None:
+            self.renderer.RemoveActor(self._grid_actor)
+            self._grid_actor = None
+        if not getattr(session, "show_grid", False):
+            self.render()
+            return
+        sketches = getattr(getattr(session, "kdoc", None), "sketches", [])
+        plane = sketches[-1].plane if sketches else "xy"
+        ext, n = 0.02, 10
+        step = 2 * ext / n
+
+        def w(u, v):
+            if plane == "zx":
+                return (u, 0.0, v)
+            if plane == "yz":
+                return (0.0, u, v)
+            return (u, v, 0.0)
+
+        lines = []
+        for i in range(n + 1):
+            t = -ext + i * step
+            lines.append([list(w(t, -ext)), list(w(t, ext))])
+            lines.append([list(w(-ext, t)), list(w(ext, t))])
+        self._grid_actor = _lines_actor(lines, (0.62, 0.68, 0.78), 1.0)
+        _exclude_from_bounds(self._grid_actor)
+        self.renderer.AddActor(self._grid_actor)
         self.render()
 
     def apply_style(self, style: str):
