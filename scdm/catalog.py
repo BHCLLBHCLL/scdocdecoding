@@ -285,14 +285,13 @@ M4_LIVE = {
     "create.chamfer", "create.draft", "insert.helix",
     "repair.stitch", "repair.solidify", "repair.gaps", "repair.missing",
     "repair.extra", "repair.small",
-    "measure.interfere", "prep.named",
+    "measure.interfere",
     "asm.insert", "asm.create", "asm.move", "asm.anchor", "asm.mate",
     "asm.explode", "asm.light",
     "tools.script", "tools.record", "tools.customize",
 }
 
 M5_LIVE = {
-    "file.print",
     "facet.reverse", "facet.smooth", "facet.reduce", "facet.fill", "facet.convert",
     "wb.params", "wb.publish",
     "add.build", "add.orient", "add.support", "add.lattice",
