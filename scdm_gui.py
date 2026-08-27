@@ -9,6 +9,7 @@ from __future__ import annotations
 import math
 import os
 import sys
+import tempfile
 import time
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -119,8 +120,13 @@ else:
             self.tools = ToolManager(self._set_status)
             self._new_session(activate=True)
             self._wire_defaults()
+            from PyQt5.QtCore import QTimer
+            self._autosave_timer = QTimer(self)
+            self._autosave_timer.timeout.connect(self._autosave_all)
+            self._autosave_timer.start(60 * 1000)
             if path:
                 self.open_path(path)
+            self._recover_prompt()
 
         # -- chrome ----------------------------------------------------------
         def _build_chrome(self):
@@ -514,6 +520,59 @@ else:
 
         def _do_file_exit(self):
             self.close()
+
+        # -- crash recovery (G2-01) ------------------------------------------
+        def _autosave_path(self, ses):
+            safe = "".join(c for c in ses.name if c.isalnum() or c in "-_") or "design"
+            return os.path.join(tempfile.gettempdir(), "scdm_autosave", safe + ".scdm")
+
+        def _autosave_all(self):
+            """Periodically write dirty sessions so a crash is recoverable."""
+            if not K.available():
+                return
+            try:
+                os.makedirs(os.path.dirname(self._autosave_path(self.session())),
+                            exist_ok=True)
+            except Exception:
+                return
+            from scdm.io_project import save_scdm
+            for ses in self.sessions:
+                if not ses.dirty or not ses.kdoc or not ses.kdoc.bodies:
+                    continue
+                try:
+                    save_scdm(self._autosave_path(ses), ses.kdoc)
+                except Exception:
+                    pass
+
+        def _recover_prompt(self):
+            adir = os.path.join(tempfile.gettempdir(), "scdm_autosave")
+            try:
+                files = [os.path.join(adir, f) for f in os.listdir(adir)
+                         if f.endswith(".scdm")]
+            except Exception:
+                return
+            if not files:
+                return
+            names = "\n".join(os.path.basename(f) for f in files)
+            if QMessageBox.question(
+                    self, "恢复",
+                    f"发现未正常关闭的会话恢复文件：\n{names}\n\n是否恢复？"
+            ) != QMessageBox.Yes:
+                for f in files:
+                    try:
+                        os.remove(f)
+                    except Exception:
+                        pass
+                return
+            for f in files:
+                try:
+                    self.open_path(f)
+                    os.remove(f)
+                except Exception as exc:
+                    self._set_status(f"恢复失败: {exc}")
+
+        def _do_file_recover(self):
+            self._recover_prompt()
 
         def _do_file_save(self):
             ses = self.session()
@@ -2148,6 +2207,12 @@ else:
                 item.setCheckState(0, Qt.Unchecked)
 
         def closeEvent(self, ev):
+            # clean exit: drop autosave files so the next start won't offer recovery
+            for ses in self.sessions:
+                try:
+                    os.remove(self._autosave_path(ses))
+                except Exception:
+                    pass
             if self.vtk_widget is not None:
                 try:
                     self.vtk_widget.Finalize()
