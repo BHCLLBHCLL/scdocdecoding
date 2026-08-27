@@ -103,6 +103,7 @@ class Scene:
         self._plane_actors = {}
         self._grid_actor = None
         self._silhouette_actor = None
+        self._section_axis = None
         self._gizmo = None
         self._install_gizmo()
         self._install_origin()
@@ -325,7 +326,40 @@ class Scene:
         self._build_sketches(kdoc)
         self.apply_visibility(session)
         self.apply_style(session.style)
+        self.set_section(getattr(session, "section_axis", None))
         self.fit()
+
+    def model_bounds(self):
+        acts = list(self._face_actors.values())
+        if not acts:
+            return None
+        b = list(acts[0].GetBounds())
+        for a in acts[1:]:
+            ab = a.GetBounds()
+            b[0] = min(b[0], ab[0]); b[1] = max(b[1], ab[1])
+            b[2] = min(b[2], ab[2]); b[3] = max(b[3], ab[3])
+            b[4] = min(b[4], ab[4]); b[5] = max(b[5], ab[5])
+        return tuple(b)
+
+    def set_section(self, axis):
+        """Static section: clip the shaded model through its centre (None=off)."""
+        self._section_axis = axis
+        planes = []
+        if axis:
+            b = self.model_bounds()
+            if b:
+                nx, ny, nz = {"x": (1, 0, 0), "y": (0, 1, 0), "z": (0, 0, 1)}[axis]
+                pl = vtk.vtkPlane()
+                pl.SetNormal(nx, ny, nz)
+                pl.SetOrigin((b[0] + b[1]) / 2.0, (b[2] + b[3]) / 2.0,
+                             (b[4] + b[5]) / 2.0)
+                planes.append(pl)
+        for a in self._face_actors.values():
+            m = a.GetMapper()
+            m.RemoveAllClippingPlanes()
+            for pl in planes:
+                m.AddClippingPlane(pl)
+        self.render()
 
     def _build_silhouette(self, pds):
         """Feature-edge overlay for the shaded model (gfx.silhouette)."""

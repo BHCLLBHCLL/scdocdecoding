@@ -1763,6 +1763,18 @@ else:
                 self.scene.apply_visibility(ses)
             self._set_status(f"轮廓边已{'开启' if ses.show_silhouette else '关闭'}")
 
+        def _do_gfx_section(self):
+            ses = self.session()
+            order = [None, "x", "y", "z"]
+            cur = getattr(ses, "section_axis", None)
+            nxt = order[(order.index(cur) + 1) % len(order)]
+            ses.section_axis = nxt
+            self.ribbon.set_checked("gfx.section", nxt is not None)
+            if self.scene:
+                self.scene.set_section(nxt)
+            label = {"x": "X 向", "y": "Y 向", "z": "Z 向", None: "关"}[nxt]
+            self._set_status(f"剖面显示：{label}（再次点击切换方向/关闭）")
+
         def _on_filter(self, key: str, on: bool):
             setattr(self.sel, "allow_" + key, on)
 

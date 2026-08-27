@@ -263,7 +263,7 @@ M1_LIVE = {
 }
 
 M2_LIVE = {
-    "gfx.silhouette",
+    "gfx.silhouette", "gfx.section",
     "file.save", "file.save_as", "file.export",
     "edit.undo", "edit.redo", "edit.copy", "edit.cut", "edit.paste",
     "tool.pull", "tool.move", "tool.fill", "tool.replace",

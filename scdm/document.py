@@ -66,6 +66,7 @@ class Session:
     show_axes: bool = True
     show_grid: bool = False  # sketch grid on the active sketch plane
     show_silhouette: bool = False  # feature-edge silhouette overlay
+    section_axis: Optional[str] = None  # static section clip: None|'x'|'y'|'z'
     style: str = "shaded_edges"  # shaded_edges | shaded | wire | transp
     kdoc: Any = None
     history: History = field(default_factory=History)
