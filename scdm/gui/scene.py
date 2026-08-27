@@ -667,6 +667,21 @@ class Scene:
         writer.SetInputConnection(w2i.GetOutputPort())
         writer.Write()
 
+    def render_image(self):
+        """Grab the current viewport as a QImage (print / render entry)."""
+        from PyQt5.QtGui import QImage
+        from vtk.util.numpy_support import vtk_to_numpy
+        self.render()
+        w2i = vtk.vtkWindowToImageFilter()
+        w2i.SetInput(self.renderer.GetRenderWindow())
+        w2i.Update()
+        img = w2i.GetOutput()
+        dims = img.GetDimensions()
+        arr = vtk_to_numpy(img.GetPointData().GetScalars())
+        arr = np.flipud(arr.reshape(dims[1], dims[0], -1))
+        fmt = QImage.Format_RGBA8888 if arr.shape[2] == 4 else QImage.Format_RGB888
+        return QImage(arr.copy(), dims[0], dims[1], dims[0] * arr.shape[2], fmt)
+
 
 def _axis_label(text, pos, color):
     """Screen-sized axis letter that does not blow up with camera fit."""

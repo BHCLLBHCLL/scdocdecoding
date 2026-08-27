@@ -476,6 +476,36 @@ else:
                 self.scene.export_png(fn)
                 self._set_status(f"已导出 {fn}")
 
+        def _do_file_print(self):
+            if not self.scene:
+                self._set_status("3D 视图不可用")
+                return
+            try:
+                from PyQt5.QtGui import QPainter
+                from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrinter
+            except Exception:
+                self._set_status("打印组件不可用（QtPrintSupport）")
+                return
+            img = self.scene.render_image()
+            if img is None or img.isNull():
+                self._set_status("无法获取视口图像")
+                return
+            printer = QPrinter(QPrinter.HighResolution)
+            preview = QPrintPreviewDialog(printer, self)
+
+            def _paint():
+                p = QPainter(printer)
+                target = p.viewport()
+                scaled = img.scaled(target.size(), Qt.KeepAspectRatio,
+                                    Qt.SmoothTransformation)
+                p.drawImage((target.width() - scaled.width()) // 2,
+                            (target.height() - scaled.height()) // 2, scaled)
+                p.end()
+
+            preview.paintRequested.connect(_paint)
+            self._set_status("打印预览：当前视口")
+            preview.exec_()
+
         def _do_file_options(self):
             dlg = OptionsDialog(self.sel, self)
             if dlg.exec_():
