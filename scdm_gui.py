@@ -880,14 +880,51 @@ else:
             self._commit("参数已更新并重建")
 
         def _do_wb_publish(self):
+            import json
             ses = self.session()
             if ses.kdoc and ses.kdoc.parametrics:
-                names = ", ".join(f"{p.body_name}(" + ", ".join(
-                    f"{k}={v:g}" for k, v in p.params.items()) + ")"
-                    for p in ses.kdoc.parametrics)
-                self._set_status(f"参数已发布：{names}")
-            else:
-                self._set_status("无参数可发布（先点「参数」创建参数盒）")
+                fn, _ = QFileDialog.getSaveFileName(
+                    self, "发布参数", ses.name + "_params.json", "JSON (*.json)")
+                if not fn:
+                    return
+                if not fn.lower().endswith(".json"):
+                    fn += ".json"
+                payload = {
+                    "format": "scdm-params", "version": 1,
+                    "params": [
+                        {"body_name": p.body_name,
+                         "builder": getattr(p.builder, "__name__", "box_builder"),
+                         "params": dict(p.params)}
+                        for p in ses.kdoc.parametrics
+                    ],
+                }
+                with open(fn, "w", encoding="utf-8") as f:
+                    json.dump(payload, f, ensure_ascii=False, indent=2)
+                self._set_status(f"参数已发布 → {fn}")
+                return
+            # nothing to publish: offer to read a published file back
+            fn, _ = QFileDialog.getOpenFileName(
+                self, "读回参数", "", "JSON (*.json)")
+            if not fn:
+                return
+            try:
+                from scdm.params import param_box, param_cylinder
+                with open(fn, encoding="utf-8") as f:
+                    payload = json.load(f)
+                if not self._need_kernel():
+                    return
+                makers = {"box_builder": param_box, "cylinder_builder": param_cylinder}
+                n = 0
+                for entry in payload.get("params", []):
+                    mk = makers.get(entry.get("builder", "box_builder"), param_box)
+                    p = mk(body_name=entry.get("body_name", "参数体"))
+                    for k, v in entry.get("params", {}).items():
+                        p.set(**{k: float(v)})
+                    ses.kdoc.add_parametric(p, ses.scale)
+                    n += 1
+                self._commit(f"已读回参数并重建 ×{n}")
+            except Exception as exc:
+                self._set_status(f"参数读回失败: {exc}")
 
         def _do_add_build(self):
             body = self._selected_kbody()
