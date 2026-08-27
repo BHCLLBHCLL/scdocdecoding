@@ -117,6 +117,7 @@ else:
             self.recorder = Recorder()
 
             self._build_chrome()
+            self._apply_customize(self.settings.value("ribbon/hidden", []) or [])
             self.tools = ToolManager(self._set_status)
             self._new_session(activate=True)
             self._wire_defaults()
@@ -1214,8 +1215,63 @@ else:
             except Exception as exc:
                 self._set_status(f"脚本回放失败: {exc}")
 
+        def _apply_customize(self, hidden):
+            """Show/hide ribbon command buttons per a list of hidden cmd ids."""
+            from scdm.catalog import TABS
+            hidden = set(hidden or [])
+            if isinstance(hidden, str):
+                hidden = {hidden}
+            for tab in TABS:
+                for g in tab.groups:
+                    for c in g.commands:
+                        b = self.ribbon.button(c.id)
+                        if b:
+                            b.setVisible(c.id not in hidden)
+
         def _do_tools_customize(self):
-            self._set_status("自定义功能区：预留（命令显隐配置持久化）")
+            from PyQt5.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox,
+                                         QGridLayout, QLabel, QScrollArea,
+                                         QTabWidget, QWidget)
+            from scdm.catalog import TABS
+            hidden = self.settings.value("ribbon/hidden", []) or []
+            if isinstance(hidden, str):
+                hidden = [hidden]
+            dlg = QDialog(self)
+            dlg.setWindowTitle("自定义功能区")
+            tabs = QTabWidget(dlg)
+            boxes = {}
+            for tab in TABS:
+                page = QWidget()
+                grid = QGridLayout(page)
+                r = 0
+                for g in tab.groups:
+                    lab = QLabel(f"{g.name}（{g.en}）")
+                    lab.setStyleSheet("font-weight: bold;")
+                    grid.addWidget(lab, r, 0, 1, 2)
+                    r += 1
+                    for c in g.commands:
+                        cb = QCheckBox(f"{c.name}（{c.en}）")
+                        cb.setChecked(c.id not in set(hidden))
+                        grid.addWidget(cb, r, 0, 1, 2)
+                        r += 1
+                        boxes[c.id] = cb
+                scroll = QScrollArea()
+                scroll.setWidgetResizable(True)
+                scroll.setWidget(page)
+                tabs.addTab(scroll, tab.name)
+            lay = QVBoxLayout(dlg)
+            lay.addWidget(tabs)
+            bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+            bb.accepted.connect(dlg.accept)
+            bb.rejected.connect(dlg.reject)
+            lay.addWidget(bb)
+            dlg.resize(420, 520)
+            if dlg.exec_() != QDialog.Accepted:
+                return
+            hidden = sorted(cid for cid, cb in boxes.items() if not cb.isChecked())
+            self.settings.setValue("ribbon/hidden", hidden)
+            self._apply_customize(hidden)
+            self._set_status(f"功能区已自定义（隐藏 {len(hidden)} 个命令）")
 
         def _do_ks_render(self):
             """Own-renderer entry on the KeyShot tab: export the current view as PNG."""
