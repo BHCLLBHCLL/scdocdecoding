@@ -104,6 +104,7 @@ class Scene:
         self._grid_actor = None
         self._silhouette_actor = None
         self._section_axis = None
+        self._note_actors = []
         self._gizmo = None
         self._install_gizmo()
         self._install_origin()
@@ -204,6 +205,9 @@ class Scene:
         if self._silhouette_actor:
             self.renderer.RemoveActor(self._silhouette_actor)
         self._silhouette_actor = None
+        for act in getattr(self, "_note_actors", []):
+            self.renderer.RemoveActor(act)
+        self._note_actors = []
         self.clear_preview()
 
     def build(self, session: Session):
@@ -324,6 +328,7 @@ class Scene:
             self.renderer.AddActor(self._vert_actor)
         self._build_silhouette(pds)
         self._build_sketches(kdoc)
+        self._build_notes(kdoc)
         self.apply_visibility(session)
         self.apply_style(session.style)
         self.set_section(getattr(session, "section_axis", None))
@@ -360,6 +365,19 @@ class Scene:
             for pl in planes:
                 m.AddClippingPlane(pl)
         self.render()
+
+    def _build_notes(self, kdoc):
+        """Viewport text annotations anchored at world positions."""
+        for note in getattr(kdoc, "notes", []):
+            lab = _axis_label(note.get("text", ""),
+                              tuple(note.get("pos") or (0, 0, 0)),
+                              (0.55, 0.25, 0.10))
+            if lab is not None:
+                self.renderer.AddActor(lab)
+                self._note_actors.append(lab)
+
+    def focal_point(self):
+        return tuple(self.renderer.GetActiveCamera().GetFocalPoint())
 
     def _build_silhouette(self, pds):
         """Feature-edge overlay for the shaded model (gfx.silhouette)."""

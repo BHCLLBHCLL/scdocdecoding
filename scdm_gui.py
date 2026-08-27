@@ -1149,7 +1149,17 @@ else:
             self._do_file_image()
 
         def _do_det_note(self):
-            self._set_status("注释：占位（M5 后续）")
+            from PyQt5.QtWidgets import QInputDialog
+            ses = self.session()
+            if not self._need_kernel():
+                return
+            text, ok = QInputDialog.getText(self, "注释", "注释内容：")
+            if not ok or not text.strip():
+                return
+            pos = self.scene.focal_point() if self.scene else (0.0, 0.0, 0.0)
+            ses.kdoc.notes.append({"pos": [float(v) for v in pos],
+                                   "text": text.strip()})
+            self._commit("已添加注释")
 
         def _do_tools_record(self):
             if self.recorder.enabled:

@@ -53,6 +53,7 @@ class KernelDoc:
         self.sketches: List[Sketch] = []
         self.components: List[Component] = []
         self.parametrics: List[Any] = []  # scdm.params.Parametric
+        self.notes: List[dict] = []  # viewport annotations: {"pos": (x,y,z), "text": str}
         self._n = 1
         self._sk = 1
         self._c = 1
