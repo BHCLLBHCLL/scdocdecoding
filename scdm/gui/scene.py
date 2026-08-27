@@ -105,6 +105,7 @@ class Scene:
         self._install_gizmo()
         self._install_origin()
         self._install_planes()
+        self._reset_empty_camera()
 
         self._click_n = 0
         self._click_actor = None
@@ -113,37 +114,49 @@ class Scene:
     def _install_gizmo(self):
         axes = vtk.vtkAxesActor()
         axes.SetTotalLength(1.0, 1.0, 1.0)
-        try:
-            axes.SetNormalizedShaftLength(0.85, 0.85, 0.85)
-            axes.SetNormalizedTipLength(0.15, 0.15, 0.15)
-        except Exception:
-            pass
+        _style_axes(axes, world=False)
         gizmo = vtk.vtkOrientationMarkerWidget()
         gizmo.SetOrientationMarker(axes)
         gizmo.SetInteractor(self.vtk_widget.GetRenderWindow().GetInteractor())
-        gizmo.SetViewport(0.0, 0.0, 0.16, 0.16)
+        gizmo.SetViewport(0.0, 0.0, 0.11, 0.11)
+        try:
+            gizmo.SetOutlineColor(0.72, 0.72, 0.72)
+        except Exception:
+            pass
         gizmo.SetEnabled(1)
         gizmo.InteractiveOff()
         self._gizmo = gizmo
 
     def _install_origin(self):
         axes = vtk.vtkAxesActor()
-        axes.SetTotalLength(0.02, 0.02, 0.02)
-        axes.SetShaftTypeToCylinder()
+        axes.SetTotalLength(0.012, 0.012, 0.012)
+        _style_axes(axes, world=True)
         self.renderer.AddActor(axes)
         self._origin_actor = axes
+        self._origin_labels = []
+        length = 0.012
+        for text, pos, color in (
+            ("X", (length * 1.15, 0.0, 0.0), (0.78, 0.22, 0.18)),
+            ("Y", (0.0, length * 1.15, 0.0), (0.20, 0.55, 0.22)),
+            ("Z", (0.0, 0.0, length * 1.15), (0.18, 0.36, 0.75)),
+        ):
+            lab = _axis_label(text, pos, color)
+            if lab is None:
+                continue
+            self.renderer.AddActor(lab)
+            self._origin_labels.append(lab)
 
     def _install_planes(self):
         specs = {
-            "xy": ((1, 0, 0), (0, 1, 0), (0.7, 0.7, 0.9)),
-            "zx": ((1, 0, 0), (0, 0, 1), (0.9, 0.7, 0.7)),
-            "yz": ((0, 1, 0), (0, 0, 1), (0.7, 0.9, 0.7)),
+            "xy": ((1, 0, 0), (0, 1, 0), (0.72, 0.74, 0.86)),
+            "zx": ((1, 0, 0), (0, 0, 1), (0.86, 0.72, 0.72)),
+            "yz": ((0, 1, 0), (0, 0, 1), (0.72, 0.84, 0.72)),
         }
         for key, (ax1, ax2, col) in specs.items():
             src = vtk.vtkPlaneSource()
-            src.SetOrigin(-0.03, -0.03, 0)
-            src.SetPoint1(0.03, -0.03, 0)
-            src.SetPoint2(-0.03, 0.03, 0)
+            src.SetOrigin(-0.018, -0.018, 0)
+            src.SetPoint1(0.018, -0.018, 0)
+            src.SetPoint2(-0.018, 0.018, 0)
             if key == "zx":
                 src.SetNormal(0, 1, 0)
             elif key == "yz":
@@ -156,8 +169,9 @@ class Scene:
             a = vtk.vtkActor()
             a.SetMapper(m)
             a.GetProperty().SetColor(*col)
-            a.GetProperty().SetOpacity(0.18)
+            a.GetProperty().SetOpacity(0.14)
             a.SetVisibility(0)
+            _exclude_from_bounds(a)
             self.renderer.AddActor(a)
             self._plane_actors[key] = a
 
@@ -403,7 +417,10 @@ class Scene:
         if self._vert_actor:
             self._vert_actor.SetVisibility(1 if session.show_vertices else 0)
         if self._origin_actor:
-            self._origin_actor.SetVisibility(1 if session.show_axes else 0)
+            vis = 1 if session.show_axes else 0
+            self._origin_actor.SetVisibility(vis)
+            for lab in getattr(self, "_origin_labels", []):
+                lab.SetVisibility(vis)
         for a in self._plane_actors.values():
             a.SetVisibility(1 if session.show_planes else 0)
         self.render()
@@ -463,8 +480,27 @@ class Scene:
         world = picker.GetPickPosition() if actor else None
         return actor, world
 
+    def _reset_empty_camera(self):
+        cam = self.renderer.GetActiveCamera()
+        cam.ParallelProjectionOn()
+        cam.SetFocalPoint(0.0, 0.0, 0.0)
+        cam.SetPosition(0.05, -0.065, 0.045)
+        cam.SetViewUp(0.0, 0.0, 1.0)
+        cam.SetParallelScale(0.042)
+        self.renderer.ResetCameraClippingRange()
+
     def fit(self):
+        if not self._face_actors:
+            self._reset_empty_camera()
+            self.render()
+            return
         self.renderer.ResetCamera()
+        cam = self.renderer.GetActiveCamera()
+        try:
+            cam.Zoom(0.92)
+        except Exception:
+            pass
+        self.renderer.ResetCameraClippingRange()
         self.render()
 
     def store_camera(self):
@@ -497,7 +533,10 @@ class Scene:
             cam.SetViewUp(0, 1, 0)
         cam.SetFocalPoint(0, 0, 0)
         cam.ParallelProjectionOn()
-        self.renderer.ResetCamera()
+        if self._face_actors:
+            self.renderer.ResetCamera()
+        else:
+            self._reset_empty_camera()
         self.render()
 
     def iso_view(self, scale: float):
@@ -507,7 +546,10 @@ class Scene:
         cam.SetViewUp(0, 0, 1)
         cam.SetFocalPoint(0, 0, 0)
         cam.ParallelProjectionOn()
-        self.renderer.ResetCamera()
+        if self._face_actors:
+            self.renderer.ResetCamera()
+        else:
+            self._reset_empty_camera()
         self.render()
 
     def export_png(self, path: str):
@@ -518,6 +560,106 @@ class Scene:
         writer.SetFileName(path)
         writer.SetInputConnection(w2i.GetOutputPort())
         writer.Write()
+
+
+def _axis_label(text, pos, color):
+    """Screen-sized axis letter that does not blow up with camera fit."""
+    try:
+        lab = vtk.vtkBillboardTextActor3D()
+        lab.SetInput(text)
+        lab.SetPosition(*pos)
+        tp = lab.GetTextProperty()
+        tp.SetFontFamilyToArial()
+        tp.SetFontSize(13)
+        tp.BoldOff()
+        tp.ItalicOff()
+        tp.ShadowOff()
+        tp.SetColor(*color)
+        tp.SetJustificationToCentered()
+        tp.SetVerticalJustificationToCentered()
+        _exclude_from_bounds(lab)
+        return lab
+    except Exception:
+        return None
+
+
+def _exclude_from_bounds(prop):
+    try:
+        prop.UseBoundsOff()
+    except Exception:
+        pass
+
+
+def _style_axes(axes, world=False):
+    try:
+        axes.SetShaftTypeToCylinder()
+        axes.SetNormalizedShaftLength(0.82, 0.82, 0.82)
+        axes.SetNormalizedTipLength(0.18, 0.18, 0.18)
+        if world:
+            axes.SetCylinderRadius(0.018)
+            axes.SetConeRadius(0.05)
+        else:
+            axes.SetCylinderRadius(0.02)
+            axes.SetConeRadius(0.06)
+        for getter, rgb in (
+            (axes.GetXAxisShaftProperty, (0.82, 0.22, 0.20)),
+            (axes.GetYAxisShaftProperty, (0.22, 0.62, 0.28)),
+            (axes.GetZAxisShaftProperty, (0.20, 0.38, 0.78)),
+            (axes.GetXAxisTipProperty, (0.82, 0.22, 0.20)),
+            (axes.GetYAxisTipProperty, (0.22, 0.62, 0.28)),
+            (axes.GetZAxisTipProperty, (0.20, 0.38, 0.78)),
+        ):
+            try:
+                getter().SetColor(*rgb)
+            except Exception:
+                pass
+    except Exception:
+        pass
+    if world:
+        try:
+            axes.AxisLabelsOff()
+        except Exception:
+            try:
+                axes.SetAxisLabels(0)
+            except Exception:
+                pass
+        _exclude_from_bounds(axes)
+        return
+    colors = ((0.78, 0.18, 0.18), (0.18, 0.55, 0.22), (0.16, 0.34, 0.72))
+    getters = (
+        axes.GetXAxisCaptionActor2D,
+        axes.GetYAxisCaptionActor2D,
+        axes.GetZAxisCaptionActor2D,
+    )
+    for getter, color in zip(getters, colors):
+        try:
+            cap = getter()
+        except Exception:
+            continue
+        try:
+            cap.SetWidth(0.08)
+            cap.SetHeight(0.04)
+        except Exception:
+            pass
+        try:
+            ta = cap.GetTextActor()
+            ta.SetTextScaleModeToNone()
+        except Exception:
+            pass
+        try:
+            tp = cap.GetCaptionTextProperty()
+            tp.ShadowOff()
+            tp.BoldOff()
+            tp.ItalicOff()
+            tp.SetFontFamilyToArial()
+            tp.SetFontSize(11)
+            tp.SetColor(*color)
+            try:
+                tp.SetBackgroundOpacity(0.0)
+            except Exception:
+                pass
+        except Exception:
+            pass
 
 
 def _polys(pts, tris):

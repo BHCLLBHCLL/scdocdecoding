@@ -3,29 +3,33 @@ from __future__ import annotations
 
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtWidgets import (
-    QButtonGroup, QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy,
-    QTabBar, QToolButton, QVBoxLayout, QWidget,
+    QButtonGroup, QFrame, QGridLayout, QHBoxLayout, QLabel, QScrollArea,
+    QSizePolicy, QTabBar, QToolButton, QVBoxLayout, QWidget,
 )
 
 from scdm.catalog import TABS, Command, Group
 from scdm.gui.icons import make_icon
 
+LARGE_ICON = 32
+SMALL_ICON = 24
+RIBBON_BODY_H = 118
+
 RIBBON_QSS = """
 QWidget#RibbonBar { background: #F0F0F0; }
-QTabBar#RibbonTabs { background: #E6E6E6; }
+QTabBar#RibbonTabs { background: #E8E8E8; }
 QTabBar#RibbonTabs::tab {
-    height: 28px; padding: 4px 14px; background: #E6E6E6;
-    border: none; color: #222; font-size: 12px;
+    height: 28px; padding: 5px 16px; background: #E8E8E8;
+    border: none; color: #333; font-size: 12px;
 }
 QTabBar#RibbonTabs::tab:selected {
-    background: #FFFFFF; border-bottom: 2px solid #0078D7; color: #000;
+    background: #FFFFFF; border-bottom: 2px solid #0078D7; color: #111;
 }
-QWidget#RibbonBody { background: #FFFFFF; border-bottom: 1px solid #D0D0D0; }
-QLabel#GroupTitle { color: #666; font-size: 11px; }
-QFrame#GroupSep { color: #D0D0D0; }
+QWidget#RibbonBody { background: #FFFFFF; border-bottom: 1px solid #D4D4D4; }
+QLabel#GroupTitle { color: #6A6A6A; font-size: 11px; padding: 2px 6px 3px 6px; }
+QFrame#GroupSep { background: #E4E4E4; max-width: 1px; margin: 10px 5px 16px 5px; }
 QToolButton {
-    border: 1px solid transparent; border-radius: 3px; padding: 2px;
-    background: transparent; font-size: 11px;
+    border: 1px solid transparent; border-radius: 3px;
+    background: transparent; font-size: 11px; color: #333;
 }
 QToolButton:hover { background: #E5F1FB; border-color: #C0D4EA; }
 QToolButton:checked { background: #CDE4F7; border-color: #0078D7; }
@@ -40,63 +44,63 @@ class RibbonButton(QToolButton):
         super().__init__(parent)
         self.cmd = cmd
         self.setObjectName(cmd.id)
-        self.setToolButtonStyle(Qt.ToolButtonTextUnderIcon if cmd.large else Qt.ToolButtonTextBesideIcon)
-        sz = 32 if cmd.large else 16
-        self.setIcon(make_icon(cmd.icon, sz))
-        self.setIconSize(QSize(sz, sz))
-        self.setText(cmd.name)
-        self.setCheckable(cmd.checkable)
         self.setAutoRaise(True)
+        self.setCheckable(cmd.checkable)
+        self.setCursor(Qt.PointingHandCursor)
         tip = f"{cmd.name} ({cmd.en})"
         if cmd.note:
             tip += f"\n{cmd.note}"
         tip += f"\n{cmd.wave}"
         self.setToolTip(tip)
         if cmd.large:
-            self.setMinimumSize(56, 64)
+            self.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            self.setIcon(make_icon(cmd.icon, LARGE_ICON))
+            self.setIconSize(QSize(LARGE_ICON, LARGE_ICON))
+            self.setText(cmd.name)
+            width = 58 if len(cmd.name) <= 3 else 74
+            self.setFixedSize(width, 80)
         else:
-            self.setMinimumHeight(22)
+            self.setToolButtonStyle(Qt.ToolButtonIconOnly)
+            self.setIcon(make_icon(cmd.icon, SMALL_ICON))
+            self.setIconSize(QSize(SMALL_ICON, SMALL_ICON))
+            self.setText(cmd.name)
+            self.setFixedSize(36, 36)
         self.clicked.connect(lambda: self.triggered_id.emit(cmd.id))
 
 
 class RibbonGroup(QWidget):
     def __init__(self, group: Group, parent=None):
         super().__init__(parent)
+        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
         root = QVBoxLayout(self)
-        root.setContentsMargins(8, 4, 8, 2)
-        root.setSpacing(2)
+        root.setContentsMargins(10, 6, 10, 4)
+        root.setSpacing(1)
         row = QHBoxLayout()
-        row.setSpacing(2)
+        row.setSpacing(4)
+        row.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.buttons = []
         large = [c for c in group.commands if c.large]
         small = [c for c in group.commands if not c.large]
         for c in large:
             b = RibbonButton(c)
-            row.addWidget(b)
+            row.addWidget(b, 0, Qt.AlignTop)
             self.buttons.append(b)
         if small:
-            grid = QVBoxLayout()
-            grid.setSpacing(1)
-            # pack small buttons two-up
-            i = 0
-            while i < len(small):
-                line = QHBoxLayout()
-                line.setSpacing(2)
-                for _ in range(2):
-                    if i >= len(small):
-                        break
-                    b = RibbonButton(small[i])
-                    line.addWidget(b)
-                    self.buttons.append(b)
-                    i += 1
-                line.addStretch(1)
-                grid.addLayout(line)
-            row.addLayout(grid)
-        row.addStretch(0)
+            nrows = 3 if (not large and len(small) <= 3) else 2
+            grid_host = QWidget()
+            grid = QGridLayout(grid_host)
+            grid.setContentsMargins(0, 4, 0, 0)
+            grid.setHorizontalSpacing(3)
+            grid.setVerticalSpacing(3)
+            for i, c in enumerate(small):
+                b = RibbonButton(c)
+                grid.addWidget(b, i % nrows, i // nrows)
+                self.buttons.append(b)
+            row.addWidget(grid_host, 0, Qt.AlignVCenter)
         root.addLayout(row, 1)
         title = QLabel(group.name)
         title.setObjectName("GroupTitle")
-        title.setAlignment(Qt.AlignHCenter)
+        title.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         root.addWidget(title)
 
 
@@ -124,10 +128,11 @@ class RibbonBar(QWidget):
 
         self.body = QWidget()
         self.body.setObjectName("RibbonBody")
-        self.body.setFixedHeight(92)
+        self.body.setFixedHeight(RIBBON_BODY_H)
         body_l = QHBoxLayout(self.body)
-        body_l.setContentsMargins(4, 0, 4, 0)
+        body_l.setContentsMargins(6, 0, 6, 0)
         body_l.setSpacing(0)
+        body_l.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -153,6 +158,7 @@ class RibbonBar(QWidget):
             hl = QHBoxLayout(host)
             hl.setContentsMargins(0, 0, 0, 0)
             hl.setSpacing(0)
+            hl.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
             for gi, g in enumerate(tab.groups):
                 rg = RibbonGroup(g)
                 for b in rg.buttons:
@@ -171,14 +177,13 @@ class RibbonBar(QWidget):
                     sep = QFrame()
                     sep.setObjectName("GroupSep")
                     sep.setFrameShape(QFrame.VLine)
-                    sep.setStyleSheet("color:#D0D0D0;")
+                    sep.setFixedWidth(1)
                     hl.addWidget(sep)
             hl.addStretch(1)
             self._pages[tab.id] = host
 
         self._current_host = None
         self.tabs.currentChanged.connect(self._on_tab)
-        # default Design
         design_idx = self._tab_ids.index("design")
         self.tabs.setCurrentIndex(design_idx)
         self._show_tab("design")

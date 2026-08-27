@@ -12,6 +12,15 @@ FILTERS = (
     ("component", "组件"),
 )
 
+FILTER_QSS = """
+QToolButton {
+    padding: 3px 9px; font-size: 12px; min-height: 20px;
+    border: 1px solid transparent; border-radius: 2px;
+}
+QToolButton:hover { background: #E5F1FB; border-color: #C0D4EA; }
+QToolButton:checked { background: #CDE4F7; border-color: #0078D7; color: #111; }
+"""
+
 
 class FilterBar(QWidget):
     filter_changed = pyqtSignal(str, bool)
@@ -19,9 +28,10 @@ class FilterBar(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setStyleSheet(FILTER_QSS)
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(0, 0, 0, 0)
-        lay.setSpacing(2)
+        lay.setContentsMargins(4, 2, 8, 2)
+        lay.setSpacing(3)
         self.buttons = {}
         for key, label in FILTERS:
             b = QToolButton()
@@ -29,12 +39,13 @@ class FilterBar(QWidget):
             b.setCheckable(True)
             b.setChecked(True)
             b.setAutoRaise(True)
+            b.setMinimumWidth(32)
             b.toggled.connect(lambda on, k=key: self.filter_changed.emit(k, on))
             lay.addWidget(b)
             self.buttons[key] = b
-        lay.addSpacing(8)
+        lay.addSpacing(10)
         self.unit = QLabel("mm")
-        self.unit.setStyleSheet("padding: 0 8px; color: #333;")
+        self.unit.setStyleSheet("padding: 0 10px; color: #444; font-size: 12px;")
         lay.addWidget(self.unit)
         for cid, text in (("view.spin", "旋转"), ("view.pan", "平移"), ("view.fit", "适合")):
             b = QToolButton()
@@ -48,4 +59,5 @@ class StatusPrompt(QLabel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setText("单击选择对象；双击选环边；三击选实体")
+        self.setStyleSheet("padding: 0 10px; color: #333; font-size: 12px;")
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)

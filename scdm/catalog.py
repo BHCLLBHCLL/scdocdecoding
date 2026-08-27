@@ -41,7 +41,7 @@ TABS: Tuple[Tab, ...] = (
     Tab("file", "文件", "File", (), "backstage"),
     Tab("design", "设计", "Design", (
         Group("剪贴板", "Clipboard", (
-            C("edit.paste", "粘贴", "Paste", "M2", "paste"),
+            C("edit.paste", "粘贴", "Paste", "M2", "paste", large=True),
             C("edit.cut", "剪切", "Cut", "M2", "cut"),
             C("edit.copy", "复制", "Copy", "M2", "copy"),
         )),
@@ -73,9 +73,9 @@ TABS: Tuple[Tab, ...] = (
             C("sketch.grid", "网格", "Grid", "M3", "grid", checkable=True),
         )),
         Group("模式", "Mode", (
-            C("mode.sketch", "草图", "Sketch", "M3", "mode_sketch", large=True, checkable=True),
-            C("mode.section", "截面", "Section", "M2", "mode_section", large=True, checkable=True),
-            C("mode.3d", "三维", "3D", "M1", "mode_3d", large=True, checkable=True),
+            C("mode.sketch", "草图", "Sketch", "M3", "mode_sketch", checkable=True),
+            C("mode.section", "截面", "Section", "M2", "mode_section", checkable=True),
+            C("mode.3d", "三维", "3D", "M1", "mode_3d", checkable=True),
         )),
         Group("编辑", "Edit", (
             C("tool.select", "选择", "Select", "M1", "select", large=True, checkable=True),

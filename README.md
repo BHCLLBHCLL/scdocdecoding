@@ -15,22 +15,27 @@ only reverse-engineered to capture the *behavioral* specification (see `scdm_api
 
 ## Runtime environment
 
-The modeling kernel (**pythonocc-core**) is **not** on the base conda env. Use the dedicated conda
-env that already has it:
+The modeling kernel is **pythonocc-core** (Open CASCADE via OCCT). Install it (conda,
+Windows) — either into the base env (so plain `python` works) or into a dedicated env:
 
 ```bat
-:: the "occ" env already has pythonocc-core (OCC), numpy, vtk
-:: install the GUI bits once:
-C:\Users\sdcll\.conda\envs\occ\python.exe -m pip install PyQt5 scipy trimesh pytest
+:: option A: into the base environment (this machine: already done)
+conda install -c conda-forge pythonocc-core -y
+:: option B: dedicated env via setup_env.bat
+setup_env.bat
+:: then: conda activate scdm
+
+:: GUI deps (pip, if not present):
+pip install PyQt5 scipy trimesh pytest
 ```
 
-Run the GUI and tests from the project root with that interpreter:
+Run the GUI and tests from the project root:
 
 ```bat
 cd D:\training\caedecoder\scdocdecoding
 set PYTHONPATH=%CD%
-C:\Users\sdcll\.conda\envs\occ\python.exe scdm_gui.py box.scdoc
-C:\Users\sdcll\.conda\envs\occ\python.exe -X utf8 tests/test_kernel.py
+python scdm_gui.py box.scdoc
+python -X utf8 tests/test_kernel.py
 ```
 
 Without OCCT the GUI still opens in read-only mode (M1 commands only; M2-M5 commands report

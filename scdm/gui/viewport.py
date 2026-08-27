@@ -3,12 +3,31 @@ from __future__ import annotations
 
 from PyQt5.QtCore import Qt, pyqtSignal, QSize
 from PyQt5.QtWidgets import (
-    QLabel, QTabBar, QToolButton, QVBoxLayout, QWidget, QHBoxLayout,
+    QLabel, QToolButton, QWidget, QHBoxLayout,
 )
 
 from scdm.gui.icons import make_icon
 
-HUD_QSS = "color: #333333; background: rgba(255,255,255,180); padding: 4px 8px; font-size: 12px;"
+HUD_QSS = """
+QLabel#ViewPrompt {
+    color: #3A3A3A;
+    background: #FAFAFA;
+    padding: 3px 14px;
+    font-size: 12px;
+    border: none;
+    border-bottom: 1px solid #E2E2E2;
+}
+"""
+
+MINI_QSS = """
+QWidget#MiniBar {
+    background: rgba(252, 252, 252, 235);
+    border: 1px solid #C8C8C8;
+    border-radius: 3px;
+}
+QToolButton { padding: 3px; border: 1px solid transparent; border-radius: 2px; }
+QToolButton:hover { background: #E5F1FB; border-color: #C0D4EA; }
+"""
 
 
 class MiniBar(QWidget):
@@ -16,10 +35,11 @@ class MiniBar(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("QWidget { background: #F7F7F7; border: 1px solid #B0B0B0; }")
+        self.setObjectName("MiniBar")
+        self.setStyleSheet(MINI_QSS)
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(4, 2, 4, 2)
-        lay.setSpacing(2)
+        lay.setContentsMargins(4, 3, 4, 3)
+        lay.setSpacing(3)
         for cid, key, name in (
             ("tool.pull", "pull", "拉动"),
             ("tool.move", "move", "移动"),
@@ -27,7 +47,9 @@ class MiniBar(QWidget):
             ("tool.combine", "combine", "合并"),
         ):
             b = QToolButton()
-            b.setIcon(make_icon(key, 16))
+            b.setIcon(make_icon(key, 24))
+            b.setIconSize(QSize(24, 24))
+            b.setFixedSize(32, 32)
             b.setToolTip(name)
             b.setAutoRaise(True)
             b.clicked.connect(lambda _=False, i=cid: self.command.emit(i))
@@ -41,16 +63,15 @@ class ViewportHost(QWidget):
         self.vtk_widget = vtk_widget
         vtk_widget.setParent(self)
         self.hud = QLabel(self)
+        self.hud.setObjectName("ViewPrompt")
         self.hud.setStyleSheet(HUD_QSS)
         self.hud.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.hud.setText("单击选择对象；双击选环边；三击选实体")
-        self.hud.adjustSize()
         self.mini = MiniBar(self)
         self.mini.hide()
 
     def set_hud(self, text: str):
         self.hud.setText(text)
-        self.hud.adjustSize()
 
     def show_mini(self, on: bool):
         self.mini.setVisible(on)
@@ -59,12 +80,13 @@ class ViewportHost(QWidget):
 
     def resizeEvent(self, ev):
         super().resizeEvent(ev)
-        self.vtk_widget.setGeometry(0, 0, self.width(), self.height())
-        self.hud.move(12, 10)
+        bar_h = 26
+        self.hud.setGeometry(0, 0, self.width(), bar_h)
+        self.vtk_widget.setGeometry(0, bar_h, self.width(), max(1, self.height() - bar_h))
         self._place_mini()
 
     def _place_mini(self):
-        self.mini.move(max(12, self.width() - self.mini.width() - 16), 48)
+        self.mini.move(max(14, self.width() - self.mini.width() - 18), 34)
 
     def sizeHint(self):
         return QSize(800, 600)

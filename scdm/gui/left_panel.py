@@ -15,7 +15,8 @@ from scdm.document import Session
 def _section(title: str, widget: QWidget) -> QWidget:
     box = QGroupBox(title)
     lay = QVBoxLayout(box)
-    lay.setContentsMargins(6, 8, 6, 6)
+    lay.setContentsMargins(8, 12, 8, 8)
+    lay.setSpacing(4)
     lay.addWidget(widget)
     return box
 
@@ -27,18 +28,25 @@ class LeftPanel(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setObjectName("LeftPanel")
         self.setMinimumWidth(260)
         self.setMaximumWidth(420)
         split = QSplitter(Qt.Vertical, self)
+        split.setChildrenCollapsible(False)
+        split.setHandleWidth(5)
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
         outer.addWidget(split)
 
         self.nav = QTabWidget()
         self.nav.setTabPosition(QTabWidget.South)
+        self.nav.setDocumentMode(True)
         self.tree = QTreeWidget()
         self.tree.setHeaderHidden(True)
         self.tree.setRootIsDecorated(True)
+        self.tree.setIndentation(16)
+        self.tree.setUniformRowHeights(True)
         self.tree.itemClicked.connect(self.tree_clicked.emit)
         self.tree.itemChanged.connect(self._on_item_changed)
         self.nav.addTab(self.tree, "结构")
@@ -78,11 +86,15 @@ class LeftPanel(QWidget):
         self.props = QTableWidget(0, 2)
         self.props.setHorizontalHeaderLabels(["属性", "值"])
         self.props.verticalHeader().setVisible(False)
+        self.props.verticalHeader().setDefaultSectionSize(24)
         self.props.horizontalHeader().setStretchLastSection(True)
         self.props.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.props.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.props.setAlternatingRowColors(True)
+        self.props.setShowGrid(False)
+        self.props.setWordWrap(False)
         split.addWidget(_section("属性", self.props))
-        split.setSizes([280, 140, 180])
+        split.setSizes([300, 150, 200])
 
         self._block_tree = False
 
@@ -95,7 +107,8 @@ class LeftPanel(QWidget):
         def checks(cmd, pairs):
             w = QWidget()
             f = QVBoxLayout(w)
-            f.setContentsMargins(2, 2, 2, 2)
+            f.setContentsMargins(4, 4, 4, 4)
+            f.setSpacing(6)
             boxes = []
             for label, default in pairs:
                 cb = QCheckBox(label)
@@ -109,7 +122,8 @@ class LeftPanel(QWidget):
         def radios(cmd, labels):
             w = QWidget()
             f = QVBoxLayout(w)
-            f.setContentsMargins(2, 2, 2, 2)
+            f.setContentsMargins(4, 4, 4, 4)
+            f.setSpacing(6)
             buttons = []
             for i, label in enumerate(labels):
                 rb = QRadioButton(label)

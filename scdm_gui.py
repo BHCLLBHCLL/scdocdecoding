@@ -17,7 +17,6 @@ if _HERE not in sys.path:
 
 try:
     from PyQt5.QtCore import Qt, QSettings, QSize
-    from PyQt5.QtGui import QColor, QPalette
     from PyQt5.QtWidgets import (
         QAction, QApplication, QCheckBox, QDialog, QDialogButtonBox,
         QFileDialog, QFormLayout, QHBoxLayout, QLabel, QMainWindow,
@@ -46,18 +45,11 @@ from scdm.tools.base import ToolManager
 
 
 def apply_light_theme(app):
+    from scdm.gui.theme import APP_QSS, apply_palette, ui_font
     app.setStyle("Fusion")
-    pal = QPalette()
-    pal.setColor(QPalette.Window, QColor(240, 240, 240))
-    pal.setColor(QPalette.Base, QColor(255, 255, 255))
-    pal.setColor(QPalette.AlternateBase, QColor(245, 245, 245))
-    pal.setColor(QPalette.Text, QColor(32, 32, 32))
-    pal.setColor(QPalette.WindowText, QColor(32, 32, 32))
-    pal.setColor(QPalette.Button, QColor(240, 240, 240))
-    pal.setColor(QPalette.ButtonText, QColor(32, 32, 32))
-    pal.setColor(QPalette.Highlight, QColor(0, 120, 215))
-    pal.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
-    app.setPalette(pal)
+    apply_palette(app)
+    app.setFont(ui_font())
+    app.setStyleSheet(APP_QSS)
 
 
 if not _HAS_DEPS:
@@ -108,6 +100,7 @@ else:
         def __init__(self, path: str = None):
             super().__init__()
             self.resize(1400, 900)
+            self.setWindowIcon(make_icon("select", 32))
             self.sessions = []
             self.cur = -1
             self.sel = SelectionModel()
@@ -138,11 +131,12 @@ else:
             root.setSpacing(0)
 
             qat = QToolBar()
+            qat.setObjectName("QuickAccess")
             qat.setMovable(False)
-            qat.setIconSize(QSize(16, 16))
-            qat.setStyleSheet("QToolBar { background: #E8E8E8; border: none; spacing: 2px; }")
+            qat.setIconSize(QSize(18, 18))
+            qat.setToolButtonStyle(Qt.ToolButtonIconOnly)
             for cmd in QAT:
-                act = QAction(make_icon(cmd.icon, 16), cmd.name, self)
+                act = QAction(make_icon(cmd.icon, 18), cmd.name, self)
                 act.setToolTip(f"{cmd.name} ({cmd.en})  {cmd.wave}")
                 act.triggered.connect(lambda _=False, i=cmd.id: self.on_command(i))
                 qat.addAction(act)
@@ -170,6 +164,8 @@ else:
             work_l.setContentsMargins(0, 0, 0, 0)
             work_l.setSpacing(0)
             split = QSplitter(Qt.Horizontal)
+            split.setChildrenCollapsible(False)
+            split.setHandleWidth(5)
             split.addWidget(self.left)
             right = QWidget()
             rl = QVBoxLayout(right)
@@ -193,15 +189,17 @@ else:
                 lab.setAlignment(Qt.AlignCenter)
                 rl.addWidget(lab, 1)
             self.doc_tabs = QTabBar()
+            self.doc_tabs.setObjectName("DocTabs")
             self.doc_tabs.setExpanding(False)
             self.doc_tabs.setTabsClosable(True)
+            self.doc_tabs.setDocumentMode(True)
             self.doc_tabs.currentChanged.connect(self._on_doc_tab)
             self.doc_tabs.tabCloseRequested.connect(self._close_tab)
             rl.addWidget(self.doc_tabs)
             split.addWidget(right)
             split.setStretchFactor(0, 0)
             split.setStretchFactor(1, 1)
-            split.setSizes([300, 1100])
+            split.setSizes([280, 1120])
             work_l.addWidget(split)
             self.stack.addWidget(work)
 

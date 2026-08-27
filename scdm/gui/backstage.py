@@ -1,7 +1,7 @@
 """File backstage (Office-style) covering the workspace."""
 from __future__ import annotations
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, QSize, pyqtSignal
 from PyQt5.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QListWidget, QPushButton, QVBoxLayout, QWidget,
 )
@@ -29,7 +29,8 @@ class Backstage(QWidget):
         nl = QVBoxLayout(nav)
         nl.setContentsMargins(0, 12, 0, 12)
         for cmd in BACKSTAGE:
-            b = QPushButton(make_icon(cmd.icon, 16), f"  {cmd.name}")
+            b = QPushButton(make_icon(cmd.icon, 18), f"  {cmd.name}")
+            b.setIconSize(QSize(18, 18))
             b.clicked.connect(lambda _=False, i=cmd.id: self.command.emit(i))
             nl.addWidget(b)
         nl.addStretch(1)
