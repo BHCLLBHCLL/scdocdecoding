@@ -1755,6 +1755,14 @@ else:
                 self.scene.apply_visibility(ses)
             self._set_status(f"显示样式：{ses.style}")
 
+        def _do_gfx_silhouette(self):
+            ses = self.session()
+            ses.show_silhouette = not ses.show_silhouette
+            self.ribbon.set_checked("gfx.silhouette", ses.show_silhouette)
+            if self.scene:
+                self.scene.apply_visibility(ses)
+            self._set_status(f"轮廓边已{'开启' if ses.show_silhouette else '关闭'}")
+
         def _on_filter(self, key: str, on: bool):
             setattr(self.sel, "allow_" + key, on)
 

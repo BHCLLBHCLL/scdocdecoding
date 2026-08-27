@@ -102,6 +102,7 @@ class Scene:
         self._origin_actor = None
         self._plane_actors = {}
         self._grid_actor = None
+        self._silhouette_actor = None
         self._gizmo = None
         self._install_gizmo()
         self._install_origin()
@@ -199,6 +200,9 @@ class Scene:
         for act in getattr(self, "_light_actors", []):
             self.renderer.RemoveActor(act)
         self._light_actors = []
+        if self._silhouette_actor:
+            self.renderer.RemoveActor(self._silhouette_actor)
+        self._silhouette_actor = None
         self.clear_preview()
 
     def build(self, session: Session):
@@ -269,6 +273,7 @@ class Scene:
         for comp in getattr(kdoc, "components", []):
             light_ids |= comp.lightweight_body_ids()
         lines, verts = [], []
+        pds = []
         self._light_actors = []
         for body in kdoc.bodies:
             if not body.visible:
@@ -287,6 +292,7 @@ class Scene:
                 if len(pts) == 0 or not tris:
                     continue
                 pd = _polys(pts, tris)
+                pds.append(pd)
                 mapper = vtk.vtkPolyDataMapper()
                 mapper.SetInputData(pd)
                 act = vtk.vtkActor()
@@ -300,7 +306,7 @@ class Scene:
                 key = f"{body.id}:{fd['index']}"
                 act._node_id = key
                 act._body_id = body.id
-                act._face_i = fd["index"]
+                act._face_i = fd['index']
                 act._normal = fd["normal"]
                 act._center = fd["center"]
                 self.renderer.AddActor(act)
@@ -315,10 +321,41 @@ class Scene:
         if verts:
             self._vert_actor = _points_actor(verts, (0.05, 0.05, 0.05), 5)
             self.renderer.AddActor(self._vert_actor)
+        self._build_silhouette(pds)
         self._build_sketches(kdoc)
         self.apply_visibility(session)
         self.apply_style(session.style)
         self.fit()
+
+    def _build_silhouette(self, pds):
+        """Feature-edge overlay for the shaded model (gfx.silhouette)."""
+        self._silhouette_actor = None
+        if not pds:
+            return
+        app = vtk.vtkAppendPolyData()
+        for pd in pds:
+            app.AddInputData(pd)
+        app.Update()
+        fe = vtk.vtkFeatureEdges()
+        fe.SetInputData(app.GetOutput())
+        fe.BoundaryEdgesOff()
+        fe.ManifoldEdgesOff()
+        fe.NonManifoldEdgesOff()
+        fe.FeatureEdgesOn()
+        fe.SetFeatureAngle(30.0)
+        fe.Update()
+        if fe.GetOutput().GetNumberOfCells() == 0:
+            return
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputConnection(fe.GetOutputPort())
+        act = vtk.vtkActor()
+        act.SetMapper(mapper)
+        act.GetProperty().SetColor(0.08, 0.08, 0.12)
+        act.GetProperty().SetLineWidth(1.6)
+        act.SetVisibility(0)  # off until session.show_silhouette
+        _exclude_from_bounds(act)
+        self.renderer.AddActor(act)
+        self._silhouette_actor = act
 
     def _add_lightweight_body(self, body):
         """Draw a lightweight body as a bounding-box wireframe (no tessellation)."""
@@ -424,6 +461,9 @@ class Scene:
                 lab.SetVisibility(vis)
         for a in self._plane_actors.values():
             a.SetVisibility(1 if session.show_planes else 0)
+        if self._silhouette_actor:
+            self._silhouette_actor.SetVisibility(
+                1 if getattr(session, "show_silhouette", False) else 0)
         self.update_grid(session)
         self.render()
 
