@@ -292,6 +292,7 @@ M4_LIVE = {
 }
 
 M5_LIVE = {
+    "prep.enclose",
     "facet.reverse", "facet.smooth", "facet.reduce", "facet.fill", "facet.convert",
     "wb.params", "wb.publish",
     "add.build", "add.orient", "add.support", "add.lattice",

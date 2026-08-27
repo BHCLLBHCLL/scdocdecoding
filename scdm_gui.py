@@ -935,6 +935,16 @@ else:
             else:
                 self._set_status("构建体太小，无法布点阵")
 
+        def _do_prep_enclose(self):
+            body = self._selected_kbody()
+            if body is None:
+                return
+            from scdm import additive as A
+            ses = self.session()
+            ses.kdoc.add_body(A.build_volume(body.shape, 1.0, ses.scale),
+                              name="包围体")
+            self._commit("已创建包围体（1mm 余量）")
+
         def _do_det_bom(self):
             from PyQt5.QtWidgets import QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout
             ses = self.session()
