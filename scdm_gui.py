@@ -683,6 +683,44 @@ else:
         def _do_insert_axis(self):
             self._do_insert_origin()
 
+        def _do_insert_component(self):
+            ses = self.session()
+            if not self._need_kernel():
+                return
+            fn, _ = QFileDialog.getOpenFileName(
+                self, "插入组件", "",
+                "CAD (*.scdm *.step *.stp *.brep *.scdoc);;All (*)")
+            if not fn:
+                return
+            stem = os.path.splitext(os.path.basename(fn))[0]
+            low = fn.lower()
+            try:
+                if low.endswith(".scdm"):
+                    from scdm.io_project import load_scdm
+                    kdoc2 = load_scdm(fn)
+                elif low.endswith(".scdoc"):
+                    from scdm.document import load_scdoc
+                    from scdm.import_sab import import_scdoc_bundle
+                    kdoc2 = import_scdoc_bundle(load_scdoc(fn))
+                elif low.endswith(".brep"):
+                    kdoc2 = KernelDoc()
+                    kdoc2.add_body(K.read_brep(fn), name=stem)
+                else:
+                    kdoc2 = KernelDoc()
+                    kdoc2.add_body(K.read_step(fn), name=stem)
+            except Exception as exc:
+                self._set_status(f"插入组件失败: {exc}")
+                return
+            ids = []
+            for b in kdoc2.bodies:
+                nb = ses.kdoc.add_body(b.shape, name=b.name, color=b.color)
+                ids.append(nb.id)
+            if not ids:
+                self._set_status("文件中没有实体")
+                return
+            comp = ses.kdoc.add_component(body_ids=ids, name=stem)
+            self._commit(f"已插入组件 {comp.name}（{len(ids)} 实体）")
+
         def _do_insert_helix(self):
             ses = self.session()
             if not self._need_kernel():

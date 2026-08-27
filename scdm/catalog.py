@@ -282,7 +282,7 @@ M3_LIVE = {
 }
 
 M4_LIVE = {
-    "file.recover",
+    "file.recover", "insert.component",
     "create.pattern", "create.mirror", "create.shell", "create.blend",
     "create.chamfer", "create.draft", "insert.helix",
     "repair.stitch", "repair.solidify", "repair.gaps", "repair.missing",
