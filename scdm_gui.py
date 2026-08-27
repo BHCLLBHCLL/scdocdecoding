@@ -16,7 +16,7 @@ if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 
 try:
-    from PyQt5.QtCore import Qt, QSettings, QSize
+    from PyQt5.QtCore import Qt, QSettings, QSize, QPoint
     from PyQt5.QtWidgets import (
         QAction, QApplication, QCheckBox, QDialog, QDialogButtonBox,
         QFileDialog, QFormLayout, QHBoxLayout, QLabel, QMainWindow,
@@ -1885,8 +1885,65 @@ else:
             elif self.sel.allows("face") and node is not None:
                 self._select_face_node(node, add)
 
+        def _selected_body_ids(self):
+            ids = []
+            for kind, sid in self.sel.items:
+                if kind == "body":
+                    bid = sid
+                elif kind == "face" and ":" in sid:
+                    bid = sid.split(":", 1)[0]
+                else:
+                    bid = None
+                if bid and bid not in ids:
+                    ids.append(bid)
+            return ids
+
+        def _hide_bodies(self, bids, isolate=False):
+            ses = self.session()
+            if not ses.kdoc:
+                return
+            for b in ses.kdoc.bodies:
+                if isolate:
+                    b.visible = b.id in bids
+                elif b.id in bids:
+                    b.visible = False
+            self._rebuild("已仅显示所选" if isolate else "已隐藏所选")
+
+        def _recolor_bodies(self, bids):
+            from PyQt5.QtWidgets import QColorDialog
+            ses = self.session()
+            if not ses.kdoc:
+                return
+            col = QColorDialog.getColor(parent=self, title="实体颜色")
+            if not col.isValid():
+                return
+            rgb = (col.redF(), col.greenF(), col.blueF())
+            n = 0
+            for b in ses.kdoc.bodies:
+                if b.id in bids:
+                    b.color = rgb
+                    n += 1
+            if n:
+                self._commit(f"已改色 ×{n}")
+
         def _on_vtk_right(self):
-            self._set_status("右键菜单：隐藏 / 缩放到（树中亦可右键）")
+            bids = self._selected_body_ids()
+            if not bids:
+                self._set_status("右键：先选择对象（隐藏 / 仅显示 / 缩放到 / 改色）")
+                return
+            menu = QMenu(self)
+            menu.addAction("隐藏", lambda: self._hide_bodies(bids))
+            menu.addAction("仅显示", lambda: self._hide_bodies(bids, isolate=True))
+            menu.addAction("缩放到", lambda: self.scene.fit_to_bodies(bids))
+            menu.addAction("改色…", lambda: self._recolor_bodies(bids))
+            x, y = 0, 0
+            try:
+                iren = self.vtk_widget.GetRenderWindow().GetInteractor()
+                x, y = iren.GetEventPosition()
+                y = max(0, self.vtk_widget.height() - y)
+            except Exception:
+                pass
+            menu.exec_(self.vtk_widget.mapToGlobal(QPoint(x, y)))
 
         def _on_vtk_key(self, obj, ev):
             try:

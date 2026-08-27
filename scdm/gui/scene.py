@@ -595,6 +595,23 @@ class Scene:
         cam.SetParallelScale(0.042)
         self.renderer.ResetCameraClippingRange()
 
+    def fit_to_bodies(self, body_ids):
+        """Reset the camera to the combined bounds of the given bodies."""
+        want = set(body_ids)
+        acts = [a for k, a in self._face_actors.items()
+                if k.split(":")[0] in want]
+        if not acts:
+            return
+        b = list(acts[0].GetBounds())
+        for a in acts[1:]:
+            ab = a.GetBounds()
+            b[0] = min(b[0], ab[0]); b[1] = max(b[1], ab[1])
+            b[2] = min(b[2], ab[2]); b[3] = max(b[3], ab[3])
+            b[4] = min(b[4], ab[4]); b[5] = max(b[5], ab[5])
+        self.renderer.ResetCamera(tuple(b))
+        self.renderer.ResetCameraClippingRange()
+        self.render()
+
     def fit(self):
         if not self._face_actors:
             self._reset_empty_camera()
