@@ -235,6 +235,10 @@ class LeftPanel(QWidget):
                 it.setData(0, Qt.UserRole, ("sketch", sk.id))
                 it.setCheckState(0, Qt.Checked)
                 root.addChild(it)
+            for ns in getattr(session.kdoc, "named", []):
+                it = QTreeWidgetItem([f"命名选择: {ns['name']}"])
+                it.setData(0, Qt.UserRole, ("named", ns["name"]))
+                root.addChild(it)
         elif doc is not None:
             for i, body in enumerate(doc.bodies):
                 caption = session.body_caption(body)

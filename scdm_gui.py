@@ -1111,6 +1111,25 @@ else:
                               name="包围体")
             self._commit("已创建包围体（1mm 余量）")
 
+        def _do_prep_named(self):
+            from PyQt5.QtWidgets import QInputDialog
+            ses = self.session()
+            if not self._need_kernel():
+                return
+            if not self.sel.items:
+                self._set_status("命名选择：先选中对象，再点击「命名选择」保存")
+                return
+            name, ok = QInputDialog.getText(self, "命名选择", "名称：")
+            if not ok or not name.strip():
+                return
+            name = name.strip()
+            others = [n for n in getattr(ses.kdoc, "named", []) if n["name"] != name]
+            others.append({"name": name,
+                           "items": [[k, s] for k, s in self.sel.items]})
+            ses.kdoc.named = others
+            self.left.populate_tree(ses)
+            self._set_status(f"已保存命名选择 [{name}]（{len(self.sel.items)} 项）")
+
         def _do_det_bom(self):
             from PyQt5.QtWidgets import QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout
             ses = self.session()
@@ -2203,6 +2222,27 @@ else:
                         rows.append(("平面", d))
             return rows
 
+        def _restore_named(self, name):
+            ses = self.session()
+            ns = next((n for n in getattr(ses.kdoc, "named", [])
+                       if n["name"] == name), None)
+            if ns is None:
+                return
+            self.sel.clear()
+            for kind, sid in ns["items"]:
+                self.sel.items.append((kind, sid))
+            if self.scene:
+                nodes = []
+                for kind, sid in ns["items"]:
+                    if kind == "face":
+                        nodes.append(sid)
+                    elif kind == "body":
+                        nodes.extend(self._body_face_nodes(sid))
+                self.scene.highlight_nodes(
+                    [n for n in nodes if n in self.scene._face_actors])
+            self.left.set_selection_list([f"{k}:{s}" for k, s in ns["items"]])
+            self._set_status(f"命名选择 [{name}]：{len(ns['items'])} 项")
+
         def _on_tree_click(self, item):
             data = item.data(0, Qt.UserRole)
             if not data:
@@ -2214,6 +2254,8 @@ else:
                 self.left.set_props([("名称", "原点"), ("类型", "基准")])
             elif kind == "plane":
                 self.left.set_props([("名称", f"平面 {sid.upper()}"), ("类型", "基准面")])
+            elif kind == "named":
+                self._restore_named(sid)
             elif kind == "root":
                 ses = self.session()
                 self.left.set_props([

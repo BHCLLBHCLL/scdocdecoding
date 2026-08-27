@@ -17,6 +17,9 @@ def save_scdm(path: str, kdoc: KernelDoc) -> None:
                     "file": f"bodies/{b.id}.brep"} for b in kdoc.bodies],
         "notes": [{"pos": list(n.get("pos") or (0, 0, 0)), "text": n.get("text", "")}
                   for n in getattr(kdoc, "notes", [])],
+        "named": [{"name": n.get("name", ""),
+                   "items": [list(it) for it in n.get("items", [])]}
+                  for n in getattr(kdoc, "named", [])],
     }
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
@@ -41,4 +44,7 @@ def load_scdm(path: str) -> KernelDoc:
                 pass
         doc._n = max_n
     doc.notes = [dict(n) for n in man.get("notes", [])]
+    doc.named = [{"name": n.get("name", ""),
+                  "items": [tuple(it) for it in n.get("items", [])]}
+                 for n in man.get("named", [])]
     return doc
