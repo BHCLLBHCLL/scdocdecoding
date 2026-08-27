@@ -15,27 +15,25 @@ only reverse-engineered to capture the *behavioral* specification (see `scdm_api
 
 ## Runtime environment
 
-The modeling kernel is **pythonocc-core** (Open CASCADE via OCCT). Install it (conda,
-Windows) — either into the base env (so plain `python` works) or into a dedicated env:
+The modeling kernel is **pythonocc-core** (Open CASCADE via OCCT). This machine's ready-made
+environment is the conda env **`occ`** (Python 3.11 + pythonocc-core 7.9.3 + OCCT 7.9.3 +
+numpy 2.4.6 + vtk 9.6.1 + PyQt5 5.15.11 + pytest). It is already fully installed and verified
+(OCC imports; box/fuse OK; pytest suite 58 passed, 1 skipped).
 
 ```bat
-:: option A: into the base environment (this machine: already done)
-conda install -c conda-forge pythonocc-core -y
-:: option B: dedicated env via setup_env.bat
-setup_env.bat
-:: then: conda activate scdm
+:: run the GUI with the pythonocc-core env
+C:\Users\sdcll\.conda\envs\occ\python.exe scdm_gui.py box.scdoc
 
-:: GUI deps (pip, if not present):
-pip install PyQt5 scipy trimesh pytest
+:: run the tests
+C:\Users\sdcll\.conda\envs\occ\python.exe -m pytest -q tests/   :: 58 passed, 1 skipped
 ```
 
-Run the GUI and tests from the project root:
+To (re)create a pythonocc-core environment on any machine (conda; needs network to
+conda-forge + PyPI):
 
 ```bat
-cd D:\training\caedecoder\scdocdecoding
-set PYTHONPATH=%CD%
-python scdm_gui.py box.scdoc
-python -X utf8 tests/test_kernel.py
+setup_env.bat            :: creates the 'scdm' env (pythonocc-core + numpy + vtk + PyQt5 + pytest)
+conda activate scdm
 ```
 
 Without OCCT the GUI still opens in read-only mode (M1 commands only; M2-M5 commands report
