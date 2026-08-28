@@ -71,6 +71,7 @@ class Session:
     kdoc: Any = None
     history: History = field(default_factory=History)
     clipboard: Optional[bytes] = None
+    saved_views: List[dict] = field(default_factory=list)  # {"name","pos","focal","up","scale"}
 
     @property
     def scale(self) -> float:

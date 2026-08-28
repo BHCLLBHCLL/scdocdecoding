@@ -16,6 +16,7 @@ class KBody:
     shape: Any
     color: Vec3 = (0.62, 0.66, 0.70)
     visible: bool = True
+    layer: str = "默认"
 
 
 @dataclass
@@ -55,6 +56,7 @@ class KernelDoc:
         self.parametrics: List[Any] = []  # scdm.params.Parametric
         self.notes: List[dict] = []  # viewport annotations: {"pos": (x,y,z), "text": str}
         self.named: List[dict] = []  # named selections: {"name": str, "items": [(kind,id)]}
+        self.groups: List[dict] = []  # user groups: same shape as named
         self._n = 1
         self._sk = 1
         self._c = 1

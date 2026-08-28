@@ -163,6 +163,13 @@ else:
             self.left.tree_checked.connect(self._on_tree_checked)
             self.left.tree.setContextMenuPolicy(Qt.CustomContextMenu)
             self.left.tree.customContextMenuRequested.connect(self._tree_menu)
+            self.left.layer_toggled.connect(self._on_layer_toggled)
+            self.left.layer_assign.connect(self._on_layer_assign)
+            self.left.layer_remove.connect(self._on_layer_remove)
+            self.left.group_save.connect(self._on_group_save)
+            self.left.group_clicked.connect(self._on_group_click)
+            self.left.view_save.connect(self._on_view_save)
+            self.left.view_clicked.connect(self._on_view_click)
 
             self._enable_3d = QApplication.instance() is not None and (
                 QApplication.platformName() != "offscreen"
@@ -2624,6 +2631,113 @@ else:
                 self.scene.render()
                 return
             self.scene.apply_visibility(ses)
+
+        def _on_layer_toggled(self, name, on):
+            ses = self.session()
+            if not ses.kdoc or not self.scene:
+                return
+            for b in ses.kdoc.bodies:
+                if (getattr(b, "layer", "默认") or "默认") == name:
+                    for n in self._body_face_nodes(b.id):
+                        act = self.scene._face_actors.get(n)
+                        if act:
+                            act.SetVisibility(1 if on else 0)
+            self.scene.render()
+            self._set_status(f"图层 [{name}] {'显示' if on else '隐藏'}")
+
+        def _on_layer_assign(self, name):
+            ses = self.session()
+            if not ses.kdoc:
+                return
+            bids = [sid for k, sid in self.sel.items if k == "body"]
+            for kind, sid in self.sel.items:
+                if kind == "face" and ":" in sid:
+                    bids.append(sid.split(":", 1)[0])
+            if not bids:
+                self._set_status("新建图层：先选中要移入的实体")
+                return
+            n = 0
+            for b in ses.kdoc.bodies:
+                if b.id in bids:
+                    b.layer = name
+                    n += 1
+            self.left.populate_tree(ses)
+            self._set_status(f"已新建图层 [{name}]（移入 {n} 实体）")
+
+        def _on_layer_remove(self, name):
+            ses = self.session()
+            if not ses.kdoc:
+                return
+            n = 0
+            for b in ses.kdoc.bodies:
+                if (getattr(b, "layer", "默认") or "默认") == name:
+                    b.layer = "默认"
+                    n += 1
+            self.left.populate_tree(ses)
+            self._set_status(f"已删除图层 [{name}]（{n} 实体回到默认）")
+
+        def _on_group_save(self):
+            from PyQt5.QtWidgets import QInputDialog
+            ses = self.session()
+            if not self._need_kernel():
+                return
+            if not self.sel.items:
+                self._set_status("保存群组：先选中对象")
+                return
+            name, ok = QInputDialog.getText(self, "保存群组", "群组名：")
+            if not ok or not name.strip():
+                return
+            name = name.strip()
+            others = [g for g in getattr(ses.kdoc, "groups", []) if g["name"] != name]
+            others.append({"name": name, "items": [[k, s] for k, s in self.sel.items]})
+            ses.kdoc.groups = others
+            self.left.populate_tree(ses)
+            self._set_status(f"已保存群组 [{name}]（{len(self.sel.items)} 项）")
+
+        def _on_group_click(self, text):
+            ses = self.session()
+            name = text.split("（")[0]
+            g = next((g for g in getattr(ses.kdoc, "groups", [])
+                      if g["name"] == name), None)
+            if g is None:
+                return
+            self.sel.clear()
+            for kind, sid in g["items"]:
+                self.sel.items.append((kind, sid))
+            self._refresh_selection_highlights()
+            self._set_status(f"群组 [{name}]：{len(g['items'])} 项")
+
+        def _on_view_save(self):
+            from PyQt5.QtWidgets import QInputDialog
+            if not self.scene:
+                return
+            name, ok = QInputDialog.getText(self, "保存视图", "视图名：")
+            if not ok or not name.strip():
+                return
+            st = self.scene.store_camera()
+            ses = self.session()
+            ses.saved_views = getattr(ses, "saved_views", [])
+            ses.saved_views.append({"name": name.strip(),
+                                    "pos": list(st[0]), "focal": list(st[1]),
+                                    "up": list(st[2]), "scale": float(st[3])})
+            self.left._populate_views(ses)
+            self._set_status(f"已保存视图 [{name.strip()}]")
+
+        def _on_view_click(self, text):
+            if text == "主视图":
+                self._do_view_home()
+                return
+            if text == "等轴测":
+                self._do_view_iso()
+                return
+            ses = self.session()
+            sv = next((v for v in getattr(ses, "saved_views", [])
+                       if v["name"] == text), None)
+            if sv and self.scene:
+                self._remember_cam()
+                self.scene.restore_camera((sv["pos"], sv["focal"], sv["up"],
+                                           sv["scale"]))
+                self._set_status(f"视图 [{text}]")
 
         def _tree_menu(self, pos):
             item = self.left.tree.itemAt(pos)

@@ -14,12 +14,16 @@ def save_scdm(path: str, kdoc: KernelDoc) -> None:
         "format": "scdm-session",
         "version": 1,
         "bodies": [{"id": b.id, "name": b.name, "color": list(b.color), "visible": b.visible,
+                    "layer": getattr(b, "layer", "默认") or "默认",
                     "file": f"bodies/{b.id}.brep"} for b in kdoc.bodies],
         "notes": [{"pos": list(n.get("pos") or (0, 0, 0)), "text": n.get("text", "")}
                   for n in getattr(kdoc, "notes", [])],
         "named": [{"name": n.get("name", ""),
                    "items": [list(it) for it in n.get("items", [])]}
                   for n in getattr(kdoc, "named", [])],
+        "groups": [{"name": n.get("name", ""),
+                    "items": [list(it) for it in n.get("items", [])]}
+                   for n in getattr(kdoc, "groups", [])],
     }
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
@@ -38,6 +42,7 @@ def load_scdm(path: str) -> KernelDoc:
             body = doc.add_body(sh, name=item.get("name"), color=tuple(item.get("color") or (0.62, 0.66, 0.70)))
             body.id = item["id"]
             body.visible = bool(item.get("visible", True))
+            body.layer = item.get("layer") or "默认"
             try:
                 max_n = max(max_n, int(str(body.id)[1:]) + 1)
             except Exception:
@@ -47,4 +52,7 @@ def load_scdm(path: str) -> KernelDoc:
     doc.named = [{"name": n.get("name", ""),
                   "items": [tuple(it) for it in n.get("items", [])]}
                  for n in man.get("named", [])]
+    doc.groups = [{"name": n.get("name", ""),
+                   "items": [tuple(it) for it in n.get("items", [])]}
+                  for n in man.get("groups", [])]
     return doc

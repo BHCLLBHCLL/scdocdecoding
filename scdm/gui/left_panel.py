@@ -4,9 +4,10 @@ from __future__ import annotations
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (
     QAbstractItemView, QCheckBox, QDoubleSpinBox, QGroupBox, QHBoxLayout,
-    QHeaderView, QLabel, QListWidget, QRadioButton, QScrollArea, QSplitter,
-    QStackedWidget, QTableWidget, QTableWidgetItem, QTabWidget, QTreeWidget,
-    QTreeWidgetItem, QVBoxLayout, QWidget, QFrame,
+    QHeaderView, QLabel, QListWidget, QListWidgetItem, QMenu, QInputDialog,
+    QRadioButton, QScrollArea, QSplitter, QStackedWidget, QTableWidget,
+    QTableWidgetItem, QTabWidget, QToolButton, QTreeWidget, QTreeWidgetItem,
+    QVBoxLayout, QWidget, QFrame,
 )
 
 from scdm.document import Session
@@ -25,6 +26,12 @@ class LeftPanel(QWidget):
     tree_clicked = pyqtSignal(object)  # QTreeWidgetItem
     tree_checked = pyqtSignal(object, int)
     layer_toggled = pyqtSignal(str, bool)
+    layer_assign = pyqtSignal(str)   # create layer from current selection
+    layer_remove = pyqtSignal(str)
+    group_save = pyqtSignal()
+    group_clicked = pyqtSignal(str)
+    view_save = pyqtSignal()
+    view_clicked = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -55,19 +62,42 @@ class LeftPanel(QWidget):
         self.layer_list.setHeaderLabels(["图层", "色"])
         self.layer_list.header().setStretchLastSection(False)
         self.layer_list.header().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.layer_list.itemChanged.connect(self._on_layer_item)
+        self.layer_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.layer_list.customContextMenuRequested.connect(self._layer_menu)
         self.nav.addTab(self.layer_list, "图层")
 
         self.sel_list = QListWidget()
         self.nav.addTab(self.sel_list, "选择")
 
+        self.group_box = QWidget()
+        gv = QVBoxLayout(self.group_box)
+        gv.setContentsMargins(2, 2, 2, 2)
+        gv.setSpacing(2)
+        self.group_save_btn = QToolButton()
+        self.group_save_btn.setText("＋ 保存当前选择为群组")
+        self.group_save_btn.clicked.connect(self.group_save.emit)
+        gv.addWidget(self.group_save_btn)
         self.group_list = QListWidget()
-        self.group_list.addItem("（尚无群组）")
-        self.nav.addTab(self.group_list, "群组")
+        self.group_list.itemClicked.connect(
+            lambda it: self.group_clicked.emit(it.text()))
+        gv.addWidget(self.group_list)
+        self.nav.addTab(self.group_box, "群组")
 
+        self.view_box = QWidget()
+        vv = QVBoxLayout(self.view_box)
+        vv.setContentsMargins(2, 2, 2, 2)
+        vv.setSpacing(2)
+        self.view_save_btn = QToolButton()
+        self.view_save_btn.setText("＋ 保存当前视图")
+        self.view_save_btn.clicked.connect(self.view_save.emit)
+        vv.addWidget(self.view_save_btn)
         self.view_list = QListWidget()
-        self.view_list.addItem("主视图")
-        self.view_list.addItem("等轴测")
-        self.nav.addTab(self.view_list, "视图")
+        self.view_list.itemClicked.connect(
+            lambda it: self.view_clicked.emit(it.text()))
+        vv.addWidget(self.view_list)
+        self.nav.addTab(self.view_box, "视图")
+        self._populate_views(None)
         split.addWidget(self.nav)
 
         self.opt_stack = QStackedWidget()
@@ -289,14 +319,65 @@ class LeftPanel(QWidget):
         self._block_tree = False
 
         self.layer_list.clear()
-        layers = session.layers()
-        if not layers:
-            it = QTreeWidgetItem(["默认", ""])
-            it.setCheckState(0, Qt.Checked)
-            self.layer_list.addTopLevelItem(it)
-        else:
-            for ly in layers:
-                it = QTreeWidgetItem([ly.name or ly.id, ly.color or ""])
-                it.setData(0, Qt.UserRole, ly.id)
-                it.setCheckState(0, Qt.Checked if ly.visible else Qt.Unchecked)
+        self._block_layer = True
+        if session.kdoc is not None and session.kdoc.bodies:
+            buckets = {}
+            for b in session.kdoc.bodies:
+                buckets.setdefault(getattr(b, "layer", "默认") or "默认", []).append(b)
+            for name in sorted(buckets):
+                bodies = buckets[name]
+                it = QTreeWidgetItem([f"{name}（{len(bodies)}）", ""])
+                it.setData(0, Qt.UserRole, ("layer", name))
+                it.setCheckState(0, Qt.Checked if all(b.visible for b in bodies)
+                                 else Qt.Unchecked)
                 self.layer_list.addTopLevelItem(it)
+        else:
+            layers = session.layers()
+            if not layers:
+                it = QTreeWidgetItem(["默认", ""])
+                it.setCheckState(0, Qt.Checked)
+                self.layer_list.addTopLevelItem(it)
+            else:
+                for ly in layers:
+                    it = QTreeWidgetItem([ly.name or ly.id, ly.color or ""])
+                    it.setData(0, Qt.UserRole, ly.id)
+                    it.setCheckState(0, Qt.Checked if ly.visible else Qt.Unchecked)
+                    self.layer_list.addTopLevelItem(it)
+        self._block_layer = False
+
+        self.group_list.clear()
+        for g in getattr(session.kdoc, "groups", []) if session.kdoc else []:
+            self.group_list.addItem(f"{g['name']}（{len(g['items'])}）")
+        if not self.group_list.count():
+            self.group_list.addItem("（尚无群组）")
+        self._populate_views(session)
+
+    def _populate_views(self, session):
+        self.view_list.clear()
+        for label in ("主视图", "等轴测"):
+            self.view_list.addItem(QListWidgetItem(label))
+        for sv in getattr(session, "saved_views", []) or []:
+            self.view_list.addItem(QListWidgetItem(sv["name"]))
+
+    def _on_layer_item(self, item, col):
+        if getattr(self, "_block_layer", False):
+            return
+        data = item.data(0, Qt.UserRole)
+        if data and isinstance(data, tuple) and data[0] == "layer":
+            self.layer_toggled.emit(data[1], item.checkState(0) == Qt.Checked)
+
+    def _layer_menu(self, pos):
+        menu = QMenu(self)
+        act_new = menu.addAction("新建图层（移入选中实体）")
+        act_del = None
+        item = self.layer_list.itemAt(pos)
+        data = item.data(0, Qt.UserRole) if item else None
+        if data and isinstance(data, tuple) and data[0] == "layer" and data[1] != "默认":
+            act_del = menu.addAction("删除图层（实体回到默认）")
+        chosen = menu.exec_(self.layer_list.viewport().mapToGlobal(pos))
+        if chosen is act_new:
+            name, ok = QInputDialog.getText(self, "新建图层", "图层名：")
+            if ok and name.strip():
+                self.layer_assign.emit(name.strip())
+        elif act_del is not None and chosen is act_del:
+            self.layer_remove.emit(data[1])
