@@ -215,6 +215,24 @@ def split_by_plane(shape, origin: Vec3, normal: Vec3) -> List[Any]:
     return solids or [splitter.Shape()]
 
 
+def edge_polyline(edge, deflection: float = 1e-3) -> List[Vec3]:
+    """Discretize an edge into a polyline of 3D points (projection source)."""
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
+    from OCC.Core.GCPnts import GCPnts_QuasiUniformDeflection
+    from OCC.Core.TopoDS import topods
+    try:
+        crv = BRepAdaptor_Curve(topods.Edge(edge))
+        disc = GCPnts_QuasiUniformDeflection(crv, deflection)
+        if not disc.IsDone():
+            return []
+        return [(crv.Value(disc.Parameter(i)).X(),
+                 crv.Value(disc.Parameter(i)).Y(),
+                 crv.Value(disc.Parameter(i)).Z())
+                for i in range(1, disc.NbPoints() + 1)]
+    except Exception:
+        return []
+
+
 def face_normal_center(face) -> Tuple[Vec3, Vec3]:
     o = _occ()
     adapt = o["BRepAdaptor_Surface"](face)

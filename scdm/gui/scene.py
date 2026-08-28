@@ -431,8 +431,19 @@ class Scene:
         import math as _math
         segs, pts = [], []
         for sk in getattr(kdoc, "sketches", []):
+            def wpt(p, _plane=sk.plane):
+                u, v = float(p[0]), float(p[1])
+                if _plane == "zx":
+                    return (u, 0.0, v)
+                if _plane == "yz":
+                    return (0.0, u, v)
+                return (u, v, 0.0)
             for c in sk.curves:
-                if c[0] == "rect":
+                if c[0] == "poly":
+                    ring = [wpt(p) for p in c[1]]
+                    for a, b in zip(ring, ring[1:]):
+                        segs.append([list(a), list(b)])
+                elif c[0] == "rect":
                     x0, y0 = c[1][0], c[1][1]
                     x1, y1 = c[2][0], c[2][1]
                     loop = [(x0, y0, c[1][2]), (x1, y0, c[1][2]),

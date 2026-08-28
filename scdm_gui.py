@@ -1355,7 +1355,45 @@ else:
             self._set_status(f"草图网格已{'开启' if ses.show_grid else '关闭'}")
 
         def _do_create_project(self):
-            self._set_status("投影：将选边记录到当前草图（M3）")
+            """Project selected face boundary edges onto the active sketch plane."""
+            ses = self.session()
+            if not self._need_kernel():
+                return
+            if not ses.kdoc.sketches:
+                self._begin_sketch()
+            sk = ses.kdoc.sketches[-1]
+            plane = sk.plane
+
+            def w2uv(p):
+                x, y, z = p[0], p[1], p[2]
+                if plane == "zx":
+                    return (x, z)
+                if plane == "yz":
+                    return (y, z)
+                return (x, y)
+
+            faces = []
+            for kind, sid in self.sel.items:
+                if kind == "face" and ":" in sid:
+                    bid, fi = sid.split(":", 1)
+                    b = ses.kdoc.body_by_id(bid)
+                    if b is None:
+                        continue
+                    bfs = K.explore(b.shape, "face")
+                    if int(fi) < len(bfs):
+                        faces.append(bfs[int(fi)])
+            if not faces:
+                self._set_status("投影：请先选择一个面（边拾取在 G3-02 提供）")
+                return
+            n = 0
+            for face in faces:
+                for e in K.explore(face, "edge"):
+                    pts3 = K.edge_polyline(e, deflection=0.05 / ses.scale)
+                    if len(pts3) >= 2:
+                        sk.curves.append(("poly", [w2uv(p) for p in pts3]))
+                        n += 1
+            self.left.populate_tree(ses)
+            self._set_status(f"已投影 {n} 条边到草图 [{sk.name}]（平面 {plane.upper()}）")
 
         def _fillet_or_chamfer(self, fillet=True):
             body = self._selected_kbody()
