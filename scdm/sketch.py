@@ -272,6 +272,19 @@ def _unit2(x, y):
     return (x / L, y / L)
 
 
+def point_segment_distance(p, a, b):
+    """(distance, t) from point p to segment a-b; t in [0,1] is the projection."""
+    ax, ay = float(a[0]), float(a[1])
+    bx, by = float(b[0]), float(b[1])
+    px, py = float(p[0]), float(p[1])
+    dx, dy = bx - ax, by - ay
+    L2 = dx * dx + dy * dy
+    if L2 < 1e-18:
+        return math.hypot(px - ax, py - ay), 0.0
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / L2))
+    return math.hypot(px - (ax + t * dx), py - (ay + t * dy)), t
+
+
 def tangent_from_point(p, c, r) -> List[Tuple[Point2, Point2]]:
     """Tangent segments from external point p to circle (c, r); 0 or 2 results."""
     dx, dy = c[0] - p[0], c[1] - p[1]

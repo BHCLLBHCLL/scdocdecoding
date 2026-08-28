@@ -118,6 +118,7 @@ else:
             self._sketch_start = None
             self._sketch_second = None
             self._sketch_chain = []
+            self._sketch_recent = []  # last two sketch-plane clicks (constraint picking)
             self.settings = QSettings("scdocdecoding", "scdm")
             from scdm.scripting import Recorder
             self.recorder = Recorder()
@@ -1616,6 +1617,42 @@ else:
                 self._sketch_chain.append(uv)
                 self._set_status(f"样条：已取 {len(self._sketch_chain)} 点，右键结束")
 
+        def _sketch_record_click(self):
+            """Remember the last two sketch-plane clicks for constraint picking."""
+            st = self._sketch_state
+            p3 = self.scene.plane_point(st["plane"])
+            if p3 is None:
+                return
+            plane = st["plane"]
+            if plane == "zx":
+                uv = [p3[0], p3[2]]
+            elif plane == "yz":
+                uv = [p3[1], p3[2]]
+            else:
+                uv = [p3[0], p3[1]]
+            self._sketch_recent = ([uv] + self._sketch_recent)[:2]
+            self._set_status(
+                f"草图选择点 {len(self._sketch_recent)}/2：应用约束将作用于最近图元")
+
+        def _nearest_sketch_point(self, pts, uv):
+            best, bd = 0, None
+            for i, p in enumerate(pts):
+                d = math.hypot(p[0] - uv[0], p[1] - uv[1])
+                if bd is None or d < bd:
+                    bd, best = d, i
+            return best
+
+        def _nearest_sketch_segment(self, segs, pts, uv):
+            from scdm import sketch as S
+            best, bd = 0, None
+            for i, (a, b) in enumerate(segs):
+                if a >= len(pts) or b >= len(pts):
+                    continue
+                d, _t = S.point_segment_distance(uv, pts[a], pts[b])
+                if bd is None or d < bd:
+                    bd, best = d, i
+            return best
+
         def _sketch_finish(self):
             if self._sketch_tool != "spline":
                 return
@@ -2182,7 +2219,11 @@ else:
             self._commit(f"草图拉动 ×{made}")
 
         def _apply_sketch_constraint(self, kind: str):
-            """Resolve a constraint against the active sketch using scdm.sketch."""
+            """Resolve a constraint against the active sketch using scdm.sketch.
+
+            Entities are chosen nearest to the last two sketch-plane clicks when
+            available; otherwise the legacy first-entities fallback applies.
+            """
             ses = self.session()
             if not ses.kdoc.sketches:
                 self._begin_sketch()
@@ -2194,35 +2235,56 @@ else:
                     self._set_status("草图无曲线可约束")
                     return
                 segs = segments or []
+                recent = getattr(self, "_sketch_recent", [])
+                pi1 = pi2 = si1 = si2 = None
+                if recent:
+                    pi1 = self._nearest_sketch_point(pts, recent[-1])
+                    if segs:
+                        si1 = self._nearest_sketch_segment(segs, pts, recent[-1])
+                    if len(recent) >= 2:
+                        pi2 = self._nearest_sketch_point(pts, recent[-2])
+                        if segs:
+                            si2 = self._nearest_sketch_segment(segs, pts, recent[-2])
                 if kind == "dim":
-                    d = math.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]) if len(pts) > 1 else 10.0
-                    consts = [(S.DIST, 0, 1, d)]
+                    i, j = (pi1, pi2) if (pi1 is not None and pi2 is not None) else (0, 1)
+                    d = math.hypot(pts[j][0] - pts[i][0], pts[j][1] - pts[i][1])
+                    consts = [(S.DIST, i, j, d)]
                 elif kind == "h":
-                    consts = [(S.HORIZONTAL, 0, 1, None)]
+                    i, j = segs[si1] if si1 is not None and segs else (0, 1)
+                    consts = [(S.HORIZONTAL, i, j, None)]
                 elif kind == "v":
-                    consts = [(S.VERTICAL, 0, 1, None)]
+                    i, j = segs[si1] if si1 is not None and segs else (0, 1)
+                    consts = [(S.VERTICAL, i, j, None)]
                 elif kind == "coin":
-                    consts = [(S.COINCIDENT, 0, 1, None)]
+                    i, j = (pi1, pi2) if (pi1 is not None and pi2 is not None) else (0, 1)
+                    consts = [(S.COINCIDENT, i, j, None)]
                 elif kind == "perp":
                     if len(segs) < 2:
                         self._set_status("垂直约束需要两条线段")
                         return
-                    consts = [(S.PERPENDICULAR, 0, 1, None)]
+                    s1 = si1 if si1 is not None else 0
+                    s2 = si2 if si2 is not None else (1 if s1 == 0 else 0)
+                    consts = [(S.PERPENDICULAR, s1, s2, None)]
                 elif kind == "eq":
                     if len(segs) < 2:
                         self._set_status("相等约束需要两条线段")
                         return
-                    consts = [(S.EQUAL, 0, 1, None)]
+                    s1 = si1 if si1 is not None else 0
+                    s2 = si2 if si2 is not None else (1 if s1 == 0 else 0)
+                    consts = [(S.EQUAL, s1, s2, None)]
                 elif kind == "par":
                     if len(segs) < 2:
                         self._set_status("平行约束需要两条线段")
                         return
-                    consts = [(S.PARALLEL, 0, 1, None)]
+                    s1 = si1 if si1 is not None else 0
+                    s2 = si2 if si2 is not None else (1 if s1 == 0 else 0)
+                    consts = [(S.PARALLEL, s1, s2, None)]
                 elif kind == "mid":
                     if not segs or len(pts) < 3:
                         self._set_status("中点约束需要线段和一个点")
                         return
-                    consts = [(S.MIDPOINT, len(pts) - 1, 0, None)]
+                    pti = pi1 if pi1 is not None else len(pts) - 1
+                    consts = [(S.MIDPOINT, pti, si1 if si1 is not None else 0, None)]
                 elif kind == "tan":
                     if not segs:
                         self._set_status("相切约束需要线段与圆")
@@ -2233,12 +2295,13 @@ else:
                         if c[0] == "circle":
                             r = c[2]
                             break
-                    consts = [(S.TANGENT, 0, len(pts) - 1, r)]
+                    consts = [(S.TANGENT, si1 if si1 is not None else 0, len(pts) - 1, r)]
                 elif kind == "fix":
                     if not pts:
                         return
-                    x, y = pts[0][0], pts[0][1]
-                    consts = [(S.FIXED, 0, x, y)]
+                    pti = pi1 if pi1 is not None else 0
+                    x, y = pts[pti][0], pts[pti][1]
+                    consts = [(S.FIXED, pti, x, y)]
                 else:
                     self._set_status(f"约束 {kind} 预留")
                     return
@@ -2545,6 +2608,8 @@ else:
             if self.tools.mode == "mode.sketch" and self._sketch_tool:
                 self._sketch_click()
                 return
+            if self.tools.mode == "mode.sketch" and self._sketch_state and self.scene:
+                self._sketch_record_click()
             if tool == "tool.move":
                 self._apply_move(actor, world)
                 return
