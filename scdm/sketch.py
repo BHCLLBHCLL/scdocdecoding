@@ -220,14 +220,106 @@ def _near(a: Point2, b: Point2, tol: float = 1e-9) -> bool:
 def extrude_sketch(curves: Sequence[tuple], thickness: float, plane: str = "xy"):
     """Build a solid by extruding the sketch's closed loop by thickness.
 
-    For plane 'xy' the loop lives on z=0 and is extruded along +z. Returns a shape,
-    or raises ValueError when no closed loop is found.
+    Loop coordinates are plane-local (u, v); the face is built on the datum plane
+    and prisms along the plane normal. Raises ValueError when no closed loop.
     """
     from scdm import kernel as K
     outline = sketch_outline(curves)
     if outline is None:
         raise ValueError("草图没有闭环（画矩形或闭合线段）")
-    pts = [(x, y, 0.0) for x, y in outline]
+    pts = [local_to_world(plane, u, v) for (u, v) in outline]
     face = K.face_from_polygon(pts)
-    vec = {"xy": (0, 0, 1), "zx": (0, 1, 0), "yz": (1, 0, 0)}.get(plane, (0, 0, 1))
-    return K.prism(face, (vec[0] * thickness, vec[1] * thickness, vec[2] * thickness))
+    n = plane_normal(plane)
+    return K.prism(face, (n[0] * thickness, n[1] * thickness, n[2] * thickness))
+
+
+PLANE_NORMALS = {"xy": (0.0, 0.0, 1.0), "zx": (0.0, 1.0, 0.0), "yz": (1.0, 0.0, 0.0)}
+
+
+def plane_normal(plane: str) -> Tuple[float, float, float]:
+    return PLANE_NORMALS.get(plane, (0.0, 0.0, 1.0))
+
+
+def local_to_world(plane: str, u: float, v: float) -> Tuple[float, float, float]:
+    """Plane-local sketch coordinates -> world 3D on the datum plane."""
+    if plane == "zx":
+        return (u, 0.0, v)
+    if plane == "yz":
+        return (0.0, u, v)
+    return (u, v, 0.0)
+
+
+def offset_polygon(pts: Sequence[Point2], distance: float) -> List[Point2]:
+    """Miter-offset a closed polygon; positive = outward for CCW input."""
+    n = len(pts)
+    out = []
+    for i in range(n):
+        p0, p1, p2 = pts[i - 1], pts[i], pts[(i + 1) % n]
+        d1 = _unit2(p1[0] - p0[0], p1[1] - p0[1])
+        d2 = _unit2(p2[0] - p1[0], p2[1] - p1[1])
+        n1 = (d1[1], -d1[0])  # outward for CCW
+        n2 = (d2[1], -d2[0])
+        bx, by = n1[0] + n2[0], n1[1] + n2[1]
+        L = math.hypot(bx, by) or 1.0
+        cos_half = max(0.2, (n1[0] * bx + n1[1] * by) / L)
+        s = distance / cos_half
+        out.append([p1[0] + bx / L * s, p1[1] + by / L * s])
+    return out
+
+
+def _unit2(x, y):
+    L = math.hypot(x, y) or 1.0
+    return (x / L, y / L)
+
+
+def tangent_from_point(p, c, r) -> List[Tuple[Point2, Point2]]:
+    """Tangent segments from external point p to circle (c, r); 0 or 2 results."""
+    dx, dy = c[0] - p[0], c[1] - p[1]
+    d2 = dx * dx + dy * dy
+    d = math.sqrt(d2)
+    if d <= r or d < 1e-12:
+        return []
+    base = math.atan2(dy, dx)
+    alpha = math.asin(max(-1.0, min(1.0, r / d)))
+    L = math.sqrt(max(d2 - r * r, 0.0))
+    out = []
+    for s in (1.0, -1.0):
+        ang = base + s * alpha
+        out.append(([p[0], p[1]], [p[0] + L * math.cos(ang), p[1] + L * math.sin(ang)]))
+    return out
+
+
+def circumcenter(p1, p2, p3):
+    """Centre and radius through three points, or None when collinear."""
+    ax, ay = float(p1[0]), float(p1[1])
+    bx, by = float(p2[0]), float(p2[1])
+    cx, cy = float(p3[0]), float(p3[1])
+    d = 2.0 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
+    if abs(d) < 1e-12:
+        return None
+    a2, b2, c2 = ax * ax + ay * ay, bx * bx + by * by, cx * cx + cy * cy
+    ux = (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / d
+    uy = (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / d
+    return [ux, uy], math.hypot(ux - ax, uy - ay)
+
+
+def catmull_rom(points: Sequence[Point2], samples: int = 12) -> List[Point2]:
+    """Smooth an open point chain with Catmull-Rom interpolation."""
+    if len(points) < 3:
+        return [list(p) for p in points]
+    pts = [points[0]] + list(points) + [points[-1]]
+    out = []
+    for i in range(1, len(pts) - 2):
+        p0, p1, p2, p3 = pts[i - 1], pts[i], pts[i + 1], pts[i + 2]
+        for j in range(samples):
+            t = j / float(samples)
+            t2, t3 = t * t, t * t * t
+            x = 0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t
+                       + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2
+                       + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3)
+            y = 0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t
+                       + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2
+                       + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3)
+            out.append([x, y])
+    out.append([pts[-2][0], pts[-2][1]])
+    return out

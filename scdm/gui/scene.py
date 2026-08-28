@@ -454,6 +454,27 @@ class Scene:
     def focal_point(self):
         return tuple(self.renderer.GetActiveCamera().GetFocalPoint())
 
+    PLANE_NORMALS = {"xy": (0, 0, 1), "zx": (0, 1, 0), "yz": (1, 0, 0)}
+
+    def plane_point(self, plane):
+        """World point where the click ray meets the datum plane (xy/zx/yz)."""
+        iren = self.vtk_widget.GetRenderWindow().GetInteractor()
+        x, y = iren.GetEventPosition()
+        picker = vtk.vtkWorldPointPicker()
+        picker.Pick(x, y, 0, self.renderer)
+        wp = picker.GetPickPosition()
+        cam = self.renderer.GetActiveCamera()
+        pos = cam.GetPosition()
+        d = (wp[0] - pos[0], wp[1] - pos[1], wp[2] - pos[2])
+        n = self.PLANE_NORMALS.get(plane, (0, 0, 1))
+        denom = d[0] * n[0] + d[1] * n[1] + d[2] * n[2]
+        if abs(denom) < 1e-12:
+            return None
+        t = -(pos[0] * n[0] + pos[1] * n[1] + pos[2] * n[2]) / denom
+        if t <= 0:
+            return None
+        return (pos[0] + d[0] * t, pos[1] + d[1] * t, pos[2] + d[2] * t)
+
     def show_measure(self, text, p1, p2=None):
         """Measurement annotation: optional connector line + billboard label."""
         self.clear_measure()
@@ -523,7 +544,10 @@ class Scene:
         self._light_actors.append(act)
 
     def _build_sketches(self, kdoc):
-        """Render sketch curves as on-plane 2D line/polygon actors."""
+        """Render sketch curves as on-plane 2D line/polygon actors.
+
+        Curve coords are plane-local (u, v); they are mapped to world per sk.plane.
+        """
         import math as _math
         segs, pts = [], []
         for sk in getattr(kdoc, "sketches", []):
@@ -542,25 +566,29 @@ class Scene:
                 elif c[0] == "rect":
                     x0, y0 = c[1][0], c[1][1]
                     x1, y1 = c[2][0], c[2][1]
-                    loop = [(x0, y0, c[1][2]), (x1, y0, c[1][2]),
-                            (x1, y1, c[1][2]), (x0, y1, c[1][2]), (x0, y0, c[1][2])]
+                    loop = [wpt((x0, y0)), wpt((x1, y0)), wpt((x1, y1)),
+                            wpt((x0, y1)), wpt((x0, y0))]
                     for a, b in zip(loop, loop[1:]):
                         segs.append([list(a), list(b)])
                 elif c[0] == "line":
-                    segs.append([list(c[1]), list(c[2])])
+                    segs.append([list(wpt(c[1])), list(wpt(c[2]))])
                 elif c[0] == "circle":
-                    cx, cy, cz = c[1]
+                    cx, cy = c[1][0], c[1][1]
                     r = c[2]
-                    ring = [(cx + r * _math.cos(t), cy + r * _math.sin(t), cz)
+                    ring = [wpt((cx + r * _math.cos(t), cy + r * _math.sin(t)))
                             for t in [_math.tau * i / 32 for i in range(32)]]
                     ring.append(ring[0])
                     for a, b in zip(ring, ring[1:]):
                         segs.append([list(a), list(b)])
                 elif c[0] == "point":
-                    pts.append(list(c[1]))
+                    pts.append(list(wpt(c[1])))
             for c in getattr(sk, "construction", []):
-                if c and c[0] in ("line",):
-                    segs.append([list(c[1]), list(c[2])])
+                if c and c[0] == "line":
+                    segs.append([list(wpt(c[1])), list(wpt(c[2]))])
+                elif c and c[0] == "poly":
+                    ring = [wpt(p) for p in c[1]]
+                    for a, b in zip(ring, ring[1:]):
+                        segs.append([list(a), list(b)])
         if segs:
             self._sketch_actor = _lines_actor(segs, (0.10, 0.30, 0.65), 2.2)
             self.renderer.AddActor(self._sketch_actor)

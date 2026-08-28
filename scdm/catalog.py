@@ -276,6 +276,8 @@ M2_LIVE = {
 M3_LIVE = {
     "mode.sketch",
     "sketch.line", "sketch.rect", "sketch.circle", "sketch.point",
+    "sketch.tangent", "sketch.rect3", "sketch.circle3", "sketch.ellipse",
+    "sketch.spline", "sketch.construction", "sketch.offset", "sketch.layout",
     "sketch.grid", "create.project",
     "con.dim", "con.hv", "con.coin", "con.perp",
     "con.eq", "con.par", "con.tan", "con.mid", "con.fix",

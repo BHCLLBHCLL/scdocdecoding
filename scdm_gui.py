@@ -113,6 +113,11 @@ else:
             self._click_t = 0.0
             self._cam_prev = None
             self._nav_mode = None  # spin|pan|zoom or None
+            self._sketch_state = None      # {"plane": "xy|zx|yz"} while in sketch mode
+            self._sketch_tool = None       # armed sketch drawing tool
+            self._sketch_start = None
+            self._sketch_second = None
+            self._sketch_chain = []
             self.settings = QSettings("scdocdecoding", "scdm")
             from scdm.scripting import Recorder
             self.recorder = Recorder()
@@ -1398,16 +1403,231 @@ else:
                 self._set_status(f"分面操作失败: {exc}")
 
         def _do_sketch_line(self):
-            self._sketch_add("line")
+            self._sketch_arm("line")
 
         def _do_sketch_rect(self):
-            self._sketch_add("rect")
+            self._sketch_arm("rect")
 
         def _do_sketch_circle(self):
-            self._sketch_add("circle")
+            self._sketch_arm("circle")
 
         def _do_sketch_point(self):
-            self._sketch_add("point")
+            self._sketch_arm("point")
+
+        def _do_sketch_tangent(self):
+            self._sketch_arm("tangent")
+
+        def _do_sketch_rect3(self):
+            self._sketch_arm("rect3")
+
+        def _do_sketch_circle3(self):
+            self._sketch_arm("circle3")
+
+        def _do_sketch_ellipse(self):
+            self._sketch_arm("ellipse")
+
+        def _do_sketch_spline(self):
+            self._sketch_arm("spline")
+
+        def _do_sketch_construction(self):
+            self._sketch_arm("construction")
+
+        def _do_sketch_offset(self):
+            from PyQt5.QtWidgets import QInputDialog
+            ses = self.session()
+            if not self._need_kernel():
+                return
+            if not ses.kdoc.sketches:
+                self._set_status("偏移：先进入草图并画一个闭环")
+                return
+            sk = ses.kdoc.sketches[-1]
+            from scdm import sketch as S
+            outline = S.sketch_outline(sk.curves)
+            if outline is None:
+                self._set_status("偏移：当前草图没有闭环")
+                return
+            d, ok = QInputDialog.getDouble(self, "偏移", "距离 mm：", 2.0,
+                                           -100000.0, 100000.0, 3)
+            if not ok:
+                return
+            out = S.offset_polygon(outline, d / ses.scale)
+            sk.curves.append(("poly", out))
+            self._rebuild("已偏移闭环轮廓")
+
+        def _do_sketch_layout(self):
+            ses = self.session()
+            if not self._need_kernel():
+                return
+            if not ses.kdoc.sketches:
+                self._set_status("布局：先在一张草图上画轮廓")
+                return
+            src = ses.kdoc.sketches[-1]
+            n = 0
+            for plane in ("xy", "zx", "yz"):
+                if plane == src.plane:
+                    continue
+                ns = ses.kdoc.add_sketch(plane)
+                ns.curves.extend(list(src.curves))
+                n += 1
+            self._rebuild(f"布局：轮廓已复制到 {n} 个基准面")
+
+        def _sketch_click(self):
+            """Viewport click while a sketch drawing tool is armed."""
+            st = self._sketch_state
+            if not st or not self.scene:
+                return
+            plane = st["plane"]
+            p3 = self.scene.plane_point(plane)
+            if p3 is None:
+                return
+            ses = self.session()
+            sk = ses.kdoc.sketches[-1]
+            if plane == "zx":
+                uv = [p3[0], p3[2]]
+            elif plane == "yz":
+                uv = [p3[1], p3[2]]
+            else:
+                uv = [p3[0], p3[1]]
+            try:
+                snap = self.left.is_checked("mode.sketch", 1)
+            except Exception:
+                snap = True
+            if snap:
+                step = 0.001  # 1 mm world step
+                uv = [round(v / step) * step for v in uv]
+            tool = self._sketch_tool
+            if tool is None:
+                return
+
+            def put(kind, *args):
+                if tool == "construction" and kind == "line":
+                    sk.construction.append((kind,) + args)
+                else:
+                    sk.curves.append((kind,) + args)
+
+            def done():
+                self._sketch_tool = None
+                self._sketch_start = None
+                self._sketch_second = None
+                self._sketch_chain = []
+                self.left.populate_tree(ses)
+                self._rebuild("")
+
+            if tool == "point":
+                put("point", (uv[0], uv[1], 0.0))
+                done()
+            elif tool in ("line", "construction"):
+                if self._sketch_start is None:
+                    self._sketch_start = uv
+                    return
+                put("line", (self._sketch_start[0], self._sketch_start[1], 0.0),
+                    (uv[0], uv[1], 0.0))
+                done()
+            elif tool == "rect":
+                if self._sketch_start is None:
+                    self._sketch_start = uv
+                    return
+                put("rect", (self._sketch_start[0], self._sketch_start[1], 0.0),
+                    (uv[0], uv[1], 0.0))
+                done()
+            elif tool == "circle":
+                if self._sketch_start is None:
+                    self._sketch_start = uv
+                    return
+                r = math.hypot(uv[0] - self._sketch_start[0], uv[1] - self._sketch_start[1])
+                if r > 1e-9:
+                    put("circle", (self._sketch_start[0], self._sketch_start[1], 0.0), r)
+                done()
+            elif tool == "tangent":
+                from scdm import sketch as S
+                if self._sketch_start is None:
+                    self._sketch_start = uv
+                    return
+                best = None
+                for c in sk.curves:
+                    if c[0] == "circle":
+                        d = math.hypot(uv[0] - c[1][0], uv[1] - c[1][1]) - c[2]
+                        if best is None or d < best[0]:
+                            best = (d, c)
+                if best is None:
+                    self._set_status("切线：草图中没有圆")
+                    self._sketch_start = None
+                    return
+                segs = S.tangent_from_point(self._sketch_start, best[1][1], best[1][2])
+                if not segs:
+                    self._set_status("切线：起点在圆内，无法作切线")
+                    self._sketch_start = None
+                    return
+                for a, b in segs:
+                    put("line", (a[0], a[1], 0.0), (b[0], b[1], 0.0))
+                done()
+            elif tool == "rect3":
+                if self._sketch_start is None:
+                    self._sketch_start = uv
+                    return
+                if self._sketch_second is None:
+                    self._sketch_second = uv
+                    return
+                p1, p2, p3 = self._sketch_start, self._sketch_second, uv
+                dx, dy = p2[0] - p1[0], p2[1] - p1[1]
+                L = math.hypot(dx, dy) or 1e-12
+                ux, uy = dx / L, dy / L
+                nx, ny = -uy, ux
+                h = (p3[0] - p1[0]) * nx + (p3[1] - p1[1]) * ny
+                if abs(h) > 1e-9:
+                    q3 = (p2[0] + nx * h, p2[1] + ny * h)
+                    q4 = (p1[0] + nx * h, p1[1] + ny * h)
+                    put("poly", [[p1[0], p1[1]], [p2[0], p2[1]],
+                                 [q3[0], q3[1]], [q4[0], q4[1]], [p1[0], p1[1]]])
+                done()
+            elif tool == "circle3":
+                from scdm import sketch as S
+                self._sketch_chain.append(uv)
+                if len(self._sketch_chain) < 3:
+                    return
+                cc = S.circumcenter(*self._sketch_chain[:3])
+                if cc is None:
+                    self._set_status("三点圆：三点共线")
+                else:
+                    (cx, cy), r = cc
+                    put("circle", (cx, cy, 0.0), r)
+                done()
+            elif tool == "ellipse":
+                self._sketch_chain.append(uv)
+                if len(self._sketch_chain) < 3:
+                    return
+                c = self._sketch_chain[0]
+                p1, p2 = self._sketch_chain[1], self._sketch_chain[2]
+                ru = math.hypot(p1[0] - c[0], p1[1] - c[1])
+                dx, dy = p1[0] - c[0], p1[1] - c[1]
+                L = math.hypot(dx, dy) or 1e-12
+                ux, uy = dx / L, dy / L
+                rv = abs((p2[0] - c[0]) * -uy + (p2[1] - c[1]) * ux)
+                if ru > 1e-9 and rv > 1e-9:
+                    ring = [[c[0] + ru * math.cos(t) * ux - rv * math.sin(t) * uy,
+                             c[1] + ru * math.cos(t) * uy + rv * math.sin(t) * ux]
+                            for t in [math.tau * i / 48 for i in range(48)]]
+                    ring.append(ring[0])
+                    put("poly", ring)
+                    sk.construction.append(
+                        ("line", (c[0], c[1], 0.0), (p1[0], p1[1], 0.0)))
+                done()
+            elif tool == "spline":
+                self._sketch_chain.append(uv)
+                self._set_status(f"样条：已取 {len(self._sketch_chain)} 点，右键结束")
+
+        def _sketch_finish(self):
+            if self._sketch_tool != "spline":
+                return
+            ses = self.session()
+            sk = ses.kdoc.sketches[-1]
+            from scdm import sketch as S
+            if len(self._sketch_chain) >= 2:
+                sk.curves.append(("poly", S.catmull_rom(self._sketch_chain)))
+            self._sketch_tool = None
+            self._sketch_start = None
+            self._sketch_chain = []
+            self._rebuild("样条完成")
 
         def _do_sketch_grid(self):
             ses = self.session()
@@ -1535,36 +1755,70 @@ else:
             if self.scene:
                 self.scene.update_grid(ses)
 
-        def _begin_sketch(self):
+        def _sketch_plane_from_selection(self):
+            for kind, sid in reversed(self.sel.items):
+                if kind == "plane" and sid in ("xy", "zx", "yz"):
+                    return sid
+                if kind == "face" and ":" in sid and self.session().kdoc:
+                    b = self.session().kdoc.body_by_id(sid.split(":", 1)[0])
+                    fi = int(sid.split(":", 1)[1])
+                    if b is not None:
+                        faces = K.explore(b.shape, "face")
+                        if fi < len(faces):
+                            n, _c = K.face_normal_center(faces[fi])
+                            ax = max(range(3), key=lambda k: abs(n[k]))
+                            return {0: "yz", 1: "zx", 2: "xy"}[ax]
+            return "xy"
+
+        def _begin_sketch(self, plane=None):
             if not self._need_kernel():
                 return
             ses = self.session()
-            ses.kdoc.add_sketch("xy")
+            if plane is None:
+                plane = self._sketch_plane_from_selection()
+            sks = ses.kdoc.sketches
+            if sks and not sks[-1].curves and not sks[-1].construction:
+                sks[-1].plane = plane  # reuse the empty sketch
+            else:
+                ses.kdoc.add_sketch(plane)
+            self._sketch_state = {"plane": plane}
+            self._sketch_tool = None
+            self._sketch_start = None
+            self._sketch_second = None
+            self._sketch_chain = []
             self._set_sketch_grid(True)
+            if self.scene:
+                self.scene.plane_view({"xy": "z", "zx": "y", "yz": "x"}[plane],
+                                      ses.scale)
             self.left.populate_tree(ses)
-            self._set_status("草图模式：直线/矩形/圆；完成后选草图再拉动")
+            self._set_status(f"草图模式（{plane.upper()}）：选择草图工具开始绘制；Esc 退出")
 
-        def _sketch_add(self, kind: str):
+        _SKETCH_HINTS = {
+            "line": "直线：单击起点、终点",
+            "rect": "矩形：单击两对角点",
+            "circle": "圆：单击圆心、半径点",
+            "point": "点：单击放置",
+            "tangent": "切线：单击起点，再单击圆附近",
+            "rect3": "三点矩形：单击边起点、边终点、对侧点",
+            "circle3": "三点圆：单击圆上三点",
+            "ellipse": "椭圆：单击中心、轴端点、协轴端点",
+            "spline": "样条：连续单击取点，右键结束",
+            "construction": "构造线：单击起点、终点（不参与闭环）",
+        }
+
+        def _sketch_arm(self, tool):
             if not self._need_kernel():
                 return
             ses = self.session()
             if not ses.kdoc.sketches:
                 self._begin_sketch()
-            sk = ses.kdoc.sketches[-1]
-            s = 10 / ses.scale
-            if kind == "rect":
-                sk.curves.append(("rect", (0, 0, 0), (s, s, 0)))
-                self._set_status("已在 XY 添加 10mm 矩形")
-            elif kind == "circle":
-                sk.curves.append(("circle", (s / 2, s / 2, 0), s / 2))
-                self._set_status("已添加 Ø10mm 圆")
-            elif kind == "line":
-                sk.curves.append(("line", (0, 0, 0), (s, 0, 0)))
-                self._set_status("已添加直线")
-            else:
-                sk.curves.append(("point", (0, 0, 0)))
-                self._set_status("已添加点")
-            self.left.populate_tree(ses)
+            if not self._sketch_state:
+                self._sketch_state = {"plane": ses.kdoc.sketches[-1].plane}
+            self._sketch_tool = tool
+            self._sketch_start = None
+            self._sketch_second = None
+            self._sketch_chain = []
+            self._set_status("草图 " + self._SKETCH_HINTS.get(tool, tool))
 
         def _toggle_section(self):
             if not self.scene:
@@ -1900,11 +2154,17 @@ else:
                 ses.kdoc.add_body(solid, name="拉伸")
                 made += 1
             except (ValueError, Exception) as exc:
-                # fall back to circles -> cylinder
+                # fall back to circles -> cylinders along the plane normal
+                from scdm import sketch as S
+                w = S.local_to_world
+                n = S.plane_normal(sk.plane)
                 for c in sk.curves:
                     if c[0] == "circle":
                         center, r = c[1], c[2]
-                        ses.kdoc.add_body(K.make_cylinder(r, h, origin=center), name="拉伸圆")
+                        origin = w(sk.plane, center[0], center[1])
+                        ses.kdoc.add_body(
+                            K.make_cylinder(r, h, origin=origin, axis=n),
+                            name="拉伸圆")
                         made += 1
                 if not made:
                     self._set_status(f"草图无闭环：{exc}")
@@ -2019,6 +2279,12 @@ else:
                 elif c[0] == "circle":
                     pts.append([float(c[1][0]), float(c[1][1]), float(c[1][2])])
                     pts.append([float(c[1][0] + c[2]), float(c[1][1]), float(c[1][2])])
+                elif c[0] == "poly":
+                    base = len(pts)
+                    for p in c[1]:
+                        pts.append([float(p[0]), float(p[1]), 0.0])
+                    for k in range(len(c[1]) - 1):
+                        segments.append((base + k, base + k + 1))
             return pts, segments
 
         def _write_sketch_points(self, sk, pts):
@@ -2031,6 +2297,11 @@ else:
                 elif c[0] == "circle":
                     sk.curves[sk.curves.index(c)] = (c[0], tuple(pts[idx])[:2] + (c[1][2],), c[2])
                     idx += 2
+                elif c[0] == "poly":
+                    n = len(c[1])
+                    new_pts = [[pts[idx + k][0], pts[idx + k][1]] for k in range(n)]
+                    sk.curves[sk.curves.index(c)] = (c[0], new_pts)
+                    idx += n
 
         def _do_view_fit(self):
             if self.scene:
@@ -2261,6 +2532,9 @@ else:
                 else:
                     self._pull_sketch()
                 return
+            if self.tools.mode == "mode.sketch" and self._sketch_tool:
+                self._sketch_click()
+                return
             if tool == "tool.move":
                 self._apply_move(actor, world)
                 return
@@ -2355,6 +2629,9 @@ else:
                 self._commit(f"已改色 ×{n}")
 
         def _on_vtk_right(self):
+            if self.tools.mode == "mode.sketch" and self._sketch_tool == "spline":
+                self._sketch_finish()
+                return
             bids = self._selected_body_ids()
             if not bids:
                 self._set_status("右键：先选择对象（隐藏 / 仅显示 / 缩放到 / 改色）")
@@ -2387,6 +2664,19 @@ else:
             elif key == "z":
                 self._do_view_pos_z()
             elif key == "escape":
+                if self.tools.mode == "mode.sketch" and self._sketch_tool:
+                    if self._sketch_tool == "spline" and len(self._sketch_chain) >= 2:
+                        self._sketch_finish()
+                    else:
+                        self._sketch_tool = None
+                        self._sketch_start = None
+                        self._sketch_second = None
+                        self._sketch_chain = []
+                        self._set_status("草图：绘制工具已取消（再按 Esc 退出草图模式）")
+                    return
+                if self.tools.mode == "mode.sketch":
+                    self.on_command("mode.3d")
+                    return
                 self._measure = []
                 if self.scene:
                     self.scene.clear_measure()

@@ -176,3 +176,60 @@ def test_edge_loop_box_face_ring():
 def test_edge_loop_out_of_range():
     box = K.make_box(10 / 1000, 10 / 1000, 10 / 1000)
     assert K.edge_loop(box, 9999) == []
+
+
+# --- G4-01/02 sketch plane mapping + drawing helpers ------------------------------
+
+from scdm import sketch as S  # noqa: E402
+
+
+def test_extrude_sketch_on_zx_plane():
+    curves = [("rect", (0, 0), (0.01, 0.01))]
+    solid = S.extrude_sketch(curves, 0.005, "zx")
+    assert abs(K.volume(solid) - 0.01 * 0.01 * 0.005) < 1e-12
+    lo, hi = None, None
+    import scdm.additive as A
+    lo, hi = A.shape_bbox(solid)
+    assert abs((hi[1] - lo[1]) - 0.005) < 1e-9  # thickness along Y (zx normal)
+
+
+def test_extrude_sketch_on_yz_plane():
+    curves = [("rect", (0, 0), (0.01, 0.02))]
+    solid = S.extrude_sketch(curves, 0.004, "yz")
+    assert abs(K.volume(solid) - 0.01 * 0.02 * 0.004) < 1e-12
+
+
+def test_offset_polygon_grows_square():
+    sq = [[0.0, 0.0], [0.01, 0.0], [0.01, 0.01], [0.0, 0.01]]
+    out = S.offset_polygon(sq, 0.001)
+    xs = [p[0] for p in out]
+    ys = [p[1] for p in out]
+    assert abs(min(xs) + 0.001) < 1e-6 and abs(max(xs) - 0.011) < 1e-6
+    assert abs(min(ys) + 0.001) < 1e-6 and abs(max(ys) - 0.011) < 1e-6
+
+
+def test_tangent_from_point():
+    segs = S.tangent_from_point([0.0, 0.0], [0.05, 0.0], 0.01)
+    assert len(segs) == 2
+    for a, b in segs:
+        # tangency: distance from circle centre to the tangent point == r
+        assert abs(math.hypot(b[0] - 0.05, b[1] - 0.0) - 0.01) < 1e-9
+    assert S.tangent_from_point([0.05, 0.0], [0.05, 0.0], 0.01) == []  # inside
+
+
+def test_circumcenter():
+    cc = S.circumcenter([0.0, 0.0], [0.02, 0.0], [0.01, 0.02])
+    assert cc is not None
+    (cx, cy), r = cc
+    assert abs(cx - 0.01) < 1e-9 and abs(cy - 0.0075) < 1e-9
+    assert abs(r - 0.0125) < 1e-9
+    assert S.circumcenter([0, 0], [0.01, 0], [0.02, 0]) is None  # collinear
+
+
+def test_catmull_rom_smooths_chain():
+    sm = S.catmull_rom([[0.0, 0.0], [0.01, 0.008], [0.02, 0.0]])
+    assert len(sm) > 3
+    assert abs(sm[0][0]) < 1e-12 and abs(sm[-1][0] - 0.02) < 1e-9
+
+
+import math  # noqa: E402
