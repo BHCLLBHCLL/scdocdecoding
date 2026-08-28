@@ -742,10 +742,16 @@ else:
             ses = self.session()
             if not self._need_kernel():
                 return
+            vals = self._ask_numbers("螺旋", [("半径1 mm", 3.0), ("半径2 mm", 2.0),
+                                              ("高度 mm", 20.0), ("螺距 mm", 0.4)])
+            if not vals:
+                return
             try:
-                sh = K.helix_solid(3 / ses.scale, 2 / ses.scale, 20 / ses.scale,
-                                   0.4 / ses.scale)
+                sh = K.helix_solid(vals[0] / ses.scale, vals[1] / ses.scale,
+                                   vals[2] / ses.scale, vals[3] / ses.scale)
                 ses.kdoc.add_body(sh, name="螺旋")
+                self._record("insert.helix", r1=vals[0], r2=vals[1],
+                             h=vals[2], pitch=vals[3])
                 self._commit("已插入螺旋体")
             except Exception as exc:
                 self._set_status(f"螺旋插入失败: {exc}")
@@ -759,39 +765,101 @@ else:
         def _do_create_chamfer(self):
             self._fillet_or_chamfer(fillet=False)
 
+        def _ask_numbers(self, title, fields):
+            """Modal numeric parameter dialog; returns list of floats or None."""
+            from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QDoubleSpinBox,
+                                         QFormLayout, QVBoxLayout)
+            dlg = QDialog(self)
+            dlg.setWindowTitle(title)
+            lay = QVBoxLayout(dlg)
+            form = QFormLayout()
+            spins = []
+            for label, default in fields:
+                sp = QDoubleSpinBox()
+                sp.setRange(-100000.0, 100000.0)
+                sp.setDecimals(3)
+                sp.setValue(float(default))
+                form.addRow(label, sp)
+                spins.append(sp)
+            lay.addLayout(form)
+            bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+            bb.accepted.connect(dlg.accept)
+            bb.rejected.connect(dlg.reject)
+            lay.addWidget(bb)
+            if dlg.exec_() != QDialog.Accepted:
+                return None
+            return [sp.value() for sp in spins]
+
+        def _selected_faces_of(self, body):
+            """Face shapes of `body` picked in the viewport (selection order)."""
+            faces = K.explore(body.shape, "face")
+            out = []
+            for kind, sid in self.sel.items:
+                if kind != "face" or ":" not in sid:
+                    continue
+                bid, fi = sid.split(":", 1)
+                if bid == body.id and int(fi) < len(faces):
+                    out.append(faces[int(fi)])
+            return out
+
         def _do_create_mirror(self):
             body = self._selected_kbody()
             if body is None:
                 return
             ses = self.session()
-            mir = K.mirror(body.shape, (0, 0, 0), (1, 0, 0))
+            plane = next((sid for k, sid in self.sel.items
+                          if k == "plane" and sid in ("xy", "zx", "yz")), None)
+            if plane is None:
+                vals = self._ask_numbers("镜像平面", [("法向 0=X 1=Y 2=Z", 0.0)])
+                if vals is None:
+                    return
+                plane = {0: "yz", 1: "zx", 2: "xy"}[int(vals[0]) % 3]
+            normal = {"yz": (1, 0, 0), "zx": (0, 1, 0), "xy": (0, 0, 1)}[plane]
+            mir = K.mirror(body.shape, (0, 0, 0), normal)
             ses.kdoc.add_body(mir, name=body.name + " 镜像")
-            self._record("create.mirror")
-            self._commit("已镜像")
+            self._record("create.mirror", plane=plane)
+            self._commit(f"已镜像（{plane.upper()} 面）")
 
         def _do_create_pattern(self):
             body = self._selected_kbody()
             if body is None:
                 return
             ses = self.session()
-            step = 15 / ses.scale
-            shapes = K.pattern_linear(body.shape, (step, 0, 0), 3)
-            for i, sh in enumerate(shapes[1:], 2):
+            vals = self._ask_numbers(
+                "阵列", [("类型 0=线性 1=圆周", 0.0),
+                         ("X 间距 / 角度°", 15.0), ("Y 间距", 0.0), ("Z 间距", 0.0),
+                         ("数量", 3.0)])
+            if not vals:
+                return
+            count = max(2, int(vals[4]))
+            if int(vals[0]) == 0:
+                step = (vals[1] / ses.scale, vals[2] / ses.scale, vals[3] / ses.scale)
+                shapes = K.pattern_linear(body.shape, step, count)[1:]
+                verb = f"线性阵列 ×{count}"
+            else:
+                shapes = K.pattern_circular(body.shape, (0, 0, 1), vals[1], count)[1:]
+                verb = f"圆周阵列 ×{count}（{vals[1]:g}°）"
+            for i, sh in enumerate(shapes, 2):
                 ses.kdoc.add_body(sh, name=f"{body.name} 阵列{i}")
-            self._record("create.pattern", step=15.0, count=3)
-            self._commit("线性阵列 ×3")
+            self._record("create.pattern", step=vals[1], count=count,
+                         circular=int(vals[0]) == 1)
+            self._commit(verb)
 
         def _do_create_shell(self):
             body = self._selected_kbody()
             if body is None:
                 return
-            faces = K.explore(body.shape, "face")
-            if not faces:
+            ses = self.session()
+            vals = self._ask_numbers("抽壳", [("壁厚 mm", 1.0)])
+            if not vals:
                 return
+            opening = self._selected_faces_of(body)
+            if not opening:
+                opening = [K.explore(body.shape, "face")[0]]
             try:
-                body.shape = K.shell_solid(body.shape, 1 / self.session().scale, [faces[0]])
-                self._record("create.shell", thickness=1.0)
-                self._commit("已抽壳")
+                body.shape = K.shell_solid(body.shape, vals[0] / ses.scale, opening)
+                self._record("create.shell", thickness=vals[0])
+                self._commit(f"已抽壳（壁厚 {vals[0]:g}mm）")
             except Exception as exc:
                 self._set_status(f"抽壳失败: {exc}")
 
@@ -799,14 +867,19 @@ else:
             body = self._selected_kbody()
             if body is None:
                 return
-            faces = K.explore(body.shape, "face")
-            if not faces:
+            vals = self._ask_numbers("拔模", [("角度 °", 5.0),
+                                              ("中性方向 0=X 1=Y 2=Z", 2.0)])
+            if not vals:
                 return
-            ang = math.radians(5.0)
+            neutral = {0: (1, 0, 0), 1: (0, 1, 0), 2: (0, 0, 1)}[int(vals[1]) % 3]
+            faces = self._selected_faces_of(body)
+            if not faces:
+                faces = [K.explore(body.shape, "face")[0]]
             try:
-                # draft the first face about +Z as the neutral direction
-                body.shape = K.draft_face(body.shape, faces[0], ang, (0, 0, 1))
-                self._commit("拔模 5°")
+                body.shape = K.draft_face(body.shape, faces[0],
+                                          math.radians(vals[0]), neutral)
+                self._record("create.draft", angle=vals[0])
+                self._commit(f"拔模 {vals[0]:g}°")
             except Exception as exc:
                 self._set_status(f"拔模失败: {exc}")
 

@@ -241,6 +241,14 @@ def vertex_point(vertex) -> Vec3:
     return (p.X(), p.Y(), p.Z())
 
 
+def pattern_circular(shape, axis: Vec3, angle_deg: float, count: int) -> List[Any]:
+    """`count` copies rotated about axis through the origin (original included)."""
+    out = [shape]
+    for i in range(1, max(count, 1)):
+        out.append(rotate(shape, (0.0, 0.0, 0.0), axis, math.radians(angle_deg * i)))
+    return out
+
+
 def face_cylinder_radius(face) -> Optional[float]:
     """Radius when the face is cylindrical, else None."""
     from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
