@@ -1328,14 +1328,64 @@ else:
             except Exception as exc:
                 self._set_status(f"反转法向失败: {exc}")
 
+        def _facet_mesh(self, body, deflection_mm: float = 0.02):
+            """Tessellate a body into a welded (verts, tris) triangle soup."""
+            import numpy as np
+            from scdm import facets as F
+            from scdm.kernel import tessellate_faces
+            faces = tessellate_faces(
+                body.shape, deflection=max(1e-6, deflection_mm / self.session().scale))
+            vs, ts, off = [], [], 0
+            for fd in faces:
+                pts = np.asarray(fd["vertices"], dtype=np.float64)
+                tris = np.asarray(fd["triangles"], dtype=np.int64)
+                if len(pts) == 0 or not len(tris):
+                    continue
+                vs.append(pts)
+                ts.append(tris + off)
+                off += len(pts)
+            if not vs:
+                return None, None
+            return F.weld(np.vstack(vs), np.vstack(ts), tol=1e-6)
+
         def _do_facet_smooth(self):
-            self._set_status("分面光滑：简化内核预留（STL 重网格在 M5 后续）")
+            self._facet_op("smooth")
 
         def _do_facet_reduce(self):
-            self._set_status("分面简化：预留（降低三角形密度）")
+            self._facet_op("reduce")
 
         def _do_facet_fill(self):
-            self._set_status("分面填孔：预留")
+            self._facet_op("fill")
+
+        def _facet_op(self, op: str):
+            from scdm import facets as F
+            body = self._selected_kbody()
+            if body is None:
+                return
+            verts, tris = self._facet_mesh(body)
+            if verts is None:
+                self._set_status("分面：所选实体没有可用的网格")
+                return
+            ses = self.session()
+            try:
+                if op == "smooth":
+                    verts = F.laplacian_smooth(verts, tris, iters=3, factor=0.5)
+                    msg = "已光滑（Laplacian ×3）"
+                elif op == "reduce":
+                    cell = 2.0 / ses.scale
+                    verts, tris = F.reduce_grid(verts, tris, cell)
+                    msg = f"已简化至 {len(tris)} 三角形"
+                else:
+                    tris, n = F.fill_holes(verts, tris)
+                    if not n:
+                        self._set_status("分面填孔：没有开放边界需要填补")
+                        return
+                    msg = f"已填补 {n} 个孔"
+                solid = F.mesh_to_shell(verts, tris)
+                body.shape = solid
+                self._commit(msg)
+            except Exception as exc:
+                self._set_status(f"分面操作失败: {exc}")
 
         def _do_sketch_line(self):
             self._sketch_add("line")

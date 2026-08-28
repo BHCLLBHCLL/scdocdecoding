@@ -109,3 +109,103 @@ def mesh_to_shell(verts: np.ndarray, tris: np.ndarray, tol: float = 1e-6):
     from scdm import kernel as K
     faces = mesh_faces(verts, tris)
     return K.sew_faces(faces, tol=tol)
+
+
+# --- mesh edit operations (G2-07: smooth / reduce / fill) ----------------------
+
+def weld(verts: np.ndarray, tris: np.ndarray, tol: float = 1e-6):
+    """Merge coincident vertices on a `tol` grid; returns (verts, tris)."""
+    verts = np.asarray(verts, dtype=np.float64)
+    tris = np.asarray(tris, dtype=np.int64).reshape(-1, 3)
+    step = max(tol, 1e-12)
+    keys = np.round(verts / step).astype(np.int64)
+    uniq, idx, inv = np.unique(keys, axis=0, return_index=True, return_inverse=True)
+    new_v = verts[idx]
+    new_t = inv[tris]
+    keep = ((new_t[:, 0] != new_t[:, 1]) & (new_t[:, 1] != new_t[:, 2])
+            & (new_t[:, 0] != new_t[:, 2]))
+    return new_v, new_t[keep]
+
+
+def laplacian_smooth(verts: np.ndarray, tris: np.ndarray, iters: int = 3,
+                     factor: float = 0.5) -> np.ndarray:
+    """Umbrella Laplacian smoothing; returns new vertex positions."""
+    v = np.asarray(verts, dtype=np.float64).copy()
+    t = np.asarray(tris, dtype=np.int64).reshape(-1, 3)
+    for _ in range(max(iters, 1)):
+        acc = np.zeros_like(v)
+        cnt = np.zeros(len(v), dtype=np.int64)
+        for k in range(3):
+            np.add.at(acc, t[:, k], v[t[:, (k + 1) % 3]])
+            np.add.at(acc, t[:, k], v[t[:, (k + 2) % 3]])
+            np.add.at(cnt, t[:, k], 2)
+        nz = cnt > 0
+        v[nz] += factor * (acc[nz] / cnt[nz, None] - v[nz])
+    return v
+
+
+def reduce_grid(verts: np.ndarray, tris: np.ndarray, cell: float):
+    """Vertex-clustering decimation: snap vertices onto a `cell` grid."""
+    verts = np.asarray(verts, dtype=np.float64)
+    tris = np.asarray(tris, dtype=np.int64).reshape(-1, 3)
+    if cell <= 0 or len(verts) == 0:
+        return verts, tris
+    keys = np.floor(verts / cell).astype(np.int64)
+    uniq, inv = np.unique(keys, axis=0, return_inverse=True)
+    new_v = np.zeros((len(uniq), 3), dtype=np.float64)
+    cnt = np.zeros(len(uniq), dtype=np.int64)
+    np.add.at(new_v, inv, verts)
+    np.add.at(cnt, inv, 1)
+    new_v /= cnt[:, None]
+    new_t = inv[tris]
+    keep = ((new_t[:, 0] != new_t[:, 1]) & (new_t[:, 1] != new_t[:, 2])
+            & (new_t[:, 0] != new_t[:, 2]))
+    new_t = new_t[keep]
+    if len(new_t):
+        _, uidx = np.unique(np.sort(new_t, axis=1), axis=0, return_index=True)
+        new_t = new_t[np.sort(uidx)]
+    return new_v, new_t
+
+
+def boundary_loops(tris: np.ndarray) -> List[List[int]]:
+    """Chain edges used by a single triangle into boundary vertex loops."""
+    t = np.asarray(tris, dtype=np.int64).reshape(-1, 3)
+    use = {}
+    for a, b, c in t:
+        for u, v in ((a, b), (b, c), (c, a)):
+            key = (min(int(u), int(v)), max(int(u), int(v)))
+            use[key] = use.get(key, 0) + 1
+    adj = {}
+    for (u, v), n in use.items():
+        if n == 1:
+            adj.setdefault(u, []).append(v)
+            adj.setdefault(v, []).append(u)
+    loops, seen = [], set()
+    for start in adj:
+        if start in seen:
+            continue
+        loop = [start]
+        seen.add(start)
+        prev, cur = None, start
+        while True:
+            nxts = [n for n in adj.get(cur, []) if n != prev and n not in seen]
+            if not nxts:
+                break
+            prev, cur = cur, nxts[0]
+            loop.append(cur)
+            seen.add(cur)
+        if len(loop) >= 3:
+            loops.append(loop)
+    return loops
+
+
+def fill_holes(verts: np.ndarray, tris: np.ndarray):
+    """Fan-triangulate open boundary loops; returns (tris, holes_filled)."""
+    t = np.asarray(tris, dtype=np.int64).reshape(-1, 3)
+    added = []
+    for loop in boundary_loops(t):
+        for i in range(1, len(loop) - 1):
+            added.append((loop[0], loop[i], loop[i + 1]))
+    if not added:
+        return t, 0
+    return np.vstack([t, np.asarray(added, dtype=np.int64)]), len(added)
