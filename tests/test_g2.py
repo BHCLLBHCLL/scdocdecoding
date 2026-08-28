@@ -99,3 +99,58 @@ def test_mesh_to_shell_from_welded_cube():
     shell = F.mesh_to_shell(wv, wt)
     faces = K.explore(shell, "face")
     assert len(faces) == 12
+
+
+# --- G3-01 tool option semantics -------------------------------------------------
+
+from types import SimpleNamespace  # noqa: E402
+
+from scdm.kdoc import KernelDoc  # noqa: E402
+from scdm.tools.direct import get_tool  # noqa: E402
+
+
+def test_pull_to_face_and_copy():
+    ses = SimpleNamespace(kdoc=KernelDoc(), scale=1000.0)
+    box = ses.kdoc.add_body(K.make_box(10 / 1000, 10 / 1000, 10 / 1000), name="B")
+    faces = K.explore(box.shape, "face")
+    zc = [K.face_normal_center(f)[1][2] for f in faces]
+    lo = zc.index(min(zc))
+    # target: top plane of a 3mm plate sitting at z=0..3mm
+    plate = K.make_box(20 / 1000, 20 / 1000, 3 / 1000, origin=(-5 / 1000, -5 / 1000, 0))
+    pn = pc = None
+    for f in K.explore(plate, "face"):
+        n, c = K.face_normal_center(f)
+        if n[2] > 0.9:
+            pn, pc = n, c
+            break
+    get_tool("tool.pull").apply(
+        ses, {"body_id": box.id, "face_i": lo,
+              "to_face_target": {"normal": pn, "center": pc}},
+        {"to_face": True, "distance": 5.0})
+    assert abs(K.volume(box.shape) - 0.01 * 0.01 * 0.007) < 1e-10
+    # copy pull: leaves the original and adds a pulled copy
+    n0 = len(ses.kdoc.bodies)
+    zc2 = [K.face_normal_center(f)[1][2] for f in K.explore(box.shape, "face")]
+    get_tool("tool.pull").apply(ses, {"body_id": box.id, "face_i": zc2.index(max(zc2))},
+                                {"copy": True, "distance": 5.0})
+    assert len(ses.kdoc.bodies) == n0 + 1
+
+
+def test_move_to_point_and_to_face():
+    ses = SimpleNamespace(kdoc=KernelDoc(), scale=1000.0)
+    box = ses.kdoc.add_body(K.make_box(10 / 1000, 10 / 1000, 10 / 1000), name="B")
+    get_tool("tool.move").apply(ses, {"body_id": box.id, "pick_point": (0.05, 0.0, 0.0)},
+                                {"to_point": True})
+    c = K.cog(box.shape)
+    assert abs(c[0] - 0.05) < 1e-9
+    # to_face: move up until the bottom face meets a plate top at z=3mm
+    plate = K.make_box(20 / 1000, 20 / 1000, 3 / 1000, origin=(-5 / 1000, -5 / 1000, 0))
+    for f in K.explore(plate, "face"):
+        n, cc = K.face_normal_center(f)
+        if n[2] > 0.9:
+            break
+    get_tool("tool.move").apply(ses, {"body_id": box.id,
+                                      "pick_face": {"normal": n, "center": cc}},
+                                {"to_face": True})
+    cz = K.cog(box.shape)[2]
+    assert abs(cz - (0.003 + 0.005)) < 1e-9

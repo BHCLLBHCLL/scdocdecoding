@@ -59,10 +59,19 @@ class SelectTool(DirectTool):
         return self.hud
 
 
+def _plane_offset(n1, c1, n2, c2) -> float:
+    """Signed offset along n1 from plane(n1,c1) to the parallel plane(n2,c2)."""
+    denom = n1[0] * n2[0] + n1[1] * n2[1] + n1[2] * n2[2]
+    if abs(denom) < 1e-9:
+        raise ToolError("两面不平行")
+    return ((c2[0] - c1[0]) * n2[0] + (c2[1] - c1[1]) * n2[1]
+            + (c2[2] - c1[2]) * n2[2]) / denom
+
+
 class PullTool(DirectTool):
     id = "tool.pull"
     name = "拉动"
-    hud = "拉动：选择面后再次单击，沿法向挤出 5mm"
+    hud = "拉动：选面后单击挤出；选项可设距离/对称/复制/到面"
 
     def apply(self, ses, ctx, opts):
         body = _body(ses, ctx.get("body_id"))
@@ -73,35 +82,70 @@ class PullTool(DirectTool):
         if fi is None or fi >= len(faces):
             raise ToolError("请选择一个面")
         d = _dist(opts, 5.0, ses)
+        face = faces[fi]
+        if opts.get("to_face") and ctx.get("to_face_target"):
+            n1, c1 = K.face_normal_center(face)
+            t = ctx["to_face_target"]
+            d = _plane_offset(n1, c1, t["normal"], t["center"])
+            if abs(d) < 1e-9:
+                raise ToolError("到面：目标面与拉动面重合")
+        if opts.get("copy"):
+            if opts.get("symmetric"):
+                pulled = K.pull_face_symmetric(body.shape, face, d)
+            else:
+                pulled = K.pull_face(body.shape, face, d)
+            ses.kdoc.add_body(pulled, name=body.name + " 拉动副本")
+            return f"复制拉动 {d * _scale(ses):.1f}mm"
         if opts.get("symmetric"):
-            body.shape = K.pull_face_symmetric(body.shape, faces[fi], d)
-            verb = f"对称拉动 {d * _scale(ses):.0f}mm"
-        else:
-            body.shape = K.pull_face(body.shape, faces[fi], d)
-            verb = f"拉动 {d * _scale(ses):.0f}mm"
-        return verb
+            body.shape = K.pull_face_symmetric(body.shape, face, d)
+            return f"对称拉动 {d * _scale(ses):.1f}mm"
+        body.shape = K.pull_face(body.shape, face, d)
+        return f"拉动 {d * _scale(ses):.1f}mm"
 
 
 class MoveTool(DirectTool):
     id = "tool.move"
     name = "移动"
-    hud = "移动：选择实体后单击，沿 X 平移 10mm；选项可复制"
+    hud = "移动：选实体后单击沿轴平移；选项可设距离/复制/到点/到面"
 
     def apply(self, ses, ctx, opts):
         body = _body(ses, ctx.get("body_id"))
         if body is None:
             raise ToolError("移动需要内核实体")
-        axis = opts.get("axis") or (1.0, 0.0, 0.0)
         d = _dist(opts, 10.0, ses)
-        vec = (axis[0] * d, axis[1] * d, axis[2] * d)
+        axis = opts.get("axis") or (1.0, 0.0, 0.0)
+        if opts.get("to_point") and ctx.get("pick_point"):
+            p = ctx["pick_point"]
+            c = K.cog(body.shape)
+            vec = (p[0] - c[0], p[1] - c[1], p[2] - c[2])
+            how = "到点"
+        elif opts.get("to_face") and ctx.get("pick_face"):
+            n2, c2 = ctx["pick_face"]["normal"], ctx["pick_face"]["center"]
+            best, bd = None, None
+            for f in K.explore(body.shape, "face"):
+                n1, c1 = K.face_normal_center(f)
+                if abs(n1[0] * n2[0] + n1[1] * n2[1] + n1[2] * n2[2]) < 0.999:
+                    continue  # only parallel faces can land on the target plane
+                dd = sum((c1[k] - c2[k]) ** 2 for k in range(3))
+                if bd is None or dd < bd:
+                    bd, best = dd, (n1, c1)
+            if best is None:
+                raise ToolError("到面：实体上没有与目标面平行的面")
+            n1, c1 = best
+            dist = _plane_offset(n1, c1, n2, c2)
+            if abs(dist) < 1e-9:
+                raise ToolError("到面：目标面与源面重合")
+            vec = (n1[0] * dist, n1[1] * dist, n1[2] * dist)
+            how = "到面"
+        else:
+            vec = (axis[0] * d, axis[1] * d, axis[2] * d)
+            how = f"{d * _scale(ses):.1f}mm"
         if opts.get("copy"):
             ses.kdoc.add_body(K.translate(body.shape, vec),
                               name=body.name + " 副本")
-            svc = f"复制 + 移动 {d * _scale(ses):.0f}mm"
-        else:
-            body.shape = K.translate(body.shape, vec)
-            svc = f"移动 {d * _scale(ses):.0f}mm"
-        return svc
+            return f"复制 + 移动（{how}）"
+        body.shape = K.translate(body.shape, vec)
+        return f"移动（{how}）"
 
 
 class FillTool(DirectTool):

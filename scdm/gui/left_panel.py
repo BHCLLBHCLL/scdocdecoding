@@ -3,10 +3,10 @@ from __future__ import annotations
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (
-    QAbstractItemView, QCheckBox, QGroupBox, QHeaderView, QLabel,
-    QListWidget, QRadioButton, QScrollArea, QSplitter, QStackedWidget,
-    QTableWidget, QTableWidgetItem, QTabWidget, QTreeWidget, QTreeWidgetItem,
-    QVBoxLayout, QWidget, QFrame,
+    QAbstractItemView, QCheckBox, QDoubleSpinBox, QGroupBox, QHBoxLayout,
+    QHeaderView, QLabel, QListWidget, QRadioButton, QScrollArea, QSplitter,
+    QStackedWidget, QTableWidget, QTableWidgetItem, QTabWidget, QTreeWidget,
+    QTreeWidgetItem, QVBoxLayout, QWidget, QFrame,
 )
 
 from scdm.document import Session
@@ -139,13 +139,39 @@ class LeftPanel(QWidget):
         self._opt_pages["none"] = (none, [])
         self.opt_stack.addWidget(none)
 
+        def check_spin(cmd, pairs, spins):
+            """Option page with checkboxes + numeric (mm) spinboxes."""
+            w = QWidget()
+            f = QVBoxLayout(w)
+            f.setContentsMargins(4, 4, 4, 4)
+            f.setSpacing(6)
+            boxes = []
+            for label, default in pairs:
+                cb = QCheckBox(label)
+                cb.setChecked(default)
+                f.addWidget(cb)
+                boxes.append(cb)
+            sp = []
+            for label, default in spins:
+                row = QHBoxLayout()
+                row.addWidget(QLabel(label))
+                sb = QDoubleSpinBox()
+                sb.setRange(0.001, 100000.0)
+                sb.setValue(float(default))
+                sb.setSuffix(" mm")
+                row.addWidget(sb)
+                f.addLayout(row)
+                sp.append(sb)
+            f.addStretch(1)
+            self._opt_pages[cmd] = (w, boxes, sp)
+            self.opt_stack.addWidget(w)
+
         checks("tool.select", [("捕捉到栅格", False), ("端点", True), ("中点", True), ("重合", False)])
-        checks("tool.pull", [("对称", False), ("两侧", False), ("复制", False), ("到面", False)])
-        checks("tool.move", [("复制", False), ("沿轴", True), ("到点", False), ("到面", False)])
-        checks("tool.fill", [("保留边", False), ("相切连续", True)])
-        checks("tool.replace", [("延伸目标面", True)])
+        check_spin("tool.pull", [("对称", False), ("复制", False), ("到面", False)],
+                   [("距离", 5.0)])
+        check_spin("tool.move", [("复制", False), ("到点", False), ("到面", False)],
+                   [("距离", 10.0)])
         radios("tool.combine", ["合并", "减去", "相交"])
-        checks("tool.split_body", [("保留两侧", True), ("仅切割面", False)])
         checks("mode.sketch", [("草图网格", True), ("捕捉栅格", True)])
         checks("mode.section", [("剖面显示", True), ("截面可拉", True)])
         checks("measure.dist", [("自动标注", True)])
@@ -167,10 +193,17 @@ class LeftPanel(QWidget):
         page = self._opt_pages.get(cmd)
         if not page:
             return False
-        _w, boxes = page
+        _w, boxes = page[0], page[1]
         if 0 <= index < len(boxes):
             return bool(boxes[index].isChecked())
         return False
+
+    def spin_value(self, cmd: str, index: int):
+        """Value of a mm spinbox on the option page, or None when absent."""
+        page = self._opt_pages.get(cmd)
+        if page and len(page) > 2 and 0 <= index < len(page[2]):
+            return float(page[2][index].value())
+        return None
 
     def show_options(self, cmd: str) -> None:
         """Show the option page for the active tool/command (defaults to 'none')."""

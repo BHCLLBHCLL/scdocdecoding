@@ -1570,6 +1570,8 @@ else:
             ses = self.session()
             if world is None:
                 world = (0.0, 0.0, 0.0)
+            if self.sel.snap_grid:
+                world = tuple(round(v * ses.scale) / ses.scale for v in world)
             r = 5 / ses.scale
             h = 10 / ses.scale
             if kind == "cyl":
@@ -1585,44 +1587,80 @@ else:
                 self._commit("已插入球")
 
         def _opts_for(self, cmd: str) -> dict:
-            """Read the active option page checkboxes/radios into a plain dict."""
-            named = {
-                "symmetric": 0, "both_sides": 1, "copy": 2, "to_face": 3,
-            }
-            opts = {}
-            for key, idx in named.items():
+            """Read the active option page checkboxes/spins into a plain dict."""
+            def chk(idx):
                 try:
-                    opts[key] = self.left.is_checked(cmd, idx)
+                    return self.left.is_checked(cmd, idx)
                 except Exception:
-                    opts[key] = False
+                    return False
+
+            def spin(idx):
+                try:
+                    return self.left.spin_value(cmd, idx)
+                except Exception:
+                    return None
+
+            opts = {}
+            if cmd == "tool.pull":
+                opts["symmetric"] = chk(0)
+                opts["copy"] = chk(1)
+                opts["to_face"] = chk(2)
+                d = spin(0)
+                if d:
+                    opts["distance"] = float(d)
+            elif cmd == "tool.move":
+                opts["copy"] = chk(0)
+                opts["to_point"] = chk(1)
+                opts["to_face"] = chk(2)
+                d = spin(0)
+                if d:
+                    opts["distance"] = float(d)
+                # default move axis = X; replaced with a picked face normal when available
+                opts["axis"] = (1.0, 0.0, 0.0)
             if cmd == "tool.combine":
                 opts["mode"] = self.left.combine_mode()
-            if cmd == "tool.move":
-                # default pull axis = X; replaced with a picked face normal when available
-                opts["axis"] = (1.0, 0.0, 0.0)
             return opts
+
+        def _pull_to_face_target(self, exclude_id):
+            """Normal/centre of a previously selected face (pull 'to face' target)."""
+            if not self.scene:
+                return None
+            for kind, sid in self.sel.items:
+                if kind != "face" or sid == exclude_id:
+                    continue
+                act = self.scene._face_actors.get(sid)
+                if act is not None and getattr(act, "_face_i", None) is not None:
+                    return {"normal": tuple(act._normal), "center": tuple(act._center)}
+            return None
 
         def _apply_pull(self, actor):
             if actor is None or not self._need_kernel():
                 return
             body_id = getattr(actor, "_body_id", None)
             face_i = getattr(actor, "_face_i", None)
+            node = f"{body_id}:{face_i}" if body_id is not None and face_i is not None else None
             from scdm.tools.direct import get_tool, ToolError
+            opts = self._opts_for("tool.pull")
+            ctx = {"body_id": body_id, "face_i": face_i}
+            if opts.get("to_face"):
+                ctx["to_face_target"] = self._pull_to_face_target(node)
+                if ctx["to_face_target"] is None:
+                    self._set_status("到面：先在选择工具里选中目标面，再拉动")
+                    return
             try:
-                msg = get_tool("tool.pull").apply(
-                    self.session(),
-                    {"body_id": body_id, "face_i": face_i},
-                    self._opts_for("tool.pull"),
-                )
-                self._record("tool.pull", face_i=int(face_i or 0), distance=5.0,
-                             symmetric=self.left.is_checked("tool.pull", 0))
+                msg = get_tool("tool.pull").apply(self.session(), ctx, opts)
+                self._record("tool.pull", face_i=int(face_i or 0),
+                             distance=float(opts.get("distance", 5.0)),
+                             symmetric=bool(opts.get("symmetric")),
+                             copy=bool(opts.get("copy")),
+                             to_face=bool(opts.get("to_face")))
                 self._commit(msg)
             except ToolError as exc:
                 self._set_status(str(exc))
             except Exception as exc:
                 self._set_status(f"拉动失败: {exc}")
 
-        def _apply_move(self):
+        def _apply_move(self, actor=None, world=None):
             body = self._selected_kbody()
             if body is None:
                 return
@@ -1639,15 +1677,22 @@ else:
                         if int(fi) < len(faces):
                             n, _c = K.face_normal_center(faces[int(fi)])
                             opts["axis"] = n
+            ctx = {"body_id": body.id}
+            if opts.get("to_point") and world is not None:
+                ctx["pick_point"] = tuple(float(v) for v in world)
+            elif opts.get("to_face") and actor is not None \
+                    and getattr(actor, "_face_i", None) is not None \
+                    and getattr(actor, "_body_id", None) != body.id:
+                ctx["pick_face"] = {"normal": tuple(actor._normal),
+                                    "center": tuple(actor._center)}
             try:
-                msg = get_tool("tool.move").apply(
-                    self.session(),
-                    {"body_id": body.id},
-                    opts,
-                )
-                self._record("tool.move", distance=10.0,
+                msg = get_tool("tool.move").apply(self.session(), ctx, opts)
+                self._record("tool.move",
+                             distance=float(opts.get("distance", 10.0)),
                              axis=list(opts.get("axis", (1.0, 0.0, 0.0))),
-                             copy=bool(opts.get("copy", False)))
+                             copy=bool(opts.get("copy", False)),
+                             to_point=bool(opts.get("to_point")),
+                             to_face=bool(opts.get("to_face")))
                 self._commit(msg)
             except ToolError as exc:
                 self._set_status(str(exc))
@@ -2109,7 +2154,7 @@ else:
                     self._pull_sketch()
                 return
             if tool == "tool.move":
-                self._apply_move()
+                self._apply_move(actor, world)
                 return
             if tool == "tool.fill":
                 self._apply_fill(actor)
