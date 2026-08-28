@@ -241,6 +241,20 @@ def vertex_point(vertex) -> Vec3:
     return (p.X(), p.Y(), p.Z())
 
 
+def face_cylinder_radius(face) -> Optional[float]:
+    """Radius when the face is cylindrical, else None."""
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+    from OCC.Core.GeomAbs import GeomAbs_Cylinder
+    from OCC.Core.TopoDS import topods
+    try:
+        s = BRepAdaptor_Surface(topods.Face(face))
+        if s.GetType() == GeomAbs_Cylinder:
+            return float(s.Cylinder().Radius())
+    except Exception:
+        return None
+    return None
+
+
 def edge_loop(shape, edge_i: int, max_edges: int = 256) -> List[int]:
     """Closed edge loop: boundary edges of the simplest face containing the edge.
 

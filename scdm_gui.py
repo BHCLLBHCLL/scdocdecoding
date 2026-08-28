@@ -106,7 +106,7 @@ else:
             self.cur = -1
             self.sel = SelectionModel()
             self.history = History()
-            self._measure_pts = []
+            self._measure = []  # structured measure picks: {"kind","node","world"}
             self._click_n = 0
             self._click_actor = None
             self._click_node = None
@@ -410,7 +410,9 @@ else:
                     self._set_status(hud)
                 if live and cmd_id in ("mode.3d", "tool.select", "measure.dist"):
                     if cmd_id == "measure.dist":
-                        self._measure_pts = []
+                        self._measure = []
+                        if self.scene:
+                            self.scene.clear_measure()
                         self._set_status(hud)
                     elif cmd_id == "mode.3d":
                         self._set_sketch_grid(False)
@@ -2125,6 +2127,104 @@ else:
             setattr(self.sel, "allow_" + key, on)
 
         # -- picking / tree -------------------------------------------------
+        def _edge_samples(self, node):
+            if not self.scene:
+                return []
+            parts = node.split(":")
+            if len(parts) == 3:
+                return self.scene._edge_segments.get((parts[1], int(parts[2])), [])
+            return []
+
+        def _edges_min_distance(self, n1, n2) -> float:
+            import numpy as np
+            pa = np.array([s[0] for s in self._edge_samples(n1)]
+                          + [s[1] for s in self._edge_samples(n1)], dtype=np.float64)
+            pb = np.array([s[0] for s in self._edge_samples(n2)]
+                          + [s[1] for s in self._edge_samples(n2)], dtype=np.float64)
+            if not len(pa) or not len(pb):
+                return 0.0
+            d = np.linalg.norm(pa[:, None, :] - pb[None, :, :], axis=2)
+            return float(d.min())
+
+        def _edges_angle(self, n1, n2):
+            sa, sb = self._edge_samples(n1), self._edge_samples(n2)
+            if not sa or not sb:
+                return None
+            def direction(segs):
+                a = segs[0][0]
+                b = segs[-1][1]
+                d = (b[0] - a[0], b[1] - a[1], b[2] - a[2])
+                L = math.sqrt(d[0] ** 2 + d[1] ** 2 + d[2] ** 2)
+                return None if L < 1e-12 else (d[0] / L, d[1] / L, d[2] / L)
+            da, db = direction(sa), direction(sb)
+            if da is None or db is None:
+                return None
+            dot = max(-1.0, min(1.0, abs(sum(da[k] * db[k] for k in range(3)))))
+            return math.acos(dot)
+
+        def _measure_pick(self, kind, node, actor, world):
+            ses = self.session()
+            world = tuple(float(v) for v in world)
+            # single pick: cylindrical face -> radius annotation
+            if not self._measure and kind == "face" and actor is not None:
+                r = self._picked_cylinder_radius(actor)
+                if r is not None:
+                    mm = r * ses.scale
+                    if self.scene:
+                        self.scene.show_measure(f"R {mm:.3f}", world)
+                    self._set_status(f"半径 {mm:.3f} {ses.units_symbol()}")
+                    return
+            self._measure.append({"kind": kind, "node": node, "world": world})
+            if len(self._measure) == 1:
+                self._set_status("已选第一点，请选择第二点（Esc 清除）")
+                return
+            a, b = self._measure[:2]
+            self._measure = []
+            pa, pb = a["world"], b["world"]
+            text = None
+            if a["kind"] == "edge" and b["kind"] == "edge":
+                d = self._edges_min_distance(a["node"], b["node"]) * ses.scale
+                text = f"{d:.3f} {ses.units_symbol()}"
+                ang = self._edges_angle(a["node"], b["node"])
+                if ang is not None:
+                    text += f" / {math.degrees(ang):.1f}°"
+            elif a["kind"] == "face" and b["kind"] == "face" and self.scene:
+                fa = self.scene._face_actors.get(a["node"])
+                fb = self.scene._face_actors.get(b["node"])
+                if fa is not None and fb is not None \
+                        and getattr(fa, "_normal", None) and getattr(fb, "_normal", None):
+                    na, ca, nb, cb = fa._normal, fa._center, fb._normal, fb._center
+                    dot = sum(na[k] * nb[k] for k in range(3))
+                    if abs(dot) > 0.999:
+                        dd = abs(sum((cb[k] - ca[k]) * na[k] for k in range(3))) * ses.scale
+                        text = f"{dd:.3f} {ses.units_symbol()}（面距）"
+                    else:
+                        dot = max(-1.0, min(1.0, dot))
+                        text = f"{math.degrees(math.acos(dot)):.1f}°（面夹角）"
+            if text is None:
+                d = math.dist(pa, pb) * ses.scale
+                text = f"{d:.3f} {ses.units_symbol()}"
+            try:
+                auto = self.left.is_checked("measure.dist", 0)
+            except Exception:
+                auto = True
+            if auto and self.scene:
+                self.scene.show_measure(text, pa, pb)
+            self._set_status(f"测量：{text}")
+
+        def _picked_cylinder_radius(self, actor):
+            bid = getattr(actor, "_body_id", None)
+            fi = getattr(actor, "_face_i", None)
+            if bid is None or fi is None:
+                return None
+            b = self.session().kdoc.body_by_id(bid)
+            if b is None:
+                return None
+            faces = K.explore(b.shape, "face")
+            if fi >= len(faces):
+                return None
+            return K.face_cylinder_radius(faces[fi])
+
         def _on_vtk_click(self):
             if not self.scene:
                 return
@@ -2140,15 +2240,7 @@ else:
                 allow = ["face"]
             kind, actor, node, world = self.scene.pick_detail(allow)
             if tool == "measure.dist" and world:
-                self._measure_pts.append(world)
-                if len(self._measure_pts) == 1:
-                    self._set_status("已点选第一点，请选择第二点")
-                elif len(self._measure_pts) >= 2:
-                    a, b = self._measure_pts[:2]
-                    d = math.sqrt(sum((a[i] - b[i]) ** 2 for i in range(3)))
-                    mm = d * self.session().scale
-                    self._set_status(f"距离 {mm:.3f} {self.session().units_symbol()}")
-                    self._measure_pts = []
+                self._measure_pick(kind, node, actor, world)
                 return
             if tool == "insert.cyl":
                 self._place_at("cyl", world)
@@ -2288,6 +2380,9 @@ else:
             elif key == "z":
                 self._do_view_pos_z()
             elif key == "escape":
+                self._measure = []
+                if self.scene:
+                    self.scene.clear_measure()
                 self.on_command("tool.select")
             elif key in ("control_z", "z") and obj.GetControlKey():
                 self._do_edit_undo()

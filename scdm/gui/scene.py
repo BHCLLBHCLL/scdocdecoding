@@ -113,6 +113,7 @@ class Scene:
         self._vertex_pos = {}
         self._sel_edge_actor = None
         self._sel_vert_actor = None
+        self._measure_actors = []
         self._gizmo = None
         self._install_gizmo()
         self._install_origin()
@@ -452,6 +453,27 @@ class Scene:
 
     def focal_point(self):
         return tuple(self.renderer.GetActiveCamera().GetFocalPoint())
+
+    def show_measure(self, text, p1, p2=None):
+        """Measurement annotation: optional connector line + billboard label."""
+        self.clear_measure()
+        mid = p1
+        if p2 is not None:
+            self._measure_actors.append(
+                _lines_actor([[list(p1), list(p2)]], (0.85, 0.45, 0.10), 2.0))
+            mid = [(p1[k] + p2[k]) / 2.0 for k in range(3)]
+        lab = _axis_label(text, mid, (0.85, 0.45, 0.10))
+        if lab is not None:
+            self._measure_actors.append(lab)
+        for a in self._measure_actors:
+            self.renderer.AddActor(a)
+        self.render()
+
+    def clear_measure(self):
+        for a in self._measure_actors:
+            self.renderer.RemoveActor(a)
+        self._measure_actors = []
+        self.render()
 
     def _build_silhouette(self, pds):
         """Feature-edge overlay for the shaded model (gfx.silhouette)."""
