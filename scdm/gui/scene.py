@@ -114,6 +114,7 @@ class Scene:
         self._sel_edge_actor = None
         self._sel_vert_actor = None
         self._measure_actors = []
+        self._section_widget = None
         self._gizmo = None
         self._install_gizmo()
         self._install_origin()
@@ -192,6 +193,7 @@ class Scene:
         self.renderer.GetRenderWindow().Render()
 
     def clear_bodies(self):
+        self.disable_section_widget()
         for act in list(self._highlight):
             self._restore(act)
         self._highlight.clear()
@@ -374,6 +376,42 @@ class Scene:
             m.RemoveAllClippingPlanes()
             for pl in planes:
                 m.AddClippingPlane(pl)
+        self.render()
+
+    def enable_section_widget(self):
+        """Interactive section: draggable implicit-plane widget clipping the model."""
+        self.disable_section_widget()
+        b = self.model_bounds()
+        if not b:
+            return False
+        try:
+            w = vtk.vtkImplicitPlaneWidget()
+        except Exception:
+            return False
+        pl = w.GetPlane()
+        pl.SetOrigin((b[0] + b[1]) / 2.0, (b[2] + b[3]) / 2.0, (b[4] + b[5]) / 2.0)
+        pl.SetNormal(1.0, 0.0, 0.0)
+        w.SetInteractor(self.vtk_widget.GetRenderWindow().GetInteractor())
+        w.SetPlaceFactor(1.25)
+        w.PlaceWidget(b)
+        w.AddObserver("InteractionEvent", lambda obj, ev: self.render())
+        w.On()
+        self._section_widget = w
+        for a in self._face_actors.values():
+            a.GetMapper().AddClippingPlane(pl)
+        self.render()
+        return True
+
+    def disable_section_widget(self):
+        w = getattr(self, "_section_widget", None)
+        if w is not None:
+            try:
+                w.Off()
+            except Exception:
+                pass
+            self._section_widget = None
+        for a in self._face_actors.values():
+            a.GetMapper().RemoveAllClippingPlanes()
         self.render()
 
     def _build_topo(self, kdoc):

@@ -1824,9 +1824,19 @@ else:
             if not self.scene:
                 return
             ses = self.session()
-            ses.show_planes = True
-            self.scene.apply_visibility(ses)
-            self._set_status("截面：已显示基准面；拉动仍在三维实体上进行")
+            if getattr(self, "_section_widget_on", False):
+                self.scene.disable_section_widget()
+                self._section_widget_on = False
+                self.ribbon.set_checked("mode.section", False)
+                self._set_status("截面模式：已关闭")
+                return
+            ok = self.scene.enable_section_widget()
+            self._section_widget_on = ok
+            if ok:
+                self._set_status("截面模式：拖动平面手柄剖切；再点「截面」或 Esc 退出")
+            else:
+                self.on_command("gfx.section")
+                self._set_status("截面模式：无拖拽组件，已退化为静态剖切")
 
         def _place_at(self, kind: str, world):
             if not self._need_kernel():
@@ -2676,6 +2686,12 @@ else:
                     return
                 if self.tools.mode == "mode.sketch":
                     self.on_command("mode.3d")
+                    return
+                if getattr(self, "_section_widget_on", False):
+                    self.scene.disable_section_widget()
+                    self._section_widget_on = False
+                    self.ribbon.set_checked("mode.section", False)
+                    self._set_status("截面模式：已关闭")
                     return
                 self._measure = []
                 if self.scene:
