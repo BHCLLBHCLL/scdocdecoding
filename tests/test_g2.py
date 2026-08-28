@@ -139,7 +139,7 @@ def test_pull_to_face_and_copy():
 def test_move_to_point_and_to_face():
     ses = SimpleNamespace(kdoc=KernelDoc(), scale=1000.0)
     box = ses.kdoc.add_body(K.make_box(10 / 1000, 10 / 1000, 10 / 1000), name="B")
-    get_tool("tool.move").apply(ses, {"body_id": box.id, "pick_point": (0.05, 0.0, 0.0)},
+    get_tool("tool.move").apply(ses, {"body_id": box.id, "pick_point": (0.05, 0.0, 0.005)},
                                 {"to_point": True})
     c = K.cog(box.shape)
     assert abs(c[0] - 0.05) < 1e-9
