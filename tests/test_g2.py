@@ -154,3 +154,25 @@ def test_move_to_point_and_to_face():
                                 {"to_face": True})
     cz = K.cog(box.shape)[2]
     assert abs(cz - (0.003 + 0.005)) < 1e-9
+
+
+# --- G3-02 edge ring selection ----------------------------------------------------
+
+def test_edge_loop_box_face_ring():
+    box = K.make_box(10 / 1000, 10 / 1000, 10 / 1000)
+    n_edges = len(K.explore(box, "edge"))
+    for ei in (0, 5, 13, 23):
+        if ei >= n_edges:
+            continue
+        loop = K.edge_loop(box, ei)
+        assert 3 <= len(loop) <= 8  # a face boundary ring (box: 4 edges)
+        assert ei in loop or K.edge_loop(box, ei)  # picked edge maps into a ring
+    loop = K.edge_loop(box, 0)
+    # all loop edges must be valid indices
+    assert all(0 <= i < n_edges for i in loop)
+    assert len(set(loop)) == len(loop)  # no duplicates
+
+
+def test_edge_loop_out_of_range():
+    box = K.make_box(10 / 1000, 10 / 1000, 10 / 1000)
+    assert K.edge_loop(box, 9999) == []

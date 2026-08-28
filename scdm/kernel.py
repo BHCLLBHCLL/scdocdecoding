@@ -233,6 +233,60 @@ def edge_polyline(edge, deflection: float = 1e-3) -> List[Vec3]:
         return []
 
 
+def vertex_point(vertex) -> Vec3:
+    """3D position of a vertex."""
+    from OCC.Core.BRep import BRep_Tool
+    from OCC.Core.TopoDS import topods
+    p = BRep_Tool().Pnt(topods.Vertex(vertex))
+    return (p.X(), p.Y(), p.Z())
+
+
+def edge_loop(shape, edge_i: int, max_edges: int = 256) -> List[int]:
+    """Closed edge loop: boundary edges of the simplest face containing the edge.
+
+    Double-click ring selection. Faces sharing the picked edge are ranked by edge
+    count; the smallest face's boundary is the loop (a box edge yields the 4 edges
+    of one of its faces).
+    """
+    edges = explore(shape, "edge")
+    if not (0 <= edge_i < len(edges)):
+        return []
+
+    def ekey(p0, p1):
+        return (round(p0[0] * 1e5), round(p0[1] * 1e5), round(p0[2] * 1e5),
+                round(p1[0] * 1e5), round(p1[1] * 1e5), round(p1[2] * 1e5))
+
+    edge_keys = {}
+    canon = {}
+    for i, e in enumerate(edges):
+        p = edge_polyline(e, 1e-5)
+        if len(p) >= 2:
+            k = ekey(p[0], p[-1])
+            canon.setdefault(k, i)
+            edge_keys.setdefault(k, []).append(i)
+    # map any (orientation-duplicated) edge index to its canonical first index
+    dedup = {}
+    for k, idxs in edge_keys.items():
+        for i in idxs:
+            dedup[i] = canon[k]
+    target = dedup.get(edge_i, edge_i)
+    best = None
+    for f in explore(shape, "face"):
+        idxs = set()
+        for e in explore(f, "edge"):
+            p = edge_polyline(e, 1e-5)
+            if len(p) < 2:
+                continue
+            ci = dedup.get(edge_keys.get(ekey(p[0], p[-1]), [None])[0])
+            if ci is not None:
+                idxs.add(ci)
+        if target in idxs and (best is None or len(idxs) < len(best)):
+            best = idxs
+            if len(idxs) <= 3:
+                break
+    return sorted(best) if best else [target]
+
+
 def face_normal_center(face) -> Tuple[Vec3, Vec3]:
     o = _occ()
     adapt = o["BRepAdaptor_Surface"](face)

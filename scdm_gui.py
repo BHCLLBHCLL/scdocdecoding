@@ -109,6 +109,7 @@ else:
             self._measure_pts = []
             self._click_n = 0
             self._click_actor = None
+            self._click_node = None
             self._click_t = 0.0
             self._cam_prev = None
             self._nav_mode = None  # spin|pan|zoom or None
@@ -2128,8 +2129,16 @@ else:
             if not self.scene:
                 return
             iren = self.vtk_widget.GetRenderWindow().GetInteractor()
-            actor, world = self.scene.pick_actor()
             tool = self.tools.active
+            if tool in ("tool.select", "measure.dist"):
+                allow = ["face"]
+                if self.sel.allows("edge"):
+                    allow.append("edge")
+                if self.sel.allows("vertex"):
+                    allow.append("vertex")
+            else:
+                allow = ["face"]
+            kind, actor, node, world = self.scene.pick_detail(allow)
             if tool == "measure.dist" and world:
                 self._measure_pts.append(world)
                 if len(self._measure_pts) == 1:
@@ -2178,26 +2187,31 @@ else:
                 self._set_status(f"{wave} 未实现：{name}")
                 return
             now = time.monotonic()
-            if actor is not None and actor is self._click_actor and (now - self._click_t) < 0.45:
+            if node is not None and node == self._click_node and (now - self._click_t) < 0.45:
                 self._click_n += 1
             else:
                 self._click_n = 1
-                self._click_actor = actor
+                self._click_node = node
             self._click_t = now
             add = bool(iren.GetControlKey())
-            if actor is None:
+            if node is None:
                 if not add:
                     self.sel.clear()
                     self.scene.highlight_actors([])
                     self.vp.show_mini(False)
                     self.left.set_selection_list([])
                 return
-            node = getattr(actor, "_node_id", None)
             if self._click_n >= 3 and self.sel.allows("body"):
                 self._select_body_from_face(node, add)
-            elif self._click_n == 2 and self.sel.allows("face"):
+            elif self._click_n == 2 and kind == "edge" and self.sel.allows("edge"):
+                self._select_edge_loop(node, add)
+            elif self._click_n == 2 and kind == "face" and self.sel.allows("face"):
                 self._select_body_from_face(node, add)
-            elif self.sel.allows("face") and node is not None:
+            elif kind == "edge" and self.sel.allows("edge"):
+                self._select_node("edge", node, add)
+            elif kind == "vertex" and self.sel.allows("vertex"):
+                self._select_node("vertex", node, add)
+            elif kind == "face" and self.sel.allows("face"):
                 self._select_face_node(node, add)
 
         def _selected_body_ids(self):
@@ -2302,6 +2316,56 @@ else:
                     pass
             return nodes
 
+        def _refresh_selection_highlights(self):
+            if not self.scene:
+                return
+            nodes = []
+            for kind, sid in self.sel.items:
+                if kind == "face":
+                    nodes.append(sid)
+                elif kind == "body":
+                    nodes.extend(self._body_face_nodes(sid))
+                elif kind == "edge":
+                    nodes.append(sid)
+                elif kind == "vertex":
+                    nodes.append(sid)
+            self.scene.highlight_nodes(
+                [n for n in nodes if n in self.scene._face_actors
+                 or str(n).startswith(("edge:", "vertex:"))])
+
+        def _select_node(self, kind, node, add):
+            if add:
+                self.sel.toggle(kind, node)
+            else:
+                self.sel.set_one(kind, node)
+            self._refresh_selection_highlights()
+            self.left.set_selection_list([f"{k} {s}" for k, s in self.sel.items])
+            self.left.set_props([("名称", node)])
+            label = {"edge": "边", "vertex": "顶点"}.get(kind, kind)
+            self._set_status(f"已选择{label} {node}")
+
+        def _select_edge_loop(self, node, add):
+            _, bid, ei = node.split(":", 2)
+            ses = self.session()
+            b = ses.kdoc.body_by_id(bid)
+            if b is None:
+                return
+            try:
+                loop = K.edge_loop(b.shape, int(ei))
+            except Exception:
+                loop = [int(ei)]
+            if not add:
+                self.sel.clear()
+            have = {s for k, s in self.sel.items if k == "edge"}
+            for i in loop:
+                nid = f"edge:{bid}:{i}"
+                if nid not in have:
+                    self.sel.toggle("edge", nid)
+            self._refresh_selection_highlights()
+            self.left.set_selection_list(
+                [f"边 {s}" for k, s in self.sel.items if k == "edge"])
+            self._set_status(f"已选边环（{len(loop)} 条边）")
+
         def _select_face_node(self, node, add: bool):
             key = str(node)
             if add:
@@ -2309,15 +2373,7 @@ else:
             else:
                 self.sel.set_one("face", key)
             face_keys = [i for k, i in self.sel.items if k == "face"]
-            if self.scene:
-                acts = []
-                for fk in face_keys:
-                    acts.append(self.scene._face_actors.get(fk))
-                    try:
-                        acts.append(self.scene._face_actors.get(int(fk)))
-                    except Exception:
-                        pass
-                self.scene.highlight_actors(acts)
+            self._refresh_selection_highlights()
             if self.vp:
                 self.vp.show_mini(True)
             self.left.set_selection_list([f"面 {i}" for i in face_keys])

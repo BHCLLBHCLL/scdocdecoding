@@ -105,6 +105,14 @@ class Scene:
         self._silhouette_actor = None
         self._section_axis = None
         self._note_actors = []
+        self._edge_topo_actor = None
+        self._vert_topo_actor = None
+        self._edge_cell_map = []
+        self._vert_cell_map = []
+        self._edge_segments = {}
+        self._vertex_pos = {}
+        self._sel_edge_actor = None
+        self._sel_vert_actor = None
         self._gizmo = None
         self._install_gizmo()
         self._install_origin()
@@ -208,6 +216,16 @@ class Scene:
         for act in getattr(self, "_note_actors", []):
             self.renderer.RemoveActor(act)
         self._note_actors = []
+        for attr in ("_edge_topo_actor", "_vert_topo_actor",
+                     "_sel_edge_actor", "_sel_vert_actor"):
+            act = getattr(self, attr, None)
+            if act:
+                self.renderer.RemoveActor(act)
+            setattr(self, attr, None)
+        self._edge_cell_map = []
+        self._vert_cell_map = []
+        self._edge_segments = {}
+        self._vertex_pos = {}
         self.clear_preview()
 
     def build(self, session: Session):
@@ -316,16 +334,7 @@ class Scene:
                 act._center = fd["center"]
                 self.renderer.AddActor(act)
                 self._face_actors[key] = act
-                for a, b, c in tris:
-                    for u, v in ((a, b), (b, c), (c, a)):
-                        lines.append([list(pts[u]), list(pts[v])])
-                        verts.append(list(pts[u]))
-        if lines:
-            self._edge_actor = _lines_actor(lines, (0.12, 0.12, 0.15), 1.2)
-            self.renderer.AddActor(self._edge_actor)
-        if verts:
-            self._vert_actor = _points_actor(verts, (0.05, 0.05, 0.05), 5)
-            self.renderer.AddActor(self._vert_actor)
+        self._build_topo(kdoc)
         self._build_silhouette(pds)
         self._build_sketches(kdoc)
         self._build_notes(kdoc)
@@ -365,6 +374,71 @@ class Scene:
             for pl in planes:
                 m.AddClippingPlane(pl)
         self.render()
+
+    def _build_topo(self, kdoc):
+        """Pickable B-rep edges (polylines) and vertices for the whole kdoc.
+
+        Cell k of the edges actor maps to (body_id, edge_index); the same mapping
+        is stored for vertices so picks resolve to edge:/vertex: node ids. Edges
+        are de-duplicated across orientation repeats via endpoint keys.
+        """
+        from scdm import kernel as K
+        pts_all, cells, ecmap, esegs = [], [], [], {}
+        vpts, vcmap, vpos = [], [], {}
+        seen_e, seen_v = set(), set()
+        for body in kdoc.bodies:
+            if not body.visible:
+                continue
+            try:
+                edges = K.explore(body.shape, "edge")
+            except Exception:
+                edges = []
+            for i, e in enumerate(edges):
+                p = K.edge_polyline(e, deflection=max(1e-6, 0.01 / 1000.0))
+                if len(p) < 2:
+                    continue
+                k = (round(p[0][0] * 1e5), round(p[0][1] * 1e5), round(p[0][2] * 1e5),
+                     round(p[-1][0] * 1e5), round(p[-1][1] * 1e5), round(p[-1][2] * 1e5))
+                if k in seen_e:
+                    continue
+                seen_e.add(k)
+                ei = len(cells)  # canonical display-edge index (cell id)
+                pids = []
+                for q in p:
+                    pids.append(len(pts_all))
+                    pts_all.append(list(q))
+                cells.append([len(pids)] + pids)
+                esegs[(body.id, ei)] = [[list(a), list(b)] for a, b in zip(p, p[1:])]
+                ecmap.append((body.id, ei))
+            try:
+                vs = K.explore(body.shape, "vertex")
+            except Exception:
+                vs = []
+            for i, v in enumerate(vs):
+                try:
+                    p = K.vertex_point(v)
+                except Exception:
+                    continue
+                k = (round(p[0] * 1e5), round(p[1] * 1e5), round(p[2] * 1e5))
+                if k in seen_v:
+                    continue
+                seen_v.add(k)
+                vi = len(vpts)
+                vpos[(body.id, vi)] = p
+                vpts.append(list(p))
+                vcmap.append((body.id, vi))
+        if cells:
+            self._edge_topo_actor = _polylines_actor(pts_all, cells, (0.12, 0.12, 0.15), 1.4)
+            self.renderer.AddActor(self._edge_topo_actor)
+            self._edge_actor = self._edge_topo_actor
+            self._edge_cell_map = ecmap
+            self._edge_segments = esegs
+        if vpts:
+            self._vert_topo_actor = _vertices_actor(vpts, (0.05, 0.05, 0.05), 6)
+            self.renderer.AddActor(self._vert_topo_actor)
+            self._vert_actor = self._vert_topo_actor
+            self._vert_cell_map = vcmap
+            self._vertex_pos = vpos
 
     def _build_notes(self, kdoc):
         """Viewport text annotations anchored at world positions."""
@@ -597,10 +671,73 @@ class Scene:
         self.render()
 
     def highlight_nodes(self, node_ids):
-        self.highlight_actors([self._face_actors.get(n) for n in node_ids])
+        face_ids = [n for n in node_ids if n in self._face_actors]
+        self.highlight_actors([self._face_actors.get(n) for n in face_ids])
+        self._highlight_topo(node_ids)
+
+    def _highlight_topo(self, node_ids):
+        """Orange overlays for selected B-rep edges / vertices."""
+        for a in (self._sel_edge_actor, self._sel_vert_actor):
+            if a:
+                self.renderer.RemoveActor(a)
+        self._sel_edge_actor = self._sel_vert_actor = None
+        esegs, vpts = [], []
+        for n in node_ids:
+            parts = str(n).split(":")
+            if len(parts) == 3 and parts[0] == "edge":
+                segs = self._edge_segments.get((parts[1], int(parts[2])))
+                if segs:
+                    esegs.extend(segs)
+            elif len(parts) == 3 and parts[0] == "vertex":
+                p = self._vertex_pos.get((parts[1], int(parts[2])))
+                if p:
+                    vpts.append(list(p))
+        if esegs:
+            self._sel_edge_actor = _lines_actor(esegs, SELECT, 2.8)
+            self.renderer.AddActor(self._sel_edge_actor)
+        if vpts:
+            self._sel_vert_actor = _vertices_actor(vpts, SELECT, 9)
+            self.renderer.AddActor(self._sel_vert_actor)
+        self.render()
 
     def highlight_all_faces(self):
         self.highlight_actors(list(self._face_actors.values()))
+
+    def pick_detail(self, allow=("face", "edge", "vertex")):
+        """Priority pick: faces, then B-rep edges, then vertices.
+
+        Returns (kind, actor, node_id, world). node_id is 'B1:2' for faces,
+        'edge:B1:3' / 'vertex:B1:1' for topo picks (cell id -> body/index map).
+        """
+        iren = self.vtk_widget.GetRenderWindow().GetInteractor()
+        x, y = iren.GetEventPosition()
+
+        def _pick(actors):
+            picker = vtk.vtkCellPicker()
+            picker.SetTolerance(0.005)
+            for a in actors:
+                picker.AddPickList(a)
+            picker.PickFromListOn()
+            picker.Pick(x, y, 0, self.renderer)
+            a = picker.GetActor()
+            return a, picker.GetCellId(), (
+                picker.GetPickPosition() if a else None)
+
+        if "face" in allow:
+            a, _cid, world = _pick(list(self._face_actors.values()))
+            if a is not None:
+                return ("face", a, getattr(a, "_node_id", None), world)
+        if "edge" in allow and self._edge_topo_actor:
+            a, cid, world = _pick([self._edge_topo_actor])
+            if a is not None and 0 <= cid < len(self._edge_cell_map):
+                bid, ei = self._edge_cell_map[cid]
+                return ("edge", a, f"edge:{bid}:{ei}", world)
+        if "vertex" in allow and self._vert_topo_actor:
+            a, cid, world = _pick([self._vert_topo_actor])
+            if a is not None and 0 <= cid < len(self._vert_cell_map):
+                bid, vi = self._vert_cell_map[cid]
+                return ("vertex", a, f"vertex:{bid}:{vi}", world)
+        return (None, None, None, None)
 
     def pick_actor(self):
         iren = self.vtk_widget.GetRenderWindow().GetInteractor()
@@ -878,6 +1015,53 @@ def _points_actor(vpts, color, size):
     a.SetMapper(m)
     a.GetProperty().SetColor(*color)
     a.GetProperty().SetPointSize(size)
+    a.GetProperty().SetAmbient(1.0)
+    a.GetProperty().LightingOff()
+    return a
+
+
+def _vertices_actor(vpts, color, size):
+    """Points with vertex cells so each point is individually pickable."""
+    pd = vtk.vtkPolyData()
+    vp = vtk.vtkPoints()
+    vp.SetData(numpy_support.numpy_to_vtk(np.array(vpts, dtype=np.float64), deep=True))
+    pd.SetPoints(vp)
+    n = len(vpts)
+    c = np.hstack([np.ones((n, 1), dtype=np.int64),
+                   np.arange(n, dtype=np.int64)[:, None]]).reshape(-1)
+    arr = vtk.vtkCellArray()
+    arr.SetCells(n, numpy_support.numpy_to_vtkIdTypeArray(c, deep=True))
+    pd.SetVerts(arr)
+    m = vtk.vtkPolyDataMapper()
+    m.SetInputData(pd)
+    a = vtk.vtkActor()
+    a.SetMapper(m)
+    a.GetProperty().SetColor(*color)
+    a.GetProperty().SetPointSize(size)
+    a.GetProperty().SetAmbient(1.0)
+    a.GetProperty().LightingOff()
+    return a
+
+
+def _polylines_actor(points, cells, color, width):
+    """Lines from explicit polyline cells; cell k == cells[k] (pickable per edge)."""
+    pd = vtk.vtkPolyData()
+    vp = vtk.vtkPoints()
+    vp.SetData(numpy_support.numpy_to_vtk(np.array(points, dtype=np.float64), deep=True))
+    pd.SetPoints(vp)
+    flat = []
+    for cell in cells:
+        flat.extend(cell)
+    arr = vtk.vtkCellArray()
+    arr.SetCells(len(cells), numpy_support.numpy_to_vtkIdTypeArray(
+        np.array(flat, dtype=np.int64), deep=True))
+    pd.SetLines(arr)
+    m = vtk.vtkPolyDataMapper()
+    m.SetInputData(pd)
+    a = vtk.vtkActor()
+    a.SetMapper(m)
+    a.GetProperty().SetColor(*color)
+    a.GetProperty().SetLineWidth(width)
     a.GetProperty().SetAmbient(1.0)
     a.GetProperty().LightingOff()
     return a
