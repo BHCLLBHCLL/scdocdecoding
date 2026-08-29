@@ -1319,6 +1319,39 @@ else:
                               name="包围体")
             self._commit("已创建包围体（1mm 余量）")
 
+        def _do_prep_share(self):
+            """Imprint all bodies on each other so interfaces become shared."""
+            ses = self.session()
+            if not self._need_kernel():
+                return
+            bodies = [b for b in ses.kdoc.bodies if b.visible]
+            if len(bodies) < 2:
+                self._set_status("共享拓扑：需要至少两个实体")
+                return
+            try:
+                groups = K.share_topology([b.shape for b in bodies])
+                for body, pieces in zip(bodies, groups):
+                    if pieces:
+                        body.shape = K.compound(pieces) if len(pieces) > 1 else pieces[0]
+                self._commit("已共享拓扑（General Fuse imprint）")
+            except Exception as exc:
+                self._set_status(f"共享拓扑失败: {exc}")
+
+        def _do_prep_mid(self):
+            """Extract a plate midsurface from the selected body."""
+            body = self._selected_kbody()
+            if body is None:
+                return
+            try:
+                face, thickness = K.midsurface_plate(body.shape)
+                mm = thickness * self.session().scale
+                ses = self.session()
+                shell = K.sew_faces([face])
+                ses.kdoc.add_body(shell, name=f"{body.name} 中面")
+                self._commit(f"已抽取中面（板厚 {mm:.2f}mm）")
+            except Exception as exc:
+                self._set_status(f"中面抽取失败: {exc}")
+
         def _do_prep_named(self):
             from PyQt5.QtWidgets import QInputDialog
             ses = self.session()

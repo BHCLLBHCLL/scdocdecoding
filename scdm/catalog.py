@@ -296,7 +296,7 @@ M4_LIVE = {
 }
 
 M5_LIVE = {
-    "prep.enclose", "file.print",
+    "prep.enclose", "prep.share", "prep.mid", "file.print",
     "facet.reverse", "facet.smooth", "facet.reduce", "facet.fill", "facet.convert",
     "wb.params", "wb.publish",
     "add.build", "add.orient", "add.support", "add.lattice",

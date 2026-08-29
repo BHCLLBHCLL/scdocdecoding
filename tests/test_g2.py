@@ -268,3 +268,22 @@ def test_hlr_three_views_box():
     # closed box: each view's outline is a closed rectangle loop
     for v in (e_front, e_top, e_right):
         assert v is not None
+
+
+# --- G6-03 share topology / midsurface ---------------------------------------------
+
+def test_share_topology_imprints_overlapping_boxes():
+    b1 = K.make_box(0.01, 0.01, 0.01, origin=(0, 0, 0))
+    b2 = K.make_box(0.01, 0.01, 0.01, origin=(0.005, 0, 0))
+    groups = K.share_topology([b1, b2])
+    assert len(groups) == 2
+    assert all(len(g) == 2 for g in groups)  # each box split at the shared interface
+    total = sum(K.volume(p) for g in groups for p in g)
+    assert abs(total - 2 * 0.01 ** 3) < 1e-12  # volume preserved
+
+
+def test_midsurface_plate():
+    plate = K.make_box(0.02, 0.02, 0.002)  # 20x20x2mm plate
+    face, thickness = K.midsurface_plate(plate)
+    assert abs(thickness - 0.002) < 1e-9
+    assert abs(K.area(face) - 0.02 * 0.02) < 1e-9

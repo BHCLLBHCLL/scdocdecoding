@@ -350,6 +350,74 @@ def solidify_shell(shape):
     return ShapeFix_Solid().SolidFromShell(shell)
 
 
+def share_topology(shapes: Sequence) -> List[List[Any]]:
+    """Imprint bodies on each other (General Fuse) so interfaces are shared.
+
+    Returns, for each input shape (same order), the list of imprinted pieces
+    that replace it. Fails when shapes do not intersect/touch.
+    """
+    from OCC.Core.BOPAlgo import BOPAlgo_Builder
+    from OCC.Core.TopTools import TopTools_ListOfShape
+    if len(shapes) < 2:
+        raise KernelError("共享拓扑需要至少两个实体")
+    b = BOPAlgo_Builder()
+    args = TopTools_ListOfShape()
+    for s in shapes:
+        args.Append(s)
+    b.SetArguments(args)
+    b.Perform()
+    out = []
+    images = b.Images()
+    for s in shapes:
+        try:
+            out.append(list(images.Find(s)))
+        except Exception:
+            out.append([s])
+    return out
+
+
+def midsurface_plate(shape) -> Tuple[Any, float]:
+    """Plate midsurface: the largest pair of parallel opposite planar faces,
+    their outer loop shifted to the mid plane. Returns (face, thickness)."""
+    faces = explore(shape, "face")
+    planes = []
+    for f in faces:
+        try:
+            n, c = face_normal_center(f)
+            planes.append((n, c, f))
+        except Exception:
+            continue
+    best = None
+    for i in range(len(planes)):
+        n1, c1, f1 = planes[i]
+        for j in range(i + 1, len(planes)):
+            n2, c2, f2 = planes[j]
+            dot = n1[0] * n2[0] + n1[1] * n2[1] + n1[2] * n2[2]
+            if dot < -0.999:
+                a = min(area(f1), area(f2))
+                if best is None or a > best[0]:
+                    best = (a, c1, c2, f1)
+    if best is None:
+        raise KernelError("中面：未找到平行的对面（仅支持板类实体）")
+    _a, c1, c2, f1 = best
+    thickness = math.dist(c1, c2)
+    shift = ((c2[0] - c1[0]) / 2.0, (c2[1] - c1[1]) / 2.0, (c2[2] - c1[2]) / 2.0)
+    pts, seen = [], set()
+    for e in explore(f1, "edge"):
+        p = edge_polyline(e, 1e-5)
+        if len(p) < 2:
+            continue
+        k = (round(p[0][0] * 1e5), round(p[0][1] * 1e5), round(p[0][2] * 1e5))
+        if k in seen:
+            continue  # explore repeats edges per orientation
+        seen.add(k)
+        pts.append(p[0])
+    if len(pts) < 3:
+        raise KernelError("中面：无法提取面轮廓")
+    moved = [(p[0] + shift[0], p[1] + shift[1], p[2] + shift[2]) for p in pts]
+    return face_from_polygon(moved), thickness
+
+
 def cyl_axis(face) -> Optional[Tuple[Vec3, Vec3]]:
     """Public alias of _cyl_axis: (direction, location) of a cylinder axis."""
     return _cyl_axis(face)
