@@ -249,6 +249,60 @@ def pattern_circular(shape, axis: Vec3, angle_deg: float, count: int) -> List[An
     return out
 
 
+def _free_boundary_wires(shell) -> List[Any]:
+    """Closed boundary wires of a shell (holes / missing faces)."""
+    from OCC.Core.ShapeAnalysis import ShapeAnalysis_FreeBounds
+    try:
+        fab = ShapeAnalysis_FreeBounds(shell, False, True, False)
+        return explore(fab.GetClosedWires(), "wire")
+    except Exception:
+        return []
+
+
+def _as_shell(shape):
+    """Cast the first shell found in `shape` (TopoDS_Shell for ShapeFix APIs)."""
+    from OCC.Core.TopoDS import topods
+    shells = explore(shape, "shell")
+    if shells:
+        return topods.Shell(shells[0])
+    return shape
+
+
+def fill_missing_faces(shape) -> Tuple[Any, int]:
+    """Sew faces, cap open boundary loops with planar faces, re-solidify.
+
+    Returns (solid, faces_added).
+    """
+    o = _occ()
+    from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace
+    from OCC.Core.ShapeFix import ShapeFix_Solid
+    faces = explore(shape, "face")
+    if not faces:
+        raise KernelError("没有可修复的面")
+    shell = _as_shell(sew_faces(faces))
+    added = 0
+    for w in _free_boundary_wires(shell):
+        try:
+            faces.append(BRepBuilderAPI_MakeFace(o["topods"].Wire(w)).Face())
+            added += 1
+        except Exception:
+            continue
+    if added:
+        shell = _as_shell(sew_faces(faces))
+    solid = ShapeFix_Solid().SolidFromShell(shell)
+    return solid, added
+
+
+def solidify_shell(shape):
+    """Sew the shape's faces and build an oriented solid from the closed shell."""
+    from OCC.Core.ShapeFix import ShapeFix_Solid
+    faces = explore(shape, "face")
+    if not faces:
+        raise KernelError("没有可实体化的面")
+    shell = _as_shell(sew_faces(faces))
+    return ShapeFix_Solid().SolidFromShell(shell)
+
+
 def face_cylinder_radius(face) -> Optional[float]:
     """Radius when the face is cylindrical, else None."""
     from OCC.Core.BRepAdaptor import BRepAdaptor_Surface

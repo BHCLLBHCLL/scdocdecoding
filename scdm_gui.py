@@ -931,7 +931,16 @@ else:
                 self._set_status(f"缝合失败: {exc}")
 
         def _do_repair_solidify(self):
-            self._do_repair_stitch()
+            """Sew faces and build an oriented solid from the closed shell."""
+            body = self._selected_kbody()
+            if body is None:
+                return
+            try:
+                body.shape = K.solidify_shell(body.shape)
+                self._record("repair.solidify")
+                self._commit("已实体化（闭合壳 → 实体）")
+            except Exception as exc:
+                self._set_status(f"实体化失败: {exc}")
 
         def _do_repair_gaps(self):
             """Close gaps: sew all faces with a larger tolerance (order of magnitude)."""
@@ -950,7 +959,20 @@ else:
                 self._set_status(f"补隙失败: {exc}")
 
         def _do_repair_missing(self):
-            self._do_repair_gaps()
+            """Detect open boundary loops and cap them with planar faces."""
+            body = self._selected_kbody()
+            if body is None:
+                return
+            try:
+                solid, added = K.fill_missing_faces(body.shape)
+                if not added:
+                    self._set_status("缺失面：没有开放边界需要填补")
+                    return
+                body.shape = solid
+                self._record("repair.missing", added=added)
+                self._commit(f"已补缺失面 ×{added}")
+            except Exception as exc:
+                self._set_status(f"缺失面修复失败: {exc}")
 
         def _do_repair_extra(self):
             """Remove the smallest faces (defeaturing) to clean up extra/thin faces."""
@@ -969,7 +991,24 @@ else:
                 self._set_status(f"移除失败: {exc}")
 
         def _do_repair_small(self):
-            self._do_repair_extra()
+            """Remove faces smaller than an area threshold (user-confirmed)."""
+            body = self._selected_kbody()
+            if body is None:
+                return
+            vals = self._ask_numbers("小面", [("面积阈值 mm²", 1.0)])
+            if not vals:
+                return
+            thr = vals[0] / (self.session().scale ** 2)
+            small = [f for f in K.explore(body.shape, "face") if K.area(f) < thr]
+            if not small:
+                self._set_status(f"小面：没有面积小于 {vals[0]:g}mm² 的面")
+                return
+            try:
+                body.shape = K.fill_faces(body.shape, small)
+                self._record("repair.small", threshold=vals[0], count=len(small))
+                self._commit(f"已移除 {len(small)} 个小面")
+            except Exception as exc:
+                self._set_status(f"小面移除失败: {exc}")
 
         def _selected_component(self):
             ses = self.session()

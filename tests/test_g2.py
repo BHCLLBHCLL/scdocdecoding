@@ -233,3 +233,20 @@ def test_catmull_rom_smooths_chain():
 
 
 import math  # noqa: E402
+
+
+# --- G5-02 repair ------------------------------------------------------------------
+
+def test_fill_missing_faces_caps_open_box():
+    box = K.make_box(10 / 1000, 10 / 1000, 10 / 1000)
+    faces = K.explore(box, "face")
+    open_shell = K.sew_faces(faces[:5])
+    solid, added = K.fill_missing_faces(open_shell)
+    assert added == 1
+    assert abs(K.volume(solid) - 0.01 ** 3) < 1e-12
+
+
+def test_solidify_shell():
+    box = K.make_box(10 / 1000, 10 / 1000, 10 / 1000)
+    solid = K.solidify_shell(K.sew_faces(K.explore(box, "face")))
+    assert abs(K.volume(solid) - 0.01 ** 3) < 1e-12
