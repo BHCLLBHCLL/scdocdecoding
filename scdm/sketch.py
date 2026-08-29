@@ -217,23 +217,79 @@ def _near(a: Point2, b: Point2, tol: float = 1e-9) -> bool:
     return abs(a[0] - b[0]) < tol and abs(a[1] - b[1]) < tol
 
 
-def extrude_sketch(curves: Sequence[tuple], thickness: float, plane: str = "xy"):
+def extrude_sketch(curves: Sequence[tuple], thickness: float, plane: str = "xy",
+                   axes: Optional[Axes] = None):
     """Build a solid by extruding the sketch's closed loop by thickness.
 
-    Loop coordinates are plane-local (u, v); the face is built on the datum plane
-    and prisms along the plane normal. Raises ValueError when no closed loop.
+    Loop coordinates are plane-local (u, v); the face is built on the sketch plane
+    (named datum or custom axes) and prisms along the plane normal.
+    Raises ValueError when no closed loop.
     """
     from scdm import kernel as K
     outline = sketch_outline(curves)
     if outline is None:
         raise ValueError("草图没有闭环（画矩形或闭合线段）")
-    pts = [local_to_world(plane, u, v) for (u, v) in outline]
+    ax = axes if axes is not None else sketch_axes(plane)
+    pts = [axes_to_world(ax, u, v) for (u, v) in outline]
     face = K.face_from_polygon(pts)
-    n = plane_normal(plane)
+    n = ax[3]
     return K.prism(face, (n[0] * thickness, n[1] * thickness, n[2] * thickness))
 
 
 PLANE_NORMALS = {"xy": (0.0, 0.0, 1.0), "zx": (0.0, 1.0, 0.0), "yz": (1.0, 0.0, 0.0)}
+
+_AXES = {
+    "xy": ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
+    "zx": ((1.0, 0.0, 0.0), (0.0, 0.0, 1.0)),
+    "yz": ((0.0, 1.0, 0.0), (0.0, 0.0, 1.0)),
+}
+
+Axes = Tuple[Tuple[float, float, float], Tuple[float, float, float],
+             Tuple[float, float, float], Tuple[float, float, float]]
+
+
+def _unit3(v):
+    L = math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) or 1.0
+    return (v[0] / L, v[1] / L, v[2] / L)
+
+
+def _cross(a, b):
+    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0])
+
+
+def sketch_axes(plane: str = "xy", origin=(0.0, 0.0, 0.0),
+                normal=None, xdir=None) -> Axes:
+    """Resolve a sketch plane to (origin, u, v, n). Named planes are the
+    through-origin datum planes; plane == 'custom' uses the stored fields."""
+    if plane == "custom" and normal is not None:
+        n = _unit3(normal)
+        if xdir is None:
+            a = (0.0, 0.0, 1.0) if abs(n[2]) < 0.9 else (1.0, 0.0, 0.0)
+            u = _unit3(_cross(n, a))
+        else:
+            x = _unit3(xdir)
+            d = x[0] * n[0] + x[1] * n[1] + x[2] * n[2]
+            u = _unit3((x[0] - d * n[0], x[1] - d * n[1], x[2] - d * n[2]))
+        v = _cross(n, u)
+        return (tuple(origin), u, v, n)
+    u, v = _AXES.get(plane, _AXES["xy"])
+    n = PLANE_NORMALS.get(plane, (0.0, 0.0, 1.0))
+    return ((0.0, 0.0, 0.0), u, v, n)
+
+
+def axes_to_world(axes: Axes, u: float, v: float) -> Tuple[float, float, float]:
+    o, ux, vx, _n = axes
+    return (o[0] + u * ux[0] + v * vx[0],
+            o[1] + u * ux[1] + v * vx[1],
+            o[2] + u * ux[2] + v * vx[2])
+
+
+def world_to_uv(axes: Axes, p) -> Tuple[float, float]:
+    o, ux, vx, _n = axes
+    d = (p[0] - o[0], p[1] - o[1], p[2] - o[2])
+    return (d[0] * ux[0] + d[1] * ux[1] + d[2] * ux[2],
+            d[0] * vx[0] + d[1] * vx[1] + d[2] * vx[2])
 
 
 def plane_normal(plane: str) -> Tuple[float, float, float]:
@@ -283,6 +339,47 @@ def point_segment_distance(p, a, b):
         return math.hypot(px - ax, py - ay), 0.0
     t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / L2))
     return math.hypot(px - (ax + t * dx), py - (ay + t * dy)), t
+
+
+def chain_polylines(polys: Sequence[Sequence[Point2]],
+                    tol: float = 1e-7) -> List[List[Point2]]:
+    """Join open polylines sharing endpoints into rings (section outlines).
+
+    Closed rings are returned without the duplicated closing point.
+    """
+    segs = [list(p) for p in polys if len(p) >= 2]
+
+    def key(q):
+        return (round(q[0] / tol), round(q[1] / tol), round(q[2] / tol))
+
+    rings, used = [], [False] * len(segs)
+    for i in range(len(segs)):
+        if used[i]:
+            continue
+        used[i] = True
+        ring = list(segs[i])
+        grew = True
+        while grew:
+            grew = False
+            tip = key(ring[-1])
+            for j, t in enumerate(segs):
+                if used[j]:
+                    continue
+                if key(t[0]) == tip:
+                    ring.extend(t[1:])
+                    used[j] = True
+                    grew = True
+                    break
+                if key(t[-1]) == tip:
+                    ring.extend(list(reversed(t[:-1])))
+                    used[j] = True
+                    grew = True
+                    break
+        if len(ring) >= 3 and key(ring[0]) == key(ring[-1]):
+            rings.append(ring[:-1])
+        elif len(ring) >= 2:
+            rings.append(ring)
+    return rings
 
 
 def tangent_from_point(p, c, r) -> List[Tuple[Point2, Point2]]:

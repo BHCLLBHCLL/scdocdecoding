@@ -495,7 +495,16 @@ class Scene:
     PLANE_NORMALS = {"xy": (0, 0, 1), "zx": (0, 1, 0), "yz": (1, 0, 0)}
 
     def plane_point(self, plane):
-        """World point where the click ray meets the datum plane (xy/zx/yz)."""
+        """World point where the click ray meets the sketch plane.
+
+        `plane` is a named datum plane ('xy'|'zx'|'yz') or a sketch axes tuple
+        (origin, u, v, n) for custom planes.
+        """
+        from scdm import sketch as S
+        if isinstance(plane, str):
+            origin, _u, _v, n = S.sketch_axes(plane)
+        else:
+            origin, _u, _v, n = plane
         iren = self.vtk_widget.GetRenderWindow().GetInteractor()
         x, y = iren.GetEventPosition()
         picker = vtk.vtkWorldPointPicker()
@@ -504,14 +513,25 @@ class Scene:
         cam = self.renderer.GetActiveCamera()
         pos = cam.GetPosition()
         d = (wp[0] - pos[0], wp[1] - pos[1], wp[2] - pos[2])
-        n = self.PLANE_NORMALS.get(plane, (0, 0, 1))
         denom = d[0] * n[0] + d[1] * n[1] + d[2] * n[2]
         if abs(denom) < 1e-12:
             return None
-        t = -(pos[0] * n[0] + pos[1] * n[1] + pos[2] * n[2]) / denom
+        t = -((pos[0] - origin[0]) * n[0] + (pos[1] - origin[1]) * n[1]
+              + (pos[2] - origin[2]) * n[2]) / denom
         if t <= 0:
             return None
         return (pos[0] + d[0] * t, pos[1] + d[1] * t, pos[2] + d[2] * t)
+
+    def normal_view(self, origin, normal, up, scale):
+        """Camera looking straight at a plane (origin along normal, up = in-plane)."""
+        cam = self.renderer.GetActiveCamera()
+        d = max(scale, 20.0) * 1.2
+        cam.SetPosition(origin[0] + normal[0] * d, origin[1] + normal[1] * d,
+                        origin[2] + normal[2] * d)
+        cam.SetFocalPoint(*origin)
+        cam.SetViewUp(*up)
+        self.renderer.ResetCameraClippingRange()
+        self.render()
 
     def show_measure(self, text, p1, p2=None):
         """Measurement annotation: optional connector line + billboard label."""
@@ -584,21 +604,22 @@ class Scene:
     def _build_sketches(self, kdoc):
         """Render sketch curves as on-plane 2D line/polygon actors.
 
-        Curve coords are plane-local (u, v); they are mapped to world per sk.plane.
+        Curve coords are plane-local (u, v), mapped through the sketch's axes
+        (named datum plane or custom origin/normal/xdir).
         """
         import math as _math
+        from scdm import sketch as S
         segs, pts = [], []
         for sk in getattr(kdoc, "sketches", []):
-            def wpt(p, _plane=sk.plane):
-                u, v = float(p[0]), float(p[1])
-                if _plane == "zx":
-                    return (u, 0.0, v)
-                if _plane == "yz":
-                    return (0.0, u, v)
-                return (u, v, 0.0)
+            axes = S.sketch_axes(sk.plane, sk.origin, sk.normal, sk.xdir)
+
+            def wpt(p, _ax=axes):
+                return list(S.axes_to_world(_ax, float(p[0]), float(p[1])))
             for c in sk.curves:
                 if c[0] == "poly":
                     ring = [wpt(p) for p in c[1]]
+                    if ring[0] != ring[-1]:
+                        ring.append(ring[0])
                     for a, b in zip(ring, ring[1:]):
                         segs.append([list(a), list(b)])
                 elif c[0] == "rect":
@@ -694,6 +715,7 @@ class Scene:
 
     def update_grid(self, session: Session):
         """Sketch grid on the active sketch's plane (session.show_grid)."""
+        from scdm import sketch as S
         if self._grid_actor is not None:
             self.renderer.RemoveActor(self._grid_actor)
             self._grid_actor = None
@@ -701,22 +723,18 @@ class Scene:
             self.render()
             return
         sketches = getattr(getattr(session, "kdoc", None), "sketches", [])
-        plane = sketches[-1].plane if sketches else "xy"
+        sk = sketches[-1] if sketches else None
+        axes = S.sketch_axes(sk.plane, sk.origin, sk.normal, sk.xdir) \
+            if sk is not None else S.sketch_axes("xy")
         ext, n = 0.02, 10
         step = 2 * ext / n
-
-        def w(u, v):
-            if plane == "zx":
-                return (u, 0.0, v)
-            if plane == "yz":
-                return (0.0, u, v)
-            return (u, v, 0.0)
-
         lines = []
         for i in range(n + 1):
             t = -ext + i * step
-            lines.append([list(w(t, -ext)), list(w(t, ext))])
-            lines.append([list(w(-ext, t)), list(w(ext, t))])
+            lines.append([list(S.axes_to_world(axes, t, -ext)),
+                          list(S.axes_to_world(axes, t, ext))])
+            lines.append([list(S.axes_to_world(axes, -ext, t)),
+                          list(S.axes_to_world(axes, ext, t))])
         self._grid_actor = _lines_actor(lines, (0.62, 0.68, 0.78), 1.0)
         _exclude_from_bounds(self._grid_actor)
         self.renderer.AddActor(self._grid_actor)

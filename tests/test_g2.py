@@ -299,3 +299,32 @@ def test_midsurface_concave_plate():
     import scdm.additive as A
     lo, hi = A.shape_bbox(face)
     assert abs(lo[2] - 0.001) < 1e-9 and abs(hi[2] - 0.001) < 1e-9  # sits at mid plane
+
+
+# --- custom sketch planes + section outline ----------------------------------------
+
+def test_extrude_sketch_custom_offset_plane():
+    axes = S.sketch_axes("custom", (0, 0, 0.005), (0, 0, 1), (1, 0, 0))
+    solid = S.extrude_sketch([("rect", (0, 0), (0.01, 0.01))], 0.01, axes=axes)
+    import scdm.additive as A
+    lo, hi = A.shape_bbox(solid)
+    assert abs(lo[2] - 0.005) < 1e-9 and abs(hi[2] - 0.015) < 1e-9
+    assert abs(K.volume(solid) - 0.01 ** 3) < 1e-12
+
+
+def test_section_outline_and_chain():
+    box = K.make_box(0.01, 0.01, 0.01)
+    polys = K.section_outline(box, (0, 0, 0.005), (0, 0, 1))
+    assert len(polys) == 4  # square cross-section, 4 straight edges
+    rings = S.chain_polylines(polys)
+    assert len(rings) == 1
+    ring = rings[0]
+    assert len(ring) == 4  # closed square without duplicated closing point
+    xs = [p[0] for p in ring]
+    ys = [p[1] for p in ring]
+    assert abs(max(xs) - min(xs) - 0.01) < 1e-6
+    assert abs(max(ys) - min(ys) - 0.01) < 1e-6
+    # uv projection onto the custom axes matches the slice
+    axes = S.sketch_axes("custom", (0, 0, 0.005), (0, 0, 1), (1, 0, 0))
+    uv = [S.world_to_uv(axes, p) for p in ring]
+    assert abs(max(u for u, _ in uv) - 0.01) < 1e-6

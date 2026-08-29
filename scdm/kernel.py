@@ -424,6 +424,21 @@ def midsurface_plate(shape) -> Tuple[Any, float]:
     return face, thickness
 
 
+def section_outline(shape, origin: Vec3, normal: Vec3) -> List[List[Vec3]]:
+    """Cross-section polylines of `shape` cut by the plane (BRepAlgoAPI_Section)."""
+    from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Section
+    from OCC.Core.gp import gp_Dir, gp_Pln, gp_Pnt
+    pln = gp_Pln(gp_Pnt(*origin), gp_Dir(*normal))
+    sec = BRepAlgoAPI_Section(shape, pln)
+    sec.Build()
+    out = []
+    for e in explore(sec.Shape(), "edge"):
+        p = edge_polyline(e, 1e-5)
+        if len(p) >= 2:
+            out.append(p)
+    return out
+
+
 def cyl_axis(face) -> Optional[Tuple[Vec3, Vec3]]:
     """Public alias of _cyl_axis: (direction, location) of a cylinder axis."""
     return _cyl_axis(face)

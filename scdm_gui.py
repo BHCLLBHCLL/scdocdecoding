@@ -445,7 +445,9 @@ else:
                         elif cmd_id == "tool.fill":
                             self._set_status("填充：选择要移除并愈合的面后单击")
                         elif cmd_id == "mode.sketch":
-                            self._begin_sketch()
+                            if not (getattr(self, "_section_widget_on", False)
+                                    and self._section_to_sketch()):
+                                self._begin_sketch()
                         elif cmd_id == "mode.section":
                             self._toggle_section()
                     return
@@ -1753,18 +1755,14 @@ else:
             st = self._sketch_state
             if not st or not self.scene:
                 return
-            plane = st["plane"]
-            p3 = self.scene.plane_point(plane)
+            axes = st.get("axes")
+            p3 = self.scene.plane_point(axes if axes else st["plane"])
             if p3 is None:
                 return
             ses = self.session()
             sk = ses.kdoc.sketches[-1]
-            if plane == "zx":
-                uv = [p3[0], p3[2]]
-            elif plane == "yz":
-                uv = [p3[1], p3[2]]
-            else:
-                uv = [p3[0], p3[1]]
+            from scdm import sketch as S
+            uv = list(S.world_to_uv(axes, p3)) if axes else [p3[0], p3[1]]
             try:
                 snap = self.left.is_checked("mode.sketch", 1)
             except Exception:
@@ -1896,16 +1894,12 @@ else:
         def _sketch_record_click(self):
             """Remember the last two sketch-plane clicks for constraint picking."""
             st = self._sketch_state
-            p3 = self.scene.plane_point(st["plane"])
+            axes = st.get("axes")
+            p3 = self.scene.plane_point(axes if axes else st["plane"])
             if p3 is None:
                 return
-            plane = st["plane"]
-            if plane == "zx":
-                uv = [p3[0], p3[2]]
-            elif plane == "yz":
-                uv = [p3[1], p3[2]]
-            else:
-                uv = [p3[0], p3[1]]
+            from scdm import sketch as S
+            uv = list(S.world_to_uv(axes, p3)) if axes else [p3[0], p3[1]]
             self._sketch_recent = ([uv] + self._sketch_recent)[:2]
             self._set_status(
                 f"草图选择点 {len(self._sketch_recent)}/2：应用约束将作用于最近图元")
@@ -2072,39 +2066,78 @@ else:
             for kind, sid in reversed(self.sel.items):
                 if kind == "plane" and sid in ("xy", "zx", "yz"):
                     return sid
+            # face -> sketch ON the face's own plane (in-plane offset supported)
+            for kind, sid in reversed(self.sel.items):
                 if kind == "face" and ":" in sid and self.session().kdoc:
                     b = self.session().kdoc.body_by_id(sid.split(":", 1)[0])
                     fi = int(sid.split(":", 1)[1])
-                    if b is not None:
-                        faces = K.explore(b.shape, "face")
-                        if fi < len(faces):
-                            n, _c = K.face_normal_center(faces[fi])
-                            ax = max(range(3), key=lambda k: abs(n[k]))
-                            return {0: "yz", 1: "zx", 2: "xy"}[ax]
+                    if b is None:
+                        continue
+                    faces = K.explore(b.shape, "face")
+                    if fi >= len(faces):
+                        continue
+                    try:
+                        from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+                        from OCC.Core.GeomAbs import GeomAbs_Plane
+                        from OCC.Core.TopoDS import topods
+                        s = BRepAdaptor_Surface(topods.Face(faces[fi]))
+                        if s.GetType() == GeomAbs_Plane:
+                            pln = s.Plane()
+                            loc = pln.Location()
+                            d = pln.Axis().Direction()
+                            xd = pln.XAxis().Direction()
+                            return ("custom", (loc.X(), loc.Y(), loc.Z()),
+                                    (d.X(), d.Y(), d.Z()),
+                                    (xd.X(), xd.Y(), xd.Z()))
+                    except Exception:
+                        pass
+                    n, _c = K.face_normal_center(faces[fi])
+                    ax = max(range(3), key=lambda k: abs(n[k]))
+                    return {0: "yz", 1: "zx", 2: "xy"}[ax]
             return "xy"
 
         def _begin_sketch(self, plane=None):
             if not self._need_kernel():
                 return
+            from scdm import sketch as S
             ses = self.session()
             if plane is None:
                 plane = self._sketch_plane_from_selection()
             sks = ses.kdoc.sketches
-            if sks and not sks[-1].curves and not sks[-1].construction:
-                sks[-1].plane = plane  # reuse the empty sketch
+            empty = sks[-1] if sks and not sks[-1].curves and not sks[-1].construction else None
+            if isinstance(plane, tuple):
+                _tag, org, nrm, xd = plane
+                if empty is not None:
+                    empty.plane, empty.origin = "custom", org
+                    empty.normal, empty.xdir = nrm, xd
+                    sk = empty
+                else:
+                    sk = ses.kdoc.add_sketch("custom")
+                    sk.origin, sk.normal, sk.xdir = org, nrm, xd
+                axes = S.sketch_axes("custom", org, nrm, xd)
+                view = ("normal", org, nrm, axes[2])
             else:
-                ses.kdoc.add_sketch(plane)
-            self._sketch_state = {"plane": plane}
+                if empty is not None:
+                    empty.plane = plane
+                    sk = empty
+                else:
+                    sk = ses.kdoc.add_sketch(plane)
+                axes = S.sketch_axes(plane)
+                view = ("plane_view", {"xy": "z", "zx": "y", "yz": "x"}[plane])
+            self._sketch_state = {"plane": sk.plane, "axes": axes}
             self._sketch_tool = None
             self._sketch_start = None
             self._sketch_second = None
             self._sketch_chain = []
             self._set_sketch_grid(True)
             if self.scene:
-                self.scene.plane_view({"xy": "z", "zx": "y", "yz": "x"}[plane],
-                                      ses.scale)
+                if view[0] == "normal":
+                    self.scene.normal_view(view[1], view[2], view[3], ses.scale)
+                else:
+                    self.scene.plane_view(view[1], ses.scale)
             self.left.populate_tree(ses)
-            self._set_status(f"草图模式（{plane.upper()}）：选择草图工具开始绘制；Esc 退出")
+            label = "自定义平面" if sk.plane == "custom" else sk.plane.upper()
+            self._set_status(f"草图模式（{label}）：选择草图工具开始绘制；Esc 退出")
 
         _SKETCH_HINTS = {
             "line": "直线：单击起点、终点",
@@ -2132,6 +2165,48 @@ else:
             self._sketch_second = None
             self._sketch_chain = []
             self._set_status("草图 " + self._SKETCH_HINTS.get(tool, tool))
+
+        def _section_to_sketch(self):
+            """Create a sketch on the current section plane with the section outline."""
+            if not (getattr(self, "_section_widget_on", False) and self.scene):
+                self._set_status("先开启截面模式，再进草图即可在截面上绘制/拉伸")
+                return False
+            ses = self.session()
+            if not self._need_kernel():
+                return False
+            pl = self.scene._section_widget.GetPlane()
+            o = pl.GetOrigin()
+            n = pl.GetNormal()
+            L = math.sqrt(n[0] ** 2 + n[1] ** 2 + n[2] ** 2) or 1.0
+            n = (n[0] / L, n[1] / L, n[2] / L)
+            from scdm import sketch as S
+            axes = S.sketch_axes("custom", o, n)
+            curves = []
+            for b in ses.kdoc.bodies:
+                if not b.visible:
+                    continue
+                polys = K.section_outline(b.shape, o, n)
+                for ring in S.chain_polylines(polys):
+                    if len(ring) >= 3:
+                        curves.append(("poly", [list(S.world_to_uv(axes, p))
+                                                for p in ring]))
+            if not curves:
+                self._set_status("截面：剖面与可见实体无交线")
+                return False
+            sk = ses.kdoc.add_sketch("custom")
+            sk.origin, sk.normal = o, n
+            sk.curves.extend(curves)
+            self._sketch_state = {"plane": "custom", "axes": axes}
+            self._sketch_tool = None
+            self._sketch_start = None
+            self._sketch_second = None
+            self._sketch_chain = []
+            self._set_sketch_grid(True)
+            if self.scene:
+                self.scene.normal_view(o, n, axes[2], ses.scale)
+            self.left.populate_tree(ses)
+            self._set_status("截面草图：剖交线已转为草图曲线；选「拉动」挤出")
+            return True
 
         def _toggle_section(self):
             if not self.scene:
@@ -2470,23 +2545,21 @@ else:
                 return
             sk = ses.kdoc.sketches[-1]
             h = 10 / ses.scale
+            from scdm import sketch as S
+            axes = S.sketch_axes(sk.plane, sk.origin, sk.normal, sk.xdir)
             made = 0
             try:
-                from scdm import sketch as S
-                solid = S.extrude_sketch(sk.curves, h, sk.plane)
+                solid = S.extrude_sketch(sk.curves, h, axes=axes)
                 ses.kdoc.add_body(solid, name="拉伸")
                 made += 1
             except (ValueError, Exception) as exc:
-                # fall back to circles -> cylinders along the plane normal
-                from scdm import sketch as S
-                w = S.local_to_world
-                n = S.plane_normal(sk.plane)
+                # fall back to circles -> cylinders along the sketch plane normal
                 for c in sk.curves:
                     if c[0] == "circle":
                         center, r = c[1], c[2]
-                        origin = w(sk.plane, center[0], center[1])
+                        origin = S.axes_to_world(axes, center[0], center[1])
                         ses.kdoc.add_body(
-                            K.make_cylinder(r, h, origin=origin, axis=n),
+                            K.make_cylinder(r, h, origin=origin, axis=axes[3]),
                             name="拉伸圆")
                         made += 1
                 if not made:

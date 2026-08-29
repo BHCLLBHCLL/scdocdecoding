@@ -23,8 +23,11 @@ class KBody:
 class Sketch:
     id: str
     name: str
-    plane: str = "xy"  # xy|zx|yz
-    curves: List[tuple] = field(default_factory=list)  # ('line',p1,p2)|('rect',p1,p2)|('circle',c,r)
+    plane: str = "xy"  # xy|zx|yz|custom
+    origin: Tuple[float, float, float] = (0.0, 0.0, 0.0)   # custom plane only
+    normal: Tuple[float, float, float] = (0.0, 0.0, 1.0)   # custom plane only
+    xdir: Tuple[float, float, float] = (1.0, 0.0, 0.0)     # custom plane only
+    curves: List[tuple] = field(default_factory=list)  # ('line',p1,p2)|('rect',p1,p2)|('circle',c,r)|('poly',pts)
     construction: List[tuple] = field(default_factory=list)
 
 
