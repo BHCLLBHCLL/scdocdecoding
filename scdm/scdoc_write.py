@@ -247,14 +247,22 @@ def _fix_partner(tokens: bytearray, partner: int) -> bytearray:
     return out
 
 
-def _attrib(owner, value):
+def _attrib(owner, value, nxt=None):
     return (_Rec("attrib", 5, chain=[("string_attrib", 2), ("name_attrib", 3), ("gen", 4)])
-            .add(_p(-1), _ti(-1), _p(-1), _p(-1), _p(owner),
+            .add(_p(-1 if nxt is None else nxt), _ti(-1), _p(-1), _p(-1), _p(owner),
                  _ti(14675622), _s("ATTRIB_XACIS_NAME%6"), _s(value)))
 
 
-def _build_sab(bodies):
-    """Assemble the SAB stream. bodies = list of (verts, edges, faces) tuples.
+def _rgb_attrib(owner, prev, rgb):
+    """Per-face rgb_color appearance attrib (record layout from official box.scdoc)."""
+    return (_Rec("attrib", 5, chain=[("rgb_color", 14), ("st", 15)])
+            .add(_p(-1), _ti(-1), _p(-1), _p(prev), _p(owner),
+                 _ti(14675654), _td(rgb[0]), _td(rgb[1]), _td(rgb[2])))
+
+
+def _build_sab(bodies, colors=None):
+    """Assemble the SAB stream. bodies = list of (verts, edges, faces) tuples;
+    colors = parallel list of per-body (r, g, b) in 0..1.
 
     Returns (bytes, face_counts, edge_counts).
     """
@@ -279,8 +287,9 @@ def _build_sab(bodies):
     idx_straight = idx_plane + F
     idx_face_attrib = idx_straight + E
     idx_edge_attrib = idx_face_attrib + F
+    idx_face_rgb = idx_edge_attrib + E
 
-    recs: List[Optional[_Rec]] = [None] * (idx_edge_attrib + E)
+    recs: List[Optional[_Rec]] = [None] * (idx_face_rgb + F)
 
     foff_of, eoff_of, voff_of = [], [], []
     coff_of = []
@@ -422,12 +431,16 @@ def _build_sab(bodies):
                      _v3b(*f["normal"]), _v3b(*_ortho(f["normal"])),
                      bytes([T_FLAG_B] * 5)))
 
-    # face / edge attribs
+    # face / edge attribs + per-face rgb_color (chained: name -> rgb)
     for bi, (verts, edges, faces) in enumerate(bodies):
         foff = foff_of[bi]
+        col = colors[bi] if colors and bi < len(colors) else (0.745, 0.902, 0.961)
         for fi in range(len(faces)):
             recs[idx_face_attrib + foff + fi] = _attrib(
-                idx_face + foff + fi, f"0:{27 + 3 * fi + 60 * bi}")
+                idx_face + foff + fi, f"0:{27 + 3 * fi + 60 * bi}",
+                nxt=idx_face_rgb + foff + fi)
+            recs[idx_face_rgb + foff + fi] = _rgb_attrib(
+                idx_face + foff + fi, idx_face_attrib + foff + fi, col)
     for bi, (verts, edges, faces) in enumerate(bodies):
         eoff = eoff_of[bi]
         for ei in range(len(edges)):
@@ -454,11 +467,14 @@ def _build_sab(bodies):
     return bytes(out), face_counts, edge_counts
 
 
-def _document_xml(name: str, face_counts: List[int], edge_counts: List[int]) -> bytes:
+def _document_xml(name: str, face_counts: List[int], edge_counts: List[int],
+                  colors=None) -> bytes:
     parts = []
     captions = []
     for i in range(len(face_counts)):
         bid = 23 + 60 * i
+        c = colors[i] if colors and i < len(colors) else (0.745, 0.902, 0.961)
+        rgb = f"{int(c[0] * 255)}, {int(c[1] * 255)}, {int(c[2] * 255)}"
         faces = "\n".join(
             f'        <NominalFaceDef Id="0:{27 + 3 * k + 60 * i}"/>'
             for k in range(face_counts[i]))
@@ -470,7 +486,7 @@ def _document_xml(name: str, face_counts: List[int], edge_counts: List[int]) -> 
                      f'      <NominalBodyDef Id="0:{bid}">\n'
                      f'        <layerId>0:9</layerId>\n'
                      f'        <type>Solid</type>\n'
-                     f'        <color>143, 166, 175</color>\n'
+                     f'        <color>{rgb}</color>\n'
                      f'        <renderingStyle>Plastic</renderingStyle>\n'
                      f'        <fillStyle>Opaque</fillStyle>\n'
                      f'        <finishStyle>MediumGloss</finishStyle>\n'
@@ -528,23 +544,23 @@ def _doc_rels(sab_name: str) -> bytes:
 
 def write_scdoc(path: str, kdoc, name: str = "design") -> None:
     """Write a native .scdoc for the session's planar-solid bodies."""
-    solids = []
+    bodies = []
+    colors = []
     for body in kdoc.bodies:
-        shape = body.shape
-        sols = K.explore(shape, "solid")
-        if not sols:
-            sols = [shape]
-        solids.extend(sols)
-    if not solids:
+        sols = K.explore(body.shape, "solid") or [body.shape]
+        for s in sols:
+            bodies.append(_extract_solid(s))
+            colors.append(tuple(getattr(body, "color", None) or (0.745, 0.902, 0.961)))
+    if not bodies:
         raise ValueError("没有可写出的实体")
-    bodies = [_extract_solid(s) for s in solids]
-    sab_bytes, face_counts, edge_counts = _build_sab(bodies)
+    sab_bytes, face_counts, edge_counts = _build_sab(bodies, colors)
 
     sab_name = "part1bodies.sab"
     stem = name or "design"
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("[Content_Types].xml", _content_types())
         z.writestr("_rels/.rels", _root_rels())
-        z.writestr("SpaceClaim/document.xml", _document_xml(stem, face_counts, edge_counts))
+        z.writestr("SpaceClaim/document.xml",
+                   _document_xml(stem, face_counts, edge_counts, colors))
         z.writestr("SpaceClaim/_rels/document.xml.rels", _doc_rels(sab_name))
         z.writestr(f"SpaceClaim/Geometry/{sab_name}", sab_bytes)
