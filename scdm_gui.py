@@ -1124,11 +1124,47 @@ else:
                     c.lightweight = ses.lightweight
                 self._rebuild("已切换全局轻量化")
 
+        def _parametric_from_body(self, body):
+            """Best-effort parametric model of an existing body (box/cylinder/bbox)."""
+            import scdm.additive as A
+            from scdm.params import param_box_at, param_cylinder_at
+            ses = self.session()
+            scale = ses.scale
+            faces = K.explore(body.shape, "face")
+            cyls = [f for f in faces if K.face_cylinder_radius(f) is not None]
+            lo, hi = A.shape_bbox(body.shape)
+            if len(cyls) == 1 and len(faces) <= 3:
+                r = K.face_cylinder_radius(cyls[0]) * scale
+                ax = K.cyl_axis(cyls[0])
+                d = ax[0] if ax else (0.0, 0.0, 1.0)
+                org = ax[1] if ax else (0.0, 0.0, 0.0)
+                caps = [K.face_normal_center(f)[1] for f in faces
+                        if K.face_cylinder_radius(f) is None]
+                if len(caps) == 2:
+                    h = math.dist(caps[0], caps[1]) * scale
+                else:
+                    h = (hi[2] - lo[2]) * scale
+                return param_cylinder_at(body.name, r, h, org, d)
+            if len(faces) == 6 and not cyls:
+                return param_box_at(body.name, (hi[0] - lo[0]) * scale,
+                                    (hi[1] - lo[1]) * scale, (hi[2] - lo[2]) * scale, lo)
+            return param_box_at(body.name + " 包围盒", (hi[0] - lo[0]) * scale,
+                                (hi[1] - lo[1]) * scale, (hi[2] - lo[2]) * scale, lo)
+
         def _do_wb_params(self):
             from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QDoubleSpinBox,
                                         QFormLayout, QLabel, QVBoxLayout)
             ses = self.session()
             if not ses.kdoc or not ses.kdoc.parametrics:
+                body = self._selected_kbody()
+                if body is not None and self._need_kernel():
+                    p = self._parametric_from_body(body)
+                    p.body_id = body.id  # rebuild into the same body
+                    ses.kdoc.parametrics.append(p)
+                    self._commit(f"已提取参数（{p.body_name}: "
+                                 + ", ".join(f"{k}={v:g}" for k, v in p.params.items())
+                                 + "）；再次点击「参数」编辑")
+                    return
                 from scdm.params import param_box
                 ses.kdoc.add_parametric(param_box(), ses.scale)
                 self._commit("已创建参数盒（W/H/D）")

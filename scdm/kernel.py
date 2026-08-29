@@ -350,6 +350,11 @@ def solidify_shell(shape):
     return ShapeFix_Solid().SolidFromShell(shell)
 
 
+def cyl_axis(face) -> Optional[Tuple[Vec3, Vec3]]:
+    """Public alias of _cyl_axis: (direction, location) of a cylinder axis."""
+    return _cyl_axis(face)
+
+
 def face_cylinder_radius(face) -> Optional[float]:
     """Radius when the face is cylindrical, else None."""
     from OCC.Core.BRepAdaptor import BRepAdaptor_Surface

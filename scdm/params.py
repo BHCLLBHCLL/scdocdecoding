@@ -44,3 +44,26 @@ def param_box(body_name: str = "参数盒", w: float = 10.0, h: float = 10.0,
 def param_cylinder(body_name: str = "参数圆柱", r: float = 5.0,
                    h: float = 10.0) -> Parametric:
     return Parametric(body_name, {"R": r, "H": h}, cylinder_builder)
+
+
+def param_box_at(body_name: str, w: float, h: float, d: float,
+                 origin=(0.0, 0.0, 0.0)) -> Parametric:
+    """Parametric box rebuilt at a fixed world origin (mm params)."""
+    org = tuple(float(v) for v in origin)
+
+    def builder(p, scale):
+        return K.make_box(p["W"] / scale, p["H"] / scale, p["D"] / scale, origin=org)
+
+    return Parametric(body_name, {"W": w, "H": h, "D": d}, builder)
+
+
+def param_cylinder_at(body_name: str, r: float, h: float,
+                      origin=(0.0, 0.0, 0.0), axis=(0.0, 0.0, 1.0)) -> Parametric:
+    """Parametric cylinder rebuilt at a fixed origin/axis (mm params)."""
+    org = tuple(float(v) for v in origin)
+    ax = tuple(float(v) for v in axis)
+
+    def builder(p, scale):
+        return K.make_cylinder(p["R"] / scale, p["H"] / scale, origin=org, axis=ax)
+
+    return Parametric(body_name, {"R": r, "H": h}, builder)
