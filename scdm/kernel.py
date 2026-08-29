@@ -376,9 +376,22 @@ def share_topology(shapes: Sequence) -> List[List[Any]]:
     return out
 
 
+def unify_same_domain(shape):
+    """Merge coplanar faces / colinear edges (needed after boolean ops)."""
+    from OCC.Core.ShapeUpgrade import ShapeUpgrade_UnifySameDomain
+    u = ShapeUpgrade_UnifySameDomain(shape, True, True, False)
+    u.Build()
+    return u.Shape()
+
+
 def midsurface_plate(shape) -> Tuple[Any, float]:
     """Plate midsurface: the largest pair of parallel opposite planar faces,
-    their outer loop shifted to the mid plane. Returns (face, thickness)."""
+    the larger face translated to the mid plane. Returns (face, thickness).
+
+    Uses an exact face transform, so concave outlines and inner holes survive.
+    Coplanar fragments are merged first (e.g. after boolean fuses).
+    """
+    shape = unify_same_domain(shape)
     faces = explore(shape, "face")
     planes = []
     for f in faces:
@@ -402,33 +415,13 @@ def midsurface_plate(shape) -> Tuple[Any, float]:
     _a, c1, c2, f1 = best
     thickness = math.dist(c1, c2)
     shift = ((c2[0] - c1[0]) / 2.0, (c2[1] - c1[1]) / 2.0, (c2[2] - c1[2]) / 2.0)
-    corners = {}
-    for e in explore(f1, "edge"):
-        p = edge_polyline(e, 1e-5)
-        if len(p) < 2:
-            continue
-        for q in (p[0], p[-1]):
-            k = (round(q[0] * 1e5), round(q[1] * 1e5), round(q[2] * 1e5))
-            corners.setdefault(k, q)
-    if len(corners) < 3:
-        raise KernelError("中面：无法提取面轮廓")
-    pts = list(corners.values())
-    # order corners around the face centre within the plane (convex faces)
-    cx = sum(p[0] for p in pts) / len(pts)
-    cy = sum(p[1] for p in pts) / len(pts)
-    cz = sum(p[2] for p in pts) / len(pts)
-    n = n1
-    a = (0.0, 0.0, 1.0) if abs(n[2]) < 0.9 else (1.0, 0.0, 0.0)
-    u = (n[1] * a[2] - n[2] * a[1], n[2] * a[0] - n[0] * a[2], n[0] * a[1] - n[1] * a[0])
-    L = math.sqrt(u[0] ** 2 + u[1] ** 2 + u[2] ** 2) or 1.0
-    u = (u[0] / L, u[1] / L, u[2] / L)
-    v = (n[1] * u[2] - n[2] * u[1], n[2] * u[0] - n[0] * u[2], n[0] * u[1] - n[1] * u[0])
-    pts.sort(key=lambda p: math.atan2((p[1] - cy) * v[1] + (p[0] - cx) * v[0]
-                                      + (p[2] - cz) * v[2],
-                                      (p[0] - cx) * u[0] + (p[1] - cy) * u[1]
-                                      + (p[2] - cz) * u[2]))
-    moved = [(p[0] + shift[0], p[1] + shift[1], p[2] + shift[2]) for p in pts]
-    return face_from_polygon(moved), thickness
+    from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_Transform
+    from OCC.Core.TopoDS import topods
+    from OCC.Core.gp import gp_Trsf, gp_Vec
+    tr = gp_Trsf()
+    tr.SetTranslation(gp_Vec(*shift))
+    face = topods.Face(BRepBuilderAPI_Transform(f1, tr, True).Shape())
+    return face, thickness
 
 
 def cyl_axis(face) -> Optional[Tuple[Vec3, Vec3]]:

@@ -287,3 +287,15 @@ def test_midsurface_plate():
     face, thickness = K.midsurface_plate(plate)
     assert abs(thickness - 0.002) < 1e-9
     assert abs(K.area(face) - 0.02 * 0.02) < 1e-9
+
+
+def test_midsurface_concave_plate():
+    # L-shaped plate: two fused 20x20x2 blocks offset by (10,10) -> 700 mm2 outline
+    b1 = K.make_box(0.02, 0.02, 0.002)
+    b2 = K.make_box(0.02, 0.02, 0.002, origin=(0.01, 0.01, 0))
+    face, thickness = K.midsurface_plate(K.fuse(b1, b2))
+    assert abs(thickness - 0.002) < 1e-9
+    assert abs(K.area(face) - 0.0007) < 1e-9
+    import scdm.additive as A
+    lo, hi = A.shape_bbox(face)
+    assert abs(lo[2] - 0.001) < 1e-9 and abs(hi[2] - 0.001) < 1e-9  # sits at mid plane
