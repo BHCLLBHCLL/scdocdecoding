@@ -1373,7 +1373,59 @@ else:
                 f"{(hi[2]-lo[2])*scale:.2f} mm")
 
         def _do_det_view(self):
-            self._do_file_image()
+            body = self._selected_kbody()
+            if body is None:
+                return
+            fn, _ = QFileDialog.getSaveFileName(
+                self, "导出工程图", self.session().name + "_drawing.pdf",
+                "PDF (*.pdf)")
+            if not fn:
+                return
+            try:
+                from scdm.drawing import extents as _ext, three_views
+                views = three_views(body.shape)
+                if not any(_ext(polys) for _l, polys in views):
+                    self._set_status("工程图：所选实体无可投影轮廓")
+                    return
+                if not fn.lower().endswith(".pdf"):
+                    fn += ".pdf"
+                self._write_drawing_pdf(fn, views)
+                self._record("det.view")
+                self._set_status(f"工程图（HLR 三视图）已导出 → {fn}")
+            except Exception as exc:
+                self._set_status(f"工程图导出失败: {exc}")
+
+        def _write_drawing_pdf(self, path, views):
+            from PyQt5.QtCore import QPointF
+            from PyQt5.QtGui import QColor, QPainter, QPageSize, QPdfWriter, QPen
+            from scdm.drawing import extents as _ext
+            writer = QPdfWriter(path)
+            writer.setPageSize(QPageSize(QPageSize.A4))
+            writer.setResolution(96)
+            p = QPainter(writer)
+            W, H = writer.width(), writer.height()
+            pen = QPen(QColor(25, 25, 35))
+            pen.setWidthF(1.2)
+            p.setPen(pen)
+            n = max(len(views), 1)
+            cw = W / n
+            for i, (label, polys) in enumerate(views):
+                e = _ext(polys)
+                if e is None:
+                    continue
+                w = (e[2] - e[0]) or 1.0
+                h = (e[3] - e[1]) or 1.0
+                s = min(cw * 0.7 / w, H * 0.7 / h)
+                cy = (e[1] + e[3]) / 2.0
+                ox = cw * i + (cw - w * s) / 2.0
+
+                def tp(x, y, _ox=ox, _s=s, _cy=cy):
+                    return QPointF(_ox + x * _s, H / 2.0 + (_cy - y) * _s)
+
+                for poly in polys:
+                    p.drawPolyline([tp(x, y) for x, y in poly])
+                p.drawText(QPointF(cw * i + 24, 40), label)
+            p.end()
 
         def _do_det_note(self):
             from PyQt5.QtWidgets import QInputDialog

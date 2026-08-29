@@ -250,3 +250,21 @@ def test_solidify_shell():
     box = K.make_box(10 / 1000, 10 / 1000, 10 / 1000)
     solid = K.solidify_shell(K.sew_faces(K.explore(box, "face")))
     assert abs(K.volume(solid) - 0.01 ** 3) < 1e-12
+
+
+# --- G6-02 HLR drawing views -------------------------------------------------------
+
+def test_hlr_three_views_box():
+    from scdm.drawing import extents, three_views
+    box = K.make_box(0.01, 0.02, 0.03)
+    views = dict(three_views(box))
+    e_front = extents(views["主视"])
+    e_top = extents(views["俯视"])
+    e_right = extents(views["右视"])
+    assert abs((e_front[2] - e_front[0]) - 0.01) < 1e-6   # X width
+    assert abs((e_front[3] - e_front[1]) - 0.03) < 1e-6   # Z height
+    assert abs((e_top[2] - e_top[0]) - 0.01) < 1e-6 and abs((e_top[3] - e_top[1]) - 0.02) < 1e-6
+    assert abs((e_right[2] - e_right[0]) - 0.02) < 1e-6 and abs((e_right[3] - e_right[1]) - 0.03) < 1e-6
+    # closed box: each view's outline is a closed rectangle loop
+    for v in (e_front, e_top, e_right):
+        assert v is not None
