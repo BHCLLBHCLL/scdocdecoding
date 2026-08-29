@@ -402,18 +402,31 @@ def midsurface_plate(shape) -> Tuple[Any, float]:
     _a, c1, c2, f1 = best
     thickness = math.dist(c1, c2)
     shift = ((c2[0] - c1[0]) / 2.0, (c2[1] - c1[1]) / 2.0, (c2[2] - c1[2]) / 2.0)
-    pts, seen = [], set()
+    corners = {}
     for e in explore(f1, "edge"):
         p = edge_polyline(e, 1e-5)
         if len(p) < 2:
             continue
-        k = (round(p[0][0] * 1e5), round(p[0][1] * 1e5), round(p[0][2] * 1e5))
-        if k in seen:
-            continue  # explore repeats edges per orientation
-        seen.add(k)
-        pts.append(p[0])
-    if len(pts) < 3:
+        for q in (p[0], p[-1]):
+            k = (round(q[0] * 1e5), round(q[1] * 1e5), round(q[2] * 1e5))
+            corners.setdefault(k, q)
+    if len(corners) < 3:
         raise KernelError("中面：无法提取面轮廓")
+    pts = list(corners.values())
+    # order corners around the face centre within the plane (convex faces)
+    cx = sum(p[0] for p in pts) / len(pts)
+    cy = sum(p[1] for p in pts) / len(pts)
+    cz = sum(p[2] for p in pts) / len(pts)
+    n = n1
+    a = (0.0, 0.0, 1.0) if abs(n[2]) < 0.9 else (1.0, 0.0, 0.0)
+    u = (n[1] * a[2] - n[2] * a[1], n[2] * a[0] - n[0] * a[2], n[0] * a[1] - n[1] * a[0])
+    L = math.sqrt(u[0] ** 2 + u[1] ** 2 + u[2] ** 2) or 1.0
+    u = (u[0] / L, u[1] / L, u[2] / L)
+    v = (n[1] * u[2] - n[2] * u[1], n[2] * u[0] - n[0] * u[2], n[0] * u[1] - n[1] * u[0])
+    pts.sort(key=lambda p: math.atan2((p[1] - cy) * v[1] + (p[0] - cx) * v[0]
+                                      + (p[2] - cz) * v[2],
+                                      (p[0] - cx) * u[0] + (p[1] - cy) * u[1]
+                                      + (p[2] - cz) * u[2]))
     moved = [(p[0] + shift[0], p[1] + shift[1], p[2] + shift[2]) for p in pts]
     return face_from_polygon(moved), thickness
 
