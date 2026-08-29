@@ -171,11 +171,67 @@ def op_shell(kdoc, opts, scale):
     return body, "已抽壳"
 
 
+def op_helix(kdoc, opts, scale):
+    sh = K.helix_solid(opts.get("r1", 3.0) / scale, opts.get("r2", 2.0) / scale,
+                       opts.get("h", 20.0) / scale, opts.get("pitch", 0.4) / scale)
+    return kdoc.add_body(sh, name="螺旋"), "插入螺旋"
+
+
+def op_enclose(kdoc, opts, scale):
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("包围体：实体不存在")
+    from scdm.additive import build_volume
+    vol = build_volume(body.shape, opts.get("margin", 1.0), scale)
+    return kdoc.add_body(vol, name="包围体"), "创建包围体"
+
+
+def op_fill(kdoc, opts, scale):
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("填充：实体不存在")
+    faces = K.explore(body.shape, "face")
+    fi = opts.get("face_i", 0)
+    if fi >= len(faces):
+        raise ValueError("填充：面索引越界")
+    body.shape = K.fill_faces(body.shape, [faces[fi]])
+    return body, "填充面"
+
+
+def _all_faces(kdoc):
+    faces = []
+    for b in kdoc.bodies:
+        faces.extend(K.explore(b.shape, "face"))
+    return faces
+
+
+def op_stitch(kdoc, opts, scale):
+    solid = K.sew_faces(_all_faces(kdoc))
+    kdoc.bodies = []
+    return kdoc.add_body(solid, name="缝合体"), "缝合"
+
+
+def op_repair_missing(kdoc, opts, scale):
+    solid, added = K.fill_missing_faces(K.compound(_all_faces(kdoc)))
+    kdoc.bodies = []
+    kdoc.add_body(solid, name="修复体")
+    return None, f"补缺失面 ×{added}"
+
+
+def op_repair_solidify(kdoc, opts, scale):
+    solid = K.solidify_shell(K.sew_faces(_all_faces(kdoc)))
+    kdoc.bodies = []
+    return kdoc.add_body(solid, name="实体"), "实体化"
+
+
 OPS = {
     "insert.cyl": op_insert_cyl,
     "insert.sphere": op_insert_sphere,
+    "insert.helix": op_helix,
+    "prep.enclose": op_enclose,
     "tool.pull": op_pull,
     "tool.move": op_move,
+    "tool.fill": op_fill,
     "tool.combine": op_combine,
     "tool.split_body": op_split,
     "create.blend": op_blend,
@@ -183,6 +239,10 @@ OPS = {
     "create.mirror": op_mirror,
     "create.pattern": op_pattern,
     "create.shell": op_shell,
+    "repair.stitch": op_stitch,
+    "repair.gaps": op_stitch,
+    "repair.solidify": op_repair_solidify,
+    "repair.missing": op_repair_missing,
 }
 
 

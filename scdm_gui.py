@@ -119,6 +119,7 @@ else:
             self._sketch_second = None
             self._sketch_chain = []
             self._sketch_recent = []  # last two sketch-plane clicks (constraint picking)
+            self._pending_paste = False
             self.settings = QSettings("scdocdecoding", "scdm")
             from scdm.scripting import Recorder
             self.recorder = Recorder()
@@ -671,10 +672,26 @@ else:
             if not ses.clipboard:
                 self._set_status("剪贴板为空")
                 return
+            if not self._need_kernel():
+                return
+            self._pending_paste = True
+            self._set_status("粘贴：单击视口放置（Esc 取消；直接按 Enter/空 click 则偏移 10mm）")
+
+        def _place_paste(self, world):
+            ses = self.session()
+            if not ses.clipboard:
+                return
             sh = K.loads_brep(ses.clipboard)
-            sh = K.translate(sh, (10 / ses.scale, 0, 0))
+            if world is not None:
+                c = K.cog(sh)
+                sh = K.translate(sh, (world[0] - c[0], world[1] - c[1],
+                                      world[2] - c[2]))
+                verb = "已粘贴（点选放置）"
+            else:
+                sh = K.translate(sh, (10 / ses.scale, 0, 0))
+                verb = "已粘贴（偏移 10mm）"
             ses.kdoc.add_body(sh, name="粘贴")
-            self._commit("已粘贴")
+            self._commit(verb)
 
         def _do_insert_cyl(self):
             self.tools.activate("insert.cyl", "圆柱", "M2", True, "单击视口放置圆柱（Ø10×10 mm）")
@@ -926,6 +943,7 @@ else:
                 solid = K.sew_faces(faces)
                 ses.kdoc.bodies = []
                 ses.kdoc.add_body(solid, name="缝合体")
+                self._record("repair.stitch")
                 self._commit("已缝合")
             except Exception as exc:
                 self._set_status(f"缝合失败: {exc}")
@@ -2815,6 +2833,10 @@ else:
                 self._click_node = node
             self._click_t = now
             add = bool(iren.GetControlKey())
+            if getattr(self, "_pending_paste", False):
+                self._pending_paste = False
+                self._place_paste(world)
+                return
             if node is None:
                 if not add:
                     self.sel.clear()
@@ -2924,6 +2946,10 @@ else:
                     return
                 if self.tools.mode == "mode.sketch":
                     self.on_command("mode.3d")
+                    return
+                if getattr(self, "_pending_paste", False):
+                    self._pending_paste = False
+                    self._set_status("粘贴已取消")
                     return
                 if getattr(self, "_section_widget_on", False):
                     self.scene.disable_section_widget()
