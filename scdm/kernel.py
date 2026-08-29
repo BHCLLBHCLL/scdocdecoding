@@ -249,6 +249,53 @@ def pattern_circular(shape, axis: Vec3, angle_deg: float, count: int) -> List[An
     return out
 
 
+def _cyl_axis(face) -> Optional[Tuple[Vec3, Vec3]]:
+    """(direction, location) of a cylindrical face's axis, else None."""
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+    from OCC.Core.GeomAbs import GeomAbs_Cylinder
+    from OCC.Core.TopoDS import topods
+    try:
+        s = BRepAdaptor_Surface(topods.Face(face))
+        if s.GetType() != GeomAbs_Cylinder:
+            return None
+        ax = s.Cylinder().Axis()
+        d = ax.Direction()
+        loc = ax.Location()
+        return ((d.X(), d.Y(), d.Z()), (loc.X(), loc.Y(), loc.Z()))
+    except Exception:
+        return None
+
+
+def align_axes(moving, moving_face, target_face):
+    """Coaxial mate: rotate+translate `moving` so its cylinder axis matches the
+    target cylinder axis (any point along the axis line is acceptable)."""
+    a1 = _cyl_axis(moving_face)
+    a2 = _cyl_axis(target_face)
+    if a1 is None or a2 is None:
+        raise KernelError("轴对齐需要两个圆柱面")
+    d1, p1 = a1
+    d2, p2 = a2
+    dot = max(-1.0, min(1.0, d1[0] * d2[0] + d1[1] * d2[1] + d1[2] * d2[2]))
+    cross = (d1[1] * d2[2] - d1[2] * d2[1],
+             d1[2] * d2[0] - d1[0] * d2[2],
+             d1[0] * d2[1] - d1[1] * d2[0])
+    L = math.sqrt(cross[0] ** 2 + cross[1] ** 2 + cross[2] ** 2)
+    if L < 1e-9:
+        axis = (1.0, 0.0, 0.0) if abs(d1[0]) < 0.9 else (0.0, 1.0, 0.0)
+        angle = math.pi if dot < 0 else 0.0
+    else:
+        axis = (cross[0] / L, cross[1] / L, cross[2] / L)
+        angle = math.acos(dot)
+    moved = rotate(moving, p1, axis, angle) if angle > 1e-12 else moving
+    # after rotation the axis passes p1 with direction d2; shift perpendicular offset
+    off = (p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2])
+    along = off[0] * d2[0] + off[1] * d2[1] + off[2] * d2[2]
+    off = (off[0] - along * d2[0], off[1] - along * d2[1], off[2] - along * d2[2])
+    if off[0] * off[0] + off[1] * off[1] + off[2] * off[2] > 1e-24:
+        moved = translate(moved, off)
+    return moved
+
+
 def _free_boundary_wires(shell) -> List[Any]:
     """Closed boundary wires of a shell (holes / missing faces)."""
     from OCC.Core.ShapeAnalysis import ShapeAnalysis_FreeBounds

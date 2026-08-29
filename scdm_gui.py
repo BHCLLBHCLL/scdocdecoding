@@ -1036,14 +1036,18 @@ else:
                 self._set_status("请先创建/选择组件")
                 return
             ses = self.session()
-            vec = (10 / ses.scale, 0, 0)
+            vals = self._ask_numbers("移动组件", [("X mm", 10.0), ("Y mm", 0.0),
+                                                  ("Z mm", 0.0)])
+            if not vals:
+                return
+            vec = (vals[0] / ses.scale, vals[1] / ses.scale, vals[2] / ses.scale)
             n = 0
             for b in ses.kdoc.bodies_of_component(comp.id):
                 if comp.anchored:
                     continue
                 b.shape = K.translate(b.shape, vec)
                 n += 1
-            self._commit(f"移动组件 ×{n} (10mm X)")
+            self._commit(f"移动组件 ×{n}（{vals[0]:g}, {vals[1]:g}, {vals[2]:g} mm）")
 
         def _do_asm_anchor(self):
             comp = self._selected_component()
@@ -1057,8 +1061,13 @@ else:
             ses = self.session()
             faces = [sid for k, sid in self.sel.items if k == "face"]
             if len(faces) < 2:
-                self._set_status("配合需要两个面")
+                self._set_status("配合需要两个面（先选移动体上的面，再选目标面）")
                 return
+            vals = self._ask_numbers("配合类型", [("0=面贴合 1=轴对齐 2=距离", 0.0),
+                                                  ("距离 mm（类型 2）", 0.0)])
+            if not vals:
+                return
+            mtype = int(vals[0]) % 3
             bid1, fi1 = faces[0].split(":", 1)
             bid2, fi2 = faces[1].split(":", 1)
             b1 = ses.kdoc.body_by_id(bid1)
@@ -1069,22 +1078,38 @@ else:
             try:
                 f1 = K.explore(b1.shape, "face")
                 f2 = K.explore(b2.shape, "face")
-                b1.shape = K.align_faces(b1.shape, f1[int(fi1)], f2[int(fi2)])
-                self._commit("已配合（面重合）")
+                mf, tf = f1[int(fi1)], f2[int(fi2)]
+                if mtype == 1:
+                    b1.shape = K.align_axes(b1.shape, mf, tf)
+                    self._commit("已配合（轴对齐）")
+                    return
+                b1.shape = K.align_faces(b1.shape, mf, tf)
+                if mtype == 2:
+                    n2, _c = K.face_normal_center(tf)
+                    b1.shape = K.translate(b1.shape, (n2[0] * vals[1] / ses.scale,
+                                                      n2[1] * vals[1] / ses.scale,
+                                                      n2[2] * vals[1] / ses.scale))
+                verb = "已配合（面重合）" if mtype == 0 else f"已配合（距离 {vals[1]:g}mm）"
+                self._commit(verb)
             except Exception as exc:
                 self._set_status(f"配合失败: {exc}")
 
         def _do_asm_explode(self):
             ses = self.session()
             if not ses.kdoc.components:
+                self._set_status("爆炸图：没有组件")
                 return
+            vals = self._ask_numbers("爆炸图", [("每组件间距 mm", 20.0)])
+            if not vals:
+                return
+            step = vals[0] / ses.scale
             for i, comp in enumerate(ses.kdoc.components, 1):
-                vec = (0.02 * i, 0, 0)
+                vec = (step * i, 0, 0)
                 for b in ses.kdoc.bodies_of_component(comp.id):
                     if comp.anchored:
                         continue
                     b.shape = K.translate(b.shape, vec)
-            self._commit("已爆炸组件")
+            self._commit(f"已爆炸组件（间距 {vals[0]:g}mm）")
 
         def _do_asm_light(self):
             comp = self._selected_component()
