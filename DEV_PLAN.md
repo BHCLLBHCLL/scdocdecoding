@@ -698,8 +698,11 @@ G1–G6 按本节计划逐项实现，每个工作包独立提交并推送 GitHu
 
 | 项 | 状态 | 说明 |
 | --- | --- | --- |
-| scdoc 锥/球/环面 | 未做 | 参照已在手（SampleModel cone/torus），按圆柱同法可扩展 |
-| scdoc 曲面自读 | 回退 | 自身 parser 拓扑层未解 cone/ellipse，圆柱 scdoc 自读回退为空（官方打开为验证目标）；自读平面体不受影响 |
-| SpaceClaim 批处理自动化 | 未通 | `/RunScript` 标志在该版本被忽略，官方侧自动验证仍走 `scdm_interop_check --open` 手动路径 |
+| scdoc 锥/球/环面 | 样本已入库 | `references/cyl_step_converted.scdoc`（官方 STEP→scdoc 转存，ACIS 29）+ SampleModel cone/torus 记录样本；cone token 序列与圆柱同构，非零半角（sine/cosine）语义待真锥样本验证 |
+| scdoc 曲面自读 | **已回退实现** | 含圆柱体的文件附 bodyFacets 部件（每三角一节点）；自读走网格回退（weld+sew→「网格导入」体，体积≈πR²h 验证通过）；平面体文件保持已验证的 32 项交叉校验布局不变 |
+| SpaceClaim 批处理自动化 | **已打通** | 根因是脚本相对路径；正解：`/RunScript=<绝对路径>.py /ExitAfterScript=True` + IronPython `clr.AddReference("SpaceClaim.Api.V19")`、`Document.Open(step, ImportOptions.Create())` 返回窗口数组、`window.Document` 取文档、`GetRootPart().GetBodies()`（journaling 注入）读体数。官方 box.scdoc 阳性对照 bodies=1 |
+| 官方打开我们的文件 | 未通 | 官方 reader 打开我们写的 scdoc 均报 0 bodies：签名级/值级 diff 已对齐并逐项排除（face token1 递增、末面 flags、loop 无尾、edge token1=11+、pid、SC:0 attrib、attrib 就位重排），剩余疑点在 document.xml↔SAB 关联层（官方 19.5KB vs 我们 2.8KB 模板）。排查脚本与流程已入库可复现 |
 
-**主要新增模块：** `scdm/drawing.py`（HLR 三视图）、`tests/test_g1.py`、`tests/test_g2.py`；核心改动集中在 `scdm_gui.py`（命令接线）、`scdm/kernel.py`（边离散/环选/轴对齐/修复/共享拓扑/中面/剖交线）、`scdm/gui/scene.py`（B-rep 拾取、栅格、剖切 widget、测量标注、渲染参数化）、`scdm/scdoc_write.py`（rgb_color、圆柱模板）、`scdoc_parser/sab.py`（多代头部兼容）。
+**第三轮新增：** `references/cyl_step_converted.scdoc`（官方转换参照入库）、`_facets_bytes`（bodyFacets 写出）、圆柱模板升级为官方 ACIS-29 布局（seam 边、curve id 21/20、surface id 15/14/16、圆边参数 0..2π、顶点在 +major 参数 0 处、面序侧/顶/底）、importer 网格回退（weld+sew）。
+
+**主要新增模块：** `scdm/drawing.py`（HLR 三视图）、`tests/test_g1.py`、`tests/test_g2.py`；核心改动集中在 `scdm_gui.py`（命令接线）、`scdm/kernel.py`（边离散/环选/轴对齐/修复/共享拓扑/中面/剖交线）、`scdm/gui/scene.py`（B-rep 拾取、栅格、剖切 widget、测量标注、渲染参数化）、`scdm/scdoc_write.py`（rgb_color、圆柱 ACIS-29 模板、bodyFacets）、`scdoc_parser/sab.py`（多代头部兼容）、`scdm/import_sab.py`（网格回退）。
