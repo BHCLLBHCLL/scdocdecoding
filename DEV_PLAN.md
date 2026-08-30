@@ -682,17 +682,24 @@ G1–G5 全部实现并推送；G6 完成 3/4 项（曲面 SAB 记录与自有�
 
 ### 20.9 实施记录（2026-08-30）
 
-G1–G6 按本节计划逐项实现，每个工作包独立提交并推送 GitHub。测试基线从 58 passed 增至 **82 passed, 1 skipped**（新增 `tests/test_g1.py` 目录守卫 + `tests/test_g2.py` 工具/网格/草图/修复/工程图单测）。
+G1–G6 按本节计划逐项实现，每个工作包独立提交并推送 GitHub。测试基线从 58 passed 增至 **87 passed, 1 skipped**（新增 `tests/test_g1.py` 目录守卫 + `tests/test_g2.py` 工具/网格/草图/修复/工程图/圆柱写出单测）。
 
-**未尽事项（如实记录）：**
+**第二轮补齐（同日，20.9.b）**：首轮的四项未尽事项已完成三项半——
 
 | 项 | 状态 | 说明 |
 | --- | --- | --- |
-| scdoc 曲面 SAB 记录 | 未做 | 仓库内无曲面官方参考文件（box.scdoc 仅平面），逆向缺参照；写出仍限平面体，非平面体报错 |
-| 自有渲染（G6-04） | 未做 | 可选项；`ks.render` 保持「导出当前视图 PNG」形态 |
-| 截面模式「截面上拉」 | 部分 | 拖拽剖切 widget 已实现；截面轮廓生成草图/拉伸未做 |
-| 中面抽取 | 简化版 | 仅支持板类凸多边形外轮廓（最大平行对面 → 中面） |
-| 边/顶点拾取精度 | v1 | B-rep 边散列为折线 cell，容差 0.005；密网格大模型建议后续按 body 分 actor |
-| 草图定位 | v1 | 草图平面过原点（拾面取主法向），无面内偏置；椭圆/样条以折线近似存储 |
+| scdoc 曲面 SAB 记录 | **圆柱已实现** | 参照不再缺失：官方 BeamProfiles/Circular.scdoc（ACIS 20）与 SrModels/SampleModel*.scdoc（ACIS 28）提供曲面记录样本；解码出圆柱面=cone(cos=1,sin=0)+ellipse 圆边、闭合边无 seam、uv=[0,h/R,−π,π]、loop int15 编码。`write_scdoc` 现按官方布局写出圆柱体（单圆柱或与平面体混排），记录种类/逐 token 与官方参照一致；`sab.py` 兼容 ACIS 20/28 旧头部与 0x0F/0x10 标记。**锥/球/环面与任意曲面体仍限平面回退**（后续按同法扩展） |
+| 自有渲染（G6-04） | **已实现** | `ks.render` 升级：超采倍数 1–4×、背景（白/浅灰/黑）、边显示开关；`render_image` 参数化，打印预览共用 |
+| 截面「截面上拉」 | **已实现** | 截面 widget 开启后点「草图」：`BRepAlgoAPI_Section` 剖交线链接成环 → 自定义平面草图曲线 → 拉动沿截面法向挤出 |
+| 非凸板中面 | **已实现** | 先 `ShapeUpgrade_UnifySameDomain` 合并共面碎片，再用面平移变换取中面（保留凹轮廓与内孔） |
+| 草图面内偏置 | **已实现** | 草图平面支持自定义 origin/normal/xdir；拾面进入草图即落在真实面平面上 |
 
-**主要新增模块：** `scdm/drawing.py`（HLR 三视图）、`tests/test_g1.py`、`tests/test_g2.py`；核心改动集中在 `scdm_gui.py`（命令接线）、`scdm/kernel.py`（边离散/环选/轴对齐/修复/共享拓扑/中面）、`scdm/gui/scene.py`（B-rep 拾取、栅格、剖切 widget、测量标注）。
+**仍开放（如实记录）：**
+
+| 项 | 状态 | 说明 |
+| --- | --- | --- |
+| scdoc 锥/球/环面 | 未做 | 参照已在手（SampleModel cone/torus），按圆柱同法可扩展 |
+| scdoc 曲面自读 | 回退 | 自身 parser 拓扑层未解 cone/ellipse，圆柱 scdoc 自读回退为空（官方打开为验证目标）；自读平面体不受影响 |
+| SpaceClaim 批处理自动化 | 未通 | `/RunScript` 标志在该版本被忽略，官方侧自动验证仍走 `scdm_interop_check --open` 手动路径 |
+
+**主要新增模块：** `scdm/drawing.py`（HLR 三视图）、`tests/test_g1.py`、`tests/test_g2.py`；核心改动集中在 `scdm_gui.py`（命令接线）、`scdm/kernel.py`（边离散/环选/轴对齐/修复/共享拓扑/中面/剖交线）、`scdm/gui/scene.py`（B-rep 拾取、栅格、剖切 widget、测量标注、渲染参数化）、`scdm/scdoc_write.py`（rgb_color、圆柱模板）、`scdoc_parser/sab.py`（多代头部兼容）。
