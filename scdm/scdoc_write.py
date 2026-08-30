@@ -87,17 +87,32 @@ class _Rec:
             self.tokens += t
         return self
 
-    def bytes(self) -> bytes:
+    def bytes(self, seen=None):
+        """Serialize. Official SAB interns class names: only the FIRST record
+        of a class carries the name header; later ones use an id-only header
+        (hdrlen=5, T_ID + int32). `seen` maps class name -> registered id and
+        is shared between chain entries and record headers."""
+        seen = seen if seen is not None else {}
         out = bytearray()
         for name, cid in self.chain:
+            if cid is not None and seen.get(name) == cid:
+                out += bytes([T_CHAIN, 5, T_ID]) + _ri(cid)
+                continue
             hdrlen = len(name) + (5 if cid is not None else 0)
             out += bytes([T_CHAIN, hdrlen]) + name.encode("latin-1")
             if cid is not None:
                 out += bytes([T_ID]) + _ri(cid)
+                seen[name] = cid
+        if self.class_id is not None and seen.get(self.name) == self.class_id:
+            out += bytes([T_RECORD, 5, T_ID]) + _ri(self.class_id)
+            out += self.tokens
+            out += bytes([T_TERM])
+            return bytes(out)
         hdrlen = len(self.name) + (5 if self.class_id is not None else 0)
         out += bytes([T_RECORD, hdrlen]) + self.name.encode("latin-1")
         if self.class_id is not None:
             out += bytes([T_ID]) + _ri(self.class_id)
+            seen[self.name] = self.class_id
         out += self.tokens
         out += bytes([T_TERM])
         return bytes(out)
@@ -752,10 +767,11 @@ def _build_sab(items, colors=None):
     out += _td(1000.0) + _td(1e-8) + _td(1e-10)
     out += bytes([T_FLAG_A])
     out += _s("FQ8FFTTT5P7PJFMUMMYS2_J8B48CXKNEWAP4QAQV2CS3PP65QBQCNVPEFCMUSP6XAAPKK47XTA84Q")
+    seen_classes = {}
     for rec in recs:
         if rec is None:
             raise ValueError("internal: uninitialised record")
-        out += rec.bytes()
+        out += rec.bytes(seen_classes)
     out += bytes([T_RECORD, len(END_NAME)]) + END_NAME.encode("latin-1")
     face_counts = [len(it[3]) if it[0] == "planar" else 3 for it in items]
     edge_counts = [len(it[2]) if it[0] == "planar" else 2 for it in items]
