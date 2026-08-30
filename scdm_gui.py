@@ -1568,7 +1568,20 @@ else:
             self._set_status(f"功能区已自定义（隐藏 {len(hidden)} 个命令）")
 
         def _do_ks_render(self):
-            """Own-renderer entry on the KeyShot tab: export the current view as PNG."""
+            """Own-renderer entry on the KeyShot tab: render with options."""
+            if self.scene is None:
+                self._set_status("3D 视图不可用")
+                return
+            vals = self._ask_numbers(
+                "自有渲染",
+                [("超采倍数 1~4", 2.0),
+                 ("背景 0=白 1=浅灰 2=黑", 1.0),
+                 ("显示边 0/1", 1.0)])
+            if not vals:
+                return
+            scale = max(1, min(4, int(vals[0])))
+            bg = [(1.0, 1.0, 1.0), (0.955, 0.955, 0.96),
+                  (0.05, 0.05, 0.06)][int(vals[1]) % 3]
             fn, _ = QFileDialog.getSaveFileName(
                 self, "导出渲染图", "", "PNG (*.png);;JPG (*.jpg)")
             if not fn:
@@ -1576,11 +1589,10 @@ else:
             if not fn.lower().endswith((".png", ".jpg", ".jpeg")):
                 fn += ".png"
             try:
-                if self.scene is None:
-                    self._set_status("3D 视图不可用")
-                    return
-                self.scene.export_png(fn)
-                self._set_status(f"已导出当前视图 → {fn}")
+                img = self.scene.render_image(
+                    scale=scale, bg=bg, show_edges=bool(int(vals[2]) % 2))
+                img.save(fn)
+                self._set_status(f"渲染完成（{scale}× 超采）→ {fn}")
             except Exception as exc:
                 self._set_status(f"渲染导出失败: {exc}")
 

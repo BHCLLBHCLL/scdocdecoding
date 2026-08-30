@@ -956,18 +956,40 @@ class Scene:
         writer.SetInputConnection(w2i.GetOutputPort())
         writer.Write()
 
-    def render_image(self):
-        """Grab the current viewport as a QImage (print / render entry)."""
+    def render_image(self, scale=1, bg=None, show_edges=None):
+        """Grab the current viewport as a QImage (print / render entry).
+
+        scale > 1 renders at a larger window size for anti-aliased supersampling;
+        bg overrides the background colour; show_edges forces the edge overlay.
+        """
         from PyQt5.QtGui import QImage
         from vtk.util.numpy_support import vtk_to_numpy
-        self.render()
-        w2i = vtk.vtkWindowToImageFilter()
-        w2i.SetInput(self.renderer.GetRenderWindow())
-        w2i.Update()
-        img = w2i.GetOutput()
-        dims = img.GetDimensions()
-        arr = vtk_to_numpy(img.GetPointData().GetScalars())
-        arr = np.flipud(arr.reshape(dims[1], dims[0], -1))
+        rw = self.vtk_widget.GetRenderWindow()
+        old_size = rw.GetSize()
+        old_bg = self.renderer.GetBackground()
+        edge_vis = self._edge_actor.GetVisibility() if self._edge_actor else 0
+        try:
+            if bg is not None:
+                self.renderer.SetBackground(*bg)
+            if show_edges is not None and self._edge_actor:
+                self._edge_actor.SetVisibility(1 if show_edges else 0)
+            if scale != 1:
+                rw.SetSize(old_size[0] * scale, old_size[1] * scale)
+            self.render()
+            w2i = vtk.vtkWindowToImageFilter()
+            w2i.SetInput(rw)
+            w2i.Update()
+            img = w2i.GetOutput()
+            dims = img.GetDimensions()
+            arr = vtk_to_numpy(img.GetPointData().GetScalars())
+            arr = np.flipud(arr.reshape(dims[1], dims[0], -1))
+        finally:
+            if scale != 1:
+                rw.SetSize(*old_size)
+            self.renderer.SetBackground(*old_bg)
+            if show_edges is not None and self._edge_actor:
+                self._edge_actor.SetVisibility(edge_vis)
+            self.render()
         fmt = QImage.Format_RGBA8888 if arr.shape[2] == 4 else QImage.Format_RGB888
         return QImage(arr.copy(), dims[0], dims[1], dims[0] * arr.shape[2], fmt)
 
