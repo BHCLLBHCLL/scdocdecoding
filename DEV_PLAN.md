@@ -701,7 +701,7 @@ G1–G6 按本节计划逐项实现，每个工作包独立提交并推送 GitHu
 | scdoc 锥/球/环面 | 样本已入库 | `references/cyl_step_converted.scdoc`（官方 STEP→scdoc 转存，ACIS 29）+ SampleModel cone/torus 记录样本；cone token 序列与圆柱同构，非零半角（sine/cosine）语义待真锥样本验证 |
 | scdoc 曲面自读 | **已回退实现** | 含圆柱体的文件附 bodyFacets 部件（每三角一节点）；自读走网格回退（weld+sew→「网格导入」体，体积≈πR²h 验证通过）；平面体文件保持已验证的 32 项交叉校验布局不变 |
 | SpaceClaim 批处理自动化 | **已打通** | 根因是脚本相对路径；正解：`/RunScript=<绝对路径>.py /ExitAfterScript=True` + IronPython `clr.AddReference("SpaceClaim.Api.V19")`、`Document.Open(step, ImportOptions.Create())` 返回窗口数组、`window.Document` 取文档、`GetRootPart().GetBodies()`（journaling 注入）读体数。官方 box.scdoc 阳性对照 bodies=1 |
-| 官方打开我们的文件 | 未通 | 官方 reader 打开我们写的 scdoc 均报 0 bodies：签名级/值级 diff 已对齐并逐项排除（face token1 递增、末面 flags、loop 无尾、edge token1=11+、pid、SC:0 attrib、attrib 就位重排），剩余疑点在 document.xml↔SAB 关联层（官方 19.5KB vs 我们 2.8KB 模板）。排查脚本与流程已入库可复现 |
+| 官方打开我们的文件 | 根因已定位 | **流顺序敏感已字节级证实**：官方 SAB 物理重排为我们的段序（字节保真 in-place + 指针重映射）后官方打开即失败（expG2，脚本流程可复现）；而官方原序 bodies=1。intern 头机制（首条带名、后续 id-only，99/12 分布）已实现并对齐。**下一步明确**：实现官方遍历序写出——kind 序列模板已导出 `references/official_box_kind_sequence.txt`，验证脚本 `references/verify_open.py` 已入库（含绝对路径/ImportOptions.Create/window.Document/GetRootPart 全部要点） |
 
 **第三轮新增：** `references/cyl_step_converted.scdoc`（官方转换参照入库）、`_facets_bytes`（bodyFacets 写出）、圆柱模板升级为官方 ACIS-29 布局（seam 边、curve id 21/20、surface id 15/14/16、圆边参数 0..2π、顶点在 +major 参数 0 处、面序侧/顶/底）、importer 网格回退（weld+sew）。
 
