@@ -328,3 +328,60 @@ def test_section_outline_and_chain():
     axes = S.sketch_axes("custom", (0, 0, 0.005), (0, 0, 1), (1, 0, 0))
     uv = [S.world_to_uv(axes, p) for p in ring]
     assert abs(max(u for u, _ in uv) - 0.01) < 1e-6
+
+
+# --- G6-01b: cylinder SAB writing (official Circular.scdoc layout) ------------------
+
+def test_cylinder_scdoc_matches_official_record_shapes():
+    import os
+    import tempfile
+    from collections import Counter
+
+    from scdoc_parser import sab as sab_mod, opc
+    from scdm.scdoc_write import write_scdoc
+
+    doc = KernelDoc()
+    doc.add_body(K.make_cylinder(0.005, 0.01), name="Cyl1")
+    fd, path = tempfile.mkstemp(suffix=".scdoc")
+    os.close(fd)
+    try:
+        write_scdoc(path, doc, name="cyl")
+        pkg = opc.parse_package(path)
+        sf = sab_mod.tokenize(pkg.read(pkg.find_geometry()[0].name))
+        kinds = Counter(r.kind for r in sf.records)
+        assert kinds["cone"] == 1 and kinds["ellipse"] == 2
+        assert kinds["face"] == 3 and kinds["edge"] == 2
+        assert kinds["plane"] == 2 and kinds["loop"] == 4 and kinds["coedge"] == 4
+        cone = [r for r in sf.records if r.kind == "cone"][0]
+        toks = [t.kind for t in cone.tokens]
+        assert toks.count("double") == 4  # ratio, sine, cosine, R
+        ellipse = [r for r in sf.records if r.kind == "ellipse"][0]
+        assert [t.kind for t in ellipse.tokens].count("vec3") == 1
+        assert [t.kind for t in ellipse.tokens].count("vec3b") == 2
+    finally:
+        os.remove(path)
+
+
+def test_mixed_box_and_cylinder_scdoc():
+    import os
+    import tempfile
+    from collections import Counter
+
+    from scdoc_parser import sab as sab_mod, opc
+    from scdm.scdoc_write import write_scdoc
+
+    doc = KernelDoc()
+    doc.add_body(K.make_box(0.01, 0.01, 0.01), name="Box1")
+    doc.add_body(K.make_cylinder(0.005, 0.01), name="Cyl1")
+    fd, path = tempfile.mkstemp(suffix=".scdoc")
+    os.close(fd)
+    try:
+        write_scdoc(path, doc, name="mixed")
+        pkg = opc.parse_package(path)
+        sf = sab_mod.tokenize(pkg.read(pkg.find_geometry()[0].name))
+        kinds = Counter(r.kind for r in sf.records)
+        assert kinds["face"] == 9 and kinds["edge"] == 14
+        assert kinds["body"] == 2 and kinds["cone"] == 1
+        assert kinds["straight"] == 12 and kinds["ellipse"] == 2
+    finally:
+        os.remove(path)

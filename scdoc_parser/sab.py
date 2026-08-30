@@ -289,6 +289,10 @@ class SabTokenizer:
                 current.tokens.append(Token('int15', self._i32(), off))
             elif b == T_TERM:
                 current = None
+            elif b in (0x0F, 0x10):
+                # legacy-stream markers (observed in pcurve/cone records of ACIS 28
+                # library files); parameterless — verified by full-stream alignment
+                current.tokens.append(Token(f'mark{b:02x}', None, off))
             else:
                 raise SabError(
                     f'unknown token 0x{b:02x} at offset {off} '
@@ -299,4 +303,28 @@ class SabTokenizer:
 
 
 def tokenize(data: bytes) -> SabFile:
+    data = _normalize_header(data)
     return SabTokenizer(data).parse()
+
+
+def _normalize_header(data: bytes) -> bytes:
+    """Accept both SAB header variants: 'T' + blob-len (new) and a leading
+    int32 schema version followed by three more int32s (legacy, e.g. ACIS 20/28
+    library files). The token stream itself is identical after the header."""
+    if data[:15] != MAGIC[:15]:
+        return data
+    if data[15:16] == b'T':
+        return data
+    s = data.find(b'\x07\x0ASpaceClaim')
+    if s < 0:
+        return data
+    i = s
+    for _ in range(3):  # product, version, date strings
+        ln = data[i + 1]
+        i += 2 + ln
+    i += 3 * 9  # three T_DOUBLE header scalars
+    head = data[:15] + b'T' + struct.pack('<i', 11) + b'\x00' * 11 + data[s:i]
+    tail = data[i:]
+    if tail[:1] != b'\x0a':  # legacy ACIS 20 headers lack flag + product id
+        tail = b'\x0a\x07\x0aSpaceClaim' + tail
+    return head + tail

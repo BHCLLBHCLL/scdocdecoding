@@ -35,7 +35,10 @@ def _record_kinds(geom_path: str):
     else:
         data = open(geom_path, "rb").read()
     sf = sab_mod.tokenize(data)
-    model = topology.SabModel(sf)
+    try:
+        model = topology.SabModel(sf)
+    except Exception:
+        model = None  # legacy-layout files (ACIS 20/28) keep token streams only
     kinds = []
     for rec in sf.records:
         if rec.kind == "record" or rec.kind == "chain":
