@@ -63,9 +63,32 @@ def import_scdoc_bundle(data: dict) -> KernelDoc:
     doc = import_model(model, color=color)
     if doc.bodies:
         return doc
-    # bbox fallback from facets
+    # facet-mesh fallback: sew the display mesh into a shell body (marks
+    # 「网格导入」through the name) — used when the SAB carries faces the
+    # topology layer cannot rebuild (e.g. cylindrical faces)
     fac = data.get("fac") if data else None
-    if fac is not None and getattr(fac, "faces", None):
+    if fac is not None and getattr(fac, "faces", None) and K.available():
+        import numpy as np
+        from scdm import facets as F
+        vs, ts, off = [], [], 0
+        for f in fac.faces:
+            pts = np.asarray([c.position for c in f.corners], dtype=np.float64)
+            tris = np.asarray(f.triangles, dtype=np.int64)
+            if len(pts) == 0 or not len(tris):
+                continue
+            vs.append(pts)
+            ts.append(tris + off)
+            off += len(pts)
+        if vs:
+            verts = np.vstack(vs)
+            tris = np.vstack(ts)
+            try:
+                verts, tris = F.weld(verts, tris, tol=1e-6)
+                shell = F.mesh_to_shell(verts, tris)
+                doc.add_body(shell, name="网格导入", color=color)
+            except Exception:
+                pass
+    if not doc.bodies and fac is not None and getattr(fac, "faces", None):
         xs, ys, zs = [], [], []
         for f in fac.faces:
             for c in f.corners:

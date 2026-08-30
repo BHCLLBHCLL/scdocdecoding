@@ -311,10 +311,11 @@ def _fix_partner(tokens: bytearray, partner: int) -> bytearray:
     return out
 
 
-def _attrib(owner, value, nxt=None):
+def _attrib(owner, value, nxt=None, type_id=14675622,
+            name_tag="ATTRIB_XACIS_NAME%6"):
     return (_Rec("attrib", 5, chain=[("string_attrib", 2), ("name_attrib", 3), ("gen", 4)])
             .add(_p(-1 if nxt is None else nxt), _ti(-1), _p(-1), _p(-1), _p(owner),
-                 _ti(14675622), _s("ATTRIB_XACIS_NAME%6"), _s(value)))
+                 _ti(type_id), _s(name_tag), _s(value)))
 
 
 def _rgb_attrib(owner, prev, rgb):
@@ -343,9 +344,9 @@ def _build_sab(items, colors=None):
     E_p = sum(len(it[2]) for _bi, it in planar)
     V_p = sum(len(it[1]) for _bi, it in planar)
     F = F_p + 3 * C
-    L = F_p + 4 * C          # planar: 1 loop/face; cyl: 4 loops
-    CC = 2 * E_p + 4 * C     # planar: 2 coedges/edge; cyl: 4
-    E = E_p + 2 * C
+    L = F_p + 3 * C          # planar: 1 loop/face; cyl: 3 loops
+    CC = 2 * E_p + 6 * C     # planar: 2 coedges/edge; cyl: 6
+    E = E_p + 3 * C
     V = V_p + 2 * C
     P = F_p + 2 * C          # plane surfaces: 1/planar face + 2 caps/cyl
 
@@ -361,13 +362,14 @@ def _build_sab(items, colors=None):
     idx_point = idx_vertex + V
     idx_plane = idx_point + V
     idx_straight = idx_plane + P
-    idx_cone = idx_straight + E_p
+    idx_cone = idx_straight + E_p + C   # planar straights + cyl seams
     idx_ellipse = idx_cone + C
     idx_face_attrib = idx_ellipse + 2 * C
     idx_edge_attrib = idx_face_attrib + F
     idx_face_rgb = idx_edge_attrib + E
+    idx_body_pname = idx_face_rgb + F   # ATTRIB_XACIS_PNAME per body
 
-    recs: List[Optional[_Rec]] = [None] * (idx_face_rgb + F)
+    recs: List[Optional[_Rec]] = [None] * (idx_body_pname + B)
 
     foff_of, eoff_of, voff_of = {}, {}, {}
     f_off = e_off = v_off = 0
@@ -392,6 +394,7 @@ def _build_sab(items, colors=None):
     cyl_eoff = E_p
     cyl_voff = V_p
     cyl_poff = F_p          # plane-surface index where cyl caps start
+    cyl_soff = E_p          # straight-curve index where cyl seams start
 
     # bodies / attribs / lumps / shells
     for bi, it in enumerate(items):
@@ -407,7 +410,11 @@ def _build_sab(items, colors=None):
             .add(_p(idx_attrib_body + bi), _ti(10), _ti(-1), _p(-1), _ti(0),
                  _p(idx_lump + bi), _p(-1), _p(-1),
                  bytes([T_FLAG_A]), _v3(*smin), _v3(*smax)))
-        recs[idx_attrib_body + bi] = _attrib(idx_body + bi, f"0:{23 + 60 * bi}")
+        recs[idx_attrib_body + bi] = _attrib(
+            idx_body + bi, f"0:{23 + 60 * bi}", nxt=idx_body_pname + bi)
+        recs[idx_body_pname + bi] = _attrib(
+            idx_body + bi, "SC:0",
+            type_id=14675622, name_tag="ATTRIB_XACIS_PNAME%8")
         recs[idx_lump + bi] = (
             _Rec("lump", 7)
             .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1),
@@ -422,20 +429,21 @@ def _build_sab(items, colors=None):
     # faces
     for bi, it in planar:
         verts, edges, faces = it[1], it[2], it[3]
-        foff, eoff, voff = foff_of[bi], eoff_of[bi], voff_of[bi]
+        foff = foff_of[bi]
         for fi, f in enumerate(faces):
             g = idx_face + foff + fi
             fmin, fmax = _bbox(verts, f["loop"])
+            f1 = T_FLAG_A if fi == len(faces) - 1 else T_FLAG_B
             recs[g] = (
                 _Rec("face", 10)
-                .add(_p(idx_face_attrib + foff + fi), _ti(4), _ti(-1), _p(-1),
+                .add(_p(idx_face_attrib + foff + fi), _ti(4 + fi), _ti(-1), _p(-1),
                      _p(idx_face + foff + fi + 1 if fi + 1 < len(faces) else -1),
                      _p(idx_loop + foff + fi), _p(idx_shell + bi), _p(-1),
                      _p(idx_plane + foff + fi),
-                     bytes([T_FLAG_B, T_FLAG_B, T_FLAG_A]), _v3(*fmin), _v3(*fmax),
+                     bytes([f1, T_FLAG_B, T_FLAG_A]), _v3(*fmin), _v3(*fmax),
                      bytes([T_FLAG_A]), _td(0.0), _td(0.01), _td(0.0), _td(0.01)))
 
-    # loops
+    # loops (official box style: most loops end at int15, no trailing surface)
     for bi, it in planar:
         verts, edges, faces = it[1], it[2], it[3]
         foff = foff_of[bi]
@@ -444,12 +452,11 @@ def _build_sab(items, colors=None):
             lmin, lmax = _bbox(verts, f["loop"])
             recs[g] = (
                 _Rec("loop", 11)
-                .add(_p(-1), _ti(37), _ti(-1), _p(-1), _p(-1),
+                .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1),
                      _p(idx_coedge + coff(foff, fi)),
                      _p(idx_face + foff + fi),
                      bytes([T_FLAG_A]), _v3(*lmin), _v3(*lmax),
-                     bytes([T_INT15]) + _ri(0),
-                     _p(idx_plane + foff + fi), bytes([T_FLAG_B])))
+                     bytes([T_INT15]) + _ri(0)))
 
     # coedges
     edge_coedges = {}
@@ -489,7 +496,7 @@ def _build_sab(items, colors=None):
             first_co = coeds[0] if coeds else -1
             recs[idx_edge + eoff + ei] = (
                 _Rec("edge", 17)
-                .add(_p(idx_edge_attrib + eoff + ei), _ti(0), _ti(-1), _p(-1),
+                .add(_p(idx_edge_attrib + eoff + ei), _ti(11 + eoff + ei), _ti(-1), _p(-1),
                      _p(idx_vertex + voff + v1), _td(0.0),
                      _p(idx_vertex + voff + v2), _td(length),
                      _p(first_co), _p(idx_straight + eoff + ei),
@@ -549,8 +556,9 @@ def _build_sab(items, colors=None):
             recs[idx_edge_attrib + eoff + ei] = _attrib(
                 idx_edge + eoff + ei, f"0:{45 + 3 * ei + 60 * bi}")
 
-    # cylindrical bodies (layout from official Circular.scdoc: cone surface +
-    # ellipse curves, closed circular edges, no seam, no pcuves)
+    # cylindrical bodies (layout from the official SpaceClaim-written cylinder
+    # reference, ACIS 29: seam edge on the side face, 0..2pi circular edges,
+    # vertices at param 0 (+major), surface/curve ids 15/14/16/21/20/22)
     for gi, (bi, it) in enumerate(cyls):
         info = it[1]
         R, h = info["R"], info["h"]
@@ -561,9 +569,9 @@ def _build_sab(items, colors=None):
         lo, hi = info["bbox"]
         col = colors[bi] if colors and bi < len(colors) else (0.745, 0.902, 0.961)
         foff = cyl_foff + 3 * gi
-        loff = cyl_loff + 4 * gi
-        coffb = cyl_coff + 4 * gi
-        eoff = cyl_eoff + 2 * gi
+        loff = cyl_loff + 3 * gi
+        coffb = cyl_coff + 6 * gi
+        eoff = cyl_eoff + 3 * gi
         voff = cyl_voff + 2 * gi
         poff = cyl_poff + 2 * gi
         cone_i = idx_cone + gi
@@ -576,139 +584,161 @@ def _build_sab(items, colors=None):
             return ((center[0] - ex, center[1] - ey, center[2] - ez),
                     (center[0] + ex, center[1] + ey, center[2] + ez))
 
-        # surfaces: two cap planes + the cone
-        for pi, center, nrm in ((0, cap_a, (-axis[0], -axis[1], -axis[2])),
-                                (1, cap_b, axis)):
+        # surfaces: top plane, bottom plane, cone (ids 15 / chain 16 / 14)
+        for pi, center, nrm in ((0, cap_b, axis),
+                                (1, cap_a, (-axis[0], -axis[1], -axis[2]))):
             recs[idx_plane + poff + pi] = (
-                _Rec("surface", 13, chain=[("plane", 12)])
+                _Rec("surface", 15, chain=[("plane", 16)])
                 .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*center),
                      _v3b(*nrm), _v3b(*mu), bytes([T_FLAG_B] * 5)))
         recs[cone_i] = (
-            _Rec("surface", 13, chain=[("cone", 17)])
+            _Rec("surface", 15, chain=[("cone", 14)])
             .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*org),
-                 _v3b(*axis), _v3b(*major), _td(1.0),
-                 bytes([T_FLAG_B, T_FLAG_B]),
-                 _td(0.0), _td(1.0), _td(R),
-                 bytes([T_FLAG_B] * 5)))
+                 _v3b(-axis[0], -axis[1], -axis[2]),
+                 _v3b(mu[0] * R, mu[1] * R, mu[2] * R),
+                 _td(1.0), bytes([T_FLAG_B, T_FLAG_B]),
+                 _td(-0.0), _td(1.0), _td(R),
+                 bytes([T_FLAG_A, T_FLAG_B, T_FLAG_B, T_FLAG_B, T_FLAG_B])))
 
-        # vertices + points at param -pi (centre - major)
-        vbot = (cap_a[0] - major[0], cap_a[1] - major[1], cap_a[2] - major[2])
-        vtop = (cap_b[0] - major[0], cap_b[1] - major[1], cap_b[2] - major[2])
+        # vertices + points at param 0 (centre + major), one per circular edge
+        major_unit_R = (mu[0] * R, mu[1] * R, mu[2] * R)
+        vbot = (cap_a[0] + major_unit_R[0], cap_a[1] + major_unit_R[1],
+                cap_a[2] + major_unit_R[2])
+        vtop = (cap_b[0] + major_unit_R[0], cap_b[1] + major_unit_R[1],
+                cap_b[2] + major_unit_R[2])
         recs[idx_vertex + voff] = (
-            _Rec("vertex", 18)
+            _Rec("vertex", 19)
             .add(_p(-1), _ti(-1), _ti(-1), _p(-1),
-                 _p(idx_edge + eoff), _p(idx_point + voff)))
+                 _p(idx_edge + eoff + 2), _p(idx_point + voff)))
         recs[idx_vertex + voff + 1] = (
-            _Rec("vertex", 18)
+            _Rec("vertex", 19)
             .add(_p(-1), _ti(-1), _ti(-1), _p(-1),
                  _p(idx_edge + eoff + 1), _p(idx_point + voff + 1)))
         recs[idx_point + voff] = (
-            _Rec("point", 21).add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*vbot)))
+            _Rec("point", 23).add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*vbot)))
         recs[idx_point + voff + 1] = (
-            _Rec("point", 21).add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*vtop)))
+            _Rec("point", 23).add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*vtop)))
 
-        # circular edges (closed: both vertex refs are the same vertex)
+        # edges: bottom circle(0..2pi), top circle(0..2pi), seam(0..h)
         bmin, bmax = circ_bbox(cap_a)
         tmin, tmax = circ_bbox(cap_b)
         recs[idx_edge + eoff] = (
-            _Rec("edge", 17)
-            .add(_p(idx_edge_attrib + eoff), _ti(0), _ti(-1), _p(-1),
-                 _p(idx_vertex + voff), _td(-math.pi),
-                 _p(idx_vertex + voff), _td(math.pi),
-                 _p(idx_coedge + coffb), _p(ell_b),
-                 bytes([T_FLAG_A]), _s("unknown"),
+            _Rec("edge", 18)
+            .add(_p(idx_edge_attrib + eoff), _ti(4), _ti(-1), _p(-1),
+                 _p(idx_vertex + voff), _td(0.0),
+                 _p(idx_vertex + voff), _td(2.0 * math.pi),
+                 _p(idx_coedge + coffb + 2), _p(ell_b + 1),
+                 bytes([T_FLAG_B]), _s("unknown"),
                  bytes([T_FLAG_A]), _v3(*bmin), _v3(*bmax)))
         recs[idx_edge + eoff + 1] = (
-            _Rec("edge", 17)
-            .add(_p(idx_edge_attrib + eoff + 1), _ti(0), _ti(-1), _p(-1),
-                 _p(idx_vertex + voff + 1), _td(-math.pi),
-                 _p(idx_vertex + voff + 1), _td(math.pi),
-                 _p(idx_coedge + coffb + 1), _p(ell_b + 1),
-                 bytes([T_FLAG_A]), _s("unknown"),
+            _Rec("edge", 18)
+            .add(_p(idx_edge_attrib + eoff + 1), _ti(5), _ti(-1), _p(-1),
+                 _p(idx_vertex + voff + 1), _td(0.0),
+                 _p(idx_vertex + voff + 1), _td(2.0 * math.pi),
+                 _p(idx_coedge + coffb), _p(ell_b),
+                 bytes([T_FLAG_B]), _s("unknown"),
                  bytes([T_FLAG_A]), _v3(*tmin), _v3(*tmax)))
-        for k, center in ((0, cap_a), (1, cap_b)):
+        recs[idx_edge + eoff + 2] = (
+            _Rec("edge", 18)
+            .add(_p(idx_edge_attrib + eoff + 2), _ti(6), _ti(-1), _p(-1),
+                 _p(idx_vertex + voff), _td(0.0),
+                 _p(idx_vertex + voff + 1), _td(h),
+                 _p(idx_coedge + coffb + 2), _p(idx_straight + cyl_soff + gi),
+                 bytes([T_FLAG_B]), _s("unknown"),
+                 bytes([T_FLAG_A]),
+                 _v3(min(vbot[0], vtop[0]), min(vbot[1], vtop[1]),
+                     min(vbot[2], vtop[2])),
+                 _v3(max(vbot[0], vtop[0]), max(vbot[1], vtop[1]),
+                     max(vbot[2], vtop[2]))))
+        for k, center in ((0, cap_b), (1, cap_a)):
             recs[ell_b + k] = (
-                _Rec("curve", 20, chain=[("ellipse", None)])
+                _Rec("curve", 21, chain=[("ellipse", 20)])
                 .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*center),
-                     _v3b(*axis), _v3b(*major), _td(1.0),
-                     bytes([T_FLAG_B, T_FLAG_B])))
+                     _v3b(*axis), _v3b(mu[0] * R, mu[1] * R, mu[2] * R),
+                     _td(1.0), bytes([T_FLAG_B, T_FLAG_B])))
+        recs[idx_straight + cyl_soff + gi] = (
+            _Rec("curve", 21, chain=[("straight", 22)])
+            .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*vbot),
+                 _v3b(0.0, 0.0, 0.001),
+                 bytes([T_FLAG_A]), _td(0.0), bytes([T_FLAG_A]), _td(h)))
 
-        # loops: cap loops (int15=1) + two side loops (int15=4)
+        # loops: side / top / bottom - int15 0, no trailing surface pointer
         recs[idx_loop + loff] = (
-            _Rec("loop", 11)
-            .add(_p(-1), _ti(37), _ti(-1), _p(-1), _p(-1),
+            _Rec("loop", 13)
+            .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1),
                  _p(idx_coedge + coffb), _p(idx_face + foff),
-                 bytes([T_FLAG_A]), _v3(*bmin), _v3(*bmax),
-                 bytes([T_INT15]) + _ri(1),
-                 _p(idx_plane + poff), bytes([T_FLAG_B])))
+                 bytes([T_FLAG_A]), _v3(*lo), _v3(*hi),
+                 bytes([T_INT15]) + _ri(0)))
         recs[idx_loop + loff + 1] = (
-            _Rec("loop", 11)
-            .add(_p(-1), _ti(37), _ti(-1), _p(-1), _p(-1),
-                 _p(idx_coedge + coffb + 1), _p(idx_face + foff + 1),
+            _Rec("loop", 13)
+            .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1),
+                 _p(idx_coedge + coffb), _p(idx_face + foff + 1),
                  bytes([T_FLAG_A]), _v3(*tmin), _v3(*tmax),
-                 bytes([T_INT15]) + _ri(1),
-                 _p(idx_plane + poff + 1), bytes([T_FLAG_B])))
-        for k in range(2):
-            lmin, lmax = (bmin, bmax) if k == 0 else (tmin, tmax)
-            recs[idx_loop + loff + 2 + k] = (
-                _Rec("loop", 11)
-                .add(_p(-1), _ti(37), _ti(-1), _p(-1), _p(-1),
-                     _p(idx_coedge + coffb + 2 + k), _p(idx_face + foff + 2),
-                     bytes([T_FLAG_A]), _v3(*lmin), _v3(*lmax),
-                     bytes([T_INT15]) + _ri(4),
-                     _p(cone_i), bytes([T_FLAG_B])))
+                 bytes([T_INT15]) + _ri(0)))
+        recs[idx_loop + loff + 2] = (
+            _Rec("loop", 13)
+            .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1),
+                 _p(idx_coedge + coffb + 3), _p(idx_face + foff + 2),
+                 bytes([T_FLAG_A]), _v3(*bmin), _v3(*bmax),
+                 bytes([T_INT15]) + _ri(0)))
 
-        # coedges: bottom(FB) / top(FA) / side-low(FA) / side-high(FB)
+        # coedges: side loop (top FA, seam FA, bottom FB, seam FB), top cap (FB),
+        # bottom cap (FA); [next, prev, partner, edge, sense, loop, -1]
+        partner_of = (3, 2, 1, 0, 0, 0)
         co_specs = (
-            (0, 1, 0, T_FLAG_B),   # bottom cap loop, partner side-low
-            (1, 0, 1, T_FLAG_A),   # top cap loop, partner side-high
-            (2, 3, 0, T_FLAG_A),   # side low circle, partner bottom
-            (3, 2, 1, T_FLAG_B),   # side high circle, partner top
+            (1, 3, 1, T_FLAG_A),   # side: top circle
+            (2, 0, 2, T_FLAG_A),   # side: seam top->bottom
+            (3, 1, 0, T_FLAG_B),   # side: bottom circle
+            (0, 2, 2, T_FLAG_B),   # side: seam bottom->top
+            (4, 4, 1, T_FLAG_B),   # top cap loop, top circle
+            (5, 5, 0, T_FLAG_A),   # bottom cap loop, bottom circle
         )
-        for ci, (loop_i, partner_i, edge_i, sense) in enumerate(co_specs):
+        for ci, (next_i, prev_i, edge_i, sense) in enumerate(co_specs):
             g = idx_coedge + coffb + ci
+            loop_ptr = idx_loop + loff + (0 if ci < 4 else (1 if ci == 4 else 2))
             recs[g] = (
-                _Rec("coedge", 16)
+                _Rec("coedge", 17)
                 .add(_p(-1), _ti(-1), _ti(-1), _p(-1),
-                     _p(g), _p(g),
-                     _p(idx_coedge + coffb + partner_i),
-                     _p(idx_edge + eoff + edge_i),
-                     bytes([sense]),
-                     _p(idx_loop + loff + loop_i), _p(-1)))
+                     _p(idx_coedge + coffb + next_i),
+                     _p(idx_coedge + coffb + prev_i),
+                     _p(idx_coedge + coffb + partner_of[ci]),
+                     _p(idx_edge + eoff + edge_i), bytes([sense]),
+                     _p(loop_ptr), _p(-1)))
 
-        # faces: bottom plane / top plane / side cone
-        uv_cap = (-R, R, -R, R)
+        # faces: side cone(1) / top plane(2) / bottom plane(3)
         uv_side = (0.0, h / R, -math.pi, math.pi)
+        uv_cap = (-R, R, -R, R)
         face_data = (
-            (0, 1, T_FLAG_B, T_FLAG_B, T_FLAG_A, uv_cap, cap_a),
-            (1, 2, T_FLAG_A, T_FLAG_B, T_FLAG_A, uv_cap, cap_b),
-            (2, -1, T_FLAG_B, T_FLAG_B, T_FLAG_A, uv_side, None),
+            (0, 1, 2, T_FLAG_B, T_FLAG_B, T_FLAG_A, uv_side, None, cone_i),
+            (1, 2, 5, T_FLAG_A, T_FLAG_B, T_FLAG_A, uv_cap, cap_b,
+             idx_plane + poff),
+            (2, -1, 3, T_FLAG_B, T_FLAG_B, T_FLAG_A, uv_cap, cap_a,
+             idx_plane + poff + 1),
         )
-        for fi, next_fi, f1, f2, f3, uv, center in face_data:
+        for fi, next_fi, co_i, f1, f2, f3, uv, center, surf_i in face_data:
             if center is None:
                 fmin, fmax = lo, hi
-                surf_i = cone_i
             else:
                 fmin, fmax = circ_bbox(center)
-                surf_i = idx_plane + poff + fi
             recs[idx_face + foff + fi] = (
-                _Rec("face", 10)
-                .add(_p(idx_face_attrib + foff + fi), _ti(4), _ti(-1), _p(-1),
+                _Rec("face", 12)
+                .add(_p(idx_face_attrib + foff + fi), _ti(fi + 1), _ti(-1),
+                     _p(-1),
                      _p(idx_face + foff + next_fi if next_fi >= 0 else -1),
-                     _p(idx_loop + loff + (0 if fi == 0 else 1 if fi == 1 else 2)),
+                     _p(idx_loop + loff + fi),
                      _p(idx_shell + bi), _p(-1), _p(surf_i),
                      bytes([f1, f2, f3]), _v3(*fmin), _v3(*fmax),
                      bytes([T_FLAG_A]), _td(uv[0]), _td(uv[1]), _td(uv[2]),
                      _td(uv[3])))
 
-        # attribs + rgb
+        # attribs + rgb (face chain: side -> top -> bottom)
         for fi in range(3):
             recs[idx_face_attrib + foff + fi] = _attrib(
                 idx_face + foff + fi, f"0:{27 + 3 * fi + 60 * bi}",
                 nxt=idx_face_rgb + foff + fi)
             recs[idx_face_rgb + foff + fi] = _rgb_attrib(
                 idx_face + foff + fi, idx_face_attrib + foff + fi, col)
-        for ei in range(2):
+        for ei in range(3):
             recs[idx_edge_attrib + eoff + ei] = _attrib(
                 idx_edge + eoff + ei, f"0:{45 + 3 * ei + 60 * bi}")
 
@@ -721,7 +751,7 @@ def _build_sab(items, colors=None):
     out += _s("Mon Aug 24 00:13:12 2026")
     out += _td(1000.0) + _td(1e-8) + _td(1e-10)
     out += bytes([T_FLAG_A])
-    out += _s("0:1")
+    out += _s("FQ8FFTTT5P7PJFMUMMYS2_J8B48CXKNEWAP4QAQV2CS3PP65QBQCNVPEFCMUSP6XAAPKK47XTA84Q")
     for rec in recs:
         if rec is None:
             raise ValueError("internal: uninitialised record")
@@ -788,6 +818,7 @@ def _content_types() -> bytes:
             b'  <Default Extension="xml" ContentType="application/xml"/>\n'
             b'  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>\n'
             b'  <Default Extension="sab" ContentType="application/binary ; modeler=Acis ; version=29.0.0"/>\n'
+            b'  <Default Extension="bin" ContentType="application/binary"/>\n'
             b'</Types>')
 
 
@@ -799,12 +830,127 @@ def _root_rels() -> bytes:
             b'</Relationships>')
 
 
-def _doc_rels(sab_name: str) -> bytes:
+def _doc_rels(sab_name: str, facets: bool = False) -> bytes:
+    extra = ''
+    if facets:
+        extra = ('  <Relationship Type="http://www.spaceclaim.com/relationships/'
+                 'internal/bodyFacets" Target="/SpaceClaim/Graphics/facets.bin" '
+                 'Id="Rf1"/>\n')
     return (f'<?xml version="1.0" encoding="utf-8"?>\n'
             f'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n'
             f'  <Relationship Type="http://www.spaceclaim.com/relationships/internal/partBodyGeometry#fc598e53-8ab6-41b2-b8ea-b7917346ae70:2"\n'
             f'                Target="/SpaceClaim/Geometry/{sab_name}" Id="Rg1"/>\n'
+            f'{extra}'
             f'</Relationships>').encode("utf-8")
+
+
+def _facets_bytes(items, tessellations, first_doc_id: int = 23) -> bytes:
+    """Graphics facets stream (bodyFacets part).
+
+    Planar bodies use the official layout: one FaceNode per B-rep face with the
+    polygon corners, boundary pairs, per-edge refs and the tail edge map. Plain
+    cylinders use one triangle node per triangle (corner_count stays in 3..64;
+    the side face would otherwise exceed it), without edge mapping.
+    """
+    import struct as _s
+    n_faces = 0
+    chunks = []          # (face-node bytes) deferred until count known -> build list
+    edge_rows = []       # (mesh_edge_id, doc_num)
+    node = first_doc_id
+    mesh_edge_base = 1000
+
+    # planar edge global offset (mesh ids must be unique across bodies)
+    planar_eoff = {}
+    _e = 0
+    for bi, it in enumerate(items):
+        if it[0] == "planar":
+            planar_eoff[bi] = _e
+            _e += len(it[2])
+
+    for bi, it in enumerate(items):
+        if it[0] == "planar":
+            verts, edges, faces = it[1], it[2], it[3]
+            for fi, f in enumerate(faces):
+                loop = f["loop"]
+                corners = [verts[vi] for vi in loop]
+                nrm = f["normal"]
+                n = len(corners)
+                body = bytearray()
+                body += _s.pack('<5I', 0, node, 0, node, n)
+                for p in corners:
+                    body += _s.pack('<8f', p[0], p[1], p[2], nrm[0], nrm[1], nrm[2],
+                                    0.0, 0.0)
+                # fan triangulation, packed 2 indices per word
+                tris = []
+                for k in range(1, n - 1):
+                    tris += [0, k, k + 1]
+                body += _s.pack('<I', len(tris))
+                for k in range(0, len(tris), 2):
+                    lo = tris[k]
+                    hi = tris[k + 1] if k + 1 < len(tris) else 0
+                    body += _s.pack('<I', (hi << 16) | lo)
+                # boundary: closed loop pairs (i, i+1 wraparound)
+                bnd = []
+                for k in range(n):
+                    bnd += [k, (k + 1) % n]
+                body += _s.pack('<I', len(bnd))
+                for k in range(0, len(bnd), 2):
+                    lo = bnd[k]
+                    hi = bnd[k + 1] if k + 1 < len(bnd) else 0
+                    body += _s.pack('<I', (hi << 16) | lo)
+                # edge refs: one per boundary pair
+                body += _s.pack('<I', n)
+                for k in range(n):
+                    mid = mesh_edge_base + planar_eoff[bi] + edges[k][0]
+                    edge_rows.append((mid, 45 + 3 * edges[k][0] + 60 * bi))
+                    body += _s.pack('<3I', mid, 2 * k, 1)
+                chunks.append(bytes(body))
+                node += 3
+                n_faces += 1
+        else:
+            faces = tessellations[bi] if bi < len(tessellations) else []
+            for fd in faces:
+                pts = fd["vertices"]
+                tris = fd["triangles"]
+                fn = fd.get("normal") or (0.0, 0.0, 1.0)
+                for a, b, c in tris:
+                    body = bytearray()
+                    body += _s.pack('<5I', 0, node, 0, node, 3)
+                    for idx in (a, b, c):
+                        p = pts[idx]
+                        body += _s.pack('<8f', p[0], p[1], p[2], fn[0], fn[1],
+                                        fn[2], 0.0, 0.0)
+                    body += _s.pack('<I', 3)
+                    body += _s.pack('<I', (1 << 16) | 0)
+                    body += _s.pack('<I', (2 << 16) | 2)
+                    body += _s.pack('<I', 0)
+                    body += _s.pack('<I', 0)
+                    chunks.append(bytes(body))
+                    node += 3
+                    n_faces += 1
+
+    head = bytearray()
+    head += b'facets  '
+    head += _s.pack('<I', 14)          # version
+    head += _s.pack('<I', 1)           # w3
+    head += _s.pack('<I', 1)           # w4
+    head += _s.pack('<I', 0)           # w5
+    head += _s.pack('<I', first_doc_id)  # w6 = owning body doc-id number
+    head += _s.pack('<I', 0)           # w7
+    head += _s.pack('<I', 0)           # w8
+    head += _s.pack('<I', 0)           # w9
+    head += _s.pack('<I', n_faces)     # w10 = declared face count
+    out = bytearray(head)
+    for c in chunks:
+        out += c
+    # tail edge map: unique (mesh_edge_id, 0, doc_num)
+    seen = {}
+    for mid, doc_num in edge_rows:
+        seen[mid] = doc_num
+    out += _s.pack('<I', len(seen))
+    for mid, doc_num in sorted(seen.items()):
+        out += _s.pack('<3I', mid, 0, doc_num)
+    return bytes(out)
 
 
 def write_scdoc(path: str, kdoc, name: str = "design") -> None:
@@ -824,6 +970,22 @@ def write_scdoc(path: str, kdoc, name: str = "design") -> None:
         raise ValueError("没有可写出的实体")
     sab_bytes, face_counts, edge_counts = _build_sab(items, colors)
 
+    # graphics facets part — only for bodies whose faces the topology layer
+    # cannot rebuild (cylinders); planar-only files keep the validated layout
+    facets_bytes = None
+    if any(it[0] == "cyl" for it in items):
+        tessellations = []
+        for body in kdoc.bodies:
+            sols = K.explore(body.shape, "solid") or [body.shape]
+            for s in sols:
+                try:
+                    from scdm.kernel import tessellate_faces
+                    tessellations.append(tessellate_faces(
+                        s, deflection=max(1e-5, 0.05 / 1000.0)))
+                except Exception:
+                    tessellations.append([])
+        facets_bytes = _facets_bytes(items, tessellations)
+
     sab_name = "part1bodies.sab"
     stem = name or "design"
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
@@ -831,5 +993,8 @@ def write_scdoc(path: str, kdoc, name: str = "design") -> None:
         z.writestr("_rels/.rels", _root_rels())
         z.writestr("SpaceClaim/document.xml",
                    _document_xml(stem, face_counts, edge_counts, colors))
-        z.writestr("SpaceClaim/_rels/document.xml.rels", _doc_rels(sab_name))
+        z.writestr("SpaceClaim/_rels/document.xml.rels",
+                   _doc_rels(sab_name, facets=facets_bytes is not None))
         z.writestr(f"SpaceClaim/Geometry/{sab_name}", sab_bytes)
+        if facets_bytes is not None:
+            z.writestr("SpaceClaim/Graphics/facets.bin", facets_bytes)

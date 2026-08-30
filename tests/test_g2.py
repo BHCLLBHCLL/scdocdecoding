@@ -350,8 +350,9 @@ def test_cylinder_scdoc_matches_official_record_shapes():
         sf = sab_mod.tokenize(pkg.read(pkg.find_geometry()[0].name))
         kinds = Counter(r.kind for r in sf.records)
         assert kinds["cone"] == 1 and kinds["ellipse"] == 2
-        assert kinds["face"] == 3 and kinds["edge"] == 2
-        assert kinds["plane"] == 2 and kinds["loop"] == 4 and kinds["coedge"] == 4
+        assert kinds["face"] == 3 and kinds["edge"] == 3   # 2 circles + seam
+        assert kinds["plane"] == 2 and kinds["loop"] == 3 and kinds["coedge"] == 6
+        assert kinds["straight"] == 1 and kinds["vertex"] == 2 and kinds["point"] == 2
         cone = [r for r in sf.records if r.kind == "cone"][0]
         toks = [t.kind for t in cone.tokens]
         assert toks.count("double") == 4  # ratio, sine, cosine, R
@@ -380,8 +381,33 @@ def test_mixed_box_and_cylinder_scdoc():
         pkg = opc.parse_package(path)
         sf = sab_mod.tokenize(pkg.read(pkg.find_geometry()[0].name))
         kinds = Counter(r.kind for r in sf.records)
-        assert kinds["face"] == 9 and kinds["edge"] == 14
+        assert kinds["face"] == 9 and kinds["edge"] == 15   # 12 planar + 3 cyl
         assert kinds["body"] == 2 and kinds["cone"] == 1
-        assert kinds["straight"] == 12 and kinds["ellipse"] == 2
+        assert kinds["straight"] == 13 and kinds["ellipse"] == 2
+        assert kinds["coedge"] == 30 and kinds["loop"] == 9
+    finally:
+        os.remove(path)
+
+
+def test_cylinder_scdoc_self_read_via_facets():
+    """Written cylinder scdoc falls back to a facet-mesh body on self-read."""
+    import os
+    import tempfile
+
+    from scdm.document import load_scdoc
+    from scdm.import_sab import import_scdoc_bundle
+    from scdm.scdoc_write import write_scdoc
+
+    doc = KernelDoc()
+    doc.add_body(K.make_cylinder(0.005, 0.01), name="Cyl1")
+    fd, path = tempfile.mkstemp(suffix=".scdoc")
+    os.close(fd)
+    try:
+        write_scdoc(path, doc, name="cyl")
+        k2 = import_scdoc_bundle(load_scdoc(path))
+        assert len(k2.bodies) == 1
+        assert "网格" in k2.bodies[0].name
+        v = K.volume(k2.bodies[0].shape)
+        assert abs(v - 3.14159 * 0.005 ** 2 * 0.01) < 0.05e-6  # mesh approximation
     finally:
         os.remove(path)
