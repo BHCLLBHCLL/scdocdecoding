@@ -326,10 +326,14 @@ def _fix_partner(tokens: bytearray, partner: int) -> bytearray:
     return out
 
 
-def _attrib(owner, value, nxt=None, type_id=14675622,
+def _attrib(owner, value, nxt=None, prv=None, type_id=14675622,
             name_tag="ATTRIB_XACIS_NAME%6"):
+    """Official attrib token layout (from box.scdoc):
+    [t0 ptr(-1), t1 int(-1), t2 ptr NEXT, t3 ptr PREV, t4 ptr OWNER,
+     t5 int type_id, t6 string name_tag, t7 string value]"""
     return (_Rec("attrib", 5, chain=[("string_attrib", 2), ("name_attrib", 3), ("gen", 4)])
-            .add(_p(-1 if nxt is None else nxt), _ti(-1), _p(-1), _p(-1), _p(owner),
+            .add(_p(-1), _ti(-1), _p(-1 if nxt is None else nxt),
+                 _p(-1 if prv is None else prv), _p(owner),
                  _ti(type_id), _s(name_tag), _s(value)))
 
 
@@ -428,7 +432,7 @@ def _build_sab(items, colors=None):
         recs[idx_attrib_body + bi] = _attrib(
             idx_body + bi, f"0:{23 + 60 * bi}", nxt=idx_body_pname + bi)
         recs[idx_body_pname + bi] = _attrib(
-            idx_body + bi, "SC:0",
+            idx_body + bi, "SC:0", prv=idx_attrib_body + bi,
             type_id=14675622, name_tag="ATTRIB_XACIS_PNAME%8")
         recs[idx_lump + bi] = (
             _Rec("lump", 7)
