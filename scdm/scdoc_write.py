@@ -88,31 +88,36 @@ class _Rec:
         return self
 
     def bytes(self, seen=None):
-        """Serialize. Official SAB interns class names: only the FIRST record
-        of a class carries the name header; later ones use an id-only header
-        (hdrlen=5, T_ID + int32). `seen` maps class name -> registered id and
-        is shared between chain entries and record headers."""
+        """Serialize. Official SAB interns class names: the FIRST record of a
+        class carries a name header and REGISTERS the class id (ids are
+        file-local, allocated in first-appearance order — box and cyl have
+        different tables); later records of the same class use an id-only
+        header (hdrlen=5, T_ID + int32). `seen` maps class name -> id and
+        doubles as the allocation counter (key None)."""
         seen = seen if seen is not None else {}
+
+        def intern(name):
+            if name in seen:
+                return seen[name], True
+            nid = seen.get(None, 0) + 1
+            seen[None] = nid
+            seen[name] = nid
+            return nid, False
+
         out = bytearray()
-        for name, cid in self.chain:
-            if cid is not None and seen.get(name) == cid:
+        for cname, _cid in self.chain:
+            cid, known = intern(cname)
+            if known:
                 out += bytes([T_CHAIN, 5, T_ID]) + _ri(cid)
-                continue
-            hdrlen = len(name) + (5 if cid is not None else 0)
-            out += bytes([T_CHAIN, hdrlen]) + name.encode("latin-1")
-            if cid is not None:
+            else:
+                out += bytes([T_CHAIN, len(cname) + 5]) + cname.encode("latin-1")
                 out += bytes([T_ID]) + _ri(cid)
-                seen[name] = cid
-        if self.class_id is not None and seen.get(self.name) == self.class_id:
-            out += bytes([T_RECORD, 5, T_ID]) + _ri(self.class_id)
-            out += self.tokens
-            out += bytes([T_TERM])
-            return bytes(out)
-        hdrlen = len(self.name) + (5 if self.class_id is not None else 0)
-        out += bytes([T_RECORD, hdrlen]) + self.name.encode("latin-1")
-        if self.class_id is not None:
-            out += bytes([T_ID]) + _ri(self.class_id)
-            seen[self.name] = self.class_id
+        cid, known = intern(self.name)
+        if known:
+            out += bytes([T_RECORD, 5, T_ID]) + _ri(cid)
+        else:
+            out += bytes([T_RECORD, len(self.name) + 5]) + self.name.encode("latin-1")
+            out += bytes([T_ID]) + _ri(cid)
         out += self.tokens
         out += bytes([T_TERM])
         return bytes(out)
