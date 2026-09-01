@@ -766,6 +766,100 @@ def _build_sab(items, colors=None):
             recs[idx_edge_attrib + eoff + ei] = _attrib(
                 idx_edge + eoff + ei, f"0:{45 + 3 * ei + 60 * bi}")
 
+    # --- interleave: move each face's loop and surface right after the face ---
+    # Official SpaceClaim streams interleave face/loop/surface per face instead
+    # of grouping them into segments. Required for the official reader.
+    _new_order = []
+    _emitted = set()
+
+    def _emit(i):
+        if 0 <= i < len(recs) and i not in _emitted and recs[i] is not None:
+            _new_order.append(i)
+            _emitted.add(i)
+
+    # emit all body-block records first (body, attribs, lump, shell, pname)
+    for i in range(len(recs)):
+        if recs[i] is not None and recs[i].name in ('body', 'lump', 'shell'):
+            _emit(i)
+        elif recs[i] is not None and recs[i].name == 'attrib':
+            # body attribs come before lump
+            _emit(i)
+
+    cyl_gi = {}
+    for _cgi, (_cbi, _cit) in enumerate(cyls):
+        cyl_gi[_cbi] = _cgi
+
+    # per-body face interleave
+    for bi, it in enumerate(items):
+        if it[0] == "planar":
+            foff = foff_of[bi]
+            nf = len(it[3])
+            fa_base = idx_face_attrib + foff
+            rgb_base = idx_face_rgb + foff
+            loop_base = idx_loop + foff
+            plane_base = idx_plane + foff
+            prev_loop = None
+            prev_plane = None
+            for fi in range(nf):
+                _emit(idx_face + foff + fi)
+                _emit(fa_base + fi)
+                _emit(rgb_base + fi)
+                if fi >= 1 and prev_loop is not None:
+                    _emit(prev_loop)
+                    _emit(prev_plane)
+                prev_loop = loop_base + fi
+                prev_plane = plane_base + fi
+            # last face's deferred loop and plane
+            if prev_loop is not None:
+                _emit(prev_loop)
+                _emit(prev_plane)
+        elif it[0] == "cyl":
+            info = it[1]
+            gi = cyl_gi.get(bi, 0)
+            foff = cyl_foff + 3 * gi
+            loff = cyl_loff + 3 * gi
+            coffb = cyl_coff + 6 * gi
+            poff = cyl_poff + 2 * gi
+            cone_i = idx_cone + gi
+            ell_b = idx_ellipse + 2 * gi
+            prev_loop = None
+            prev_surf = None
+            for fi in range(3):
+                _emit(idx_face + foff + fi)
+                _emit(idx_face_attrib + foff + fi)
+                _emit(idx_face_rgb + foff + fi)
+                surf_i = cone_i if fi == 0 else (idx_plane + poff + 0 if fi == 1 else idx_plane + poff + 1)
+                if fi >= 1 and prev_loop is not None:
+                    _emit(prev_loop)
+                    _emit(prev_surf)
+                prev_loop = idx_loop + loff + (0 if fi == 0 else 1 if fi == 1 else 2)
+                prev_surf = surf_i
+            if prev_loop is not None:
+                _emit(prev_loop)
+                _emit(prev_surf)
+
+    # remaining records (coedges, edges, vertices, points, curves, attribs)
+    for i in range(len(recs)):
+        _emit(i)
+
+    # build old->new mapping and reorder
+    _old_to_new = {}
+    for new_idx, old_idx in enumerate(_new_order):
+        _old_to_new[old_idx] = new_idx
+
+    # remap ptr tokens (recs tokens are bytearrays; ptr values are int32 LE)
+    for r in recs:
+        if r is None:
+            continue
+        tk = r.tokens
+        for pos in range(len(tk)):
+            if tk[pos] == T_PTR and pos + 4 < len(tk):
+                old_v = struct.unpack_from('<i', tk, pos + 1)[0]
+                if 0 <= old_v < len(_old_to_new):
+                    struct.pack_into('<i', tk, pos + 1, _old_to_new[old_v])
+
+    recs = [recs[old_idx] for old_idx in _new_order]
+
     out = bytearray()
     out += MAGIC
     blob = b"\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00"
