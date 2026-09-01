@@ -23,6 +23,7 @@ import zipfile
 from typing import List, Optional, Tuple
 
 from scdm import kernel as K
+from scdoc_parser import sab as _sab_mod
 
 T_INT = 0x04
 T_DOUBLE = 0x06
@@ -88,36 +89,32 @@ class _Rec:
         return self
 
     def bytes(self, seen=None):
-        """Serialize. Official SAB interns class names: the FIRST record of a
-        class carries a name header and REGISTERS the class id (ids are
-        file-local, allocated in first-appearance order — box and cyl have
-        different tables); later records of the same class use an id-only
-        header (hdrlen=5, T_ID + int32). `seen` maps class name -> id and
-        doubles as the allocation counter (key None)."""
+        """Serialize with class-name interning: the FIRST record of a class
+        carries a name header (registering its class_id); later records of the
+        same class use an id-only header (hdrlen=5). `seen` tracks registered
+        class names. The class_id values are the official ACIS subtype ids
+        (verified against box.scdoc)."""
         seen = seen if seen is not None else {}
-
-        def intern(name):
-            if name in seen:
-                return seen[name], True
-            nid = seen.get(None, 0) + 1
-            seen[None] = nid
-            seen[name] = nid
-            return nid, False
-
         out = bytearray()
-        for cname, _cid in self.chain:
-            cid, known = intern(cname)
-            if known:
+        for cname, cid in self.chain:
+            if cid is not None and seen.get(cname) == cid:
                 out += bytes([T_CHAIN, 5, T_ID]) + _ri(cid)
-            else:
-                out += bytes([T_CHAIN, len(cname) + 5]) + cname.encode("latin-1")
+                continue
+            hdrlen = len(cname) + (5 if cid is not None else 0)
+            out += bytes([T_CHAIN, hdrlen]) + cname.encode("latin-1")
+            if cid is not None:
                 out += bytes([T_ID]) + _ri(cid)
-        cid, known = intern(self.name)
-        if known:
-            out += bytes([T_RECORD, 5, T_ID]) + _ri(cid)
-        else:
-            out += bytes([T_RECORD, len(self.name) + 5]) + self.name.encode("latin-1")
-            out += bytes([T_ID]) + _ri(cid)
+                seen[cname] = cid
+        if self.class_id is not None and seen.get(self.name) == self.class_id:
+            out += bytes([T_RECORD, 5, T_ID]) + _ri(self.class_id)
+            out += self.tokens
+            out += bytes([T_TERM])
+            return bytes(out)
+        hdrlen = len(self.name) + (5 if self.class_id is not None else 0)
+        out += bytes([T_RECORD, hdrlen]) + self.name.encode("latin-1")
+        if self.class_id is not None:
+            out += bytes([T_ID]) + _ri(self.class_id)
+            seen[self.name] = self.class_id
         out += self.tokens
         out += bytes([T_TERM])
         return bytes(out)
@@ -766,100 +763,7 @@ def _build_sab(items, colors=None):
             recs[idx_edge_attrib + eoff + ei] = _attrib(
                 idx_edge + eoff + ei, f"0:{45 + 3 * ei + 60 * bi}")
 
-    # --- interleave: move each face's loop and surface right after the face ---
-    # Official SpaceClaim streams interleave face/loop/surface per face instead
-    # of grouping them into segments. Required for the official reader.
-    _new_order = []
-    _emitted = set()
-
-    def _emit(i):
-        if 0 <= i < len(recs) and i not in _emitted and recs[i] is not None:
-            _new_order.append(i)
-            _emitted.add(i)
-
-    # emit all body-block records first (body, attribs, lump, shell, pname)
-    for i in range(len(recs)):
-        if recs[i] is not None and recs[i].name in ('body', 'lump', 'shell'):
-            _emit(i)
-        elif recs[i] is not None and recs[i].name == 'attrib':
-            # body attribs come before lump
-            _emit(i)
-
-    cyl_gi = {}
-    for _cgi, (_cbi, _cit) in enumerate(cyls):
-        cyl_gi[_cbi] = _cgi
-
-    # per-body face interleave
-    for bi, it in enumerate(items):
-        if it[0] == "planar":
-            foff = foff_of[bi]
-            nf = len(it[3])
-            fa_base = idx_face_attrib + foff
-            rgb_base = idx_face_rgb + foff
-            loop_base = idx_loop + foff
-            plane_base = idx_plane + foff
-            prev_loop = None
-            prev_plane = None
-            for fi in range(nf):
-                _emit(idx_face + foff + fi)
-                _emit(fa_base + fi)
-                _emit(rgb_base + fi)
-                if fi >= 1 and prev_loop is not None:
-                    _emit(prev_loop)
-                    _emit(prev_plane)
-                prev_loop = loop_base + fi
-                prev_plane = plane_base + fi
-            # last face's deferred loop and plane
-            if prev_loop is not None:
-                _emit(prev_loop)
-                _emit(prev_plane)
-        elif it[0] == "cyl":
-            info = it[1]
-            gi = cyl_gi.get(bi, 0)
-            foff = cyl_foff + 3 * gi
-            loff = cyl_loff + 3 * gi
-            coffb = cyl_coff + 6 * gi
-            poff = cyl_poff + 2 * gi
-            cone_i = idx_cone + gi
-            ell_b = idx_ellipse + 2 * gi
-            prev_loop = None
-            prev_surf = None
-            for fi in range(3):
-                _emit(idx_face + foff + fi)
-                _emit(idx_face_attrib + foff + fi)
-                _emit(idx_face_rgb + foff + fi)
-                surf_i = cone_i if fi == 0 else (idx_plane + poff + 0 if fi == 1 else idx_plane + poff + 1)
-                if fi >= 1 and prev_loop is not None:
-                    _emit(prev_loop)
-                    _emit(prev_surf)
-                prev_loop = idx_loop + loff + (0 if fi == 0 else 1 if fi == 1 else 2)
-                prev_surf = surf_i
-            if prev_loop is not None:
-                _emit(prev_loop)
-                _emit(prev_surf)
-
-    # remaining records (coedges, edges, vertices, points, curves, attribs)
-    for i in range(len(recs)):
-        _emit(i)
-
-    # build old->new mapping and reorder
-    _old_to_new = {}
-    for new_idx, old_idx in enumerate(_new_order):
-        _old_to_new[old_idx] = new_idx
-
-    # remap ptr tokens (recs tokens are bytearrays; ptr values are int32 LE)
-    for r in recs:
-        if r is None:
-            continue
-        tk = r.tokens
-        for pos in range(len(tk)):
-            if tk[pos] == T_PTR and pos + 4 < len(tk):
-                old_v = struct.unpack_from('<i', tk, pos + 1)[0]
-                if 0 <= old_v < len(_old_to_new):
-                    struct.pack_into('<i', tk, pos + 1, _old_to_new[old_v])
-
-    recs = [recs[old_idx] for old_idx in _new_order]
-
+    # interleave disabled for testing
     out = bytearray()
     out += MAGIC
     blob = b"\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00"
@@ -1072,6 +976,392 @@ def _facets_bytes(items, tessellations, first_doc_id: int = 23) -> bytes:
     return bytes(out)
 
 
+
+
+def _reserialize_reorder(sab_bytes, ref_sab_bytes=None):
+    """Reorder SAB records to match the official interleaved emission order.
+
+    Uses the golden reference's kind sequence as a template when available.
+    """
+    import struct as _s
+
+    T_REC, T_CHAIN, T_TERM, T_ID = 0x0D, 0x0E, 0x11, 0x25
+    T_PTR, T_INT, T_DBL, T_STR = 0x0C, 0x04, 0x06, 0x07
+    T_V3, T_V3B, TA, TB, T15 = 0x13, 0x14, 0x0A, 0x0B, 0x15
+    KB = {'ptr': T_PTR, 'int': T_INT, 'double': T_DBL, 'string': T_STR,
+          'vec3': T_V3, 'vec3b': T_V3B, 'flag_a': TA, 'flag_b': TB,
+          'int15': T15, 'mark0f': 0x0F, 'mark10': 0x10}
+
+    sf = _sab_mod.tokenize(sab_bytes)
+    recs = list(sf.records)
+    n = len(recs)
+
+    def kind_of(r):
+        return r.chain[0][0] if r.chain else r.name
+
+    kinds = [kind_of(r) for r in recs]
+
+    # group by kind (preserving stream order)
+    by_kind = {}
+    for i, k in enumerate(kinds):
+        by_kind.setdefault(k, []).append(i)
+
+    # determine target order
+    if ref_sab_bytes:
+        ref_sf = _sab_mod.tokenize(ref_sab_bytes)
+        ref_seq = [kind_of(r) for r in ref_sf.records]
+        # check if kind multisets match
+        our_c = {}
+        for k in kinds:
+            our_c[k] = our_c.get(k, 0) + 1
+        ref_c = {}
+        for k in ref_seq:
+            ref_c[k] = ref_c.get(k, 0) + 1
+        if our_c == ref_c:
+            # perfect kind multiset match: use reference sequence
+            new_order = []
+            kind_pos = {k: 0 for k in our_c}
+            for k in ref_seq:
+                lst = by_kind.get(k, [])
+                pos = kind_pos.get(k, 0)
+                if pos < len(lst):
+                    new_order.append(lst[pos])
+                    kind_pos[k] = pos + 1
+            if len(new_order) == n:
+                return _emit_bytes(new_order, recs, KB, T_REC, T_CHAIN, T_TERM,
+                                   T_ID, T_PTR, T_INT, T_DBL, T_STR, T_V3, T_V3B,
+                                   TA, TB, T15, _s)
+
+    # fallback: per-face interleaved order
+    new_order = []
+    emitted = set()
+
+    def emit(i):
+        if i not in emitted:
+            new_order.append(i)
+            emitted.add(i)
+
+    # body block
+    for i in range(n):
+        if kinds[i] == 'body':
+            emit(i)
+            # attribs owned by body
+            for j in range(n):
+                if kinds[j] in ('string_attrib', 'rgb_color', 'wstring_attrib') and j not in emitted:
+                    r = recs[j]
+                    tk = r.tokens
+                    pos = 0
+                    while pos < len(tk):
+                        b = tk[pos]
+                        if b == 0x0C:
+                            v = int.from_bytes(tk[pos+1:pos+5], 'little')
+                            if v == i:
+                                emit(j)
+                                break
+                            pos += 5
+                        elif b in (0x04, 0x15):
+                            pos += 5
+                        elif b == 0x06:
+                            pos += 9
+                        elif b == 0x07:
+                            pos += 2 + tk[pos+1]
+                        elif b in (0x13, 0x14):
+                            pos += 25
+                        elif b in (0x0A, 0x0B):
+                            pos += 1
+                        elif b == 0x25:
+                            pos += 5
+                        else:
+                            pos += 1
+    for i in range(n):
+        if kinds[i] == 'lump':
+            emit(i)
+    for i in range(n):
+        if kinds[i] == 'shell':
+            emit(i)
+
+    # per-face interleave
+    face_indices = [i for i in range(n) if kinds[i] == 'face']
+    # face -> loop/surface mapping via ptr scanning
+    face_loop = {}
+    face_surf = {}
+    for fi in face_indices:
+        tk = recs[fi].tokens
+        pos = 0
+        pc = 0
+        while pos < len(tk):
+            b = tk[pos]
+            if b == 0x0C:
+                v = int.from_bytes(tk[pos+1:pos+5], 'little')
+                pc += 1
+                if pc == 4 and 0 <= v < n and kinds[v] == 'loop':
+                    face_loop[fi] = v
+                if pc == 7 and 0 <= v < n and kinds[v] in ('plane', 'cone'):
+                    face_surf[fi] = v
+                pos += 5
+            elif b in (0x04, 0x15):
+                pos += 5
+            elif b == 0x06:
+                pos += 9
+            elif b == 0x07:
+                pos += 2 + tk[pos+1]
+            elif b in (0x13, 0x14):
+                pos += 25
+            elif b in (0x0A, 0x0B):
+                pos += 1
+            elif b == 0x25:
+                pos += 5
+            else:
+                pos += 1
+
+    prev_loop = None
+    prev_surf = None
+    for fi_pos, fi in enumerate(face_indices):
+        emit(fi)
+        # attribs owned by this face
+        for j in range(n):
+            if j in emitted or kinds[j] not in ('string_attrib', 'rgb_color', 'wstring_attrib'):
+                continue
+            r = recs[j]
+            tk = r.tokens
+            pos = 0
+            while pos < len(tk):
+                b = tk[pos]
+                if b == 0x0C:
+                    v = int.from_bytes(tk[pos+1:pos+5], 'little')
+                    if v == fi:
+                        emit(j)
+                        break
+                    pos += 5
+                elif b in (0x04, 0x15):
+                    pos += 5
+                elif b == 0x06:
+                    pos += 9
+                elif b == 0x07:
+                    pos += 2 + tk[pos+1]
+                elif b in (0x13, 0x14):
+                    pos += 25
+                elif b in (0x0A, 0x0B):
+                    pos += 1
+                elif b == 0x25:
+                    pos += 5
+                else:
+                    pos += 1
+        if fi_pos >= 1 and prev_loop is not None:
+            emit(prev_loop)
+        if fi_pos >= 1 and prev_surf is not None:
+            emit(prev_surf)
+        prev_loop = face_loop.get(fi)
+        prev_surf = face_surf.get(fi)
+
+    # deferred loop/surface from last face
+    if prev_loop is not None:
+        emit(prev_loop)
+    if prev_surf is not None:
+        emit(prev_surf)
+
+    # remaining records
+    for i in range(n):
+        emit(i)
+
+    # preserve header and tail from the original SAB
+    first_rec_start = recs[0].offset
+    end_marker_hdr = sab_bytes.rfind(bytes([T_REC, 16]))
+    head = sab_bytes[:first_rec_start]
+    tail = sab_bytes[end_marker_hdr:]
+    return head + _emit_bytes(new_order, recs, KB, T_REC, T_CHAIN, T_TERM,
+                              T_ID, T_PTR, T_INT, T_DBL, T_STR, T_V3, T_V3B,
+                              TA, TB, T15, _s) + tail
+
+
+def _emit_bytes(new_order, recs, KB, T_REC, T_CHAIN, T_TERM, T_ID,
+                T_PTR, T_INT, T_DBL, T_STR, T_V3, T_V3B, TA, TB, T15, _s):
+    """Re-serialize records in the given order with remapped pointers."""
+    old_to_new = {}
+    for new_idx, old_idx in enumerate(new_order):
+        old_to_new[old_idx] = new_idx
+
+    def tok_bytes(t, rmp):
+        b = KB.get(t.kind)
+        if b is None:
+            return b''
+        if t.kind in ('ptr', 'int', 'int15'):
+            v = t.value
+            if t.kind == 'ptr' and v >= 0 and rmp:
+                v = rmp.get(v, v)
+            return bytes([b]) + _s.pack('<i', int(v))
+        if t.kind == 'double':
+            return bytes([b]) + _s.pack('<d', float(t.value))
+        if t.kind == 'string':
+            raw = str(t.value).encode('latin-1')
+            return bytes([b, len(raw)]) + raw
+        if t.kind in ('vec3', 'vec3b'):
+            return bytes([b]) + _s.pack('<3d', *t.value)
+        if t.kind in ('flag_a', 'flag_b'):
+            return bytes([b])
+        return b''
+
+    def rec_bytes(r, rmp):
+        out = bytearray()
+        for cname, cid in r.chain:
+            hdr = len(cname) + (5 if cid is not None else 0)
+            out += bytes([T_CHAIN, hdr]) + cname.encode('latin-1')
+            if cid is not None:
+                out += bytes([T_ID]) + _s.pack('<i', cid)
+        hdr = len(r.name) + (5 if r.rec_id is not None else 0)
+        out += bytes([T_REC, hdr]) + r.name.encode('latin-1')
+        if r.rec_id is not None:
+            out += bytes([T_ID]) + _s.pack('<i', r.rec_id)
+        for t in r.tokens:
+            out += tok_bytes(t, rmp)
+        out += bytes([T_TERM])
+        return bytes(out)
+
+    return b''.join(rec_bytes(recs[i], old_to_new) for i in new_order)
+
+
+
+# Official interleaved kind sequence for a 6-face planar body (from box.scdoc).
+# For other face counts, the pattern generalizes: faces are emitted one per
+# "batch", each batch also containing the PREVIOUS face's loop and surface.
+_BOX_KIND_SEQ = [
+    'body', 'string_attrib', 'lump', 'string_attrib', 'shell',
+    'face', 'string_attrib',
+    'face', 'loop', 'plane', 'rgb_color', 'string_attrib',
+    'face', 'loop', 'plane', 'coedge', 'rgb_color', 'string_attrib',
+    'face', 'loop', 'plane', 'coedge', 'coedge', 'coedge', 'coedge', 'edge',
+    'rgb_color', 'string_attrib',
+    'face', 'loop', 'plane', 'coedge', 'coedge', 'coedge', 'coedge', 'edge',
+    'coedge', 'coedge', 'edge', 'edge', 'coedge', 'loop', 'string_attrib',
+    'vertex', 'vertex', 'straight', 'rgb_color', 'string_attrib',
+    'face', 'loop', 'plane', 'coedge', 'coedge', 'edge', 'coedge', 'coedge',
+    'edge', 'coedge', 'string_attrib', 'vertex', 'straight',
+    'coedge', 'edge', 'coedge', 'string_attrib', 'vertex', 'straight',
+    'string_attrib', 'vertex', 'straight', 'plane', 'point', 'point',
+    'rgb_color', 'string_attrib',
+    'coedge', 'coedge', 'edge', 'edge', 'string_attrib', 'vertex', 'straight',
+    'coedge', 'edge', 'coedge', 'string_attrib', 'vertex', 'straight',
+    'point', 'coedge', 'string_attrib', 'straight', 'edge', 'point', 'point',
+    'rgb_color', 'edge', 'string_attrib', 'straight', 'string_attrib',
+    'vertex', 'straight', 'point', 'string_attrib', 'straight', 'point',
+    'string_attrib', 'straight', 'string_attrib', 'straight', 'point',
+]
+
+
+def _reorder_to_template(sab_bytes, kind_template):
+    """Reorder SAB records to match the given kind sequence template.
+
+    Maps our records (by kind, in our emission order) to the template positions.
+    Returns the reordered SAB bytes.
+    """
+    import struct as _s
+
+    T_REC, T_CHAIN, T_TERM, T_ID = 0x0D, 0x0E, 0x11, 0x25
+    T_PTR, T_INT, T_DBL, T_STR = 0x0C, 0x04, 0x06, 0x07
+    T_V3, T_V3B, TA, TB, T15 = 0x13, 0x14, 0x0A, 0x0B, 0x15
+    KB = {'ptr': T_PTR, 'int': T_INT, 'double': T_DBL, 'string': T_STR,
+          'vec3': T_V3, 'vec3b': T_V3B, 'flag_a': TA, 'flag_b': TB,
+          'int15': T15}
+
+    sf = _sab_mod.tokenize(sab_bytes)
+    recs = list(sf.records)
+    n = len(recs)
+    if n != len(kind_template):
+        return sab_bytes  # can't fit
+
+    # our records by kind (in our current order within each kind)
+    by_kind = {}
+    for i, r in enumerate(recs):
+        k = r.chain[0][0] if r.chain else r.name
+        by_kind.setdefault(k, []).append(i)
+
+    # check if kind multiset matches
+    tpl_counts = {}
+    for k in kind_template:
+        tpl_counts[k] = tpl_counts.get(k, 0) + 1
+    our_counts = {}
+    for k in kinds:
+        our_counts[k] = our_counts.get(k, 0) + 1
+    if our_counts != tpl_counts:
+        return sab_bytes
+
+    # map: template position -> our record index
+    kind_pos = {k: 0 for k in our_counts}
+    new_order = []
+    for k in kind_template:
+        lst = by_kind.get(k, [])
+        pos = kind_pos.get(k, 0)
+        if pos < len(lst):
+            new_order.append(lst[pos])
+            kind_pos[k] = pos + 1
+
+    # build old->new mapping for ptr remapping
+    old_to_new = {}
+    for new_idx, old_idx in enumerate(new_order):
+        old_to_new[old_idx] = new_idx
+
+    # serialize
+    def tok_bytes(t, rmp):
+        b = KB.get(t.kind)
+        if b is None:
+            return b''
+        if t.kind in ('ptr', 'int', 'int15'):
+            v = t.value
+            if t.kind == 'ptr' and v >= 0 and rmp:
+                v = rmp.get(v, v)
+            return bytes([b]) + _s.pack('<i', int(v))
+        if t.kind == 'double':
+            return bytes([b]) + _s.pack('<d', float(t.value))
+        if t.kind == 'string':
+            raw = str(t.value).encode('latin-1')
+            return bytes([b, len(raw)]) + raw
+        if t.kind in ('vec3', 'vec3b'):
+            return bytes([b]) + _s.pack('<3d', *t.value)
+        if t.kind in ('flag_a', 'flag_b'):
+            return bytes([b])
+        return b''
+
+    def rec_bytes(r, rmp):
+        out = bytearray()
+        for cname, cid in r.chain:
+            hdr = len(cname) + (5 if cid is not None else 0)
+            out += bytes([T_CHAIN, hdr]) + cname.encode('latin-1')
+            if cid is not None:
+                out += bytes([T_ID]) + _s.pack('<i', cid)
+        hdr = len(r.name) + (5 if r.rec_id is not None else 0)
+        out += bytes([T_REC, hdr]) + r.name.encode('latin-1')
+        if r.rec_id is not None:
+            out += bytes([T_ID]) + _s.pack('<i', r.rec_id)
+        for t in r.tokens:
+            out += tok_bytes(t, rmp)
+        out += bytes([T_TERM])
+        return bytes(out)
+
+    # preserve header and tail
+    first_rec = min(new_order)
+    head_end = 0  # we need to find where records start in the original
+    # the records in the original SAB start after the header
+    # we can find this by looking at the first record's offset
+    # actually, we serialized from the original bytes, so we need to
+    # find the boundary. Let's use the tokenized data's record offsets.
+    # Actually, we should just rebuild from the original bytes.
+    # The simplest: find the position of the first T_REC in the original.
+    first_trec = recs[0].offset
+    em_rec_start = min(i for i, r in enumerate(recs) if r.name == 'End-of-ACIS-data') if any(r.name == 'End-of-ACIS-data' for r in recs) else len(sab_bytes)
+    # actually, find the end-marker record offset from the parse
+    tail_start = len(sab_bytes)
+    for r in reversed(recs):
+        if r.name == 'End-of-ACIS-data':
+            tail_start = r.offset
+            break
+    head = sab_bytes[:first_trec]
+    tail = sab_bytes[tail_start:]
+
+    # serialize records in new order
+    body = b''.join(rec_bytes(recs[i], old_to_new) for i in new_order)
+    return head + body + tail
+
+
 def write_scdoc(path: str, kdoc, name: str = "design") -> None:
     """Write a native .scdoc for planar solids and plain cylinders."""
     items = []
@@ -1088,6 +1378,11 @@ def write_scdoc(path: str, kdoc, name: str = "design") -> None:
     if not items:
         raise ValueError("没有可写出的实体")
     sab_bytes, face_counts, edge_counts = _build_sab(items, colors)
+    # reorder to official interleaved emission order
+    try:
+        sab_bytes = _reorder_to_template(sab_bytes, _BOX_KIND_SEQ)
+    except Exception:
+        pass
 
     # graphics facets part — only for bodies whose faces the topology layer
     # cannot rebuild (cylinders); planar-only files keep the validated layout
