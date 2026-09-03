@@ -236,62 +236,79 @@ class Makers:
     # -- planar topology ------------------------------------------------
     def make(self, key, wl):
         kind = key[0]
+        bi = key[1] if len(key) > 1 and isinstance(key[1], int) else None
+        itype = self.item(bi)[0] if bi is not None else None
         if kind == "body":
-            bi = key[1]
-            it = self.item(bi)
-            smin, smax = (it[1]["bbox"] if it[0] == "cyl"
+            it = self.item(key[1])
+            smin, smax = (it[1]["bbox"] if it[0] in ("cyl", "sphere", "torus")
                           else _bbox(it[1]))
             return (_Rec("body", 1)
-                    .add(_p(wl.ref(("attrib", "bname", bi))), _ti(-1), _ti(-1),
-                         _p(-1), _ti(0), _p(wl.ref(("lump", bi))), _p(-1),
-                         _p(-1), bytes([T_FLAG_A]), _v3(*smin), _v3(*smax)))
+                    .add(_p(wl.ref(("attrib", "bname", key[1]))), _ti(0),
+                         _ti(-1), _p(-1), _ti(0), _p(wl.ref(("lump", key[1]))),
+                         _p(-1), _p(-1), bytes([T_FLAG_A]), _v3(*smin),
+                         _v3(*smax)))
         if kind == "lump":
-            bi = key[1]
-            it = self.item(bi)
-            smin, smax = (it[1]["bbox"] if it[0] == "cyl"
+            it = self.item(key[1])
+            smin, smax = (it[1]["bbox"] if it[0] in ("cyl", "sphere", "torus")
                           else _bbox(it[1]))
             return (_Rec("lump", 7)
                     .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1),
-                         _p(wl.ref(("shell", bi))), _p(wl.ref(("body", bi))),
+                         _p(wl.ref(("shell", key[1]))), _p(wl.ref(("body", key[1]))),
                          bytes([T_FLAG_A]), _v3(*smin), _v3(*smax)))
         if kind == "shell":
-            bi = key[1]
-            it = self.item(bi)
-            smin, smax = (it[1]["bbox"] if it[0] == "cyl"
+            it = self.item(key[1])
+            smin, smax = (it[1]["bbox"] if it[0] in ("cyl", "sphere", "torus")
                           else _bbox(it[1]))
             return (_Rec("shell", 9)
                     .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1), _p(-1),
-                         _p(wl.ref(("face", bi, 0))), _p(-1),
-                         _p(wl.ref(("lump", bi))),
+                         _p(wl.ref(("face", key[1], 0))), _p(-1),
+                         _p(wl.ref(("lump", key[1]))),
                          bytes([T_FLAG_A]), _v3(*smin), _v3(*smax)))
         if kind == "face":
-            return (self._face(key, wl) if self.item(key[1])[0] == "planar"
-                    else self._cface(key, wl))
+            return (self._face(key, wl) if itype == "planar"
+                    else (self._sphere_face(key, wl) if itype == "sphere"
+                          else (self._torus_face(key, wl) if itype == "torus"
+                                else self._cface(key, wl))))
         if kind == "loop":
-            return (self._loop(key, wl) if self.item(key[1])[0] == "planar"
-                    else self._cloop(key, wl))
+            return (self._loop(key, wl) if itype == "planar"
+                    else (self._sphere_loop(key, wl) if itype == "sphere"
+                          else (self._torus_loop(key, wl) if itype == "torus"
+                                else self._cloop(key, wl))))
         if kind == "coedge":
-            return (self._coedge(key, wl) if self.item(key[1])[0] == "planar"
-                    else self._ccoedge(key, wl))
+            return (self._coedge(key, wl) if itype == "planar"
+                    else (self._sphere_coedge(key, wl) if itype == "sphere"
+                          else (self._torus_coedge(key, wl) if itype == "torus"
+                                else self._ccoedge(key, wl))))
         if kind == "edge":
-            return (self._edge(key, wl) if self.item(key[1])[0] == "planar"
-                    else self._cedge(key, wl))
+            return (self._edge(key, wl) if itype == "planar"
+                    else (self._sphere_edge(key, wl) if itype == "sphere"
+                          else (self._torus_edge(key, wl) if itype == "torus"
+                                else self._cedge(key, wl))))
         if kind == "vertex":
-            return (self._vertex(key, wl) if self.item(key[1])[0] == "planar"
-                    else self._cvertex(key, wl))
+            return (self._vertex(key, wl) if itype == "planar"
+                    else (self._sphere_vertex(key, wl) if itype == "sphere"
+                          else (self._torus_vertex(key, wl) if itype == "torus"
+                                else self._cvertex(key, wl))))
         if kind == "point":
-            return (self._point(key, wl) if self.item(key[1])[0] == "planar"
-                    else self._cpoint(key, wl))
+            return (self._point(key, wl) if itype == "planar"
+                    else (self._sphere_point(key, wl) if itype == "sphere"
+                          else (self._torus_point(key, wl) if itype == "torus"
+                                else self._cpoint(key, wl))))
+        if kind == "sphere":
+            return self._sphere_surface(key, wl)
+        if kind == "torus":
+            return self._torus_surface(key, wl)
         if kind == "plane":
             return self._plane(key, wl)
         if kind == "cone":
             return self._cone(key, wl)
         if kind == "straight":
-            bi, ei = key[1], key[2]
-            return (self._straight(key, wl) if self.item(bi)[0] == "planar"
+            bi2, ei = key[1], key[2]
+            return (self._straight(key, wl) if self.item(bi2)[0] == "planar"
                     else self._cstraight(key, wl))
         if kind == "ellipse":
-            return self._ellipse(key, wl)
+            return (self._torus_ellipse(key, wl)
+                    if self.item(key[1])[0] == "torus" else self._ellipse(key, wl))
         if kind == "attrib":
             return self._attrib(key, wl)
         raise ValueError("unknown entity key " + repr(key))
@@ -551,6 +568,203 @@ class Makers:
         return (_Rec("point", 21)
                 .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*p)))
 
+    # -- sphere (single closed face: 1 loop / 1 self coedge / 1 seam edge) ----
+    def _sph(self, bi):
+        return self.items[bi][1]
+
+    def _sphere_surface(self, key, wl):
+        info = self._sph(key[1])
+        org, R = info["origin"], info["R"]
+        axis = info.get("axis", (0.0, 0.0, 1.0))
+        xdir = (1.0, 0.0, 0.0)
+        return (_Rec("surface", 15, chain=[("sphere", 14)])
+                .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*org),
+                     _td(R), _v3b(*xdir), _v3b(*axis),
+                     bytes([T_FLAG_B] * 5)))
+
+    def _sphere_face(self, key, wl):
+        bi = key[1]
+        info = self._sph(bi)
+        lo, hi = info["bbox"]
+        return (_Rec("face", 10)
+                .add(_p(wl.ref(("attrib", "fname", bi, 0))), _ti(1),
+                     _ti(-1), _p(-1), _p(-1), _p(wl.ref(("loop", bi, 0))),
+                     _p(wl.ref(("shell", bi))), _p(-1),
+                     _p(wl.ref(("sphere", bi))),
+                     bytes([T_FLAG_B, T_FLAG_B, T_FLAG_A]),
+                     _v3(*lo), _v3(*hi), bytes([T_FLAG_A]),
+                     _td(-math.pi / 2), _td(math.pi / 2),
+                     _td(-math.pi), _td(math.pi)))
+
+    def _sphere_loop(self, key, wl):
+        bi = key[1]
+        info = self._sph(bi)
+        org, R = info["origin"], info["R"]
+        axis = info.get("axis", (0.0, 0.0, 1.0))
+        # the seam loop is a degenerate single point at the pole
+        p = (org[0] - axis[0] * R, org[1] - axis[1] * R, org[2] - axis[2] * R)
+        return (_Rec("loop", 11)
+                .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1),
+                     _p(wl.ref(("coedge", bi, 0))), _p(wl.ref(("face", bi, 0))),
+                     bytes([T_FLAG_A]), _v3(*p), _v3(*p),
+                     bytes([T_INT15]) + _ri(4), _p(wl.ref(("sphere", bi))),
+                     bytes([T_FLAG_B])))
+
+    def _sphere_coedge(self, key, wl):
+        bi = key[1]
+        return (_Rec("coedge", 16)
+                .add(_p(-1), _ti(-1), _ti(-1), _p(-1),
+                     _p(wl.ref(("coedge", bi, 0))),
+                     _p(wl.ref(("coedge", bi, 0))),
+                     _p(-1),
+                     _p(wl.ref(("edge", bi, 0))), bytes([T_FLAG_B]),
+                     _p(wl.ref(("loop", bi, 0))), _p(-1)))
+
+    def _sphere_edge(self, key, wl):
+        bi = key[1]
+        lo, hi = self._sph(bi)["bbox"]
+        return (_Rec("edge", 17)
+                .add(_p(-1), _ti(-1), _ti(-1), _p(-1),
+                     _p(wl.ref(("vertex", bi, 0))), _td(1.0),
+                     _p(wl.ref(("vertex", bi, 0))), _td(0.0),
+                     _p(wl.ref(("coedge", bi, 0))), _p(-1),
+                     bytes([T_FLAG_B]), _s("unknown"),
+                     bytes([T_FLAG_A]), _v3(*lo), _v3(*hi)))
+
+    def _sphere_vertex(self, key, wl):
+        bi = key[1]
+        return (_Rec("vertex", 18)
+                .add(_p(-1), _ti(-1), _ti(-1), _p(-1),
+                     _p(wl.ref(("edge", bi, 0))), _p(wl.ref(("point", bi, 0)))))
+
+    def _sphere_point(self, key, wl):
+        bi = key[1]
+        info = self._sph(bi)
+        org, R = info["origin"], info["R"]
+        axis = info.get("axis", (0.0, 0.0, 1.0))
+        # seam pole = centre - R * axis (matches official (0,0,-R))
+        p = (org[0] - axis[0] * R, org[1] - axis[1] * R, org[2] - axis[2] * R)
+        return (_Rec("point", 21)
+                .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*p)))
+
+    # -- torus (single closed face: 1 loop, 4 coedges, 2 seam edges) ----------
+    def _tor(self, bi):
+        return self.items[bi][1]
+
+    def _torus_surface(self, key, wl):
+        info = self._tor(key[1])
+        org, axis, R, r = info["origin"], info["axis"], info["R"], info["r"]
+        xref = info.get("major_unit", (1.0, 0.0, 0.0))
+        return (_Rec("surface", 15, chain=[("torus", 14)])
+                .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*org),
+                     _v3b(*axis), _td(R), _td(r), _v3b(*xref),
+                     bytes([T_FLAG_B] * 5)))
+
+    def _torus_face(self, key, wl):
+        bi = key[1]
+        lo, hi = self._tor(bi)["bbox"]
+        return (_Rec("face", 10)
+                .add(_p(wl.ref(("attrib", "fname", bi, 0))), _ti(1),
+                     _ti(-1), _p(-1), _p(-1), _p(wl.ref(("loop", bi, 0))),
+                     _p(wl.ref(("shell", bi))), _p(-1),
+                     _p(wl.ref(("torus", bi))),
+                     bytes([T_FLAG_B, T_FLAG_B, T_FLAG_A]),
+                     _v3(*lo), _v3(*hi), bytes([T_FLAG_A]),
+                     _td(-math.pi), _td(math.pi),
+                     _td(-math.pi), _td(math.pi)))
+
+    def _torus_loop(self, key, wl):
+        bi = key[1]
+        lo, hi = self._tor(bi)["bbox"]
+        return (_Rec("loop", 11)
+                .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1),
+                     _p(wl.ref(("coedge", bi, 0))), _p(wl.ref(("face", bi, 0))),
+                     bytes([T_FLAG_A]), _v3(*lo), _v3(*hi),
+                     bytes([T_INT15]) + _ri(0)))
+
+    def _torus_coedge(self, key, wl):
+        # official 4-coedge ring: c0/c2 come from edge0 (major), c1/c3 edge1
+        bi, ci = key[1], key[2]
+        # next / prev / partner / edge / sense per official torus stream
+        specs = (
+            (1, 3, 2, 0, T_FLAG_A),   # c0: next=c1 prev=c3 partner=c2 edge=e0
+            (2, 0, 1, 1, T_FLAG_A),   # c1: next=c2 prev=c0 partner=c1? self->edge1
+            (0, 1, 0, 1, T_FLAG_B),   # c2: next=c0 prev=c1 partner=c0 edge1
+            (0, 0, 0, 0, T_FLAG_B),   # c3: next=c0 prev=c0 partner=c0 edge0
+        )
+        nxt, prv, part, edg, sense = specs[ci]
+        # partner is the paired coedge on the same edge; map via index table
+        partner = (2, 3, 0, 1)[ci]
+        return (_Rec("coedge", 16)
+                .add(_p(-1), _ti(-1), _ti(-1), _p(-1),
+                     _p(wl.ref(("coedge", bi, nxt))),
+                     _p(wl.ref(("coedge", bi, prv))),
+                     _p(wl.ref(("coedge", bi, partner))),
+                     _p(wl.ref(("edge", bi, edg))), bytes([sense]),
+                     _p(wl.ref(("loop", bi, 0))), _p(-1)))
+
+    def _torus_edge(self, key, wl):
+        bi, ei = key[1], key[2]
+        info = self._tor(bi)
+        v = ("vertex", bi, 0)
+        if ei == 0:
+            lo, hi = info["bbox"]
+            return (_Rec("edge", 17)
+                    .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(wl.ref(v)),
+                         _td(0.0), _p(wl.ref(v)), _td(2 * math.pi),
+                         _p(wl.ref(("coedge", bi, 0))),
+                         _p(wl.ref(("ellipse", bi, 0))),
+                         bytes([T_FLAG_B]), _s("unknown"),
+                         bytes([T_FLAG_A]), _v3(*lo), _v3(*hi)))
+        # major seam: passes through R+r on the xref axis
+        org, axis, R, r = info["origin"], info["axis"], info["R"], info["r"]
+        xref = info.get("major_unit", (1.0, 0.0, 0.0))
+        p = (org[0] + xref[0] * (R + r), org[1] + xref[1] * (R + r),
+             org[2] + xref[2] * (R + r))
+        lo, hi = info["bbox"]
+        return (_Rec("edge", 17)
+                .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(wl.ref(v)),
+                     _td(0.0), _p(wl.ref(v)), _td(2 * math.pi),
+                     _p(wl.ref(("coedge", bi, 1))),
+                     _p(wl.ref(("ellipse", bi, 1))),
+                     bytes([T_FLAG_B]), _s("unknown"),
+                     bytes([T_FLAG_A]), _v3(*lo), _v3(*hi)))
+
+    def _torus_vertex(self, key, wl):
+        bi = key[1]
+        return (_Rec("vertex", 18)
+                .add(_p(-1), _ti(-1), _ti(-1), _p(-1),
+                     _p(wl.ref(("edge", bi, 0))), _p(wl.ref(("point", bi, 0)))))
+
+    def _torus_point(self, key, wl):
+        bi = key[1]
+        info = self._tor(bi)
+        org, axis, R, r = info["origin"], info["axis"], info["R"], info["r"]
+        xref = info.get("major_unit", (1.0, 0.0, 0.0))
+        p = (org[0] + xref[0] * (R + r), org[1] + xref[1] * (R + r),
+             org[2] + xref[2] * (R + r))
+        return (_Rec("point", 21)
+                .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*p)))
+
+    def _torus_ellipse(self, key, wl):
+        bi, k = key[1], key[2]
+        info = self._tor(bi)
+        org, axis, R, r = info["origin"], info["axis"], info["R"], info["r"]
+        xref = info.get("major_unit", (1.0, 0.0, 0.0))
+        if k == 0:
+            # outer (major) circle in the axis plane: centre=org, xdir=xref
+            centre = org
+            xdir = xref
+        else:
+            # minor seam ellipse: centre on xref*(R+r), axis along xref
+            centre = (org[0] + xref[0] * (R + r), org[1] + xref[1] * (R + r),
+                      org[2] + xref[2] * (R + r))
+            xdir = (axis[0] * r, axis[1] * r, axis[2] * r)
+        return (_Rec("curve", 20, chain=[("ellipse", 19)])
+                .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*centre),
+                     _v3b(*axis), _v3b(*xdir),
+                     _td(1.0), bytes([T_FLAG_B, T_FLAG_B])))
+
     def _cone(self, key, wl):
         bi = key[1]
         info = self.cyl(bi)
@@ -603,8 +817,10 @@ class Makers:
         if sub == "fname":
             bi, fi = key[2], key[3]
             owner = wl.ref(("face", bi, fi))
-            return _attrib(owner, "0:%d" % (27 + 3 * fi + 60 * bi),
-                           wl.ref(("attrib", "frgb", bi, fi)), None,
+            # sphere/torus faces carry no rgb_color chain (matches official)
+            closed = self.item(bi)[0] in ("sphere", "torus")
+            nxt = None if closed else wl.ref(("attrib", "frgb", bi, fi))
+            return _attrib(owner, "0:%d" % (27 + 3 * fi + 60 * bi), nxt, None,
                            name_tag="%6")
         if sub == "frgb":
             bi, fi = key[2], key[3]
@@ -829,7 +1045,7 @@ def _planar_layouts():
 
     layouts["body"] = L("body", [
         _P(lambda ctx: ("attrib", "bname", ctx.key[1])),
-        _I(-1), _I(-1), _P(), _I(0),
+        _I(0), _I(-1), _P(), _I(0),
         _P(lambda ctx: ("lump", ctx.key[1])),
         _P(), _P(), _FA(),
         _V3(lambda ctx: body_bbox(ctx.key, ctx.wl, ctx.m)[0]),

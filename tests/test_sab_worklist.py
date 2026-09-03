@@ -110,3 +110,27 @@ def test_planar_layout_emitter_matches_handwritten():
     for k in ("body", "lump", "shell", "face", "loop", "coedge", "edge",
               "vertex", "point", "plane", "straight"):
         assert k in layouts, f"planar layout missing for {k}"
+
+
+def _roundtrip_bodies(fn):
+    from scdm.document import load_scdoc as _ls
+    from scdm.import_sab import import_scdoc_bundle as _ib
+    from scdm.kdoc import KernelDoc
+    import tempfile
+    doc = KernelDoc()
+    doc.add_body(fn(), name="S")
+    fd, path = tempfile.mkstemp(suffix=".scdoc")
+    os.close(fd)
+    try:
+        W.write_scdoc(path, doc, name="s")
+        k2 = _ib(_ls(path))
+        return len(k2.bodies)
+    finally:
+        os.remove(path)
+
+
+def test_sphere_and_torus_roundtrip_via_facets():
+    """Phase 2: closed-surface bodies fall back to a facet-mesh body on
+    self-read (official SpaceClaim opens them as true B-rep bodies)."""
+    assert _roundtrip_bodies(lambda: K.make_sphere(0.01)) == 1
+    assert _roundtrip_bodies(lambda: K.make_torus(0.02, 0.005)) == 1

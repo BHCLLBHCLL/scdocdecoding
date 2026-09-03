@@ -125,6 +125,13 @@ def make_sphere(radius: float, origin: Vec3 = (0.0, 0.0, 0.0)):
     return o["prim"].BRepPrimAPI_MakeSphere(o["gp"].gp_Pnt(*origin), radius).Shape()
 
 
+def make_torus(major: float, minor: float, origin: Vec3 = (0.0, 0.0, 0.0),
+               axis: Vec3 = (0.0, 0.0, 1.0)):
+    o = _occ()
+    ax = o["gp"].gp_Ax2(o["gp"].gp_Pnt(*origin), o["gp"].gp_Dir(*axis))
+    return o["prim"].BRepPrimAPI_MakeTorus(ax, major, minor).Shape()
+
+
 def make_plane_face(origin: Vec3, normal: Vec3, half: float = 0.05):
     o = _occ()
     pln = o["gp"].gp_Pln(o["gp"].gp_Pnt(*origin), o["gp"].gp_Dir(*normal))

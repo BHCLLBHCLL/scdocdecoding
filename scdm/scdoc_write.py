@@ -188,6 +188,61 @@ def _cyl_info(solid):
     }
 
 
+def _shape_bbox(solid):
+    """Geometric axis-aligned bbox of a shape (works for closed surfaces like
+    sphere/torus that have no boundary vertices)."""
+    from OCC.Core.Bnd import Bnd_Box
+    from OCC.Core.BRepBndLib import brepbndlib
+    b = Bnd_Box()
+    brepbndlib.Add(solid, b)
+    xmin, ymin, zmin, xmax, ymax, zmax = b.Get()
+    return (xmin, ymin, zmin), (xmax, ymax, zmax)
+
+
+def _sphere_info(solid):
+    """Detect a closed sphere (single spherical face) and extract its params."""
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+    from OCC.Core.GeomAbs import GeomAbs_Sphere
+    from OCC.Core.TopoDS import topods
+    faces = K.explore(solid, "face")
+    if len(faces) != 1:
+        return None
+    ad = BRepAdaptor_Surface(topods.Face(faces[0]))
+    if ad.GetType() != GeomAbs_Sphere:
+        return None
+    sph = ad.Sphere()
+    loc = sph.Location()
+    d = (0.0, 0.0, 1.0)  # gp_Sphere has no axis; use the default Z axis
+    lo, hi = _shape_bbox(solid)
+    return {"origin": (loc.X(), loc.Y(), loc.Z()),
+            "axis": d,
+            "R": sph.Radius(),
+            "bbox": (lo, hi)}
+
+
+def _torus_info(solid):
+    """Detect a closed torus (single torus face) and extract its params."""
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+    from OCC.Core.GeomAbs import GeomAbs_Torus
+    from OCC.Core.TopoDS import topods
+    faces = K.explore(solid, "face")
+    if len(faces) != 1:
+        return None
+    ad = BRepAdaptor_Surface(topods.Face(faces[0]))
+    if ad.GetType() != GeomAbs_Torus:
+        return None
+    tor = ad.Torus()
+    loc = tor.Location()
+    d = tor.Axis().Direction()
+    lo, hi = _shape_bbox(solid)
+    return {"origin": (loc.X(), loc.Y(), loc.Z()),
+            "axis": (d.X(), d.Y(), d.Z()),
+            "R": tor.MajorRadius(),
+            "r": tor.MinorRadius(),
+            "major_unit": (1.0, 0.0, 0.0),
+            "bbox": (lo, hi)}
+
+
 def _extract_solid(solid):
     """Return (verts, edges, faces) for a planar-faced solid."""
     from OCC.Core.BRep import BRep_Tool
@@ -379,8 +434,18 @@ def _build_sab(items, colors=None):
     out += _s("FQ8FFTTT5P7PJFMUMMYS2_J8B48CXKNEWAP4QAQV2CS3PP65QBQCNVPEFCMUSP6XAAPKK47XTA84Q")
     out += body
     out += bytes([T_RECORD, len(END_NAME)]) + END_NAME.encode("latin-1")
-    face_counts = [len(it[3]) if it[0] == "planar" else 3 for it in items]
-    edge_counts = [len(it[2]) if it[0] == "planar" else 2 for it in items]
+    # per-body face/edge counts: planar from geometry, cyl=3, sphere/torus=1
+    def _fc(it):
+        if it[0] == "planar":
+            return len(it[3])
+        return 1 if it[0] in ("sphere", "torus") else 3
+
+    def _ec(it):
+        if it[0] == "planar":
+            return len(it[2])
+        return 1 if it[0] in ("sphere", "torus") else 2
+    face_counts = [_fc(it) for it in items]
+    edge_counts = [_ec(it) for it in items]
     return bytes(out), face_counts, edge_counts
 
 
@@ -1003,7 +1068,7 @@ def _reorder_to_template(sab_bytes, kind_template):
 
 
 def write_scdoc(path: str, kdoc, name: str = "design") -> None:
-    """Write a native .scdoc for planar solids and plain cylinders."""
+    """Write a native .scdoc for planar solids, cylinders, spheres, torus."""
     items = []
     colors = []
     for body in kdoc.bodies:
@@ -1013,7 +1078,15 @@ def write_scdoc(path: str, kdoc, name: str = "design") -> None:
             if info is not None:
                 items.append(("cyl", info))
             else:
-                items.append(("planar",) + _extract_solid(s))
+                sfo = _sphere_info(s)
+                if sfo is not None:
+                    items.append(("sphere", sfo))
+                else:
+                    tfo = _torus_info(s)
+                    if tfo is not None:
+                        items.append(("torus", tfo))
+                    else:
+                        items.append(("planar",) + _extract_solid(s))
             colors.append(tuple(getattr(body, "color", None) or (0.745, 0.902, 0.961)))
     if not items:
         raise ValueError("没有可写出的实体")
@@ -1025,7 +1098,7 @@ def write_scdoc(path: str, kdoc, name: str = "design") -> None:
     # bodyFacets stream to bind bodies; planar bodies use the official
     # FaceNode layout, cylinders fall back to triangle nodes).
     tessellations = []
-    if any(it[0] == "cyl" for it in items):
+    if any(it[0] in ("cyl", "sphere", "torus") for it in items):
         for body in kdoc.bodies:
             sols = K.explore(body.shape, "solid") or [body.shape]
             for s in sols:
