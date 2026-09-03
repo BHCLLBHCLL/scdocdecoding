@@ -706,3 +706,105 @@ G1–G6 按本节计划逐项实现，每个工作包独立提交并推送 GitHu
 **第三轮新增：** `references/golden/`（盒/L 形/圆柱三个官方黄金参照）、`references/make_official_ref.py`（官方参照批量生成管线）、`references/verify_open.py`（官方侧验证脚本）、`_facets_bytes`（bodyFacets 写出）、圆柱模板升级为官方 ACIS-29 布局（seam 边、curve id 21/20、surface id 15/14/16、圆边参数 0..2π、顶点在 +major 参数 0 处、面序侧/顶/底）、importer 网格回退（weld+sew）、SAB class interning（首条带名+后续 id-only）、attrib 链指针修正（官方布局 t2=NEXT/t3=PREV/t4=OWNER）。
 
 **主要新增模块：** `scdm/drawing.py`（HLR 三视图）、`tests/test_g1.py`、`tests/test_g2.py`；核心改动集中在 `scdm_gui.py`（命令接线）、`scdm/kernel.py`（边离散/环选/轴对齐/修复/共享拓扑/中面/剖交线）、`scdm/gui/scene.py`（B-rep 拾取、栅格、剖切 widget、测量标注、渲染参数化）、`scdm/scdoc_write.py`（rgb_color、圆柱 ACIS-29 模板、bodyFacets）、`scdoc_parser/sab.py`（多代头部兼容）、`scdm/import_sab.py`（网格回退）。
+
+### 20.10 完整 ACIS 遍历算法机制开发计划（2026-09-03）
+
+#### 20.10.0 现状更新（相对 20.9 的进展）
+
+20.9 中「官方打开我们的文件」仅平面体打通（SAT 通路），且纯圆柱 coedge 待微调。本轮回合已完成：
+
+| 项 | 状态 | 说明 |
+| --- | --- | --- |
+| **ACIS 遍历算法逆向** | **完成** | 反汇编 `SpaACIS.dll` 的 `api_save_entity_list` + `save_entity_pointer`，确证 FIFO 工作清单：seed BODY → 出队写记录 → 指针字段首次引用登记编号并入队尾。官方 ref_tet 141 记录 FIFO 模拟**精确重现**（LIFO 反证失败）。详见 `references/acis_save_algorithm.md` |
+| **原生 FIFO 发射器** | **完成** | `scdm/sab_emit.py`（`Worklist`+`Makers`）替代旧 `_BOX_KIND_SEQ` 模板交错与二次重排；box/cyl/mixed FIFO 不变量自检全绿 |
+| **官方打开（原生）** | **平面体 bodies=1、圆柱 bodies=1** | 定位四个前置条件：①FIFO 遍历序 ②XACIS 字符串池驻留（`%6`）③document.xml 与 SAB attrib Id 体系一致（0:23 模板）④面定向 flag（CCW loop → flag_b）。`verify_open.py` 哨兵 `done bodies=1` |
+| **解析器容错** | **完成** | `SabModel._decode` 对布局变体容错（可选 bbox/uv/参数、face/coedge/edge/vertex/loop 指针守卫、新增几何类）。Library 全部 6 个 SrModels 解析成功（此前全崩）；ref_tet 解码保持精确 |
+
+**遍历算法机制业已完整实现并官方验证；缺的是「实体类写模板覆盖」。** 当前原生路径仅支持平面体（plane+straight）与圆柱（cone+ellipse）；其余实体类靠 SAT 路径（官方 SabSatConverter）兜底。
+
+#### 20.10.1 目标界定
+
+「完整」= **原生 FIFO 路径能写出任意常用 B-rep 几何的官方可打开 scdoc**，按价值分三级：
+
+- **T1 常用旋转/球/圆环**：`torus`、`sphere`
+- **T2 参数曲线**：`pcurve`、`intcurve`、`exppc`（`exactcur`/`surfintcur` 顺带）
+- **T3 自由曲面/曲线**：`nurbs`/`nubs`、`spline`（`nullbs`、`null_surface` 顺带）
+
+#### 20.10.2 实体类清单（来自全部 Library 模型 + ref 参照合计）
+
+| 类别 | 类 | 现状 |
+| --- | --- | --- |
+| 拓扑核心 | body/lump/shell/face/loop/coedge/edge/vertex/point | ✅ 已实现写入 |
+| 基础几何 | plane/cone/straight/ellipse | ✅ 已实现写入 |
+| 常用曲面 | **torus, sphere** | ❌ |
+| 参数曲面 | **nubs, spline, nullbs, nurbs** | ❌（量最大） |
+| 参数曲线 | **pcurve, intcurve, exppc, exactcur, surfintcur** | ❌（导入模型主流） |
+| 拓扑变体 | tcoedge/tvertex/tedge/ref/null_surface | ❌（透传即可） |
+| attrib | string_attrib/wstring_attrib/rgb_color/integer_attrib | ✅（写 string/rgb） |
+
+#### 20.10.3 核心战略：数据驱动布局库（重构 Makers）
+
+**不做「每类一个手写函数」，改为「布局表 + 通用发射器」**，这是规模化的关键：
+
+```
+class_layouts = {
+   'torus': TorusLayout,   # 只声明字段 token 序列 + 槽位语义
+   ...
+}
+```
+
+- **字段序列** = 该类每 token 的 kind（ptr/int/double/vec3/vec3b/flag/string）+ 可选性范围
+- **槽位语义** = 每个 ptr 槽指向的实体类（如 coedge.t4→coedge、t6→partner coedge）
+- **几何参数**（半径/中心/法向/控制点等）从 OCCT 形状（`BRepAdaptor_Surface`/`Geom_BSplineSurface` 等）提取
+- **布局获取无需手抄**：现有 `SabSatConverter`（官方 SAB→SAT 文本）+ SpaACIS.dll 反汇编 `save_data` 工具链，可对每类**自动生成** schema
+
+#### 20.10.4 分阶段步骤
+
+> 依赖顺序：先 Phase 0 + Phase 1（基建，让后续类「只加一行布局表」），再按 T1→T2→T3 逐批推进。
+
+**Phase 0 — 布局逆向管线（基建）**
+- [ ] `references/extract_layouts.py`：对每类取官方样本（Library 模型 + ref）→ `SabSatConverter` 转 SAT → 反汇编对应 `save_data` → 自动生成字段 token 序列（含可选字段范围）与语义槽位表
+- [ ] 产出 `scdm/layouts/class_layouts.json`
+- **验证**：用布局表重放 ref_tet/cyl 已知流，字节级比对（复用 `reserialize.py`）
+
+**Phase 1 — 通用发射器重构**
+- [ ] `sab_emit.py` 新增 `LayoutEmitter`：输入=实体图（OCCT `explore`）+ `class_layouts`；输出=记录流（复用 `Worklist`）
+- [ ] `Makers` 改薄：只做「OCCT 几何 → 实体图 + 每实体参数」，模板交给 `LayoutEmitter`；删除手写 `_face`/`_coedge`/`_c*` 等
+- **验证**：box/cyl/mixed 官方打开 bodies=1 不回归（全量 92+2 测试绿）
+
+**Phase 2 — T1 常用旋转曲面**
+- [ ] `torus`（中心/法向/主半径/副半径）与 `sphere`（球面）字段模板 + OCCT 参数映射
+- **验证**：生成 torus/sphere scdoc → `SabSatConverter` restore + SpaceClaim 打开 bodies=1
+
+**Phase 3 — T2 参数曲线**
+- [ ] `pcurve`（面-曲线 UV 参数化，base curve + pcurve surface 双段结构）、`intcurve`/`exactcur`/`surfintcur`（两曲面交线）、`exppc`
+- **验证**：对含此类类的官方样本（SampleModel1/5）做「读→解→写→官方打开」一致性闭环
+
+**Phase 4 — T3 自由曲面/曲线**
+- [ ] `nurbs`/`nubs`（B 样条面：控制点网格 + 节点向量 + 阶数 + 权重）、`spline`（B 样条曲线）
+- **验证**：对含曲面的官方模型写回官方打开
+
+**Phase 5 — 拓扑变体透传 + 稳健性**
+- [ ] tcoedge/tvertex/tedge/ref/null_surface 标记为透传（字段存在即可）
+- [ ] `topology.py` 解析器补齐这些 kind（已有 optional 容错基础）
+
+**Phase 6 — 回归与文档**
+- [ ] 全量测试绿；`references/acis_save_algorithm.md` 追加 entity coverage 矩阵；提交推送
+
+#### 20.10.5 工作量与风险
+
+| 阶段 | 依赖 | 量级 | 说明 |
+| --- | --- | --- | --- |
+| Phase 0 | 逆向管线（SAT 文本 + 反汇编已有） | 中 | 管线规模化关键 |
+| Phase 1 | Phase 0 | 中 | 重构，风险集中，须守住 box/cyl 回归 |
+| Phase 2 | Phase 1 | 小-中 | |
+| Phase 3 | Phase 0 | 中 | 参数曲线链路最复杂（pcurve 双段结构） |
+| Phase 4 | Phase 0 + 3 | 大 | B 样条字段多 |
+| Phase 5 | Phase 1 | 小 | |
+| Phase 6 | 全部 | 小 | |
+
+**最大风险**：Phase 3 的 `pcurve`（曲线↔面 UV 空间双段连接体）；**最高价值**：Phase 4（自由曲面，导入模型主流）。
+
+#### 20.10.6 建议执行路径
+
+按依赖顺序先做 **Phase 0 + Phase 1**（让后续所有类「只加一行布局表即可」），再按 **T1→T2→T3** 逐批推进，每批独立验证官方打开，完成后推送 GitHub。

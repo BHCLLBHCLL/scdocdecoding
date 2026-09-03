@@ -91,3 +91,22 @@ def test_write_scdoc_roundtrip_box():
         assert abs(v - 1e-6) < 1e-9
     finally:
         os.remove(path)
+
+
+def test_planar_layout_emitter_matches_handwritten():
+    """Phase 1: data-driven LayoutEmitter must reproduce the hand-written
+    Makers.make byte stream for a planar body (regression guard)."""
+    from scdm import sab_emit as SE
+
+    box = K.make_box(0.01, 0.01, 0.01)
+    items = [("planar",) + W._extract_solid(s)
+             for s in (K.explore(box, "solid") or [box])]
+    ref = SE.Worklist().run([("body", 0)], SE.Makers(items))
+    layouts = SE._planar_layouts()
+    out = SE.Worklist().run([("body", 0)],
+                            SE.LayoutEmitter(SE.Makers(items), layouts))
+    assert ref == out, "LayoutEmitter diverged from Makers.make"
+    # the emitter must cover all planar topology kinds
+    for k in ("body", "lump", "shell", "face", "loop", "coedge", "edge",
+              "vertex", "point", "plane", "straight"):
+        assert k in layouts, f"planar layout missing for {k}"

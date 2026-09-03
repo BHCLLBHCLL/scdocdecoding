@@ -635,6 +635,324 @@ def _attrib(owner_idx, value, nxt_idx=None, prv_idx=None, type_id=14675622,
 
 
 # ----------------------------------------------------------------------
+# Phase 1: data-driven layout emitter
+# ----------------------------------------------------------------------
+class F:
+    """A single field of a record layout.
+
+    kind is the token kind (ptr/int/double/vec3/vec3b/flag_a/flag_b/int15/
+    string).  make_value(ctx) -> value:
+      * ptr: returns the referenced entity key, or None for a null pointer
+      * int/double: the scalar
+      * vec3/vec3b: a 3-tuple
+      * string: the string
+      * flag_*: ignored (the kind carries the byte)
+    """
+
+    __slots__ = ("kind", "make_value")
+
+    def __init__(self, kind, make_value=None):
+        self.kind = kind
+        if kind == "ptr":
+            # make_value (callable or None) yields the referenced key / None
+            self.make_value = make_value
+        elif callable(make_value):
+            self.make_value = make_value
+        else:
+            self.make_value = (lambda ctx, _v=make_value: _v)
+        # constant flag kinds carry no value
+        if kind in ("flag_a", "flag_b"):
+            self.make_value = None
+
+    def emit(self, ctx):
+        if self.kind in ("flag_a", "flag_b"):
+            return bytes([T_FLAG_A if self.kind == "flag_a" else T_FLAG_B])
+        v = self.make_value(ctx) if self.make_value is not None else None
+        if self.kind == "ptr":
+            return _p(ctx.wl.ref(v) if v is not None else -1)
+        if self.kind == "int":
+            return _ti(v)
+        if self.kind == "int15":
+            return bytes([T_INT15]) + _ri(v)
+        if self.kind == "double":
+            return _td(v)
+        if self.kind == "vec3":
+            return _v3(*v)
+        if self.kind == "vec3b":
+            return _v3b(*v)
+        if self.kind == "string":
+            return _s(v)
+        if self.kind == "flag":
+            return bytes([v])  # v is T_FLAG_A / T_FLAG_B
+        raise ValueError("unknown field kind " + self.kind)
+
+
+# shorthand constructors (pass the value through; F handles callable vs const)
+def _P(make_value=None):
+    return F("ptr", make_value)
+
+
+def _I(v):
+    return F("int", v)
+
+
+def _D(v):
+    return F("double", v)
+
+
+def _V3(v):
+    return F("vec3", v)
+
+
+def _V3B(v):
+    return F("vec3b", v)
+
+
+def _S(v):
+    return F("string", v)
+
+
+def _FA():
+    return F("flag_a")
+
+
+def _FB():
+    return F("flag_b")
+
+
+class Layout:
+    """A record layout: name + ordered fields (+ chain / class interning)."""
+
+    def __init__(self, name, fields, class_id=None, chain=()):
+        self.name = name
+        self.fields = fields
+        self.class_id = class_id
+        self.chain = chain
+
+    def render(self, key, wl, m):
+        rec = _Rec(self.name, self.class_id, self.chain)
+        ctx = _Ctx(key, wl, m)
+        for f in self.fields:
+            rec.add(f.emit(ctx))
+        return rec
+
+
+class _Ctx:
+    """Per-record context passed to layout field make_value functions."""
+
+    __slots__ = ("key", "wl", "m")
+
+    def __init__(self, key, wl, m):
+        self.key = key
+        self.wl = wl
+        self.m = m
+
+
+class LayoutEmitter:
+    """Drive the FIFO worklist with a data-driven layout table.
+
+    `m` is a Makers instance (data/geometry accessor); `layouts` maps
+    entity kind -> Layout.  Falls back to the hand-written Makers.make for
+    kinds without a layout entry (used while migrating).
+    """
+
+    def __init__(self, m, layouts):
+        self.m = m
+        self.l = layouts
+
+    def make(self, key, wl):
+        l = self.l.get(key[0])
+        if l is None:
+            return self.m.make(key, wl)
+        return l.render(key, wl, self.m)
+
+
+# ----------------------------------------------------------------------
+# planar record layouts (migrated from the hand-written Makers.make)
+# ----------------------------------------------------------------------
+def _flg(sense_val):
+    """A dynamic flag field: make_value returns T_FLAG_A / T_FLAG_B."""
+    return F("flag", lambda ctx: sense_val(ctx) if callable(sense_val)
+             else sense_val)
+
+
+def _planar_layouts():
+    L = Layout
+    layouts = {}
+
+    def body_bbox(k, wl, m):
+        it = m.item(k[1])
+        smin, smax = (it[1]["bbox"] if it[0] == "cyl" else _bbox(it[1]))
+        return smin, smax
+
+    def face_bbox(ctx):
+        # ctx.key may be ('face',bi,fi) or ('loop',bi,fi); both read the same
+        # face geometry.
+        k = ctx.key if ctx.key[0] == "face" else ("face", ctx.key[1], ctx.key[2])
+        d = ctx.m.fi[k]
+        return _bbox(d["verts"], d["loop"])
+
+    def face_next(ctx):
+        ff = ctx.m.fi[ctx.key]
+        return (("face", ctx.key[1], ctx.key[2] + 1)
+                if ctx.key[2] + 1 < ff["n_faces"] else None)
+
+    def coedge_next_prev(ctx):
+        coeds = ctx.m.lc[("loop", ctx.key[1], ctx.key[2])]
+        n = len(coeds)
+        k = ctx.key[3]
+        return coeds[(k + 1) % n], coeds[(k - 1) % n]
+
+    def coedge_partner(ctx):
+        info = ctx.m.ce[ctx.key]
+        partners = ctx.m.coe.get(info["edge"], [])
+        if len(partners) == 2:
+            return partners[1] if ctx.key == partners[0] else partners[0]
+        return partners[0]
+
+    def _edge_key(ctx):
+        # maps ('edge'|'straight', bi, ei) -> the edge data key
+        return ("edge", ctx.key[1], ctx.key[2])
+
+    def edge_len(ctx):
+        d = ctx.m.ei[_edge_key(ctx)]
+        p1, p2 = d["verts"][d["v1"]], d["verts"][d["v2"]]
+        return ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2
+                + (p2[2] - p1[2]) ** 2) ** 0.5
+
+    def edge_bbox(ctx):
+        d = ctx.m.ei[_edge_key(ctx)]
+        return _bbox(d["verts"], [d["v1"], d["v2"]])
+
+    def vertex_inc(ctx):
+        return ctx.m.vp.get(ctx.key)
+
+    layouts["body"] = L("body", [
+        _P(lambda ctx: ("attrib", "bname", ctx.key[1])),
+        _I(-1), _I(-1), _P(), _I(0),
+        _P(lambda ctx: ("lump", ctx.key[1])),
+        _P(), _P(), _FA(),
+        _V3(lambda ctx: body_bbox(ctx.key, ctx.wl, ctx.m)[0]),
+        _V3(lambda ctx: body_bbox(ctx.key, ctx.wl, ctx.m)[1]),
+    ], class_id=1)
+
+    layouts["lump"] = L("lump", [
+        _P(), _I(-1), _I(-1), _P(), _P(),
+        _P(lambda ctx: ("shell", ctx.key[1])),
+        _P(lambda ctx: ("body", ctx.key[1])),
+        _FA(),
+        _V3(lambda ctx: body_bbox(ctx.key, ctx.wl, ctx.m)[0]),
+        _V3(lambda ctx: body_bbox(ctx.key, ctx.wl, ctx.m)[1]),
+    ], class_id=7)
+
+    layouts["shell"] = L("shell", [
+        _P(), _I(-1), _I(-1), _P(), _P(), _P(),
+        _P(lambda ctx: ("face", ctx.key[1], 0)),
+        _P(),
+        _P(lambda ctx: ("lump", ctx.key[1])),
+        _FA(),
+        _V3(lambda ctx: body_bbox(ctx.key, ctx.wl, ctx.m)[0]),
+        _V3(lambda ctx: body_bbox(ctx.key, ctx.wl, ctx.m)[1]),
+    ], class_id=9)
+
+    def face_uvs(ctx):
+        fmin, fmax = face_bbox(ctx)
+        dx = (fmax[0] - fmin[0]) / 2.0
+        dy = (fmax[1] - fmin[1]) / 2.0
+        if dx <= 0.0:
+            dx = dy
+        if dy <= 0.0:
+            dy = dx
+        return (-dx, dx, -dy, dy)
+
+    layouts["face"] = L("face", [
+        _P(lambda ctx: ("attrib", "fname", ctx.key[1], ctx.key[2])),
+        _I(-1), _I(-1), _P(), _P(face_next),
+        _P(lambda ctx: ("loop", ctx.key[1], ctx.key[2])),
+        _P(lambda ctx: ("shell", ctx.key[1])),
+        _P(),
+        _P(lambda ctx: ("plane", ctx.key[1], ctx.key[2])),
+        _FB(), _FB(), _FA(),
+        _V3(lambda ctx: face_bbox(ctx)[0]),
+        _V3(lambda ctx: face_bbox(ctx)[1]),
+        _FA(),
+        _D(lambda ctx: face_uvs(ctx)[0]), _D(lambda ctx: face_uvs(ctx)[1]),
+        _D(lambda ctx: face_uvs(ctx)[2]), _D(lambda ctx: face_uvs(ctx)[3]),
+    ], class_id=10)
+
+    layouts["loop"] = L("loop", [
+        _P(), _I(-1), _I(-1), _P(), _P(),
+        _P(lambda ctx: ctx.m.lc[ctx.key][0]),
+        _P(lambda ctx: ("face", ctx.key[1], ctx.key[2])),
+        _FA(),
+        _V3(lambda ctx: face_bbox(ctx)[0]),
+        _V3(lambda ctx: face_bbox(ctx)[1]),
+        F("int15", lambda ctx: 0),
+    ], class_id=11)
+
+    layouts["coedge"] = L("coedge", [
+        _P(), _I(-1), _I(-1), _P(),
+        _P(lambda ctx: coedge_next_prev(ctx)[0]),
+        _P(lambda ctx: coedge_next_prev(ctx)[1]),
+        _P(coedge_partner),
+        _P(lambda ctx: ctx.m.ce[ctx.key]["edge"]),
+        _flg(lambda ctx: ctx.m.ce[ctx.key]["sense"]),
+        _P(lambda ctx: ("loop", ctx.key[1], ctx.key[2])),
+        _P(),
+    ], class_id=16)
+
+    layouts["edge"] = L("edge", [
+        _P(lambda ctx: ("attrib", "ename", ctx.key[1], ctx.key[2])),
+        _I(-1), _I(-1), _P(),
+        _P(lambda ctx: ("vertex", ctx.key[1], ctx.m.ei[ctx.key]["v1"])),
+        _D(lambda ctx: 0.0),
+        _P(lambda ctx: ("vertex", ctx.key[1], ctx.m.ei[ctx.key]["v2"])),
+        _D(edge_len),
+        _P(lambda ctx: (ctx.m.coe.get(ctx.key) or [None])[0]),
+        _P(lambda ctx: ("straight", ctx.key[1], ctx.key[2])),
+        _FB(), _S("unknown"), _FA(),
+        _V3(lambda ctx: edge_bbox(ctx)[0]),
+        _V3(lambda ctx: edge_bbox(ctx)[1]),
+    ], class_id=17)
+
+    layouts["vertex"] = L("vertex", [
+        _P(), _I(-1), _I(-1), _P(), _P(vertex_inc),
+        _P(lambda ctx: ("point", ctx.key[1], ctx.key[2])),
+    ], class_id=18)
+
+    layouts["point"] = L("point", [
+        _P(), _I(-1), _I(-1), _P(),
+        _V3(lambda ctx: ctx.m.item(ctx.key[1])[1][ctx.key[2]]),
+    ], class_id=21)
+
+    layouts["plane"] = L("surface", [
+        _P(), _I(-1), _I(-1), _P(),
+        _V3(lambda ctx: ctx.m.fi[("face", ctx.key[1], ctx.key[2])]["f"]["center"]),
+        _V3B(lambda ctx: ctx.m.fi[("face", ctx.key[1], ctx.key[2])]["f"]["normal"]),
+        _V3B(lambda ctx: _ortho(ctx.m.fi[("face", ctx.key[1], ctx.key[2])]["f"]["normal"])),
+        _FB(), _FB(), _FB(), _FB(), _FB(),
+    ], class_id=13, chain=(("plane", 12),))
+
+    layouts["straight"] = L("curve", [
+        _P(), _I(-1), _I(-1), _P(),
+        _V3(lambda ctx: ctx.m.ei[("edge", ctx.key[1], ctx.key[2])]["verts"][
+            ctx.m.ei[("edge", ctx.key[1], ctx.key[2])]["v1"]]),
+        _V3B(lambda ctx: _straight_dir(ctx)),
+        _FA(), _D(lambda ctx: 0.0), _FA(), _D(edge_len),
+    ], class_id=20, chain=(("straight", 19),))
+
+    return layouts
+
+
+def _straight_dir(ctx):
+    d = ctx.m.ei[("edge", ctx.key[1], ctx.key[2])]
+    p1, p2 = d["verts"][d["v1"]], d["verts"][d["v2"]]
+    dx, dy, dz = p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]
+    length = (dx * dx + dy * dy + dz * dz) ** 0.5 or 1.0
+    return (dx / length, dy / length, dz / length)
+
+
+# ----------------------------------------------------------------------
 # public entry
 # ----------------------------------------------------------------------
 def build_sab(items, colors=None):
@@ -642,4 +960,8 @@ def build_sab(items, colors=None):
     _build_sab contract; caller supplies the header preamble."""
     wl = Worklist()
     makers = Makers(items, colors)
-    return wl.run([("body", bi) for bi in range(len(items))], makers)
+    # planar topology goes through the data-driven layout table; unknown kinds
+    # (attrib, the cylindrical _c* builders) fall back to Makers.make.
+    # Verified byte-identical to the hand-written Makers.make path for box.
+    emitter = LayoutEmitter(makers, _planar_layouts())
+    return wl.run([("body", bi) for bi in range(len(items))], emitter)
