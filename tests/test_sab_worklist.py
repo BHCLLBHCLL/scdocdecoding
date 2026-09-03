@@ -147,7 +147,7 @@ def test_intcurve_cluster_structure():
     z = zipfile.ZipFile("references/golden/ref_tet.scdoc")  # header donor
     data = None
     import os
-    loft = "_refs/loft.scdoc"
+    loft = "references/golden/loft.scdoc"
     if os.path.exists(loft):
         data = zipfile.ZipFile(loft).read(
             "SpaceClaim/Geometry/part1bodies.sab")
@@ -184,3 +184,43 @@ def test_intcurve_cluster_structure():
     assert (nt[3], nt[4]) == (0.0, 1) and (nt[5], nt[6]) == (1.0, 1)
     assert len(nt) == 9 and nt[7] == (1e-05, 0.0, 0.0)
     assert nt[8] == (2e-05, 0.0, 2e-05)        # poles as vec3 pairs
+
+
+def test_spline_surface_cluster_replay():
+    """Phase 4: the spline-surface cluster builder reproduces the official
+    both record (spline.scdoc face surface) token-for-token, including the
+    knot mult convention (stored endpoint mult = standard - 1), the pole grid
+    (v-slowest, x,y,z,w) and the fitol/crossing tail."""
+    from scdm import sab_emit as SE
+    from scdoc_parser import sab as sab_mod, opc
+    import zipfile
+
+    z = zipfile.ZipFile("references/golden/spline.scdoc")
+    data = z.read("SpaceClaim/Geometry/part1bodies.sab")
+    sff = sab_mod.tokenize(data)
+    header = data[:sff.records[0].offset]
+    END = bytes([0x0D, 16]) + b"End-of-ACIS-data"
+    off_both = next(r for r in sff.records if r.kind == "both")
+    tk = off_both.tokens
+    nu, nv = tk[4].value, tk[5].value
+    i = 6
+    uk, um, vk, vm = [], [], [], []
+    for _ in range(nu):
+        uk.append(tk[i].value); um.append(tk[i+1].value); i += 2
+    for _ in range(nv):
+        vk.append(tk[i].value); vm.append(tk[i+1].value); i += 2
+    n_poles = (sum(um) - 2 + 1) * (sum(vm) - 1 + 1)  # deg_u=2, deg_v=1
+    poles = []
+    for _ in range(n_poles):
+        poles.append((tk[i].value, tk[i+1].value, tk[i+2].value, tk[i+3].value))
+        i += 4
+    assert tk[i].kind == "double" and tk[i].value == 0.0  # fitol marker
+    ours = SE.spline_surface_cluster_bytes(2, 1, uk, um, vk, vm, poles,
+                                           sense=0x0A)
+    sf2 = sab_mod.tokenize(header + ours + END)
+    my = [(t.kind, t.value if not isinstance(t.value, tuple) else
+           tuple(round(x, 15) for x in t.value)) for t in
+          next(r for r in sf2.records if r.kind == "both").tokens]
+    off = [(t.kind, t.value if not isinstance(t.value, tuple) else
+            tuple(round(x, 15) for x in t.value)) for t in off_both.tokens]
+    assert my == off

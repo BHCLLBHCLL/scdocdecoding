@@ -805,6 +805,32 @@ class_layouts = {
 
 **下一步**：NURBS 曲面集群（spline+exactsur+nurbs+both，SAT 文本已解码出 knots/poles/权重网格布局）+ OCCT `Geom_BSplineSurface` 提取器 + 写入管线接线 + restore/官方打开验证。
 
+#### 20.10.4.c NURBS 曲面集群定谳（2026-09-04，同日续）
+
+**spline-surface 集群完整布局**（官方 spline.scdoc 面曲面 77 token 逐字段验证一致）：
+
+```
+T_RECORD "surface" [id]
+  [ptr attrib][int -1][int -1][ptr -1][sense flag]
+  0x0F
+    exactsur: [int 0][int15 0]                    ← "0 full"
+    nurbs:    [int u_deg][int v_deg]              ← "2 1"
+    both:     [int15×4 = u/v periodicity + u/v form（open/none=0，periodic=2）]
+              [#u knots][#v knots]
+              [(double val)(int mult)]×#u + [(double val)(int mult)]×#v
+              [poles (x,y,z,w) × u_poles × v_poles]  ← v-slowest
+              [double fitol=0.0]
+              [int 0][int 1][double 0.0][int 0×4]      ← crossing/seam 段（open 面）
+              [(flag_a)(double)]×4                      ← "F 1 F 0 F 1 F 0"
+  0x10 + [flag_b×4] + 0x11
+```
+
+**knot mult 存储约定定谳**：ACIS 存储的端点 mult = 标准 clamped mult − 1（例：标准 (3,2,3) 存 (2,2,3→2)），极点数 = Σ(存储 mult) − deg + 1。极点网格 v-slowest，每极点 4 double（x,y,z,w，非有理时 w=1）。
+
+**已交付**：`spline_surface_cluster_bytes`/`_nurbs_surface_body`（token 级与官方 both 记录 77/77 一致）+ 重放回归测试；98 tests 绿。
+
+**下一步（管线接线）**：OCCT `Geom_BSplineSurface` 提取器（deg/knots/mults/poles/weights，端点 mult −1 换算）→ `Makers` 增加 `("bsurf", bi, fi)` 面曲面分派 + B 样条边的 intcurve 集群分派 → `write_scdoc` 识别 B 样条体 → restore + SpaceClaim bodies=1 验证。
+
 #### 20.10.5 工作量与风险
 
 | 阶段 | 依赖 | 量级 | 说明 |

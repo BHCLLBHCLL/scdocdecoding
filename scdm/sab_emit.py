@@ -893,6 +893,61 @@ def intcurve_cluster_bytes(degree, knots, mults, poles, seen=None,
     return bytes(out)
 
 
+def _nurbs_surface_body(u_deg, v_deg, u_knots, u_mults, v_knots, v_mults,
+                        poles):
+    """both record payload (open/open, non-rational-form flags all 0).
+
+    poles: flat list of (x, y, z, w), v-slowest (for v in rows: for u in cols),
+    matching the official grid order.
+    """
+    out = bytearray()
+    out += bytes([T_INT15]) + _ri(0)   # u periodicity: open
+    out += bytes([T_INT15]) + _ri(0)   # v periodicity: open
+    out += bytes([T_INT15]) + _ri(0)   # u form: none
+    out += bytes([T_INT15]) + _ri(0)   # v form: none
+    out += _ti(len(u_knots)) + _ti(len(v_knots))
+    for k, m in zip(u_knots, u_mults):
+        out += _td(k) + _ti(m)
+    for k, m in zip(v_knots, v_mults):
+        out += _td(k) + _ti(m)
+    for p in poles:
+        out += _td(p[0]) + _td(p[1]) + _td(p[2]) + _td(p[3])
+    out += _td(0.0)                    # fit tolerance (official trailing 0.0)
+    # crossing/seam tail (official open-surface pattern)
+    out += _ti(0) + _ti(1) + _td(0.0)
+    out += _ti(0) + _ti(0) + _ti(0) + _ti(0)
+    # param-range flag pairs (constant in official streams)
+    for v in (1.0, 0.0, 1.0, 0.0):
+        out += bytes([T_FLAG_A]) + _td(v)
+    return bytes(out)
+
+
+def spline_surface_cluster_bytes(u_deg, v_deg, u_knots, u_mults,
+                                 v_knots, v_mults, poles, seen=None,
+                                 sense=T_FLAG_A):
+    """Emit the spline-surface record: surface + 0x0F scope + exactsur +
+    nurbs + both, closed by 0x10 + 4 flags + 0x11.
+
+    Mirrors the official spline.scdoc face-surface cluster byte pattern.
+    """
+    out = bytearray()
+    out += _rec_header("surface", 13, seen)
+    out += _p(-1) + _ti(-1) + _ti(-1) + _p(-1)
+    out += bytes([sense])
+    out += bytes([0x0F])
+    out += _rec_header("exactsur", CID_EXACTSUR, seen)
+    out += _ti(0) + bytes([T_INT15]) + _ri(0)
+    out += _rec_header("nurbs", CID_NURBS, seen)
+    out += _ti(2) + _ti(1)
+    out += _rec_header("both", CID_BOTH, seen)
+    out += _nurbs_surface_body(u_deg, v_deg, u_knots, u_mults,
+                               v_knots, v_mults, poles)
+    out += bytes([0x10])
+    out += bytes([T_FLAG_B] * 4)
+    out += bytes([T_TERM])
+    return bytes(out)
+
+
 
     # -- B-spline curve cluster (Phase 3/4 machinery) ----------------------
     # Structure reverse-engineered from official SpaceClaim streams
