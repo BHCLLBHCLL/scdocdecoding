@@ -141,6 +141,27 @@ class SabModel:
     def _dbl(self, rec, pos): return self._tok(rec, pos, 'double')
     def _v3(self, rec, pos): return tuple(self._tok(rec, pos, 'vec3'))
 
+    # optional variants: None when the token is absent or a different kind
+    def _opt(self, rec, pos, kind, value):
+        if pos >= len(rec.tokens):
+            return None
+        t = rec.tokens[pos]
+        if t.kind != kind:
+            return None
+        return value(t)
+
+    def _opt_ptr(self, rec, pos):
+        return self._opt(rec, pos, 'ptr', lambda t: t.value)
+
+    def _opt_v3(self, rec, pos):
+        return self._opt(rec, pos, 'vec3', lambda t: tuple(t.value))
+
+    def _opt_v3b(self, rec, pos):
+        return self._opt(rec, pos, 'vec3b', lambda t: tuple(t.value))
+
+    def _opt_dbl(self, rec, pos):
+        return self._opt(rec, pos, 'double', lambda t: t.value)
+
     def _decode_all(self):
         for idx, rec in enumerate(self.sab.records):
             self.entities[idx] = self._decode(idx, rec)
@@ -151,8 +172,9 @@ class SabModel:
         if k == 'body':
             e.attribs = self._ptr(rec, 0)
             e.lump = self._ptr(rec, 5)
-            e.bbox_min = self._v3(rec, 9)
-            e.bbox_max = self._v3(rec, 10)
+            # body bbox appears on some writers (box) but not on imported models
+            e.bbox_min = self._opt_v3(rec, 9)
+            e.bbox_max = self._opt_v3(rec, 10)
         elif k == 'lump':
             e.shell = self._ptr(rec, 5)
             e.body = self._ptr(rec, 6)
@@ -161,65 +183,76 @@ class SabModel:
             e.lump = self._ptr(rec, 8)
         elif k == 'face':
             e.attribs = self._ptr(rec, 0)
-            e.next = self._ptr(rec, 4)
-            e.loop = self._ptr(rec, 5)
-            e.shell = self._ptr(rec, 6)
-            e.surface = self._ptr(rec, 8)
             e.sense = rec.tokens[9].kind if len(rec.tokens) > 9 else None
-            e.bbox_min = self._v3(rec, 12)
-            e.bbox_max = self._v3(rec, 13)
-            e.uv_range = [self._dbl(rec, i) for i in range(15, 19)]
+            e.bbox_min = self._opt_v3(rec, 12)
+            e.bbox_max = self._opt_v3(rec, 13)
+            # standard SpaceClaim face layout: [.., -1, next, loop, shell, -1,
+            # surface, ..]; imported (Parasolid) faces re-arrange the early
+            # tokens, so only decode the topology pointers when token4 is a ptr.
+            if len(rec.tokens) > 8 and rec.tokens[4].kind == 'ptr':
+                e.next = self._opt_ptr(rec, 4)
+                e.loop = self._opt_ptr(rec, 5)
+                e.shell = self._opt_ptr(rec, 6)
+                e.surface = self._opt_ptr(rec, 8)
+            if (len(rec.tokens) >= 19
+                    and all(rec.tokens[i].kind == 'double' for i in range(15, 19))):
+                e.uv_range = [t.value for t in rec.tokens[15:19]]
         elif k == 'loop':
-            e.coedge = self._ptr(rec, 5)
-            e.face = self._ptr(rec, 6)
-            if len(rec.tokens) > 10 and rec.tokens[10].kind == 'int15':
-                pass  # loop subtype (0 / 1)
-            if len(rec.tokens) > 11 and rec.tokens[11].kind == 'ptr':
-                e.surface = rec.tokens[11].value
+            e.coedge = self._opt_ptr(rec, 5)
+            e.face = self._opt_ptr(rec, 6)
+            # optional: loop subtype (int15 at 10) then a trailing surface ptr
+            st = self._opt(rec, 10, 'int15', lambda t: t.value)
+            if st is not None:
+                e.surface = self._opt_ptr(rec, 11)
         elif k == 'coedge':
-            e.next = self._ptr(rec, 4)
-            e.prev = self._ptr(rec, 5)
-            e.partner = self._ptr(rec, 6)
-            e.edge = self._ptr(rec, 7)
+            e.next = self._opt_ptr(rec, 4)
+            e.prev = self._opt_ptr(rec, 5)
+            e.partner = self._opt_ptr(rec, 6)
+            e.edge = self._opt_ptr(rec, 7)
             e.sense = rec.tokens[8].kind if len(rec.tokens) > 8 else None
-            e.loop = self._ptr(rec, 9)
-            e.face = self._ptr(rec, 10)
+            e.loop = self._opt_ptr(rec, 9)
+            e.face = self._opt_ptr(rec, 10)
         elif k == 'edge':
             e.attribs = self._ptr(rec, 0)
-            e.v1 = self._ptr(rec, 4)
-            e.pstart = self._dbl(rec, 5)
-            e.v2 = self._ptr(rec, 6)
-            e.pend = self._dbl(rec, 7)
-            e.coedge = self._ptr(rec, 8)
-            e.curve = self._ptr(rec, 9)
+            e.v1 = self._opt_ptr(rec, 4)
+            e.pstart = self._opt_dbl(rec, 5)
+            e.v2 = self._opt_ptr(rec, 6)
+            e.pend = self._opt_dbl(rec, 7)
+            e.coedge = self._opt_ptr(rec, 8)
+            e.curve = self._opt_ptr(rec, 9)
             e.sense = rec.tokens[10].kind if len(rec.tokens) > 10 else None
-            e.bbox_min = self._v3(rec, 13)
-            e.bbox_max = self._v3(rec, 14)
+            e.bbox_min = self._opt_v3(rec, 13)
+            e.bbox_max = self._opt_v3(rec, 14)
         elif k == 'vertex':
-            e.edge = self._ptr(rec, 4)
-            e.point = self._ptr(rec, 5)
+            e.edge = self._opt_ptr(rec, 4)
+            e.point = self._opt_ptr(rec, 5)
         elif k == 'point':
-            e.origin = self._v3(rec, 4)
-        elif k == 'plane':
-            e.origin = self._v3(rec, 4)
-            e.normal = tuple(self._tok(rec, 5, 'vec3b'))
-            e.xdir = tuple(self._tok(rec, 6, 'vec3b'))
+            e.origin = self._opt_v3(rec, 4)
+        elif k in ('plane', 'cone', 'ellipse', 'spline', 'nubs', 'curve',
+                   'pcurve', 'exppc', 'intcurve', 'torus', 'sphere'):
+            e.origin = self._opt_v3(rec, 4)
+            e.normal = self._opt_v3b(rec, 5)
+            e.xdir = self._opt_v3b(rec, 6)
         elif k == 'straight':
-            e.origin = self._v3(rec, 4)
-            e.direction = tuple(self._tok(rec, 5, 'vec3b'))
-            e.t0 = self._dbl(rec, 7)
-            e.t1 = self._dbl(rec, 9)
-        elif k == 'string_attrib':
+            e.origin = self._opt_v3(rec, 4)
+            e.direction = self._opt_v3b(rec, 5)
+            # parameter range is optional-spaceclaimed as t0/t1 (two doubles
+            # after the direction); imported lines may omit it entirely.
+            e.t0 = self._opt_dbl(rec, 7)
+            e.t1 = self._opt_dbl(rec, 9)
+        elif k in ('string_attrib', 'wstring_attrib', 'integer_attrib'):
             e.next = self._ptr(rec, 2)
             e.prev = self._ptr(rec, 3)
             e.owner = self._ptr(rec, 4)
             e.attrib_type = self._resolve_string(self._tok(rec, 6, 'string'))
-            e.attrib_value = self._tok(rec, 7, 'string')
+            v = rec.tokens[7] if len(rec.tokens) > 7 else None
+            e.attrib_value = v.value if v is not None else None
         elif k == 'rgb_color':
             e.next = self._ptr(rec, 2)
             e.prev = self._ptr(rec, 3)
             e.owner = self._ptr(rec, 4)
             e.rgb = (self._dbl(rec, 6), self._dbl(rec, 7), self._dbl(rec, 8))
+        # unknown kinds: keep the minimal Ent so record indexing stays valid
         return e
 
     # -- accessors -----------------------------------------------------------

@@ -389,12 +389,10 @@ class Makers:
         it = self.item(bi)
         if it[0] == "cyl":
             info = it[1]
-            if fi == 0:
-                center, nrm = info["cap_b"], info["axis"]
-            else:
-                center, nrm = info["cap_a"], (-info["axis"][0],
-                                              -info["axis"][1],
-                                              -info["axis"][2])
+            # official cylinder caps: both planes store +axis as normal; the
+            # bottom face carries sense=flag_a to flip it outward.
+            center, nrm = (info["cap_b"] if fi == 0 else info["cap_a"],
+                           info["axis"])
             return (_Rec("surface", 13, chain=[("plane", 12)])
                     .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*center),
                          _v3b(*nrm), _v3b(*info["major_unit"]),
@@ -426,11 +424,9 @@ class Makers:
         R, h, axis = info["R"], info["h"], info["axis"]
         cap_a, cap_b = info["cap_a"], info["cap_b"]
         lo, hi = info["bbox"]
-        f1 = T_FLAG_B
-        if fi == 0:
-            f1 = T_FLAG_A
-        elif fi == 1:
-            f1 = T_FLAG_B
+        # official cylinder face orientation: side & top forward (flag_b),
+        # bottom is reversed (flag_a) because its plane normal faces +axis.
+        f1 = (T_FLAG_B, T_FLAG_B, T_FLAG_A)[fi]
         surf = ("cone", bi)
         if fi == 1:
             surf = ("plane", bi, 0)
@@ -457,81 +453,89 @@ class Makers:
         R, axis = info["R"], info["axis"]
         cap_a, cap_b = info["cap_a"], info["cap_b"]
         lo, hi = info["bbox"]
+        # official loop membership: side(4 coedges, head=c0), top(1, head=c3),
+        # bottom(1, head=c5)
+        head = (("coedge", bi, 0), ("coedge", bi, 3), ("coedge", bi, 5))[fi]
         if fi == 0:
-            hmm = [("coedge", bi, c) for c in (0, 1, 2, 3)]
             lmin, lmax = lo, hi
         elif fi == 1:
-            hmm = [("coedge", bi, 4)]
             lmin, lmax = _circ_bbox(cap_b, R, axis)
         else:
-            hmm = [("coedge", bi, 5)]
             lmin, lmax = _circ_bbox(cap_a, R, axis)
         return (_Rec("loop", 11)
                 .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1),
-                     _p(wl.ref(hmm[0])), _p(wl.ref(("face", bi, fi))),
+                     _p(wl.ref(head)), _p(wl.ref(("face", bi, fi))),
                      bytes([T_FLAG_A]), _v3(*lmin), _v3(*lmax),
                      bytes([T_INT15]) + _ri(0)))
 
     def _ccoedge(self, key, wl):
         bi, ci = key[1], key[2]
-        specs = ((1, 3, 1, T_FLAG_A), (2, 0, 2, T_FLAG_A),
-                 (3, 1, 0, T_FLAG_B), (0, 2, 2, T_FLAG_B),
-                 (4, 4, 1, T_FLAG_B), (5, 5, 0, T_FLAG_A))
-        nxt_i, prv_i, edg_i, sense = specs[ci]
-        partner_i = (3, 2, 1, 0, 0, 0)[ci]
-        if ci < 4:
-            loop_ptr = ("loop", bi, 0)
-        elif ci == 4:
-            loop_ptr = ("loop", bi, 1)
-        else:
-            loop_ptr = ("loop", bi, 2)
+        # official 6-coedge ring, index-aligned to the 51-record cyl stream:
+        #   c0 side/top-circle  next=c1 prev=c4 partner=c3 edge=e0 sense=a loop=side
+        #   c1 side/seam         next=c2 prev=c0 partner=c4 edge=e1 sense=a loop=side
+        #   c2 side/bottom-circle next=c4 prev=c1 partner=c5 edge=e2 sense=b loop=side
+        #   c3 top-cap (self)     next=c3 prev=c3 partner=c0 edge=e0 sense=b loop=top
+        #   c4 side/seam          next=c0 prev=c2 partner=c1 edge=e1 sense=b loop=side
+        #   c5 bottom-cap (self)  next=c5 prev=c5 partner=c2 edge=e2 sense=a loop=bottom
+        nxt = (1, 2, 4, 3, 0, 5)[ci]
+        prv = (4, 0, 1, 3, 2, 5)[ci]
+        partner = (3, 4, 5, 0, 1, 2)[ci]
+        edge_i = (0, 1, 2, 0, 1, 2)[ci]
+        sense = (T_FLAG_A, T_FLAG_A, T_FLAG_B, T_FLAG_B, T_FLAG_B, T_FLAG_A)[ci]
+        loop_i = (0, 0, 0, 1, 0, 2)[ci]
         return (_Rec("coedge", 16)
                 .add(_p(-1), _ti(-1), _ti(-1), _p(-1),
-                     _p(wl.ref(("coedge", bi, nxt_i))),
-                     _p(wl.ref(("coedge", bi, prv_i))),
-                     _p(wl.ref(("coedge", bi, partner_i))),
-                     _p(wl.ref(("edge", bi, edg_i))), bytes([sense]),
-                     _p(wl.ref(loop_ptr)), _p(-1)))
+                     _p(wl.ref(("coedge", bi, nxt))),
+                     _p(wl.ref(("coedge", bi, prv))),
+                     _p(wl.ref(("coedge", bi, partner))),
+                     _p(wl.ref(("edge", bi, edge_i))), bytes([sense]),
+                     _p(wl.ref(("loop", bi, loop_i))), _p(-1)))
 
     def _cedge(self, key, wl):
         bi, ei = key[1], key[2]
         info = self.cyl(bi)
         R, mu, axis = info["R"], info["major_unit"], info["axis"]
         cap_a, cap_b = info["cap_a"], info["cap_b"]
+        # e0 = top circle, e1 = seam, e2 = bottom circle (official int 4/5/6)
         if ei == 0:
-            bmin, bmax = _circ_bbox(cap_a, R, axis)
+            bmin, bmax = _circ_bbox(cap_b, R, axis)
             return (_Rec("edge", 17)
                     .add(_p(wl.ref(("attrib", "ename", bi, ei))), _ti(4),
                          _ti(-1), _p(-1), _p(wl.ref(("vertex", bi, 0))), _td(0.0),
                          _p(wl.ref(("vertex", bi, 0))), _td(2.0 * math.pi),
-                         _p(wl.ref(("coedge", bi, 2))), _p(wl.ref(("ellipse", bi, 1))),
+                         _p(wl.ref(("coedge", bi, 0))),
+                         _p(wl.ref(("ellipse", bi, 0))),
                          bytes([T_FLAG_B]), _s("unknown"),
                          bytes([T_FLAG_A]), _v3(*bmin), _v3(*bmax)))
         if ei == 1:
-            bmin, bmax = _circ_bbox(cap_b, R, axis)
+            v0 = (cap_a[0] + mu[0] * R, cap_a[1] + mu[1] * R,
+                  cap_a[2] + mu[2] * R)
+            v1 = (cap_b[0] + mu[0] * R, cap_b[1] + mu[1] * R,
+                  cap_b[2] + mu[2] * R)
+            bmin = (min(v0[0], v1[0]), min(v0[1], v1[1]), min(v0[2], v1[2]))
+            bmax = (max(v0[0], v1[0]), max(v0[1], v1[1]), max(v0[2], v1[2]))
             return (_Rec("edge", 17)
                     .add(_p(wl.ref(("attrib", "ename", bi, ei))), _ti(5),
                          _ti(-1), _p(-1), _p(wl.ref(("vertex", bi, 1))), _td(0.0),
-                         _p(wl.ref(("vertex", bi, 1))), _td(2.0 * math.pi),
-                         _p(wl.ref(("coedge", bi, 0))), _p(wl.ref(("ellipse", bi, 0))),
+                         _p(wl.ref(("vertex", bi, 0))), _td(info["h"]),
+                         _p(wl.ref(("coedge", bi, 1))),
+                         _p(wl.ref(("straight", bi, 0))),
                          bytes([T_FLAG_B]), _s("unknown"),
                          bytes([T_FLAG_A]), _v3(*bmin), _v3(*bmax)))
-        p1 = (cap_a[0] + mu[0] * R, cap_a[1] + mu[1] * R,
-              cap_a[2] + mu[2] * R)
-        p2 = (cap_b[0] + mu[0] * R, cap_b[1] + mu[1] * R,
-              cap_b[2] + mu[2] * R)
-        bmin = (min(p1[0], p2[0]), min(p1[1], p2[1]), min(p1[2], p2[2]))
-        bmax = (max(p1[0], p2[0]), max(p1[1], p2[1]), max(p1[2], p2[2]))
+        bmin, bmax = _circ_bbox(cap_a, R, axis)
         return (_Rec("edge", 17)
                 .add(_p(wl.ref(("attrib", "ename", bi, ei))), _ti(6),
-                     _ti(-1), _p(-1), _p(wl.ref(("vertex", bi, 0))), _td(0.0),
-                     _p(wl.ref(("vertex", bi, 1))), _td(info["h"]),
-                     _p(wl.ref(("coedge", bi, 2))), _p(wl.ref(("straight", bi, 0))),
+                     _ti(-1), _p(-1), _p(wl.ref(("vertex", bi, 1))), _td(0.0),
+                     _p(wl.ref(("vertex", bi, 1))), _td(2.0 * math.pi),
+                     _p(wl.ref(("coedge", bi, 2))),
+                     _p(wl.ref(("ellipse", bi, 1))),
                      bytes([T_FLAG_B]), _s("unknown"),
                      bytes([T_FLAG_A]), _v3(*bmin), _v3(*bmax)))
 
     def _cvertex(self, key, wl):
         bi, vi = key[1], key[2]
+        # official binding: top vertex -> top circle edge(e0);
+        # bottom vertex -> seam edge(e1)
         edge_key = ("edge", bi, 0) if vi == 0 else ("edge", bi, 1)
         return (_Rec("vertex", 18)
                 .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(wl.ref(edge_key)),
