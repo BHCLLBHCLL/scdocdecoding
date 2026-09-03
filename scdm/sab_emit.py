@@ -839,6 +839,89 @@ class Makers:
         raise ValueError("attrib key " + repr(key))
 
 
+
+# fresh file-local class ids for the parametric cluster (unused by the
+# box-family table 1..21; the reader registers whatever we declare)
+CID_EXACTCUR = 22
+CID_NUBS = 23
+CID_NULL_SURFACE = 24
+CID_NULLBS = 25
+CID_INTCURVE = 26
+CID_SPLINE = 27
+CID_EXACTSUR = 28
+CID_NURBS = 29
+CID_BOTH = 30
+
+
+def _nubs_body(degree, knots, mults, poles):
+    """nubs record payload: degree, int15 0, #knots, (val, mult)..., poles."""
+    out = bytearray()
+    out += _ti(degree)
+    out += bytes([T_INT15]) + _ri(0)
+    out += _ti(len(knots))
+    for k, m in zip(knots, mults):
+        out += _td(k) + _ti(m)
+    for p in poles:
+        out += _v3(*p)
+    return bytes(out)
+
+
+def intcurve_cluster_bytes(degree, knots, mults, poles, seen=None,
+                           exactcur_int=1, sense=T_FLAG_B):
+    """Emit the full intcurve edge-curve record (nested subtype cluster).
+
+    Mirrors the official splineedge.scdoc byte pattern for a degree-2,
+    3-pole, clamped B-spline edge curve.
+    """
+    out = bytearray()
+    out += _rec_header("intcurve", CID_INTCURVE, seen)
+    out += _p(-1) + _ti(-1) + _ti(-1) + _p(-1)
+    out += bytes([sense])
+    out += bytes([0x0F])
+    out += _rec_header("exactcur", CID_EXACTCUR, seen)
+    out += _ti(exactcur_int) + bytes([T_INT15]) + _ri(0)
+    out += _rec_header("nubs", CID_NUBS, seen)
+    out += _nubs_body(degree, knots, mults, poles)
+    out += _rec_header("null_surface", CID_NULL_SURFACE, seen)
+    out += _rec_header("null_surface", CID_NULL_SURFACE, seen)
+    out += _rec_header("nullbs", CID_NULLBS, seen)
+    out += _rec_header("nullbs", CID_NULLBS, seen)
+    out += NULLBS_TEMPLATE
+    out += bytes([0x10])
+    out += bytes([T_FLAG_B, T_FLAG_B])
+    out += bytes([T_TERM])
+    return bytes(out)
+
+
+
+    # -- B-spline curve cluster (Phase 3/4 machinery) ----------------------
+    # Structure reverse-engineered from official SpaceClaim streams
+    # (_refs/splineedge.scdoc, _refs/loft.scdoc); see intcurve_cluster_bytes.
+
+
+NULLBS_TEMPLATE = (
+    _td(-1.0) + _td(-1.0) + bytes([T_FLAG_B, T_FLAG_B])
+    + _ti(0) + _ti(0) + _ti(0) + _td(-1.0)
+    + bytes([T_INT15]) + _ri(2)
+    + bytes([T_FLAG_B, T_FLAG_A]) + _td(1.0)
+    + bytes([T_FLAG_A]) + _td(0.0)
+)
+
+
+def _rec_header(name, cid, seen, kind=T_RECORD):
+    """Serialize a record/chain header with class-name interning."""
+    out = bytearray()
+    if seen is not None and seen.get(name) == cid:
+        out += bytes([kind, 5, T_ID]) + _ri(cid)
+        return bytes(out)
+    hdrlen = len(name) + 5
+    out += bytes([kind, hdrlen]) + name.encode("latin-1")
+    out += bytes([T_ID]) + _ri(cid)
+    if seen is not None:
+        seen[name] = cid
+    return bytes(out)
+
+
 def _attrib(owner_idx, value, nxt_idx=None, prv_idx=None, type_id=14675622,
             name_tag="ATTRIB_XACIS_NAME%6"):
     """Official attrib token layout: [t0=-1, t1=-1, t2=NEXT, t3=PREV,

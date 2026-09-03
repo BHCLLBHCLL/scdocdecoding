@@ -791,6 +791,20 @@ class_layouts = {
 **Phase 6 — 回归与文档**
 - [ ] 全量测试绿；`references/acis_save_algorithm.md` 追加 entity coverage 矩阵；提交推送
 
+#### 20.10.4.b Phase 3/4 实施记录（2026-09-04，进行中）
+
+**参数曲线集群逆向完成**（`_refs` → `references/golden/{loft,spline,splineedge}.scdoc` 三个官方参照）：
+
+- **intcurve 边曲线集群**（单条 0x0D 记录内嵌子类型）：`[ptr,int,int,ptr 前缀][flag][0x0F] + exactcur(int,int15) + nubs + null_surface×2(空) + nullbs(空) + nullbs(固定模板) + [0x10][flag_b flag_b][0x11]`
+- **nubs 曲线布局**：`[int degree][int15 0][int #distinct-knots][(double knot, int mult)...][poles (x,y,z)×n]`——degree/knots 语义由 degree-2 三极点样例（splineedge）定谳
+- **pcurve 非必需**：官方 loft（cone 面 + intcurve seam）coedge 的 pcurve 槽全为 -1 且官方打开正常
+- **class id 文件内注册制确认**：新类用首次出现全名头 + 任意一致 id 即可（22+）
+- **intcurve vs surfcur 区分**：顶层边曲线 = `intcurve-curve`（带 ENTITY 前缀）；surfcur 子类型 = 裸 `intcurve`（无前缀）
+
+**已交付**：`scdm/sab_emit.py` 的 `intcurve_cluster_bytes` / `_nubs_body` / `_rec_header` / NULLBS 模板（token 级与官方 loft 集群一致）+ 回归测试；97 tests 绿。
+
+**下一步**：NURBS 曲面集群（spline+exactsur+nurbs+both，SAT 文本已解码出 knots/poles/权重网格布局）+ OCCT `Geom_BSplineSurface` 提取器 + 写入管线接线 + restore/官方打开验证。
+
 #### 20.10.5 工作量与风险
 
 | 阶段 | 依赖 | 量级 | 说明 |

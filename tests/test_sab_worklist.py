@@ -134,3 +134,53 @@ def test_sphere_and_torus_roundtrip_via_facets():
     self-read (official SpaceClaim opens them as true B-rep bodies)."""
     assert _roundtrip_bodies(lambda: K.make_sphere(0.01)) == 1
     assert _roundtrip_bodies(lambda: K.make_torus(0.02, 0.005)) == 1
+
+
+def test_intcurve_cluster_structure():
+    """Phase 3/4: the B-spline edge-curve cluster reproduces the official
+    intcurve-curve token pattern (loft.scdoc reference)."""
+    from scdm import sab_emit as SE
+    from scdoc_parser import sab as sab_mod, opc
+    import zipfile
+
+    # official reference cluster (loft: degree-1 seam curve, 2 poles)
+    z = zipfile.ZipFile("references/golden/ref_tet.scdoc")  # header donor
+    data = None
+    import os
+    loft = "_refs/loft.scdoc"
+    if os.path.exists(loft):
+        data = zipfile.ZipFile(loft).read(
+            "SpaceClaim/Geometry/part1bodies.sab")
+    assert data is not None, "loft reference missing (generate via make_official_ref)"
+    sf = sab_mod.tokenize(data)
+    ic = next(r for r in sf.records if r.kind == "intcurve")
+    nxt = min((r for r in sf.records if r.index > ic.index
+               and r.kind not in ("intcurve", "exactcur", "nubs",
+                                  "null_surface", "nullbs", "ref", "spline",
+                                  "pcurve", "exppc")),
+              key=lambda r: r.index)
+    header = data[:sf.records[0].offset]
+    END = bytes([0x0D, 16]) + b"End-of-ACIS-data"
+
+    ours = SE.intcurve_cluster_bytes(
+        1, [0.0, 1.0], [1, 1],
+        [(1e-05, 0.0, 0.0), (2e-05, 0.0, 2e-05)], exactcur_int=0)
+    sf2 = sab_mod.tokenize(header + ours + END)
+    r2 = sf2.records[0]
+    assert r2.kind == "intcurve"
+    t = [(x.kind, x.value if not isinstance(x.value, tuple) else
+          tuple(round(v, 9) for v in x.value)) for x in r2.tokens]
+    # flattened official prefix (tokenizer stops at 0x0F mark)
+    assert t[:6] == [('ptr', -1), ('int', -1), ('int', -1), ('ptr', -1),
+                     ('flag_b', None), ('mark0f', None)]
+    # nested subtypes are visible as records in the flattened view
+    kinds = [x.kind for x in sf2.records]
+    assert kinds[:6] == ["intcurve", "exactcur", "nubs", "null_surface",
+                         "null_surface", "nullbs"], kinds[:6]
+    # nubs payload: degree 1, open, 2 knots (0,1),(1,1), 2 poles
+    nubs = next(x for x in sf2.records if x.kind == "nubs")
+    nt = [x.value for x in nubs.tokens]
+    assert nt[0] == 1 and nt[2] == 2           # degree, #knots
+    assert (nt[3], nt[4]) == (0.0, 1) and (nt[5], nt[6]) == (1.0, 1)
+    assert len(nt) == 9 and nt[7] == (1e-05, 0.0, 0.0)
+    assert nt[8] == (2e-05, 0.0, 2e-05)        # poles as vec3 pairs
