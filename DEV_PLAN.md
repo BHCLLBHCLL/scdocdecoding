@@ -914,6 +914,20 @@ T_RECORD "surface" [id]
 
 注：SAT 备用通路覆盖平面/圆柱（sphere/torus 在矩阵中标 `--`，native 路径已官方覆盖）。
 
+### 21.3.c H2 实施记录（2026-09-05，完成）
+
+| 工作包 | 交付 | 验证 |
+| --- | --- | --- |
+| Pull 模式族分派 | `kernel.pull_auto`：face+方向→拉伸/切削、edge→倒圆（或 chamfer 模式）、solid→抽壳、draft 模式 | 分派单测 4 断言 |
+| 变半径圆角 | `kernel.fillet_variable`：逐边半径 + 沿边 (u,r) 演化（`SetRadius(TColgp_Array1OfPnt2d, IC, IinC)`） | 沿边体积严格落在两端等半径圆角之间 |
+| 多厚度抽壳 | `kernel.shell_multi`：逐面内法向棱柱并集构成壁层，空腔=体−壁层——绕开 MakeThickSolidByJoin 在圆角体/多开面上的失败；壁厚组合精确（介于两个等厚抽壳之间） | 体积精确验证 |
+| 中性面拔模 | `kernel.draft_neutral`（BRepOffsetAPI_DraftAngle + 中性面平面）；不可拔模面跳过 | 圆角体拔模单测 |
+| 沿路径/填充阵列 | `kernel.pattern_path`（弧长均布）、`kernel.pattern_fill`（矩形网格+间隙） | 5 份/3×3 网格单测 |
+| 脚本接线 | `create.blend_variable` / `create.shell_multi` / `create.draft_neutral` / `tool.pull_auto`；`create.pattern` 增 path/fill 模式；中性面自动取平面 | 录制回放 5 步链全通 |
+| 测试 | `tests/test_h2.py` 9 项 | **113 passed** |
+
+关键排障：①`SetRadius` 需 (IC, IinC) 双索引且 `IsDone` 在 `Build()` 后才有效；②`shell_solid(shape,t,[])` 无移除面时返回内腔实体（MakeThickSolidByJoin 语义怪癖），且在圆角体上直接失败——棱柱壁层构造彻底绕开；③拔模对与圆角相切的平面拒绝（SpaceClaim 同样拒绝），脚本层容错跳过。
+
 ### 21.4 统一验收协议
 
 1. 每工作包单测（pytest，OCCT 级断言）
