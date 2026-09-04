@@ -1038,6 +1038,17 @@ def read_stl(path: str):
     return shape
 
 
+def apply_mat4(shape, m):
+    """Apply a row-major 4x4 transform (scdm.mates convention) to a shape."""
+    o = _occ()
+    tr = o["gp"].gp_Trsf()
+    tr.SetValues(m[0][0], m[0][1], m[0][2], m[0][3],
+                 m[1][0], m[1][1], m[1][2], m[1][3],
+                 m[2][0], m[2][1], m[2][2], m[2][3])
+    from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_Transform
+    return BRepBuilderAPI_Transform(shape, tr, True).Shape()
+
+
 def write_iges(shape, path: str) -> None:
     o = _occ()
     from OCC.Core.IGESControl import IGESControl_Writer

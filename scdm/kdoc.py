@@ -40,6 +40,8 @@ class Component:
     anchored: bool = False
     visible: bool = True
     lightweight: bool = False
+    explosion: Optional[tuple] = None   # (dx, dy, dz) applied explosion offset
+    transform: Optional[tuple] = None   # pending 4x4 pose from mate solving
     # lightweight bodies are drawn as a bounding-box wireframe (no full tessellation)
 
     def lightweight_body_ids(self) -> set:
@@ -56,6 +58,8 @@ class KernelDoc:
         self.bodies: List[KBody] = []
         self.sketches: List[Sketch] = []
         self.components: List[Component] = []
+        self.mates: List[dict] = []   # {"type", "a": comp_id, "b": comp_id,
+        #                               "value", "angle", "slide"}
         self.parametrics: List[Any] = []  # scdm.params.Parametric
         self.notes: List[dict] = []  # viewport annotations: {"pos": (x,y,z), "text": str}
         self.named: List[dict] = []  # named selections: {"name": str, "items": [(kind,id)]}

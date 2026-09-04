@@ -1116,11 +1116,13 @@ else:
             if len(faces) < 2:
                 self._set_status("配合需要两个面（先选移动体上的面，再选目标面）")
                 return
-            vals = self._ask_numbers("配合类型", [("0=面贴合 1=轴对齐 2=距离", 0.0),
-                                                  ("距离 mm（类型 2）", 0.0)])
+            vals = self._ask_numbers(
+                "配合类型",
+                [("0=刚性 1=旋转 2=圆柱 3=平面 4=球 5=螺旋 6=距离 7=面贴合 8=轴对齐", 0.0),
+                 ("值（距离/螺距 mm）", 0.0)])
             if not vals:
                 return
-            mtype = int(vals[0]) % 3
+            mtype = int(vals[0]) % 9
             bid1, fi1 = faces[0].split(":", 1)
             bid2, fi2 = faces[1].split(":", 1)
             b1 = ses.kdoc.body_by_id(bid1)
@@ -1132,18 +1134,35 @@ else:
                 f1 = K.explore(b1.shape, "face")
                 f2 = K.explore(b2.shape, "face")
                 mf, tf = f1[int(fi1)], f2[int(fi2)]
-                if mtype == 1:
-                    b1.shape = K.align_axes(b1.shape, mf, tf)
-                    self._commit("已配合（轴对齐）")
+                if mtype in (7, 8):     # legacy face-flush / axis-align
+                    if mtype == 8:
+                        b1.shape = K.align_axes(b1.shape, mf, tf)
+                        self._commit("已配合（轴对齐）")
+                        return
+                    b1.shape = K.align_faces(b1.shape, mf, tf)
+                    if mtype == 7 and vals[1]:
+                        n2, _c = K.face_normal_center(tf)
+                        d = vals[1] / ses.scale
+                        b1.shape = K.translate(b1.shape,
+                                               (n2[0] * d, n2[1] * d, n2[2] * d))
+                    verb = "已配合（面重合）" if not vals[1] else f"已配合（距离 {vals[1]:g}mm）"
+                    self._commit(verb)
                     return
-                b1.shape = K.align_faces(b1.shape, mf, tf)
-                if mtype == 2:
-                    n2, _c = K.face_normal_center(tf)
-                    b1.shape = K.translate(b1.shape, (n2[0] * vals[1] / ses.scale,
-                                                      n2[1] * vals[1] / ses.scale,
-                                                      n2[2] * vals[1] / ses.scale))
-                verb = "已配合（面重合）" if mtype == 0 else f"已配合（距离 {vals[1]:g}mm）"
-                self._commit(verb)
+                # kinematic mates via the solver
+                from scdm import mates as M
+                names = {0: M.RIGID, 1: M.REVOLUTE, 2: M.CYLINDRICAL,
+                         3: M.PLANAR, 4: M.BALL, 5: M.SCREW, 6: M.DISTANCE}
+                mname = names[mtype]
+                fr_a = M.frame_of(tf)   # target reference (fixed)
+                fr_b = M.frame_of(mf)   # moving reference
+                mat = M.Mate(mname, fr_a, fr_b,
+                             value=vals[1] / ses.scale)
+                m4 = M.solve_transform(mat)
+                b1.shape = K.apply_mat4(b1.shape, m4)
+                ses.kdoc.mates.append({
+                    "type": mname, "a": b2.id, "b": b1.id,
+                    "value": vals[1] / ses.scale, "angle": 0.0, "slide": 0.0})
+                self._commit(f"已配合（{mname}）")
             except Exception as exc:
                 self._set_status(f"配合失败: {exc}")
 
@@ -1157,12 +1176,13 @@ else:
                 return
             step = vals[0] / ses.scale
             for i, comp in enumerate(ses.kdoc.components, 1):
+                if comp.anchored:
+                    continue
                 vec = (step * i, 0, 0)
                 for b in ses.kdoc.bodies_of_component(comp.id):
-                    if comp.anchored:
-                        continue
                     b.shape = K.translate(b.shape, vec)
-            self._commit(f"已爆炸组件（间距 {vals[0]:g}mm）")
+                comp.explosion = vec
+            self._commit(f"已爆炸组件（间距 {vals[0]:g}mm，已记录方向）")
 
         def _do_asm_light(self):
             comp = self._selected_component()
