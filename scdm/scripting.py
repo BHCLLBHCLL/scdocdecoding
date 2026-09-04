@@ -156,10 +156,99 @@ def op_pattern(kdoc, opts, scale):
         raise ValueError("阵列：实体不存在")
     step = opts.get("step", 15.0) / scale
     count = opts.get("count", 3)
+    mode = opts.get("mode", "linear")
+    if mode == "path":
+        faces = K.explore(body.shape, "face")
+        edges = K.explore(body.shape, "edge")
+        copies = K.pattern_path(body.shape, edges[0], count)
+        for i, sh in enumerate(copies[1:], 2):
+            kdoc.add_body(sh, name=f"{body.name} 路径阵列{i}")
+        return body, f"沿路径阵列 ×{count}"
+    if mode == "fill":
+        ex = opts.get("elem", 10.0) / scale
+        gap = opts.get("gap", 2.0) / scale
+        rx = opts.get("region", 100.0) / scale
+        copies = K.pattern_fill(body.shape, rx, rx, ex, ex, gap=gap)
+        for i, sh in enumerate(copies[1:], 2):
+            kdoc.add_body(sh, name=f"{body.name} 填充阵列{i}")
+        return body, f"填充阵列 ×{len(copies)}"
     shapes = K.pattern_linear(body.shape, (step, 0, 0), count)
     for i, sh in enumerate(shapes[1:], 2):
         kdoc.add_body(sh, name=f"{body.name} 阵列{i}")
     return body, f"线性阵列 ×{count}"
+
+
+def op_blend_variable(kdoc, opts, scale):
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("变半径圆角：实体不存在")
+    edges = K.explore(body.shape, "edge")
+    sel = opts.get("edges", [0])
+    radii = opts.get("radii", [opts.get("radius", 2.0)])
+    spec = [(edges[i], r / scale) for i, r in
+            zip(sel, radii * len(sel) if len(radii) < len(sel) else radii)]
+    body.shape = K.fillet_variable(body.shape, spec)
+    return body, "变半径圆角"
+
+
+def op_shell_multi(kdoc, opts, scale):
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("多厚度抽壳：实体不存在")
+    faces = K.explore(body.shape, "face")
+    groups = []
+    for g in opts.get("groups", [{"faces": [0], "thickness": 1.0}]):
+        gf = [faces[i] for i in g.get("faces", [0]) if i < len(faces)]
+        groups.append((gf, g.get("thickness", 1.0) / scale))
+    body.shape = K.shell_multi(body.shape, groups)
+    return body, "多厚度抽壳"
+
+
+def op_draft_neutral(kdoc, opts, scale):
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("中性面拔模：实体不存在")
+    faces = K.explore(body.shape, "face")
+    sel = opts.get("neutral", 2)
+    if sel == "planar":
+        from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+        from OCC.Core.GeomAbs import GeomAbs_Plane
+        from OCC.Core.TopoDS import topods
+        nf = next(f for f in faces if BRepAdaptor_Surface(
+            topods.Face(f)).GetType() == GeomAbs_Plane)
+    else:
+        nf = faces[sel]
+    df = [faces[i] for i in opts.get("faces", [0]) if i < len(faces)]
+    import math
+    ang = math.radians(opts.get("angle", 5.0))
+    ok_faces = []
+    cur = body.shape
+    for f in df:
+        try:
+            cur = K.draft_neutral(cur, f, ang, nf)
+            ok_faces.append(f)
+        except Exception:
+            continue  # undraftable (e.g. adjacent to a fillet) — skip
+    if not ok_faces:
+        raise ValueError("拔模：没有可拔模的面")
+    body.shape = cur
+    return body, f"中性面拔模 ×{len(ok_faces)}"
+
+
+def op_pull_auto(kdoc, opts, scale):
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("拉动：实体不存在")
+    what = opts.get("what", "face")
+    idx = opts.get("index", 0)
+    sub = (K.explore(body.shape, "face") if what == "face"
+           else K.explore(body.shape, "edge"))[idx]
+    dist = opts.get("distance", 2.0) / scale
+    direction = opts.get("direction", (0, 0, 1))
+    mode = opts.get("mode", "auto")
+    kind, shape = K.pull_auto(body.shape, sub, direction, dist, mode)
+    body.shape = shape
+    return body, f"拉动（{kind}）"
 
 
 def op_shell(kdoc, opts, scale):
@@ -243,6 +332,10 @@ OPS = {
     "repair.gaps": op_stitch,
     "repair.solidify": op_repair_solidify,
     "repair.missing": op_repair_missing,
+    "create.blend_variable": op_blend_variable,
+    "create.shell_multi": op_shell_multi,
+    "create.draft_neutral": op_draft_neutral,
+    "tool.pull_auto": op_pull_auto,
 }
 
 

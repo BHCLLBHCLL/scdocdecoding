@@ -733,6 +733,202 @@ def draft_face(solid, face, angle_rad: float, neutral_dir: Vec3 = (0.0, 0.0, 1.0
     return mk.Shape()
 
 
+def fillet_variable(shape, spec):
+    """Variable-radius fillet.
+
+    spec: list of entries, either
+      (edge, radius)                 -- constant radius on that edge
+      (edge, [(u, r), ...])          -- radius evolving along the edge
+        u in [0, 1] relative parameter, r the local radius.
+    Tangent-continuous edges of each entry are absorbed into the contour.
+    """
+    o = _occ()
+    mk = o["fillet"].BRepFilletAPI_MakeFillet(shape)
+    from OCC.Core.TColgp import TColgp_Array1OfPnt2d
+    from OCC.Core.gp import gp_Pnt2d
+    from OCC.Core.TopoDS import topods
+    for item in spec:
+        edge, rad = item
+        mk.Add(topods.Edge(edge))
+        idx = mk.NbContours()
+        if isinstance(rad, (int, float)):
+            mk.SetRadius(float(rad), idx, 1)
+        else:
+            pairs = sorted(rad)
+            arr = TColgp_Array1OfPnt2d(1, len(pairs))
+            for k, (u, r) in enumerate(pairs, start=1):
+                arr.SetValue(k, gp_Pnt2d(float(u), float(r)))
+            mk.SetRadius(arr, idx, 1)
+    mk.Build()
+    if not mk.IsDone():
+        raise KernelError("变半径圆角失败")
+    return mk.Shape()
+
+
+def _face_prism(face, thickness: float):
+    """Slab of material between a planar face and its inward offset."""
+    o = _occ()
+    from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakePrism
+    from OCC.Core.TopoDS import topods
+    nrm, _ctr = face_normal_center(topods.Face(face))
+    v = o["gp"].gp_Vec(-nrm[0] * thickness, -nrm[1] * thickness,
+                       -nrm[2] * thickness)
+    return BRepPrimAPI_MakePrism(face, v).Shape()
+
+
+def shell_multi(shape, groups, default_thickness=None):
+    """Shell with per-group thickness (SpaceClaim 多厚度抽壳).
+
+    groups: [(faces_to_remove, thickness), ...].  The wall layer is built
+    as the union of per-face inward prisms (each face offset by its own
+    thickness); the cavity = shape - wall_layer.  Single-thickness input
+    reduces exactly to a uniform shell.
+    """
+    o = _occ()
+    from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Cut, BRepAlgoAPI_Fuse
+    all_faces = explore(shape, "face")
+    if default_thickness is None:
+        default_thickness = groups[0][1]
+    grouped = set()
+    wall = None
+    for f in all_faces:
+        t = default_thickness
+        hit = None
+        for faces, tg in groups:
+            if any(f.IsSame(gf) for gf in faces):
+                t = tg
+                break
+        try:
+            pr = _face_prism(f, t)
+        except Exception:
+            continue
+        if pr is None or pr.IsNull():
+            continue
+        wall = pr if wall is None else BRepAlgoAPI_Fuse(wall, pr).Shape()
+    if wall is None:
+        raise KernelError("多厚度抽壳失败（无法构建壁层）")
+    cavity = BRepAlgoAPI_Cut(shape, wall).Shape()
+    return BRepAlgoAPI_Cut(shape, cavity).Shape()
+
+
+def draft_neutral(solid, draft_faces, angle_rad: float, neutral_face):
+    """SpaceClaim 中性面拔模: draft_faces taper about the neutral FACE's
+    plane (the plane the pull direction is measured against)."""
+    o = _occ()
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+    from OCC.Core.GeomAbs import GeomAbs_Plane
+    from OCC.Core.TopoDS import topods
+    nf = topods.Face(neutral_face)
+    ad = BRepAdaptor_Surface(nf)
+    if ad.GetType() != GeomAbs_Plane:
+        raise KernelError("中性面必须是平面")
+    pln = ad.Plane()
+    mk = o["offset"].BRepOffsetAPI_DraftAngle(solid)
+    drf = topods.Face(draft_faces) if not isinstance(
+        draft_faces, (list, tuple)) else None
+    faces = ([topods.Face(f) for f in draft_faces]
+             if isinstance(draft_faces, (list, tuple)) else [drf])
+    for f in faces:
+        mk.Add(f, pln.Axis().Direction(), angle_rad, pln)
+    if not mk.AddDone():
+        raise KernelError("拔模失败（面不可拔模）")
+    mk.Build()
+    if not mk.IsDone():
+        raise KernelError("拔模失败")
+    return mk.Shape()
+
+
+def pattern_path(shape, path_edge, count: int, align_tangent: bool = False):
+    """Distribute `count` copies (including the original position) along the
+    path curve of path_edge, evenly by arc length."""
+    o = _occ()
+    from OCC.Core.GCPnts import GCPnts_AbscissaPoint
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
+    from OCC.Core.TopoDS import topods
+    from math import floor
+    ad = BRepAdaptor_Curve(topods.Edge(path_edge))
+    total = GCPnts_AbscissaPoint.Length(ad)
+    out = []
+    for k in range(count):
+        t = total * k / max(1, count - 1) if count > 1 else 0.0
+        u = GCPnts_AbscissaPoint(ad, t, ad.FirstParameter()).Parameter()
+        p = ad.Value(u)
+        tr = o["gp"].gp_Trsf()
+        tr.SetTranslation(o["gp"].gp_Vec(
+            p.X() - ad.Value(ad.FirstParameter()).X(),
+            p.Y() - ad.Value(ad.FirstParameter()).Y(),
+            p.Z() - ad.Value(ad.FirstParameter()).Z()))
+        out.append(K_copy_transformed(shape, tr))
+    return [s for s in out if s is not None]
+
+
+def K_copy_transformed(shape, trsf):
+    o = _occ()
+    from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_Transform
+    return BRepBuilderAPI_Transform(shape, trsf, True).Shape()
+
+
+def pattern_fill(shape, rx: float, ry: float, ex: float, ey: float,
+                 gap: float = 0.0, dx0: float = 0.0, dy0: float = 0.0):
+    """Grid-fill copies of shape inside a rectangular region rx*ry:
+    element footprint (ex, ey) with gap between footprints; (dx0, dy0) =
+    first element origin offset."""
+    o = _occ()
+    import math
+    step_x = ex + gap
+    step_y = ey + gap
+    cols = max(1, int(math.floor((rx + gap + 1e-12) / step_x)))
+    rows = max(1, int(math.floor((ry + gap + 1e-12) / step_y)))
+    out = []
+    for r in range(rows):
+        for c in range(cols):
+            tr = o["gp"].gp_Trsf()
+            tr.SetTranslation(o["gp"].gp_Vec(dx0 + c * step_x,
+                                             dy0 + r * step_y, 0.0))
+            out.append(K_copy_transformed(shape, tr))
+    return out
+
+
+def pull_auto(shape, subshape, direction=None, distance=0.001,
+              mode: str = "auto"):
+    """SpaceClaim Pull 的模式族自动分派（内核级）。
+
+    face + direction  -> extrude/offset (out-of-plane pull)
+    face, angle given -> draft about face normal
+    edge              -> fillet (round) — use distance as radius
+    edge + chamfer    -> chamfer
+    wire/curve        -> sweep is handled by callers with a path
+    solid             -> shell (distance = wall thickness, openings via
+                         subshape being the solid's own faces)
+    Returns (kind, result_shape).
+    """
+    from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_EDGE, TopAbs_SOLID
+    from OCC.Core.TopoDS import topods
+    st = subshape.ShapeType()
+    if st == TopAbs_EDGE:
+        if mode == "chamfer":
+            return ("chamfer", chamfer_edges(shape, distance, [subshape]))
+        return ("fillet", fillet_edges(shape, distance, [subshape]))
+    if st == TopAbs_FACE:
+        f = topods.Face(subshape)
+        nrm, ctr = face_normal_center(f)
+        if direction is not None and mode == "draft":
+            return ("draft", draft_face(shape, f, distance, direction))
+        tr = _occ()["gp"].gp_Trsf()
+        tr.SetTranslation(_occ()["gp"].gp_Vec(
+            direction[0] * distance, direction[1] * distance,
+            direction[2] * distance))
+        moved = K_copy_transformed(shape, tr)
+        from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut
+        d = sum(a * b for a, b in zip(nrm, direction)) if direction else 1.0
+        if d >= 0:
+            return ("extrude", BRepAlgoAPI_Fuse(shape, moved).Shape())
+        return ("offset-cut", BRepAlgoAPI_Cut(shape, moved).Shape())
+    if st == TopAbs_SOLID:
+        return ("shell", shell_solid(shape, distance, []))
+    raise KernelError("Pull：不支持的选择类型")
+
+
 def face_from_polygon(pts: Sequence[Vec3]):
     o = _occ()
     mk = o["bapi"].BRepBuilderAPI_MakePolygon()
