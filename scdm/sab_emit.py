@@ -111,6 +111,17 @@ class _Rec:
         return bytes(out)
 
 
+class _ClusterRec:
+    """Worklist entry wrapping a nested-subtype cluster (spline surface /
+    intcurve curve).  Regenerates its bytes with the shared interning dict."""
+
+    def __init__(self, fn):
+        self.fn = fn
+
+    def bytes(self, seen):
+        return self.fn(seen)
+
+
 class Worklist:
     """save_entity_list mirror: index assignment at first reference + FIFO."""
 
@@ -196,6 +207,9 @@ class Makers:
         self.coe = {}                 # ('edge', bi, ei) -> [coedge keys]
         self.ei = {}                  # ('edge', bi, ei) -> dict
         self.vp = {}                  # ('vertex', bi, vi) -> incident edge key
+        self.extras = {
+            bi: (items[bi][4] if len(items[bi]) > 4 else {})
+            for bi in range(len(items))}
         self._build_model()
 
     def _build_model(self):
@@ -269,6 +283,17 @@ class Makers:
                     else (self._sphere_face(key, wl) if itype == "sphere"
                           else (self._torus_face(key, wl) if itype == "torus"
                                 else self._cface(key, wl))))
+        if kind == "bsurf":
+            bi, fi = key[1], key[2]
+            data = self.extras[bi]["face_surf"][fi][1]
+            return _ClusterRec(lambda seen: spline_surface_cluster_bytes(
+                data[0], data[1], data[2], data[3], data[4], data[5],
+                data[6], seen=seen, sense=T_FLAG_B))
+        if kind == "bcur":
+            bi, ei = key[1], key[2]
+            data = self.extras[bi]["edge_curve"][ei][1]
+            return _ClusterRec(lambda seen, d=data: intcurve_cluster_bytes(
+                d[0], d[1], d[2], d[3], seen=seen, exactcur_int=0))
         if kind == "loop":
             return (self._loop(key, wl) if itype == "planar"
                     else (self._sphere_loop(key, wl) if itype == "sphere"
@@ -330,11 +355,14 @@ class Makers:
             dx = dy
         if dy <= 0.0:
             dy = dx
+        surf_key = (("bsurf", bi, fi)
+                    if fi in self.extras.get(bi, {}).get("face_surf", {})
+                    else ("plane", bi, fi))
         return (_Rec("face", 10)
                 .add(_p(wl.ref(("attrib", "fname", bi, fi))), _ti(-1),
                      _ti(-1), _p(-1), _p(wl.ref(nxt)), _p(wl.ref(("loop", bi, fi))),
                      _p(wl.ref(("shell", bi))), _p(-1),
-                     _p(wl.ref(("plane", bi, fi))),
+                     _p(wl.ref(surf_key)),
                      bytes([f1, T_FLAG_B, T_FLAG_A]),
                      _v3(*fmin), _v3(*fmax), bytes([T_FLAG_A]),
                      _td(-dx), _td(dx), _td(-dy), _td(dy)))
@@ -380,12 +408,15 @@ class Makers:
         emin, emax = _bbox(verts, [v1, v2])
         coeds = self.coe.get(key, [])
         first_co = coeds[0] if coeds else None
+        curve_key = (("bcur", bi, ei)
+                     if ei in self.extras.get(bi, {}).get("edge_curve", {})
+                     else ("straight", bi, ei))
         return (_Rec("edge", 17)
                 .add(_p(wl.ref(("attrib", "ename", bi, ei))),
                      _ti(-1), _ti(-1), _p(-1),
                      _p(wl.ref(("vertex", bi, v1))), _td(0.0),
                      _p(wl.ref(("vertex", bi, v2))), _td(length),
-                     _p(wl.ref(first_co)), _p(wl.ref(("straight", bi, ei))),
+                     _p(wl.ref(first_co)), _p(wl.ref(curve_key)),
                      bytes([T_FLAG_B]), _s("unknown"),
                      bytes([T_FLAG_A]), _v3(*emin), _v3(*emax)))
 
@@ -874,7 +905,8 @@ def intcurve_cluster_bytes(degree, knots, mults, poles, seen=None,
     3-pole, clamped B-spline edge curve.
     """
     out = bytearray()
-    out += _rec_header("intcurve", CID_INTCURVE, seen)
+    out += _rec_header("intcurve", CID_INTCURVE, seen, kind=T_CHAIN)
+    out += _rec_header("curve", 20, seen)
     out += _p(-1) + _ti(-1) + _ti(-1) + _p(-1)
     out += bytes([sense])
     out += bytes([0x0F])
@@ -931,6 +963,7 @@ def spline_surface_cluster_bytes(u_deg, v_deg, u_knots, u_mults,
     Mirrors the official spline.scdoc face-surface cluster byte pattern.
     """
     out = bytearray()
+    out += _rec_header("spline", CID_SPLINE, seen, kind=T_CHAIN)
     out += _rec_header("surface", 13, seen)
     out += _p(-1) + _ti(-1) + _ti(-1) + _p(-1)
     out += bytes([sense])

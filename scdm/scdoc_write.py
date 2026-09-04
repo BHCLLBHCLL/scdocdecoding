@@ -243,13 +243,69 @@ def _torus_info(solid):
             "bbox": (lo, hi)}
 
 
+def _bsurface_data(face):
+    """Extract an OCCT B-spline surface for the ACIS both record.
+
+    Returns (u_deg, v_deg, u_knots, u_mults, v_knots, v_mults, poles)
+    with poles flat (x, y, z, w) v-slowest, and knot multiplicities in
+    ACIS storage form (endpoint mult = standard - 1).
+    """
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+    from OCC.Core.GeomAbs import GeomAbs_BSplineSurface
+    from OCC.Core.TopoDS import topods
+    ad = BRepAdaptor_Surface(topods.Face(face))
+    if ad.GetType() != GeomAbs_BSplineSurface:
+        return None
+    bs = ad.BSpline()
+    u_deg, v_deg = bs.UDegree(), bs.VDegree()
+
+    def stored(mults, deg):
+        out = [mults[i] for i in range(len(mults))]
+        out[0] -= 1
+        out[-1] -= 1
+        return out
+
+    u_mults = stored([bs.UMultiplicity(i) for i in range(1, bs.NbUKnots() + 1)], u_deg)
+    v_mults = stored([bs.VMultiplicity(i) for i in range(1, bs.NbVKnots() + 1)], v_deg)
+    u_knots = [bs.UKnot(i) for i in range(1, bs.NbUKnots() + 1)]
+    v_knots = [bs.VKnot(i) for i in range(1, bs.NbVKnots() + 1)]
+    poles = []
+    for j in range(1, bs.NbVPoles() + 1):
+        for i in range(1, bs.NbUPoles() + 1):
+            p = bs.Pole(i, j)
+            w = bs.Weight(i, j)
+            poles.append((p.X(), p.Y(), p.Z(), w))
+    return (u_deg, v_deg, u_knots, u_mults, v_knots, v_mults, poles)
+
+
+def _bcurve_data(edge):
+    """Extract an OCCT B-spline curve for the ACIS nubs record."""
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
+    from OCC.Core.GeomAbs import GeomAbs_BSplineCurve
+    from OCC.Core.TopoDS import topods
+    ad = BRepAdaptor_Curve(topods.Edge(edge))
+    if ad.GetType() != GeomAbs_BSplineCurve:
+        return None
+    c = ad.BSpline()
+    deg = c.Degree()
+    mults = [c.Multiplicity(i) for i in range(1, c.NbKnots() + 1)]
+    mults[0] -= 1
+    mults[-1] -= 1
+    knots = [c.Knot(i) for i in range(1, c.NbKnots() + 1)]
+    poles = []
+    for i in range(1, c.NbPoles() + 1):
+        p = c.Pole(i)
+        poles.append((p.X(), p.Y(), p.Z()))
+    return (deg, knots, mults, poles)
+
+
 def _extract_solid(solid):
     """Return (verts, edges, faces) for a planar-faced solid."""
     from OCC.Core.BRep import BRep_Tool
     from OCC.Core.BRepTools import BRepTools_WireExplorer
     from OCC.Core.GeomAbs import GeomAbs_Plane
-    from OCC.Core.TopAbs import (TopAbs_FACE, TopAbs_FORWARD, TopAbs_VERTEX,
-                                 TopAbs_WIRE)
+    from OCC.Core.TopAbs import (TopAbs_EDGE, TopAbs_FACE, TopAbs_FORWARD,
+                                 TopAbs_VERTEX, TopAbs_WIRE)
     from OCC.Core.TopExp import TopExp_Explorer
     from OCC.Core.TopoDS import topods
 
@@ -271,6 +327,8 @@ def _extract_solid(solid):
     faces = []
     edges = []
     emap = {}
+    face_surf = {}   # face index -> ("bsurf", data)
+    edge_curve = {}  # edge index -> ("bcur", data)
 
     def edge_index(a, b):
         key = (min(a, b), max(a, b))
@@ -285,7 +343,11 @@ def _extract_solid(solid):
         from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
         adapt = BRepAdaptor_Surface(face)
         if adapt.GetType() != GeomAbs_Plane:
-            raise ValueError("仅支持平面面的实体写出（遇到非平面面）")
+            data = _bsurface_data(face)
+            if data is None:
+                raise ValueError("仅支持平面/双样条面的实体写出")
+        else:
+            data = None
         nrm, ctr = K.face_normal_center(face)
         outer = None
         wexp = TopExp_Explorer(face, TopAbs_WIRE)
@@ -316,8 +378,31 @@ def _extract_solid(solid):
         for k in range(len(outer)):
             edge_index(outer[k], outer[(k + 1) % len(outer)])
         faces.append({"loop": outer, "normal": nrm, "center": ctr})
+        if data is not None:
+            face_surf[len(faces) - 1] = ("bsurf", data)
         fexp.Next()
-    return verts, edges, faces
+    # capture B-spline edge curves (by vertex-pair edge index)
+    from OCC.Core.GeomAbs import GeomAbs_BSplineCurve
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
+    eexp = TopExp_Explorer(solid, TopAbs_EDGE)
+    while eexp.More():
+        occe = topods.Edge(eexp.Current())
+        vs = []
+        vex = TopExp_Explorer(occe, TopAbs_VERTEX)
+        while vex.More():
+            vs.append(vid(vex.Current()))
+            vex.Next()
+        if len(vs) >= 2:
+            key = (min(vs[0], vs[-1]), max(vs[0], vs[-1]))
+            if key in emap and emap[key] not in edge_curve:
+                ad = BRepAdaptor_Curve(occe)
+                if ad.GetType() == GeomAbs_BSplineCurve:
+                    d = _bcurve_data(occe)
+                    if d is not None:
+                        edge_curve[emap[key]] = ("bcur", d)
+        eexp.Next()
+    return verts, edges, faces, {"face_surf": face_surf,
+                                  "edge_curve": edge_curve}
 
 
 def _polygon_normal(loop, verts):
