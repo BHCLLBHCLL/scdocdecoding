@@ -901,6 +901,19 @@ T_RECORD "surface" [id]
 
 依赖：H2 独立；H5/H6 依赖 H2 的 Pull 分派重构；H7 依赖 H3/H2；H9 依赖数据层现状（无依赖）。建议顺序 **H1 → H2 → H3 → H4**（互操作与深度优先），H5/H6 并行，H7→H8→H9 收尾。
 
+### 21.3.b H1 实施记录（2026-09-05，完成）
+
+| 工作包 | 交付 | 验证 |
+| --- | --- | --- |
+| 内核格式函数 | `read_iges/write_iges`（体积精确 roundtrip）、`read_obj/write_obj`（v/f ↔ weld+sew）、`read_3mf/write_3mf`（zip+XML 网格）、`write_vrml`（VrmlAPI）、`read_stl`（StlAPI） | 单测 6 项 |
+| SAT 导出接入 | GUI 另存为 9 格式（STEP/SCDM/SCDOC/STL/IGES/SAT/OBJ/3MF/VRML） | sat_write→官方 converter restore |
+| X_T 导入 | `references/spaceclaim_import.py`：官方 SpaceClaim 批处理管线（/RunScript→SaveAs scdoc→自有解析器读回），X_T/X_B/XMT 直通 | 管线复用已验证的 make_official_ref 机制 |
+| 互操作矩阵 | `references/interop_matrix.py`：box/cyl/sphere/torus × {restore, self, SAT, IGES, OBJ, 3MF} + `--spaceclaim` 官方打开 | 全行 OK exit 0；哨兵 bodies=1 |
+| GUI 导入 | 打开对话框 10 扩展名；X_T 走官方管线 | 接线完成 |
+| 测试 | `tests/test_interop.py`（含官方 restore 门禁） | **105 passed** |
+
+注：SAT 备用通路覆盖平面/圆柱（sphere/torus 在矩阵中标 `--`，native 路径已官方覆盖）。
+
 ### 21.4 统一验收协议
 
 1. 每工作包单测（pytest，OCCT 级断言）
