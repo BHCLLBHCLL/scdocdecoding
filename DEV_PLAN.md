@@ -866,3 +866,44 @@ T_RECORD "surface" [id]
 #### 20.10.6 建议执行路径
 
 按依赖顺序先做 **Phase 0 + Phase 1**（让后续所有类「只加一行布局表即可」），再按 **T1→T2→T3** 逐批推进，每批独立验证官方打开，完成后推送 GitHub。
+
+## 21. SpaceClaim 100% 对标开发规划（2026-09-05 全量盘点后）
+
+### 21.1 现状快照（实测）
+
+| 层 | 实测状态 |
+| --- | --- |
+| UI 命令面 | 14 页签 / 125 命令 / **123 live**（仅 prep.small、safety.tab 占位） |
+| 内核（kernel.py 71 函数） | 基本体×4、拉伸/旋转/螺旋/棱柱、布尔、圆角/倒角/抽壳/拔模/偏移、阵列（线性/圆周）、镜像、分割、修复组（缝隙/缺失面/实体化/缝合）、中面/共享拓扑、干涉/体积/面积/重心、STEP/STL/BREP 读写、离散 |
+| scdoc 数据层 | **读取**：22 类 SAB 记录全解码（含 B 样条深度解码/容忍拓扑）、facets、document.xml；**写入**：FIFO 遍历 + 平面/圆柱/球/环/B 样条体官方 bodies=1；SAT 备用通路；模板打包 |
+| 脚本 | 录制/回放 18 ops |
+| 测试 | 99 passed / 1 skipped |
+
+### 21.2 对标差距（三层模型）
+
+- **B 层·命令在但深度不足**（对标 SpaceClaim 同名命令的完整行为）：Pull 全模式族（SpaceClaim 的 Pull 集拉伸/旋转/扫掠/抽壳/偏移/倒圆于一体并按选择对象自动分派）；圆角/倒角（变半径、多链、溢出控制）；抽壳（多厚度+移除面集）；拔模（中性面/分型线）；阵列（填充/草图驱动/沿路径）；草约求解深度；Repair 检查几何全家桶（小面/尖刺/薄片/自交/反向面/短边）；脚本 API 完整度
+- **C 层·整页缺失**：Sheet Metal（钣金）、Surface（曲面工具）、Simulation（载荷/支撑/接触）、Rendering（材质/场景）、3D Markup、Structure（梁/焊）
+- **D 层·数据/互操作**：导入缺 IGES/SAT/X_T/OBJ/3MF/VRML；导出缺 IGES/SAT（SAT 写出已具 sat_write 基础）/PDF-3D/OBJ；scdoc 写回的 document.xml 深度（图层/命名组/视图/截面/参数/颜色写回，目前模板化）；装配配合类型全家桶
+
+### 21.3 波次规划（H 系列，每波独立验收）
+
+| 波 | 主题 | 关键工作包 | 验收标准 | 预估 |
+| --- | --- | --- | --- | --- |
+| H1 | 互操作矩阵 | 导入 IGES/OBJ/3MF/VRML（OCCT 现成）；SAT 导出（sat_write→官方 converter 校验）；X_T 经官方 SpaceClaim 批处理管线；导出 PDF-3D；批量互操作回归（官方打开矩阵自动化） | 每格式读→写→官方打开 roundtrip 通过；新增格式化测试 | 5~8 天 |
+| H2 | 直接建模深度 | Pull 模式族自动分派（面=拉伸/拔模/偏移、边=倒圆/倒角、线=扫掠、体=抽壳识别）；变半径圆角；多厚度抽壳；中性面拔模；填充阵列/沿路径阵列 | 每模式单测 + 与 SpaceClaim 行为对照清单 | 8~12 天 |
+| H3 | 装配深度 | 配合类型（刚性/旋转/圆柱/平面/球/螺旋/距离）；自由度求解与 Motion 拖动；爆炸图保存；组件层级写回 scdoc | 两体六类配合可建可解；爆炸状态可保存重开 | 8~12 天 |
+| H4 | Repair 全家桶 | 检查几何（小面/尖刺/薄片/自交/反向面/短边/干涉）+ 一键修复向导；结果面板交互 | 对官方样本库逐项检出率验证 | 5~8 天 |
+| H5 | Sheet Metal 页 | 钣金内核（折弯/展开/ ripped/ corner/jog；K 因子）；页签 UI；参数化钣金体 | 逐命令单测 + 展开面积校验 | 10~15 天 |
+| H6 | Surface 页 | untrim/patch/blend(曲面)/extend/curve-network/thicken（OCCT ShapeUpgrade/GeomFill 支撑） | 每命令单测 + 官方打开 | 10~15 天 |
+| H7 | 参数驱动 + 脚本全量化 | 尺寸驱动 + 表达式（params.py 扩展）；脚本 API 对齐 SpaceClaim 命名（IPart/IEdge...子集）+ 编辑器页 | 录制→改参数→重放重建 | 8~12 天 |
+| H8 | Simulation/Rendering/Markup 页 | Simulation（载荷/支撑/接触/区域对象与显示）；Rendering（材质/场景/离屏渲染已有基础）；3D Markup（注释相机+标注） | 页面命令 live + 对象写入 scdoc | 10~15 天 |
+| H9 | scdoc 写回深度 | document.xml 全量生成（图层/命名组/保存视图/截面对象/参数/装配层级）替代模板；ID 分配器与 SAB attrib 联动 | 写出文件官方打开 + 元数据逐项可见 | 8~12 天 |
+
+依赖：H2 独立；H5/H6 依赖 H2 的 Pull 分派重构；H7 依赖 H3/H2；H9 依赖数据层现状（无依赖）。建议顺序 **H1 → H2 → H3 → H4**（互操作与深度优先），H5/H6 并行，H7→H8→H9 收尾。
+
+### 21.4 统一验收协议
+
+1. 每工作包单测（pytest，OCCT 级断言）
+2. 数据层改动必须过**官方互操作矩阵**：本方写出 → SabSatConverter restore + SpaceClaim `/RunScript` 哨兵 bodies>0
+3. UI 命令 live 状态与 catalog 守卫测试联动（tests/test_g1.py 既有机制）
+4. 每波结束跑全量测试 + push GitHub
