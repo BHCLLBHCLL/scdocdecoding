@@ -90,6 +90,13 @@ class Ent:
     pend: Optional[float] = None
     rgb: Optional[Tuple[float, float, float]] = None
     tolerance: Optional[float] = None
+    bs_form: Optional[int] = None
+    bs_deg: Optional[int] = None
+    bs_deg_v: Optional[int] = None
+    bs_knots: Optional[list] = None
+    bs_mults: Optional[list] = None
+    bs_poles: Optional[list] = None
+    bs_poles_2d: Optional[list] = None
     t_range: Optional[tuple] = None
     attrib_type: Optional[str] = None
     attrib_value: Optional[str] = None
@@ -247,8 +254,8 @@ class SabModel:
             e.tolerance = self._opt_dbl(rec, 15)
         elif k == 'point':
             e.origin = self._opt_v3(rec, 4)
-        elif k in ('plane', 'cone', 'ellipse', 'spline', 'nubs', 'curve',
-                   'pcurve', 'exppc', 'intcurve', 'torus', 'sphere'):
+        elif k in ('plane', 'cone', 'ellipse', 'spline', 'curve',
+                   'torus', 'sphere'):
             e.origin = self._opt_v3(rec, 4)
             e.normal = self._opt_v3b(rec, 5)
             e.xdir = self._opt_v3b(rec, 6)
@@ -259,6 +266,57 @@ class SabModel:
             # after the direction); imported lines may omit it entirely.
             e.t0 = self._opt_dbl(rec, 7)
             e.t1 = self._opt_dbl(rec, 9)
+        elif k == 'nubs':
+            # B-spline definition: [form][int15][#knots][(val,mult)...]
+            # [closed int][poles 3D | 2D(+2-double tail)]; the degree is NOT
+            # stored — it is derived: sum(mults) - npoles + 1.
+            if len(rec.tokens) >= 5 and rec.tokens[2].kind == 'int':
+                e.bs_form = self._opt(rec, 0, 'int', lambda t: t.value)
+                nk = rec.tokens[2].value
+                kt, mt, i = [], [], 3
+                ok = True
+                for _ in range(nk):
+                    if (i + 1 < len(rec.tokens)
+                            and rec.tokens[i].kind == 'double'
+                            and rec.tokens[i + 1].kind == 'int'):
+                        kt.append(rec.tokens[i].value)
+                        mt.append(rec.tokens[i + 1].value)
+                        i += 2
+                    else:
+                        ok = False
+                        break
+                if ok:
+                    if i < len(rec.tokens) and rec.tokens[i].kind == 'int':
+                        i += 1  # optional closed/open marker (3D nubs)
+                    rest = len(rec.tokens) - i
+                    e.bs_knots, e.bs_mults = kt, mt
+                    if rest % 3 == 0 and rest >= 3:
+                        n3 = rest // 3
+                        e.bs_poles = [tuple(rec.tokens[j].value
+                                            for j in range(k, k + 3))
+                                      for k in range(i, i + 3 * n3, 3)]
+                        e.bs_deg = sum(mt) - n3 + 1
+                    if rest % 2 == 0 and rest >= 2:
+                        n2 = (rest - 2) // 2  # 2D carries a 2-double tail
+                        if n2 > 0:
+                            e.bs_poles_2d = [tuple(rec.tokens[j].value
+                                                   for j in range(k, k + 2))
+                                             for k in range(i, i + 2 * n2, 2)]
+                            e.bs_deg = sum(mt) - n2 + 1
+        elif k == 'exppc':
+            e.bs_form = self._opt(rec, 0, 'int', lambda t: t.value)
+        elif k == 'ref':
+            e.bs_form = self._opt(rec, 0, 'int', lambda t: t.value)
+        elif k in ('exactcur', 'exactsur'):
+            e.bs_form = self._opt(rec, 0, 'int', lambda t: t.value)
+        elif k == 'nurbs':
+            e.bs_deg = self._opt(rec, 0, 'int', lambda t: t.value)
+            e.bs_deg_v = self._opt(rec, 1, 'int', lambda t: t.value)
+        elif k in ('intcurve', 'spline', 'surfintcur', 'surfcur', 'pcurve',
+                   'sweepsur', 'sumsur', 'skinsur', 'offsur', 'parcur'):
+            # [ptr attrib][int][int][ptr][flag] prefix — keep the sense flag
+            if len(rec.tokens) > 4 and rec.tokens[4].kind in ('flag_a', 'flag_b'):
+                e.sense = rec.tokens[4].kind
         elif k in ('string_attrib', 'wstring_attrib', 'integer_attrib'):
             e.next = self._ptr(rec, 2)
             e.prev = self._ptr(rec, 3)

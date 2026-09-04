@@ -58,3 +58,34 @@ attrib 链走 `save_common`（遍历链头，vtable+0x140 判定可保存性）�
 2. **document.xml 与 SAB attrib 值 Id 体系一致**：模板包的 `NominalBodyDef Id="0:23"` / `NominalFaceDef Id="0:27"...` 必须与 SAB 中 `string_attrib` 值 `0:23`/`0:27` 匹配；错位（如模板 0:22 体系配 0:23 SAB）→ 官方打开 bodies=0。
 
 最终验证：原生 emitter 写出的 box（10mm）= **官方 SpaceClaim bodies=1** ✅（`references/verify_open.py` 哨兵 `done bodies=1`）。
+
+## 实体类覆盖矩阵（2026-09-04，Phase 5/6 收尾）
+
+### 写入路径（scdm/sab_emit.py，官方 SpaceClaim 打开验证）
+
+| 类 | 布局来源 | 官方打开 | 备注 |
+|---|---|---|---|
+| body/lump/shell/face/loop/coedge/edge/vertex/point | box.scdoc 逆向 | ✅ box/cyl/mixed bodies=1 | FIFO 工作清单 |
+| plane/cone/straight/ellipse（解析曲面/曲线） | box/cyl 参照 | ✅ | |
+| sphere/torus（闭曲面） | 官方 sphere/torus 参照 | ✅ bodies=1 | seam 极点拓扑；surface rec_id=15；闭面无 rgb |
+| spline/exactsur/nurbs/both（B 样条曲面集群） | spline.scdoc 逆向 | ✅ bodies=1（剪切圆柱） | knot mult 端点 −1 约定；极点 v-slowest；77 token 重放一致 |
+| intcurve/exactcur/nubs/null_surface/nullbs（B 样条曲线集群） | loft/splineedge 参照 | ✅ | chain(intcurve)+record(curve)；degree 推导 |
+| tvertex/tedge/tcoedge（容忍拓扑透传） | SampleModel4 逆向 | 就绪（构建器重放一致） | chain(子类)+record(基类)+容差 |
+| pcurve/exppc（参数曲线） | 布局已解 | — | 官方打开非必需（loft 证）；发射器待接 |
+| ref/nullbs/null_surface | 布局已解 | 就绪（集群内已发射） | |
+
+### 读取路径（scdoc_parser/topology.py，Library 6 模型全解）
+
+| 类 | 解码深度 |
+|---|---|
+| 拓扑核心 + attrib + 解析曲面 | 全字段 |
+| tvertex/tedge/tcoedge | 全字段 + tolerance/t_range |
+| nubs | form/#knots/knots/mults/poles(3D 与 2D 视图)/degree（推导：sum(mults)−npoles+1）；Library 2863 条中 2503 条完整解出（2411 条阶数 1-5 合理） |
+| nurbs（u_deg,v_deg）/exppc/ref/exactcur/exactsur | 形式码 |
+| intcurve/spline/surfintcur/surfcur/pcurve/sweepsur/sumsur/skinsur/offsur/parcur | sense flag |
+| null_surface/nullbs/null_pcurve/no_merge_attribute/APATTERN | 最小 Ent（记录索引保持） |
+
+### 验证基线
+
+- 本机测试 99 passed / 1 skipped（含 FIFO 不变量、布局字节一致、官方重放、Library 全解、球/环/B 样条 roundtrip）
+- 官方验证：box/cyl/sphere/torus/剪切圆柱（B 样条）均 `verify_open.py` bodies=1
