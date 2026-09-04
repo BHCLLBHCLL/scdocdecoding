@@ -89,6 +89,8 @@ class Ent:
     pstart: Optional[float] = None
     pend: Optional[float] = None
     rgb: Optional[Tuple[float, float, float]] = None
+    tolerance: Optional[float] = None
+    t_range: Optional[tuple] = None
     attrib_type: Optional[str] = None
     attrib_value: Optional[str] = None
     sense: Optional[str] = None
@@ -204,7 +206,7 @@ class SabModel:
             st = self._opt(rec, 10, 'int15', lambda t: t.value)
             if st is not None:
                 e.surface = self._opt_ptr(rec, 11)
-        elif k == 'coedge':
+        elif k in ('coedge', 'tcoedge'):
             e.next = self._opt_ptr(rec, 4)
             e.prev = self._opt_ptr(rec, 5)
             e.partner = self._opt_ptr(rec, 6)
@@ -212,6 +214,8 @@ class SabModel:
             e.sense = rec.tokens[8].kind if len(rec.tokens) > 8 else None
             e.loop = self._opt_ptr(rec, 9)
             e.face = self._opt_ptr(rec, 10)
+            if k == 'tcoedge' and len(rec.tokens) > 12:
+                e.t_range = (self._opt_dbl(rec, 11), self._opt_dbl(rec, 12))
         elif k == 'edge':
             e.attribs = self._ptr(rec, 0)
             e.v1 = self._opt_ptr(rec, 4)
@@ -223,9 +227,24 @@ class SabModel:
             e.sense = rec.tokens[10].kind if len(rec.tokens) > 10 else None
             e.bbox_min = self._opt_v3(rec, 13)
             e.bbox_max = self._opt_v3(rec, 14)
-        elif k == 'vertex':
+        elif k in ('vertex', 'tvertex'):
             e.edge = self._opt_ptr(rec, 4)
             e.point = self._opt_ptr(rec, 5)
+            if k == 'tvertex':
+                e.tolerance = self._opt_dbl(rec, 6)
+        elif k == 'tedge':
+            # same layout as edge plus a trailing tolerance double
+            e.attribs = self._ptr(rec, 0)
+            e.v1 = self._opt_ptr(rec, 4)
+            e.pstart = self._opt_dbl(rec, 5)
+            e.v2 = self._opt_ptr(rec, 6)
+            e.pend = self._opt_dbl(rec, 7)
+            e.coedge = self._opt_ptr(rec, 8)
+            e.curve = self._opt_ptr(rec, 9)
+            e.sense = rec.tokens[10].kind if len(rec.tokens) > 10 else None
+            e.bbox_min = self._opt_v3(rec, 13)
+            e.bbox_max = self._opt_v3(rec, 14)
+            e.tolerance = self._opt_dbl(rec, 15)
         elif k == 'point':
             e.origin = self._opt_v3(rec, 4)
         elif k in ('plane', 'cone', 'ellipse', 'spline', 'nubs', 'curve',

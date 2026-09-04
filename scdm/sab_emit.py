@@ -884,6 +884,70 @@ CID_NURBS = 29
 CID_BOTH = 30
 
 
+CID_TVERTEX = 32
+CID_TEDGE = 33
+CID_TCOEDGE = 34
+
+
+def _rec_header(name, cid, seen, kind=T_RECORD):
+    """Serialize a record/chain header with class-name interning."""
+    out = bytearray()
+    if seen is not None and seen.get(name) == cid:
+        out += bytes([kind, 5, T_ID]) + _ri(cid)
+        return bytes(out)
+    hdrlen = len(name) + (5 if cid is not None else 0)
+    out += bytes([kind, hdrlen]) + name.encode("latin-1")
+    if cid is not None:
+        out += bytes([T_ID]) + _ri(cid)
+        if seen is not None:
+            seen[name] = cid
+    return bytes(out)
+
+
+def tvertex_record(wl, edge_key, point_key, tol, seen=None):
+    """Tolerant vertex: chain('tvertex') + record('vertex') + tolerance."""
+    out = bytearray()
+    out += _rec_header("tvertex", CID_TVERTEX, seen, kind=T_CHAIN)
+    out += _rec_header("vertex", 18, seen)
+    out += _p(-1) + _ti(-1) + _ti(-1) + _p(-1)
+    out += _p(wl.ref(edge_key)) + _p(wl.ref(point_key)) + _td(tol)
+    out += bytes([T_TERM])
+    return bytes(out)
+
+
+def tedge_record(edge_tokens, tol, seen=None):
+    """Tolerant edge: chain('tedge') + record('edge') + tolerance.
+
+    edge_tokens: the plain edge record's token bytes (built by Makers._edge).
+    """
+    out = bytearray()
+    out += _rec_header("tedge", CID_TEDGE, seen, kind=T_CHAIN)
+    out += _rec_header("edge", 17, seen)
+    out += edge_tokens
+    out += _td(tol)
+    out += bytes([T_TERM])
+    return bytes(out)
+
+
+def tcoedge_record(coedge_tokens, pcurve_idx=None, t_range=None, seen=None):
+    """Tolerant coedge: chain('tcoedge') + record('coedge') + pcurve ptr +
+    (t_start, t_end) + trailing flag.
+
+    coedge_tokens: plain coedge token bytes WITHOUT the trailing pcurve slot
+    (the first 10 tokens' bytes: attrib..loop ptr).
+    """
+    out = bytearray()
+    out += _rec_header("tcoedge", CID_TCOEDGE, seen, kind=T_CHAIN)
+    out += _rec_header("coedge", 16, seen)
+    out += coedge_tokens
+    out += _p(-1 if pcurve_idx is None else pcurve_idx)
+    t0, t1 = t_range if t_range else (0.0, 0.0)
+    out += _td(t0) + _td(t1)
+    out += bytes([T_FLAG_B])
+    out += bytes([T_TERM])
+    return bytes(out)
+
+
 def _nubs_body(degree, knots, mults, poles):
     """nubs record payload: degree, int15 0, #knots, (val, mult)..., poles."""
     out = bytearray()

@@ -831,6 +831,17 @@ T_RECORD "surface" [id]
 
 **下一步（管线接线）**：OCCT `Geom_BSplineSurface` 提取器（deg/knots/mults/poles/weights，端点 mult −1 换算）→ `Makers` 增加 `("bsurf", bi, fi)` 面曲面分派 + B 样条边的 intcurve 集群分派 → `write_scdoc` 识别 B 样条体 → restore + SpaceClaim bodies=1 验证。
 
+#### 20.10.4.d 透传类增强（2026-09-04，同日续）
+
+**容忍拓扑（tvertex/tedge/tcoedge）双向打通**：
+
+- 布局定谳（SampleModel4 官方样本）：均为 `chain(子类)+record(基类)` 形式——tvertex=vertex+尾部容差 double；tedge=edge+尾部容差（token 15）；tcoedge=coedge+pcurve 槽+（t_start,t_end）+尾部 flag_b
+- **解析器**（topology.py）：三类的完整解码（edge/point/coedge/loop 字段 + tolerance/t_range）——容忍模型（导入件常见）现可全量遍历
+- **发射器**（sab_emit.py）：`tvertex_record`/`tedge_record`/`tcoedge_record` + CID 32-34，tvertex 与官方记录 token 级一致
+- 回归测试守护；99 tests 绿
+
+**pcurve/exppc 集群布局已解（待发射器）**：`pcurve[ptr,int,int,ptr,int 0,flag]+0x0F+exppc+nubs(2D)+spline[0x0F]+exactsur+nurbs+both(曲面)+[0x10+4flags]+[0x10+2 doubles]+0x11`（双层嵌套；2D nubs 极点为 (u,v) 对）。coedge 第 11 槽 = pcurve 指针。已证官方打开非必需，作为保真增强后续落地。
+
 #### 20.10.5 工作量与风险
 
 | 阶段 | 依赖 | 量级 | 说明 |

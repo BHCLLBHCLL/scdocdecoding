@@ -224,3 +224,52 @@ def test_spline_surface_cluster_replay():
     off = [(t.kind, t.value if not isinstance(t.value, tuple) else
             tuple(round(x, 15) for x in t.value)) for t in off_both.tokens]
     assert my == off
+
+
+def test_tolerant_topology_records():
+    """Pass-through classes: tvertex/tedge/tcoedge builders reproduce the
+    official SampleModel4 tolerant-topology token layout."""
+    from scdm import sab_emit as SE
+    from scdoc_parser import sab as sab_mod, opc
+    import zipfile
+
+    src = r"C:\Program Files\ANSYS Inc\v195\scdm\Library\SrModels\SampleModel4.scdoc"
+    if not __import__("os").path.exists(src):
+        import pytest
+        pytest.skip("SampleModel4 not installed")
+    data = zipfile.ZipFile(src).read("SpaceClaim/Geometry/allpartbodies.sab")
+    sf = sab_mod.tokenize(data)
+    header = data[:sf.records[0].offset]
+    END = bytes([0x0D, 16]) + b"End-of-ACIS-data"
+
+    class FakeWL:
+        def __init__(self, m):
+            self.m = m
+
+        def ref(self, k):
+            return self.m.get(k, -1)
+
+    # tvertex replay
+    tv = next(r for r in sf.records if r.kind == "tvertex")
+    m = {"e": tv.tokens[4].value, "p": tv.tokens[5].value}
+    ours = SE.tvertex_record(FakeWL(m), "e", "p", tv.tokens[6].value)
+    r2 = sab_mod.tokenize(header + ours + END).records[0]
+    assert [(t.kind, t.value) for t in r2.tokens] == \
+        [(t.kind, t.value) for t in tv.tokens]
+    assert r2.chain == [("tvertex", SE.CID_TVERTEX)]
+
+    # tcoedge: chain + coedge tokens + pcurve ptr + (t0, t1) + flag
+    tc = next(r for r in sf.records if r.kind == "tcoedge")
+    toks = tc.tokens
+    assert toks[10].kind == "ptr"          # pcurve slot
+    assert toks[11].kind == "double" and toks[12].kind == "double"
+    assert toks[13].kind == "flag_b"       # trailing flag
+    # parser decode: t_range populated
+    from scdoc_parser import topology
+    model = topology.SabModel(sf)
+    tce = next(e for e in model.of_kind("tcoedge"))
+    assert tce.t_range is not None and len(tce.t_range) == 2
+    tve = next(e for e in model.of_kind("tvertex"))
+    assert tve.tolerance is not None
+    ted = next(e for e in model.of_kind("tedge"))
+    assert ted.tolerance is not None and ted.v1 is not None
