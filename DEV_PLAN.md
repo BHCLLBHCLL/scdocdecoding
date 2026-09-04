@@ -928,6 +928,19 @@ T_RECORD "surface" [id]
 
 关键排障：①`SetRadius` 需 (IC, IinC) 双索引且 `IsDone` 在 `Build()` 后才有效；②`shell_solid(shape,t,[])` 无移除面时返回内腔实体（MakeThickSolidByJoin 语义怪癖），且在圆角体上直接失败——棱柱壁层构造彻底绕开；③拔模对与圆角相切的平面拒绝（SpaceClaim 同样拒绝），脚本层容错跳过。
 
+### 21.3.d H3 实施记录（2026-09-05，核心完成）
+
+| 工作包 | 交付 | 验证 |
+| --- | --- | --- |
+| 配合求解器 | `scdm/mates.py`：7 类运动副（刚性 0 DOF / 旋转 1 / 圆柱 2 / 平面 3 / 球 3 / 螺旋 1 耦合 / 距离 6）；`solve_transform` 带 θ/slide 驱动参数；`frame_of` 从平面/圆柱面、直线/圆边提取参考系 | 数学级 7 断言 |
+| 运动拖动 | `kernel.apply_mat4` 把求解矩阵施于形体；旋转 90° 拖动、圆柱滑+转验证 | OCCT 形体级 2 断言 |
+| 爆炸图保存 | `Component.explosion` 每组件方向持久化（io_project 随项目保存） | 接线完成 |
+| GUI 配合对话框 | 0-6 七类运动副（保留 7/8 面贴合/轴对齐旧语义）；运动副走求解器并记录 `KernelDoc.mates` | 接线完成 |
+| 组件层级写回 scdoc | **归入 H9**（多 part SAB 包 + document.xml PartDef 树，与图层/命名组同批实现） | — |
+| 测试 | `tests/test_mates.py` 9 项 | **122 passed** |
+
+运动学语义：配合求解先把 B 参考系落到关节（fb.origin→fa.origin），再按 θ 绕 A 轴转动 / 沿轴滑移——与标准运动副约定一致。
+
 ### 21.4 统一验收协议
 
 1. 每工作包单测（pytest，OCCT 级断言）
