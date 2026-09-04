@@ -842,6 +842,13 @@ T_RECORD "surface" [id]
 
 **pcurve/exppc 集群布局已解（待发射器）**：`pcurve[ptr,int,int,ptr,int 0,flag]+0x0F+exppc+nubs(2D)+spline[0x0F]+exactsur+nurbs+both(曲面)+[0x10+4flags]+[0x10+2 doubles]+0x11`（双层嵌套；2D nubs 极点为 (u,v) 对）。coedge 第 11 槽 = pcurve 指针。已证官方打开非必需，作为保真增强后续落地。
 
+#### 20.10.4.e Phase 5/6 完成（2026-09-04）
+
+- **Phase 5（拓扑变体透传 + 稳健性）完成**：解析器补齐 nubs（form/knots/mults/poles 3D+2D/推导阶数；Library 2863 条解出 2503，阶数 1-5 合理 2411）、nurbs 双阶数、exppc/ref/exactcur/exactsur 形式码、intcurve/spline/surfintcur 等十余类 sense——配合此前 tvertex/tedge/tcoedge 全解码，**Library 全部 22 类 kind 均有解码路径**；分支优先级修正（nubs/pcurve/exppc/intcurve 移出通用几何分支）
+- **Phase 6（回归与文档）完成**：`references/acis_save_algorithm.md` 追加**实体类覆盖矩阵**（写入路径 8 组类 + 官方打开结果；读取路径 22 类解码深度；验证基线 99 tests + 5 类几何官方 bodies=1）；全量测试绿；提交推送
+
+**20.10 计划全景完成**：完整 ACIS 遍历算法机制（FIFO 工作清单 + 数据驱动布局 + LayoutEmitter）+ T1 旋转/球/环 + T2/T3 参数曲线与自由曲面 + 容忍拓扑透传，原生写出 → 官方 SpaceClaim bodies=1。
+
 #### 20.10.5 工作量与风险
 
 | 阶段 | 依赖 | 量级 | 说明 |
