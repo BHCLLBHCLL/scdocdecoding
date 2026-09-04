@@ -377,6 +377,25 @@ else:
                 ses.kdoc = load_scdm(path)
             elif low.endswith(".brep"):
                 ses.kdoc.add_body(K.read_brep(path), name=stem)
+            elif low.endswith((".igs", ".iges")):
+                ses.kdoc.add_body(K.read_iges(path), name=stem)
+            elif low.endswith(".obj"):
+                ses.kdoc.add_body(K.read_obj(path), name=stem)
+            elif low.endswith(".3mf"):
+                ses.kdoc.add_body(K.read_3mf(path), name=stem)
+            elif low.endswith(".stl"):
+                ses.kdoc.add_body(K.read_stl(path), name=stem)
+            elif low.endswith((".x_t", ".x_b", ".xmt_txt", ".xmt_bin")):
+                # Parasolid: official SpaceClaim batch pipeline
+                sys.path.insert(0, os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), "references"))
+                try:
+                    from spaceclaim_import import import_via_spaceclaim
+                finally:
+                    sys.path.pop(0)
+                scdoc = import_via_spaceclaim(path)
+                ses = session_from_scdoc(scdoc)
+                return ses
             else:
                 ses.kdoc.add_body(K.read_step(path), name=stem)
             ses.history.clear()
@@ -481,7 +500,8 @@ else:
         def _do_file_open(self):
             fn, _ = QFileDialog.getOpenFileName(
                 self, "打开", "",
-                "CAD (*.scdoc *.step *.stp *.scdm *.brep);;All (*)",
+                "CAD (*.scdoc *.step *.stp *.igs *.iges *.obj *.3mf *.stl "
+                "*.brep *.scdm *.x_t *.x_b);;All (*)",
             )
             if fn:
                 self.open_path(fn)
@@ -609,7 +629,9 @@ else:
             ses = self.session()
             path, _ = QFileDialog.getSaveFileName(
                 self, "另存为", (ses.name or "Design") + ".step",
-                "STEP (*.step *.stp);;SCDM (*.scdm);;STL (*.stl)")
+                "STEP (*.step *.stp);;SCDM (*.scdm);;SCDOC (*.scdoc);;"
+                "STL (*.stl);;IGES (*.igs *.iges);;SAT (*.sat);;"
+                "OBJ (*.obj);;3MF (*.3mf);;VRML (*.wrl)")
             if path:
                 self._save_to(path)
 
@@ -626,6 +648,17 @@ else:
                 shape = ses.kdoc.compound()
                 if low.endswith(".stl"):
                     K.write_stl(shape, path)
+                elif low.endswith((".igs", ".iges")):
+                    K.write_iges(shape, path)
+                elif low.endswith(".sat"):
+                    from scdm.sat_write import write_sat
+                    open(path, "w").write(write_sat(ses.kdoc, name=ses.name))
+                elif low.endswith(".obj"):
+                    K.write_obj(shape, path)
+                elif low.endswith(".3mf"):
+                    K.write_3mf(shape, path)
+                elif low.endswith(".wrl"):
+                    K.write_vrml(shape, path)
                 elif low.endswith(".scdm"):
                     from scdm.io_project import save_scdm
                     save_scdm(path, ses.kdoc)

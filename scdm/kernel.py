@@ -831,6 +831,168 @@ def read_step(path: str):
     return r.OneShape()
 
 
+def read_stl(path: str):
+    o = _occ()
+    from OCC.Core.StlAPI import StlAPI_Reader
+    from OCC.Core.TopoDS import TopoDS_Shape
+    shape = TopoDS_Shape()
+    r = StlAPI_Reader()
+    if not r.Read(shape, path):
+        raise KernelError("STL 读取失败")
+    return shape
+
+
+def write_iges(shape, path: str) -> None:
+    o = _occ()
+    from OCC.Core.IGESControl import IGESControl_Writer
+    w = IGESControl_Writer()
+    w.AddShape(shape)
+    w.ComputeModel()
+    if not w.Write(path):
+        raise KernelError("IGES 写出失败")
+
+
+def read_iges(path: str):
+    o = _occ()
+    from OCC.Core.IGESControl import IGESControl_Reader
+    r = IGESControl_Reader()
+    if r.ReadFile(path) != o["ifs"].IFSelect_RetDone:
+        raise KernelError("IGES 读取失败")
+    r.TransferRoots()
+    return r.OneShape()
+
+
+def _mesh_tris(shape, deflection: float = 0.001):
+    """(vertices, triangles) from OCCT tessellation."""
+    o = _occ()
+    o["mesh"].BRepMesh_IncrementalMesh(shape, deflection, False, 0.5, True)
+    from OCC.Core.TopExp import TopExp_Explorer
+    from OCC.Core.TopAbs import TopAbs_FACE
+    from OCC.Core.BRep import BRep_Tool
+    from OCC.Core.TopoDS import topods
+    verts, tris, off = [], [], 0
+    ex = TopExp_Explorer(shape, TopAbs_FACE)
+    while ex.More():
+        f = topods.Face(ex.Current())
+        from OCC.Core.TopLoc import TopLoc_Location
+        loc = TopLoc_Location()
+        poly = BRep_Tool().Triangulation(f, loc)
+        if poly is not None:
+            for k in range(1, poly.NbNodes() + 1):
+                p = poly.Node(k).Transformed(loc.Transformation())
+                verts.append((p.X(), p.Y(), p.Z()))
+            for k in range(1, poly.NbTriangles() + 1):
+                a, b, c = poly.Triangle(k).Get()
+                tris.append((a + off - 1, b + off - 1, c + off - 1))
+            off += poly.NbNodes()
+        ex.Next()
+    return verts, tris
+
+
+def write_obj(shape, path: str) -> None:
+    """Shape -> OBJ from tessellation (v/f lines)."""
+    verts, tris = _mesh_tris(shape, deflection=0.001)
+    lines = ["# exported by scdm"]
+    for p in verts:
+        lines.append("v %.9g %.9g %.9g" % (p[0], p[1], p[2]))
+    for a, b, c in tris:
+        lines.append("f %d %d %d" % (a + 1, b + 1, c + 1))
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def read_obj(path: str):
+    """OBJ (v/f mesh) -> shell body via weld + sew."""
+    import numpy as np
+    from scdm import facets as F
+    pts, tris = [], []
+    with open(path) as f:
+        for ln in f:
+            if ln.startswith("v "):
+                x, y, z = ln.split()[1:4]
+                pts.append((float(x), float(y), float(z)))
+            elif ln.startswith("f "):
+                idx = [int(t.split("/")[0]) - 1 for t in ln.split()[1:]]
+                for k in range(1, len(idx) - 1):
+                    tris.append((idx[0], idx[k], idx[k + 1]))
+    if not tris:
+        raise KernelError("OBJ 无面数据")
+    pts = np.array(pts, dtype=np.float64)
+    tris = np.array(tris, dtype=np.int64)
+    pts, tris = F.weld(pts, tris, tol=1e-6)
+    return F.mesh_to_shell(pts, tris)
+
+
+def read_3mf(path: str):
+    """3MF (zip + XML mesh) -> shell body. Mesh data only (welded)."""
+    return _read_mesh_zip(
+        path, ns="{http://schemas.microsoft.com/3dmanufacturing/core/2015/02}")
+
+
+def _read_mesh_zip(path, ns):
+    import zipfile
+    import xml.etree.ElementTree as ET
+    with zipfile.ZipFile(path) as z:
+        name = next(n for n in z.namelist() if n.endswith(".model"))
+        root = ET.fromstring(z.read(name))
+    ns_ = ns
+    verts = {}
+    for v in root.iter(ns_ + "vertex"):
+        verts[int(v.get("id"))] = (float(v.get("x")), float(v.get("y")),
+                                   float(v.get("z")))
+    tris = []
+    for t in root.iter(ns_ + "triangle"):
+        tris.append((int(t.get("v1")), int(t.get("v2")), int(t.get("v3"))))
+    if not tris:
+        raise KernelError("3MF 无网格数据")
+    from scdm import facets as F
+    import numpy as np
+    pts = np.array([verts[i] for i in sorted(verts)], dtype=np.float64)
+    idx = {vid: k for k, vid in enumerate(sorted(verts))}
+    tris = np.array([[idx[a], idx[b], idx[c]] for a, b, c in tris],
+                    dtype=np.int64)
+    pts, tris = F.weld(pts, tris, tol=1e-6)
+    return F.mesh_to_shell(pts, tris)
+
+
+def write_3mf(shape, path: str) -> None:
+    """Shape -> 3MF zip (tessellated mesh)."""
+    import zipfile
+    verts, tris = _mesh_tris(shape, deflection=0.001)
+    xs, ys, zs = [], [], []
+    vid = {}
+    for k, p in enumerate(verts):
+        vid[k] = k + 1
+        xs.append("%.6g" % p[0]); ys.append("%.6g" % p[1]); zs.append("%.6g" % p[2])
+    v_lines = "".join('<vertex id="%d" x="%s" y="%s" z="%s"/>' % (k + 1, xs[k], ys[k], zs[k]) for k in range(len(verts)))
+    t_lines = "".join('<triangle v1="%d" v2="%d" v3="%d"/>' % (a + 1, b + 1, c + 1) for a, b, c in tris)
+    xml = ('<?xml version="1.0" encoding="UTF-8"?>'
+           '<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">'
+           '<resources><object id="1" type="model"><mesh>'
+           '<vertices>%s</vertices><triangles>%s</triangles>'
+           '</mesh></object></resources>'
+           '<build><item objectid="1"/></build></model>') % (v_lines, t_lines)
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml",
+                   '<?xml version="1.0" encoding="UTF-8"?>'
+                   '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                   '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                   '<Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>')
+        z.writestr("_rels/.rels",
+                   '<?xml version="1.0" encoding="UTF-8"?>'
+                   '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                   '<Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>')
+        z.writestr("3D/3dmodel.model", xml)
+
+
+def write_vrml(shape, path: str) -> None:
+    o = _occ()
+    from OCC.Core.VrmlAPI import VrmlAPI_Writer
+    w = VrmlAPI_Writer()
+    if not w.Write(shape, path):
+        raise KernelError("VRML 写出失败")
+
+
 def write_stl(shape, path: str, deflection: float = 0.1) -> None:
     tessellate_mesh(shape, deflection)
     o = _occ()
