@@ -1063,6 +1063,107 @@ else:
             except Exception as exc:
                 self._set_status(f"小面移除失败: {exc}")
 
+        def _sheet_params(self, title, fields):
+            vals = self._ask_numbers(title, fields)
+            return vals
+
+        def _do_sheet_bend(self):
+            ses = self.session()
+            vals = self._sheet_params("折弯（K 因子）", [
+                ("宽度 mm", 20.0), ("厚度 mm", 1.0),
+                ("flat1 mm", 30.0), ("flat2 mm", 20.0),
+                ("角度 deg", 90.0), ("内 R mm", 2.0), ("K 因子", 0.42)])
+            if not vals:
+                return
+            import math
+            from scdm import sheetmetal as SM
+            w, t, l1, l2, ang, r, k = vals
+            k = min(max(k, 0.0), 1.0)
+            try:
+                solid = SM.bend_from_flat(
+                    w / ses.scale, t / ses.scale, l1 / ses.scale,
+                    l2 / ses.scale, math.radians(ang), r / ses.scale, k)
+                ses.kdoc.add_body(solid, name="折弯件")
+                self._commit(f"折弯件（{ang:g}°，R={r:g}mm，K={k:g}）")
+            except Exception as exc:
+                self._set_status(f"折弯失败: {exc}")
+
+        def _do_sheet_unfold(self):
+            ses = self.session()
+            body = self._selected_kbody()
+            if body is None:
+                return
+            vals = self._sheet_params("展开（K 因子）", [("K 因子", 0.42)])
+            if not vals:
+                return
+            from scdm import sheetmetal as SM
+            try:
+                flat = SM.unfold(body.shape, k=min(max(vals[0], 0.0), 1.0))
+                body.shape = flat
+                self._commit(f"已展开（K={vals[0]:g}）")
+            except Exception as exc:
+                self._set_status(f"展开失败: {exc}")
+
+        def _do_sheet_rip(self):
+            ses = self.session()
+            body = self._selected_kbody()
+            if body is None:
+                return
+            faces = [sid for k, sid in self.sel.items if k == "face"]
+            try:
+                from scdm import sheetmetal as SM
+                face = None
+                if faces:
+                    bid, fi = faces[0].split(":", 1)
+                    fb = ses.kdoc.body_by_id(bid)
+                    if fb is body:
+                        face = K.explore(body.shape, "face")[int(fi)]
+                if face is None:
+                    face = K.explore(body.shape, "face")[0]
+                body.shape = SM.rip(body.shape, face, gap=0.2 / ses.scale)
+                self._commit("已撕裂（沿所选面最长边）")
+            except Exception as exc:
+                self._set_status(f"撕裂失败: {exc}")
+
+        def _do_sheet_corner(self):
+            ses = self.session()
+            body = self._selected_kbody()
+            if body is None:
+                return
+            vals = self._sheet_params("角落释放", [
+                ("尺寸 mm", 2.0), ("圆形 0/1", 1.0)])
+            if not vals:
+                return
+            from scdm import sheetmetal as SM
+            import scdm.additive as A
+            (x0, y0, z0), (x1, y1, z1) = A.shape_bbox(body.shape)
+            corner = (x1, y0, z1)
+            try:
+                body.shape = SM.corner_relief(
+                    body.shape, corner, vals[0] / ses.scale,
+                    round(vals[1]) == 1)
+                self._commit("角落释放已切")
+            except Exception as exc:
+                self._set_status(f"角落释放失败: {exc}")
+
+        def _do_sheet_jog(self):
+            ses = self.session()
+            vals = self._sheet_params("折叠（Z 形）", [
+                ("宽度 mm", 20.0), ("厚度 mm", 1.0),
+                ("flat1 mm", 30.0), ("web 高度 mm", 5.0),
+                ("flat2 mm", 20.0)])
+            if not vals:
+                return
+            from scdm import sheetmetal as SM
+            w, t, l1, web, l2 = vals
+            try:
+                solid = SM.jog(w / ses.scale, t / ses.scale, l1 / ses.scale,
+                               web / ses.scale, l2 / ses.scale)
+                ses.kdoc.add_body(solid, name="折叠件")
+                self._commit(f"折叠件（高度 {web:g}mm）")
+            except Exception as exc:
+                self._set_status(f"折叠失败: {exc}")
+
         def _do_repair_check(self):
             """H4 检查几何：全项检出 + 一键修复向导。"""
             body = self._selected_kbody()

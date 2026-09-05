@@ -199,7 +199,16 @@ TABS: Tuple[Tab, ...] = (
             C("wb.publish", "发布", "Publish", "M5", "save"),
         )),
     )),
-    Tab("detail", "详细", "Detailing", (
+        Tab("sheet", "钣金", "Sheet Metal", (
+        Group("钣金", "Sheet Metal", (
+            C("sheet.bend", "折弯", "Bend", "M5", "bend"),
+            C("sheet.unfold", "展开", "Unfold", "M5", "unfold"),
+            C("sheet.rip", "撕裂", "Rip", "M5", "rip"),
+            C("sheet.corner", "角落释放", "Corner", "M5", "corner"),
+            C("sheet.jog", "折叠", "Jog", "M5", "jog"),
+        )),
+    )),
+Tab("detail", "详细", "Detailing", (
         Group("工程图", "Drawing", (
             C("det.view", "视图", "Views", "M5", "iso"),
             C("det.dim", "尺寸", "Dimension", "M5", "dim"),
@@ -297,6 +306,7 @@ M4_LIVE = {
 }
 
 M5_LIVE = {
+    "sheet.bend", "sheet.unfold", "sheet.rip", "sheet.corner", "sheet.jog",
     "prep.enclose", "prep.share", "prep.mid", "file.print",
     "facet.reverse", "facet.smooth", "facet.reduce", "facet.fill", "facet.convert",
     "wb.params", "wb.publish",
