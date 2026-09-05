@@ -34,102 +34,43 @@ FIXED = "fixed"
 
 def solve_constraints(points: Sequence[Point2], constraints: Sequence[tuple],
                       segments: Optional[Sequence[Tuple[int, int]]] = None,
-                      iters: int = 40) -> None:
-    """Relax points against constraints; points are mutated in place.
+                      iters: int = 40, param_table=None,
+                      circles: Optional[Dict[int, float]] = None,
+                      max_iter: Optional[int] = None) -> "SolveReport":
+    """Solve sketch constraints; points are mutated in place.
 
-    The optional 'segments' list maps segment indices to (i, j) point-index pairs and
-    is required by EQUAL/PAR/PERP/TANGENT/MIDPOINT constraints.
+    Delegates to the H-series damped-least-squares solver
+    (`scdm.sketch_solver.SketchSolver`) with DOF analysis, over-constraint
+    detection and convergence reporting; `iters` maps to max_iter.
+    The optional 'segments' list maps segment indices to (i, j) point-index
+    pairs and is required by EQUAL/PAR/PERP/TANGENT/MIDPOINT constraints.
+    Returns a SolveReport (legacy callers may ignore it).
     """
-    segs = list(segments) if segments else []
-
-    def sp(s):
-        return segs[s] if 0 <= s < len(segs) else None
-
-    for _ in range(iters):
-        for c in constraints:
-            kind = c[0]
-            if kind == FIXED:
-                _, i, x, y = c
-                if 0 <= i < len(points):
-                    points[i][0], points[i][1] = float(x), float(y)
-                continue
-            if kind in (EQUAL, PARALLEL, PERPENDICULAR):
-                s1, s2 = sp(c[1]), sp(c[2])
-                if s1 is None or s2 is None:
-                    continue
-                (a1, b1), (a2, b2) = s1, s2
-                if max(a1, b1, a2, b2) >= len(points):
-                    continue
-                p1, p2 = points[a1], points[b1]
-                q1, q2 = points[a2], points[b2]
-                d1 = _seglen(p1, p2); d2 = _seglen(q1, q2)
-                if kind == EQUAL and d1 and d2:
-                    avg = (d1 + d2) / 2.0
-                    _scale_seg(points, a1, b1, avg, fixed_point=a1)
-                    _scale_seg(points, a2, b2, avg, fixed_point=a2)
-                elif kind == PARALLEL and d2:
-                    _rotate_seg_to(points, a2, b2, math.atan2(p2[1] - p1[1], p2[0] - p1[0]), fixed=a2)
-                elif kind == PERPENDICULAR and d2:
-                    base = math.atan2(p2[1] - p1[1], p2[0] - p1[0]) + math.pi / 2.0
-                    _rotate_seg_to(points, a2, b2, base, fixed=a2)
-                continue
-            if kind == TANGENT:
-                s = sp(c[1])
-                ci = c[2]
-                radius = c[3]
-                if s is None or ci >= len(points):
-                    continue
-                a, b = s
-                if max(a, b) >= len(points):
-                    continue
-                p, q = points[a], points[b]
-                cc = points[ci]
-                if _seglen(p, q) < 1e-12:
-                    continue
-                nx, ny = -(q[1] - p[1]), (q[0] - p[0])
-                nl = math.hypot(nx, ny) or 1.0
-                nx, ny = nx / nl, ny / nl
-                dist = (cc[0] - p[0]) * nx + (cc[1] - p[1]) * ny
-                err = abs(dist) - radius
-                sign = 1.0 if dist >= 0 else -1.0
-                shift = sign * err / 2.0
-                p[0] += nx * shift; p[1] += ny * shift
-                q[0] += nx * shift; q[1] += ny * shift
-                continue
-            if kind == MIDPOINT:
-                pt_i, s = c[1], sp(c[2])
-                if s is None or pt_i >= len(points):
-                    continue
-                a, b = s
-                if max(a, b) >= len(points):
-                    continue
-                p, q = points[a], points[b]
-                points[pt_i][0] = (p[0] + q[0]) / 2.0
-                points[pt_i][1] = (p[1] + q[1]) / 2.0
-                continue
-            # point-pair kinds
-            i, j = c[1], c[2]
-            val = c[3] if len(c) > 3 else None
-            if i >= len(points) or j >= len(points):
-                continue
-            p, q = points[i], points[j]
-            dx, dy = q[0] - p[0], q[1] - p[1]
-            if kind == DIST and val:
-                d = math.hypot(dx, dy) or 1e-12
-                err = (d - val) / 2.0
-                ux, uy = dx / d, dy / d
-                p[0] += ux * err; p[1] += uy * err
-                q[0] -= ux * err; q[1] -= uy * err
-            elif kind == HORIZONTAL:
-                err = (q[1] - p[1]) / 2.0
-                p[1] += err; q[1] -= err
-            elif kind == VERTICAL:
-                err = (q[0] - p[0]) / 2.0
-                p[0] += err; q[0] -= err
-            elif kind == COINCIDENT:
-                mx, my = (p[0] + q[0]) / 2.0, (p[1] + q[1]) / 2.0
-                p[0], p[1] = mx, my
-                q[0], q[1] = mx, my
+    from scdm.sketch_solver import SketchSolver
+    solver = SketchSolver(points, segments, circles or {}, constraints,
+                          param_table)
+    # reference-side semantics (SpaceClaim UX): for entity-pair constraints
+    # the FIRST entity stays ~fixed while the second adjusts
+    def seg(s):
+        return segments[s] if segments and 0 <= s < len(segments) else None
+    for c in constraints:
+        if c[0] in ("par", "perp"):
+            s1 = seg(c[1])
+            if s1:
+                solver.anchor(*s1)   # reference segment stays put
+            s2 = seg(c[2])
+            if s2 and s2[0] < len(points):
+                # pivot: the adjusted segment rotates about its start point
+                solver.pinned[s2[0]] = tuple(points[s2[0]])
+        elif c[0] == "mid":
+            s0 = seg(c[2])
+            if s0:
+                solver.anchor(*s0)
+        elif c[0] == "tangent":
+            s0 = seg(c[1])
+            if s0:
+                solver.anchor(*s0)
+    return solver.solve(max_iter=max_iter or iters)
 
 
 def _seglen(a: Point2, b: Point2) -> float:
@@ -161,13 +102,13 @@ def _rotate_seg_to(points, i, j, angle, fixed):
 
 
 def solve_dimensions(points: Sequence[Point2], dims: Sequence[Tuple[int, int, float]],
-                     iters: int = 40) -> List[float]:
+                     iters: int = 40, param_table=None) -> List[float]:
     """Drive (i, j, target_distance) dimensions to their targets.
 
     Returns the final solved distances in dims order.
     """
     constraints = [(DIST, i, j, d) for (i, j, d) in dims]
-    solve_constraints(points, constraints, iters=iters)
+    solve_constraints(points, constraints, iters=iters, param_table=param_table)
     return [math.hypot(points[j][0] - points[i][0], points[j][1] - points[i][1])
             for (i, j, _d) in dims]
 
