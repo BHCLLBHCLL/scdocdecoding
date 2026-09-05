@@ -965,6 +965,21 @@ T_RECORD "surface" [id]
 | 页签 UI | 钣金页 5 命令（折弯/展开/撕裂/角落释放/折叠）+ K 因子参数对话框 + 图标 | catalog 守卫通过 |
 | 测试 | `tests/test_sheetmetal.py` 9 项 | **138 passed** |
 
+### 21.3.g H6 实施记录（2026-09-05，完成）
+
+| 工作包 | 交付 | 验证 |
+| --- | --- | --- |
+| 去修剪 | `surface.untrim`：自然界重建面；OCCT 无穷标记（±2e100 是有限 float！）按 1e50 阈值识别并以原范围外扩替换——圆柱去缝（面积 3 倍）、平面外扩 | 单测 2 项 |
+| 延伸 | `surface.extend_face`：B 样条走 GeomLib ExtendSurfByLength；平面/通用走 UV 界扩展（surface 句柄 6 参 MakeFace） | 面积增长精确 |
+| 偏移面 | `surface.offset_face`：Geom_OffsetSurface + 保持原 UV 界；圆柱偏移用曲面采样点验证 R+dist（偏移面不再是解析圆柱——正确行为） | 采样 0.006 精确 |
+| 加厚 | `surface.thicken`：面沿法向棱柱拉伸（单侧加厚） | 体积=面积×厚度 |
+| 补面 | `surface.patch_fill`：BRepFill_Filling N 边补面（G0/G1 连续度） | 方形 1e-4 精确 |
+| 过渡 | `surface.blend_loft`：ThruSections 非规则 B 样条过渡面 | 双圆过渡面成面 |
+| 页签 UI | 曲面页 6 命令（加厚/偏移/去修剪/延伸/补面/过渡），作用于所选面 | catalog 守卫通过 |
+| 测试 | `tests/test_surface.py` 7 项 | **145 passed** |
+
+排障：①GeomLib 顶层无 GeomLib 类——函数为模块级 `geomlib_ExtendSurfByLength`（弃用别名）；②Geom_BSplineSurface ctor 需要 (poles,uk,vk,um,vm,udeg,vdeg)；③OCCT 用 ±2e100 有限巨值表示无穷参数界；④MakeFace 无 (gp_Pln,u,v) 重载——用 Geom_Surface 句柄 6 参。
+
 ### 21.4 统一验收协议
 
 1. 每工作包单测（pytest，OCCT 级断言）
