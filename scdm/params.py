@@ -35,14 +35,21 @@ class Parametric:
 
     def resolve_params(self) -> Dict[str, float]:
         """Numeric params with expression params resolved (global table +
-        own numeric params form the namespace)."""
-        out = {k: v for k, v in self.params.items()}
-        glob = self.table.resolve() if self.table is not None else {}
+        own numeric params form the namespace).  `_raw` is authoritative:
+        set() updates it, self.params is only the construction snapshot."""
+        out: Dict[str, float] = {}
+        exprs: Dict[str, str] = {}
         for k, v in self._raw.items():
             if isinstance(v, str):
-                ns = dict(glob)
-                ns.update({kk: vv for kk, vv in out.items()})
-                out[k] = eval_expr(v, ns)
+                exprs[k] = v
+            else:
+                out[k] = float(v)
+        glob = self.table.resolve() if self.table is not None else {}
+        ns = dict(glob)
+        ns.update(out)
+        for k, v in exprs.items():
+            out[k] = eval_expr(v, ns)
+            ns[k] = out[k]
         return out
 
     def build(self, scale: float = 1000.0):
