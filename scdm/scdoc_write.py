@@ -1212,7 +1212,7 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
                     rels.append(
                         '  <Relationship Type="http://www.spaceclaim.com/'
                         'relationships/internal/partBodyGeometry#' +
-                        DOC_GUID + ':' + str(2 + gi * 60) +
+                        DOC_GUID + ':' + str(22 + gi * 60) +
                         '" Target="/SpaceClaim/Geometry/part' +
                         str(gi + 1) + 'bodies.sab" Id="Rg' + str(gi + 1) +
                         '"/>')
@@ -1322,23 +1322,34 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
         c = colors[0] if colors else (0.745, 0.902, 0.961)
         rgb = "%d, %d, %d" % (int(c[0] * 255), int(c[1] * 255),
                               int(c[2] * 255))
-        faces = "".join('<NominalFaceDef Id="0:%d"/>'
-                        % (27 + 3 * k + gi * 60) for k in range(face_n))
+        faces = "".join(
+            '<NominalFaceDef Id="0:%d"><updateState>0:%d</updateState>'
+            '</NominalFaceDef>' % (27 + 3 * k + gi * 60,
+                                   27 + 3 * k + gi * 60)
+            for k in range(face_n))
         edges = "".join(
-            '<NominalEdgeDef Id="0:%d"><isReversed>False</isReversed>'
-            '</NominalEdgeDef>' % (45 + 3 * k + gi * 60)
+            '<NominalEdgeDef Id="0:%d"><updateState>0:%d</updateState>'
+            '<isReversed>False</isReversed></NominalEdgeDef>'
+            % (45 + 3 * k + gi * 60, 45 + 3 * k + gi * 60)
             for k in range(edge_n))
         bid = 23 + gi * 60
-        pid = 2 + gi * 60
-        return ('<PartDef Id="0:%d"><DefaultEdgeTreatmentDef Id="0:%d">'
+        pid = 22 + gi * 60
+        return ('<PartDef Id="0:%d"><updateState>0:%d</updateState>'
+                '<patternBase /><materialId>0:0</materialId>'
+                '<type>Normal</type>'
+                '<shareTopologyOption>None</shareTopologyOption>'
+                '<DefaultEdgeTreatmentDef Id="0:%d">'
+                '<updateState>0:%d</updateState>'
                 '<blendRadius>0</blendRadius></DefaultEdgeTreatmentDef>'
-                '<NominalBodyDef Id="0:%d"><layerId>0:9</layerId>'
-                '<type>Solid</type><color>%s</color>'
+                '<NominalBodyDef Id="0:%d"><updateState>0:%d</updateState>'
+                '<layerId>0:9</layerId><type>Solid</type><color>%s</color>'
                 '<renderingStyle>Plastic</renderingStyle>'
-                '<fillStyle>Opaque</fillStyle>'
+                '<fillStyle>Opaque</fillStyle><materialId>0:0</materialId>'
+                '<modificationLock>None</modificationLock>'
                 '<finishStyle>MediumGloss</finishStyle>%s%s'
                 '</NominalBodyDef></PartDef>'
-                % (pid, 13 + gi * 60, bid, rgb, faces, edges))
+                % (pid, 60 + gi * 60, 13 + gi * 60, 13 + gi * 60, bid,
+                   bid, rgb, faces, edges))
 
     comp_xml = []
     part_xml = []
@@ -1361,7 +1372,7 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
             '</lastEvaluatedTrans></ComponentDef>'
             % (200 + (hash(comp.id + str(gi)) % 5000),
                200 + (hash(comp.id + str(gi)) % 5000),
-               DOC_GUID, 2 + gi * 60)
+               DOC_GUID, 22 + gi * 60)
             for gi, _b in members)
         comp_xml.append(children)
     for gi, body in loose:
@@ -1374,7 +1385,7 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
             '</lastEvaluatedTrans></ComponentDef>'
             % (200 + (hash("loose" + str(gi)) % 5000),
                200 + (hash("loose" + str(gi)) % 5000),
-               DOC_GUID, 2 + gi * 60))
+               DOC_GUID, 22 + gi * 60))
 
     layer = ('<PresentationDef sectionId="22222222-2222-2222-2222-'
              '222222222222" Id="0:5" xmlns="urn:presentation">'
@@ -1391,7 +1402,12 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
            '<importTimestamp>01/01/2026 00:00:00</importTimestamp>'
            '<Design sectionId="11111111-1111-1111-1111-111111111111" '
            'Id="0:1" xmlns="urn:nom">'
-           '<PartDef Id="0:2"><type>Normal</type>%s</PartDef>'
+           '<PartDef Id="0:2"><updateState>0:1999</updateState>'
+           '<patternBase /><defaultEdgeTreatment sctype='
+           '"SpaceClaim.BasicMoniker`1[[SpaceClaim.IDefaultEdgeTreatment,'
+           ' Nom]], Core" refId="%s:13" />'
+           '<materialId>0:0</materialId><type>Normal</type>'
+           '<shareTopologyOption>None</shareTopologyOption>%s</PartDef>'
            '%s</Design>%s%s'
            '<DocumentSettingsDef sectionId="33333333-3333-3333-3333-'
            '333333333333" Id="0:16" xmlns="urn:presentation">'
@@ -1402,8 +1418,8 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
            '<PresentationDef2 sectionId="55555555-5555-5555-5555-'
            '555555555555" Id="0:7" xmlns="urn:nom">%s'
            '</PresentationDef2></Document>'
-           % (name, "".join(comp_xml), "".join(part_xml), layer, views,
-              "".join(captions)))
+           % (name, DOC_GUID, "".join(comp_xml), "".join(part_xml), layer,
+              views, "".join(captions)))
     return xml.encode("utf-8")
 
 

@@ -28,6 +28,16 @@ try:
     part = GetRootPart()
     bodies = part.GetBodies()
     n = len(bodies)
+    # assemblies: bodies nested inside components are not root-level
+    try:
+        comps = part.GetAllComponents() if hasattr(part, 'GetAllComponents') else part.GetComponents()
+        for c in comps:
+            try:
+                n += len(c.GetBodies())
+            except Exception:
+                pass
+    except Exception:
+        pass
     vol = 0.0
     for b in bodies:
         try:

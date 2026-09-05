@@ -46,7 +46,7 @@ def test_document_xml_component_hierarchy(asm_path):
     assert "<ComponentDef" in xml.split("</PartDef>")[0]  # nested in root
     # component instance references the target part number
     ref = re.search(r'<source[^>]*refId="[^":]+:(\d+)"', xml)
-    assert ref and ref.group(1) == "2"                   # body part 0:2
+    assert ref and ref.group(1) == "22"                  # body part 0:22
     # per-body PartDef ids follow the global body index scheme
     assert 'Id="0:23"' in xml and 'Id="0:83"' in xml
     assert "Base" in xml and "Boss" in xml
