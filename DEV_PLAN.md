@@ -1026,6 +1026,20 @@ T_RECORD "surface" [id]
 多折弯连续展开/图幅版式。纪律闸门 5 条入册（无哨兵不宣称官方打开、边
 界项先入册再剔除口径等）。
 
+### 21.6 草图约束完整求解器（2026-09-05，差距 Top1 关闭）
+
+`scdm/sketch_solver.py`（新模块）：Levenberg–Marquardt 数值解环替换原固定迭代松弛——
+
+- **变量向量** = 点 xy + 圆半径；约束残差行覆盖全部语法（DIST/H/V/COIN/EQUAL/PAR/PERP/TANGENT/MIDPOINT/FIXED + 新增 RADIUS/POINT_ON）
+- **自由度分析**：DOF = 变量数 − rank(J)（数值 Gram–Schmidt 秩），冗余行计数，**冲突检测**（未收敛 = 约束不一致）——`SolveReport` 一次给齐
+- **拖拽容错**：pinned 点（λ 无关常量刚度 1e10）拖拽后重解
+- **H7 参数表联动**：DIST/TANGENT/RADIUS 值可为表达式串（`"width"`、`"width/2"`），参数变更 → 重新求值 → 几何重解
+- `sketch.solve_constraints/solve_dimensions` 委托新求解器（返回 SolveReport，旧调用方不受影响），参考侧锚定语义保留（PAR/PERP 锚参考段 + 钉被调段 pivot；EQUAL 双侧平均；MIDPOINT 锚段）
+
+排障实录：①`dict.get(k, float(v))` 默认值急切求值（键存在也先转 float）——改显式 in 检查；②circles/points 引用丢失（复制 vs 原对象）——改保引用就地变更；③报告阶段 jacobian 扰动污染最终状态——先算秩再 scatter；④锚点权重乘 λ 随阻尼坍缩——改常量刚度。
+
+测试 `tests/test_sketch_solver.py` 12 项（精确收敛/DOF 2 vs 0/冲突/冗余/拖拽/表达式联动/圆约束/旧语义）；**179 passed**。
+
 ### 21.4 统一验收协议
 
 1. 每工作包单测（pytest，OCCT 级断言）
