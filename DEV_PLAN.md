@@ -1012,6 +1012,20 @@ T_RECORD "surface" [id]
 
 测试 `tests/test_h3writeback.py` 6 项；**167 passed**。
 
+### 21.5 功能差距全面分析（2026-09-05）
+
+参照 `D:/training/cgns/pphdecoding/function_gap_analysis.md` 方法完成
+**双口径实测**（完整度% + 深度 L0–L4）×13 功能域：整体 **≈91%**（10 满格
+域 + 2 差距域），逐域证据指针 + 进度条图 + 满格/差距分层落盘
+[function_gap_analysis.md](function_gap_analysis.md)；边界项 6 条（字节恒
+等/CATIA 直读/ACIS bit 等/ANSYS 语义/KeyShot 内核/PMI）与暂缓项 8 条
+（含解锁路径与预估）入册 [docs/NYI_INVENTORY.md](docs/NYI_INVENTORY.md)。
+
+差距 Top3（后续排期入口）：①草图约束完整求解器（L1+，与 H7 参数表打
+通后 ROI 最高）；②官方装配对拍样本（一次性人工，配合域 L1+→L2）；③
+多折弯连续展开/图幅版式。纪律闸门 5 条入册（无哨兵不宣称官方打开、边
+界项先入册再剔除口径等）。
+
 ### 21.4 统一验收协议
 
 1. 每工作包单测（pytest，OCCT 级断言）
