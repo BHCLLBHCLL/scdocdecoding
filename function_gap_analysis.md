@@ -168,7 +168,7 @@ scdoc 写端                █████████████████�
 | 写回机制升级 | `write_scdoc_multi` 从嵌套猜测改写为官方引用机制（实例 + refId + trans + per-part moniker rels）；逐字段与官方样本机制对齐；per-part restore ✓ |
 | 差距 5% | **整装配官方打开仍 bodies=0**（诚实负项：官方读取还需 updateState moniker 解析等实例态链接，见 TODO-9）；配合面方向判定为几何启发式 |
 
-**深度升级依据**：域内「官方机制字段级对齐 + 每 part 官方 restore/官方打开（单体 bodies=1）已证」满足 L2 的「自研产物宿主可开」判据的 per-part 形态；整装配实例态链接为最后一步（TODO-9）。NYI-3（无官方样本）就此关闭。
+**深度升级依据**：域内「官方机制字段级对齐 + 每 part 官方 restore/官方打开（单体 bodies=1）已证」满足 L2 的「自研产物宿主可开」判据的 per-part 形态。**哨兵修正**：verify_open 原只数根部件直属体——装配体的体在组件内，官方样本实测 bodies=2（修复后），此前 bodies=0 为测量偏差。整装配实例态绑定仍有最后一环（TODO-9：renderlist 实例 Path 挂体/updateState moniker 链）。NYI-3（无官方样本）就此关闭。
 
 ### 2.8 钣金 —— 85%，L2
 

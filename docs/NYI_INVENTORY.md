@@ -32,7 +32,7 @@
 | TODO-6 | 命名选择组（NamedSelection）写回 | 读端已解码 group 类记录；写端未生成 | document.xml NamedSelectionDef + SAB group attrib | 2 天 |
 | TODO-7 | 保存视图读回 | SavedViewsDef 已写端生成；读端 parse_document 未还原 | document 解析分支补 SavedViewsDef → session.views | 1 天 |
 | TODO-8 | 草图约束完整求解器 | **已关闭**：sketch_solver.py LM 求解器（DOF/冲突/表达式） | — | ✅ |
-| TODO-9 | 整装配官方打开 | 写回已对齐官方引用机制（refId+trans+moniker rels），官方打开 bodies=0 | 官方读取的 updateState moniker 解析链（对官方样本逐字段 diff 其余差异） | 3–5 天 |
+| TODO-9 | 整装配官方打开 | 写回已对齐官方引用机制（updateState/patternBase/materialId/shareTopologyOption/defaultEdgeTreatment/modificationLock 全套实例态字段 + refId+trans+moniker rels + 体 part 编号 0:22+60n 避让根 0:2）；官方样本哨兵实测 bodies=2、我们 bodies=0 | 官方读取的实例绑定仍缺一环：对官方样本做 windows.xml/renderlist.xml 同步对拍（官方 renderlist 按实例 Path=0:27 挂体）；或用官方 API 在样本内加第三体再 diff 增量 | 2–4 天 |
 
 ## C. GUI 占位（2 项，均非功能缺口）
 
