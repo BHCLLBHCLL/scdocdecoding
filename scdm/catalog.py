@@ -199,7 +199,21 @@ TABS: Tuple[Tab, ...] = (
             C("wb.publish", "发布", "Publish", "M5", "save"),
         )),
     )),
-        Tab("surface", "曲面", "Surface", (
+        Tab("simulation", "仿真", "Simulation", (
+        Group("仿真准备", "Sim Prep", (
+            C("sim.load", "载荷", "Load", "M5", "load"),
+            C("sim.support", "支撑", "Support", "M5", "support"),
+            C("sim.contact", "接触", "Contact", "M5", "contact"),
+            C("sim.report", "报告", "Report", "M5", "report"),
+        )),
+    )),
+    Tab("markup", "标记", "3D Markup", (
+        Group("标记", "Markup", (
+            C("markup.note", "便签", "Note", "M5", "note"),
+            C("markup.list", "标记列表", "List", "M5", "list"),
+        )),
+    )),
+    Tab("surface", "曲面", "Surface", (
         Group("曲面", "Surface", (
             C("surface.thicken", "加厚", "Thicken", "M5", "thick"),
             C("surface.offset", "偏移面", "Offset", "M5", "offace"),
@@ -319,6 +333,8 @@ M5_LIVE = {
     "sheet.bend", "sheet.unfold", "sheet.rip", "sheet.corner", "sheet.jog",
     "surface.thicken", "surface.offset", "surface.untrim", "surface.extend",
     "surface.patch", "surface.blend",
+    "sim.load", "sim.support", "sim.contact", "sim.report",
+    "markup.note", "markup.list",
     "prep.enclose", "prep.share", "prep.mid", "file.print",
     "facet.reverse", "facet.smooth", "facet.reduce", "facet.fill", "facet.convert",
     "wb.params", "wb.publish",

@@ -141,14 +141,20 @@ class Worklist:
         return i
 
     def run(self, seeds, makers):
+        """Drain each seed's subtree to exhaustion BEFORE referencing the
+        next seed (official multi-body order is depth-first per body)."""
         seen = {}
         out = bytearray()
-        for s in seeds:
-            self.ref(s)
-        while self._qpos < len(self._q):
-            key = self._q[self._qpos]
-            self._qpos += 1
-            out += makers.make(key, self).bytes(seen)
+        seed_q = list(seeds)
+        while True:
+            while self._qpos < len(self._q):
+                key = self._q[self._qpos]
+                self._qpos += 1
+                out += makers.make(key, self).bytes(seen)
+            if seed_q:
+                self.ref(seed_q.pop(0))
+                continue
+            break
         return bytes(out)
 
 

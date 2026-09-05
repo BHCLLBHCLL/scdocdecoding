@@ -21,6 +21,12 @@ def load_scdoc(path: str) -> dict:
     doc = dmod.parse_document(pkg.read(doc_part)) if doc_part else None
     sf = sab.tokenize(pkg.read(geom[0].name)) if geom else None
     model = topology.SabModel(sf) if sf else None
+    models = []
+    for g in geom:
+        try:
+            models.append(topology.SabModel(sab.tokenize(pkg.read(g.name))))
+        except Exception:
+            pass
     fac_pd = None
     fac = None
     render_pd = None
@@ -42,6 +48,7 @@ def load_scdoc(path: str) -> dict:
         "pkg": pkg,
         "doc": doc,
         "model": model,
+        "models": models,
         "fac": fac,
         "render": render,
         "scale": scale,

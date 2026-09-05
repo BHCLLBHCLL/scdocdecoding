@@ -62,7 +62,7 @@ class KernelDoc:
         #                               "value", "angle", "slide"}
         self.parametrics: List[Any] = []  # scdm.params.Parametric
         self.param_table = None           # scdm.params.ParamTable (optional)
-        self.notes: List[dict] = []  # viewport annotations: {"pos": (x,y,z), "text": str}
+        self.sim = None                   # scdm.simprep.SimModel (H8)
         self.named: List[dict] = []  # named selections: {"name": str, "items": [(kind,id)]}
         self.groups: List[dict] = []  # user groups: same shape as named
         self._n = 1
@@ -84,6 +84,27 @@ class KernelDoc:
             return self.add_parametric(parametric, scale)
         body.shape = parametric.build(scale)
         return body
+
+    @property
+    def notes(self) -> List[dict]:
+        """Viewport note annotations (H8 markup notes projected + legacy)."""
+        out = list(getattr(self, "_legacy_notes", []))
+        sim = getattr(self, "sim", None)
+        if sim is not None:
+            out += [{"text": m.text, "pos": m.point} for m in sim.markups]
+        return out
+
+    @notes.setter
+    def notes(self, value):
+        """Accept legacy pickled note dicts; migrated into sim.markups."""
+        self._legacy_notes = list(value or [])
+        if self._legacy_notes and self.sim is None:
+            from scdm.simprep import SimModel
+            self.sim = SimModel()
+        for nd in self._legacy_notes:
+            self.sim.add_markup(nd.get("text", ""),
+                                tuple(nd.get("pos") or (0, 0, 0)))
+        self._legacy_notes = []
 
     def add_component(self, name: Optional[str] = None, body_ids: Optional[List[str]] = None) -> Component:
         cid = f"C{self._c}"

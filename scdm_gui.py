@@ -664,7 +664,11 @@ else:
                     save_scdm(path, ses.kdoc)
                 elif low.endswith(".scdoc"):
                     from scdm.scdoc_write import write_scdoc
-                    write_scdoc(path, ses.kdoc, name=ses.name)
+                    if ses.kdoc.components:
+                        from scdm.scdoc_write import write_scdoc_multi
+                        write_scdoc_multi(path, ses.kdoc, name=ses.name)
+                    else:
+                        write_scdoc(path, ses.kdoc, name=ses.name)
                 else:
                     if not low.endswith((".step", ".stp")):
                         path += ".step"
@@ -1279,6 +1283,114 @@ else:
                 self._commit("过渡面完成")
             except Exception as exc:
                 self._set_status(f"过渡失败: {exc}")
+
+        # -- H8: simulation / markup -----------------------------------
+        def _sim_model(self):
+            ses = self.session()
+            if ses.kdoc.sim is None:
+                from scdm.simprep import SimModel
+                ses.kdoc.sim = SimModel()
+            return ses.kdoc.sim
+
+        def _do_sim_load(self):
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("载荷：请选择一个面")
+                return
+            vals = self._ask_numbers("载荷", [
+                ("类型 0=力 1=压力 2=扭矩", 0.0),
+                ("大小", 100.0),
+                ("方向 X", 0.0), ("方向 Y", 0.0), ("方向 Z", -1.0)])
+            if not vals:
+                return
+            kinds = ("force", "pressure", "torque")
+            sim = self._sim_model()
+            fi = self._face_index_of(body)
+            kind = kinds[int(vals[0]) % 3]
+            sim.add_load(kind, body.id, fi,
+                         vector=(vals[2], vals[3], vals[4]),
+                         magnitude=vals[1])
+            self._commit(sim.summary())
+
+        def _do_sim_support(self):
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("支撑：请选择一个面")
+                return
+            vals = self._ask_numbers("支撑", [("类型 0=固定 1=销 2=滚动", 0.0)])
+            if not vals:
+                return
+            kinds = ("fixed", "pin", "roller")
+            sim = self._sim_model()
+            sim.add_support(kinds[int(vals[0]) % 3], body.id,
+                            self._face_index_of(body))
+            self._commit(sim.summary())
+
+        def _do_sim_contact(self):
+            ses = self.session()
+            faces = [sid for k, sid in self.sel.items if k == "face"]
+            if len(faces) < 2:
+                self._set_status("接触：请选择两个不同体上的面")
+                return
+            vals = self._ask_numbers("接触", [("类型 0=绑定 1=不分离", 0.0)])
+            if not vals:
+                return
+            kinds = ("bonded", "no_separation")
+            bid1, fi1 = faces[0].split(":", 1)
+            bid2, fi2 = faces[1].split(":", 1)
+            sim = self._sim_model()
+            sim.add_contact(kinds[int(vals[0]) % 3], bid1, int(fi1),
+                            bid2, int(fi2))
+            self._commit(sim.summary())
+
+        def _do_sim_report(self):
+            ses = self.session()
+            if ses.kdoc.sim is None:
+                self._set_status("仿真准备：无对象")
+                return
+            sim = ses.kdoc.sim
+            lines = ([ld.describe() for ld in sim.loads]
+                     + [sp.describe() for sp in sim.supports]
+                     + [ct.describe() for ct in sim.contacts])
+            QMessageBox.information(self, "仿真准备报告",
+                                    "\n".join(lines) or "（空）")
+            self._set_status(sim.summary())
+
+        def _face_index_of(self, body):
+            faces = [sid for k, sid in self.sel.items if k == "face"]
+            for sid in faces:
+                bid, fi = sid.split(":", 1)
+                if bid == body.id:
+                    return int(fi)
+            return 0
+
+        def _do_markup_note(self):
+            ses = self.session()
+            if not self.scene:
+                return
+            vals = self._ask_text("3D 标记便签", "备注内容")
+            if not vals:
+                return
+            focal = self.scene.focal_point()
+            sim = self._sim_model()
+            sim.add_markup(vals, focal)
+            self._commit(sim.summary())   # scene rebuild renders the note
+
+        def _do_markup_list(self):
+            ses = self.session()
+            if ses.kdoc.sim is None or not ses.kdoc.sim.markups:
+                self._set_status("标记：无便签")
+                return
+            lines = [f"{m.id}: {m.text} @ ({m.point[0]:g},{m.point[1]:g},"
+                     f"{m.point[2]:g})" for m in ses.kdoc.sim.markups]
+            QMessageBox.information(self, "3D 标记", chr(10).join(lines))
+
+        def _ask_text(self, title, label):
+            from PyQt5.QtWidgets import QInputDialog
+            text, ok = QInputDialog.getText(self, title, label)
+            return text.strip() if ok and text.strip() else None
 
         def _do_repair_check(self):
             """H4 检查几何：全项检出 + 一键修复向导。"""

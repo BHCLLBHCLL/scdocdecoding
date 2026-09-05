@@ -60,6 +60,42 @@ def import_scdoc_bundle(data: dict) -> KernelDoc:
                     if b.get("rgb"):
                         color = tuple(c / 255.0 for c in b["rgb"])
                         break
+    fac = data.get("fac") if data else None
+    models = (data.get("models") if data else None) or (
+        [model] if model is not None else [])
+    doc = KernelDoc()
+    failed = 0
+    for mdl in models:
+        part_doc = import_model(mdl, color=color)
+        if part_doc.bodies:
+            for b in part_doc.bodies:
+                doc.add_body(b.shape, name=b.name, color=b.color)
+        else:
+            failed += 1
+    if doc.bodies:
+        if failed and fac is not None and getattr(fac, "faces", None)                 and K.available():
+            import numpy as np
+            from scdm import facets as F
+            vs, ts, off = [], [], 0
+            for f in fac.faces:
+                pts = np.asarray([c.position for c in f.corners],
+                                 dtype=np.float64)
+                tris = np.asarray(f.triangles, dtype=np.int64)
+                if len(pts) == 0 or not len(tris):
+                    continue
+                vs.append(pts)
+                ts.append(tris + off)
+                off += len(pts)
+            if vs:
+                verts = np.vstack(vs)
+                tris = np.vstack(ts)
+                try:
+                    verts, tris = F.weld(verts, tris, tol=1e-6)
+                    doc.add_body(F.mesh_to_shell(verts, tris),
+                                 name="网格导入", color=color)
+                except Exception:
+                    pass
+        return doc
     doc = import_model(model, color=color)
     if doc.bodies:
         return doc
