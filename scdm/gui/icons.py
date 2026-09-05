@@ -73,7 +73,10 @@ class _G:
             self.p.setPen(pe)
         else:
             self.p.setPen(Qt.NoPen)
-        self.p.setBrush(QBrush(_qc(color)))
+        if color is None:
+            self.p.setBrush(Qt.NoBrush)
+        else:
+            self.p.setBrush(QBrush(_qc(color)))
 
     def line(self, a, b):
         self.p.drawLine(self.pt(*a), self.pt(*b))
@@ -661,6 +664,16 @@ def _draw(g: _G, key: str):
             g.node(0.18, fy + 0.06, 0.055, AXIS_B)
             g.stroke(INK, g.sw * 0.85)
             g.line((0.30, fy + 0.06), (0.88, fy + 0.06))
+    elif key == "check":
+        # magnifier with a red tick over a small solid
+        g.iso(0.36, 0.62, 0.60, GREEN)
+        g.stroke(INK)
+        g.fill(None)
+        g.ellipse(0.44, 0.10, 0.46, 0.46)
+        g.stroke(RED, g.sw * 1.4)
+        g.line((0.55, 0.33), (0.63, 0.42))
+        g.line((0.63, 0.42), (0.79, 0.22))
+        g.stroke(INK)
     else:
         g.iso(0.50, 0.56, 0.90, STEEL)
 

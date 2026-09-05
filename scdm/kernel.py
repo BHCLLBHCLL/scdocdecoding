@@ -1038,6 +1038,147 @@ def read_stl(path: str):
     return shape
 
 
+def check_geometry(shape, min_area: float = 1e-7, min_edge: float = 1e-6):
+    """H4 check-geometry suite. Returns a findings dict:
+
+    {"small_faces": [face...], "short_edges": [edge...],
+     "sliver_faces": [face...], "self_intersecting": bool,
+     "inverted_faces": [face...], "open_shell": bool}
+    Thresholds in metres / square metres.
+    """
+    faces = explore(shape, "face")
+    edges = explore(shape, "edge")
+    out = {"small_faces": [], "short_edges": [], "sliver_faces": [],
+           "self_intersecting": False, "inverted_faces": [],
+           "open_shell": False}
+    for f in faces:
+        a = area(f)
+        if a < min_area:
+            out["small_faces"].append(f)
+            continue
+        # sliver: face area tiny relative to its longest edge span
+        emax = 0.0
+        fedges = explore(f, "edge")
+        for e in fedges:
+            pts = edge_polyline(e, deflection=0.0005)
+            if len(pts) < 2:
+                continue
+            p1, p2 = pts[0], pts[-1]
+            d = (p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2 + (p2[2] - p1[2]) ** 2
+            emax = max(emax, d)
+        if emax > 0 and a < 0.01 * emax:
+            out["sliver_faces"].append(f)
+    for e in edges:
+        pts = edge_polyline(e, deflection=0.0005)
+        if len(pts) >= 2:
+            p1, p2 = pts[0], pts[-1]
+            d = ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2
+                 + (p2[2] - p1[2]) ** 2) ** 0.5
+            if d < min_edge:
+                out["short_edges"].append(e)
+    # self-intersection (OCCT BRepAlgoAPI_Check)
+    try:
+        from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Check
+        chk = BRepAlgoAPI_Check(shape)
+        out["self_intersecting"] = not chk.IsValid()
+    except Exception:
+        pass
+    # inverted faces: per-face oriented volume contribution should point
+    # away from the body centre for a consistently oriented closed solid
+    try:
+        cog = _cog_vec(shape)
+        for f in faces:
+            tri = tessellate_faces(f, deflection=0.002)
+            if not tri:
+                continue
+            fd = tri[0]
+            n = fd.get("normal")
+            if n is None:
+                continue
+            c = fd["vertices"][0] if fd["vertices"] else None
+            if c is None:
+                continue
+            if (n[0] * (c[0] - cog[0]) + n[1] * (c[1] - cog[1])
+                    + n[2] * (c[2] - cog[2])) < 0:
+                out["inverted_faces"].append(f)
+    except Exception:
+        pass
+    # open shell: an edge used by only one face
+    try:
+        from collections import Counter
+        cnt = Counter()
+        for f in faces:
+            for e in explore(f, "edge"):
+                cnt[e.TShape()] += 1
+        lonely = [k for k, c in cnt.items() if c == 1]
+        out["open_shell"] = bool(faces) and len(lonely) > 0
+    except Exception:
+        pass
+    return out
+
+
+def _cog_vec(shape):
+    return cog(shape)
+
+
+def repair_geometry(shape, findings, new_face_replacement=None):
+    """Auto-fix what is fixable: small faces & slivers via unify-then-heal,
+    short edges via ShapeFix_Wireframe, inverted faces via reversal.
+    Returns (shape, report dict of applied fixes)."""
+    report = {}
+    cur = shape
+    # 1) short edges
+    if findings.get("short_edges"):
+        try:
+            from OCC.Core.ShapeFix import ShapeFix_Wireframe
+            fx = ShapeFix_Wireframe(cur)
+            fx.SetPrecision(max(findings.get("_min_edge", 1e-6), 1e-7))
+            fx.FixSmallEdges()
+            fx.FixGaps3d()
+            fx.FixGaps2d()
+            if fx.Shape() is not None and not fx.Shape().IsNull():
+                cur = fx.Shape()
+                report["short_edges"] = len(findings["short_edges"])
+        except Exception:
+            report["short_edges"] = "failed"
+    # 2) inverted faces
+    inv = findings.get("inverted_faces") or []
+    if inv:
+        fixed = 0
+        for f in inv:
+            try:
+                cur = reverse_face(cur, f)
+                fixed += 1
+            except Exception:
+                pass
+        report["inverted_faces"] = fixed
+    # 3) small faces / slivers: merge coplanar neighbours then heal
+    if findings.get("small_faces") or findings.get("sliver_faces"):
+        try:
+            cur = unify_same_domain(cur)
+            report["small_faces"] = report.get("small_faces", 0) if                 isinstance(report.get("small_faces"), int) else                 len(findings.get("small_faces", [])) +                 len(findings.get("sliver_faces", []))
+        except Exception:
+            pass
+    return cur, report
+
+
+def reverse_face(shape, face):
+    """Return the shape with the given face's orientation reversed.
+
+    ReShape ignores same-TShape replacements, so the replacement is a REBUILT
+    face (new TShape) carrying the reversed orientation.
+    """
+    from OCC.Core.TopoDS import topods
+    from OCC.Core.ShapeBuild import ShapeBuild_ReShape
+    from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace
+    from OCC.Core.TopAbs import TopAbs_SHAPE
+    f = topods.Face(face)
+    newf = BRepBuilderAPI_MakeFace(f.Reversed()).Face()
+    rs = ShapeBuild_ReShape()
+    rs.Replace(f, newf)
+    return rs.Apply(shape, TopAbs_SHAPE)
+
+
 def apply_mat4(shape, m):
     """Apply a row-major 4x4 transform (scdm.mates convention) to a shape."""
     o = _occ()

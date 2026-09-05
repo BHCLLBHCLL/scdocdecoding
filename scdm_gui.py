@@ -1063,6 +1063,39 @@ else:
             except Exception as exc:
                 self._set_status(f"小面移除失败: {exc}")
 
+        def _do_repair_check(self):
+            """H4 检查几何：全项检出 + 一键修复向导。"""
+            body = self._selected_kbody()
+            if body is None:
+                return
+            ses = self.session()
+            try:
+                fnd = K.check_geometry(body.shape,
+                                       min_area=1.0 / (ses.scale ** 2),
+                                       min_edge=0.1 / ses.scale)
+            except Exception as exc:
+                self._set_status(f"检查失败: {exc}")
+                return
+            counts = {k: (len(v) if isinstance(v, list) else v)
+                      for k, v in fnd.items()}
+            total = sum(v for v in counts.values() if isinstance(v, int))
+            if total == 0:
+                self._set_status("检查几何：未发现问题 ✓")
+                return
+            names = {"small_faces": "小面", "short_edges": "短边",
+                     "sliver_faces": "尖刺/薄片", "self_intersecting": "自交",
+                     "inverted_faces": "反向面", "open_shell": "开壳"}
+            detail = "、".join(f"{names[k]}{counts[k]}" for k in names
+                               if counts.get(k))
+            try:
+                fixed, rep = K.repair_geometry(body.shape, fnd)
+                body.shape = fixed
+                fixedn = sum(v for v in rep.values() if isinstance(v, int))
+                self._record("repair.check", counts=counts, fixed=rep)
+                self._commit(f"检查几何：{detail} — 已修复 {fixedn} 项")
+            except Exception as exc:
+                self._set_status(f"检查到 {detail}；自动修复失败: {exc}")
+
         def _selected_component(self):
             ses = self.session()
             for kind, sid in reversed(self.sel.items):

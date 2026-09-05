@@ -313,6 +313,24 @@ def op_repair_solidify(kdoc, opts, scale):
     return kdoc.add_body(solid, name="实体"), "实体化"
 
 
+def op_repair_check(kdoc, opts, scale):
+    """H4 检查几何：全项检出 + 自动修复。"""
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("检查几何：实体不存在")
+    min_area = opts.get("min_area_mm2", 1.0) / (scale ** 2)
+    min_edge = opts.get("min_edge_mm", 0.1) / scale
+    fnd = K.check_geometry(body.shape, min_area=min_area, min_edge=min_edge)
+    counts = {k: (len(v) if isinstance(v, list) else v) for k, v in fnd.items()}
+    total = sum(v for v in counts.values() if isinstance(v, int))
+    if total == 0:
+        return body, "检查几何：未发现问题"
+    fixed, rep = K.repair_geometry(body.shape, fnd)
+    body.shape = fixed
+    fixedn = sum(v for v in rep.values() if isinstance(v, int))
+    return body, f"检查几何：{total} 项问题，已修复 {fixedn}"
+
+
 OPS = {
     "insert.cyl": op_insert_cyl,
     "insert.sphere": op_insert_sphere,
@@ -336,6 +354,7 @@ OPS = {
     "create.shell_multi": op_shell_multi,
     "create.draft_neutral": op_draft_neutral,
     "tool.pull_auto": op_pull_auto,
+    "repair.check": op_repair_check,
 }
 
 
