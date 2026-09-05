@@ -1392,6 +1392,56 @@ else:
             text, ok = QInputDialog.getText(self, title, label)
             return text.strip() if ok and text.strip() else None
 
+        # -- H7: parameter editor ---------------------------------------
+        def _do_det_params(self):
+            ses = self.session()
+            if ses.kdoc.param_table is None:
+                from scdm.params import ParamTable
+                ses.kdoc.param_table = ParamTable()
+            table = ses.kdoc.param_table
+            defs = table.defs()
+            if defs:
+                initial = chr(10).join(f"{k} = {v}"
+                                       for k, v in sorted(defs.items()))
+            else:
+                initial = "width = 20" + chr(10) + "height = width * 2"
+            from PyQt5.QtWidgets import (QDialog, QDialogButtonBox,
+                                         QPlainTextEdit, QVBoxLayout, QLabel)
+            dlg = QDialog(self)
+            dlg.setWindowTitle("参数（表达式支持：height = width * 2）")
+            lay = QVBoxLayout(dlg)
+            lay.addWidget(QLabel("每行一个参数：名称 = 数值或表达式"))
+            edit = QPlainTextEdit()
+            edit.setPlainText(initial)
+            edit.setMinimumSize(420, 240)
+            lay.addWidget(edit)
+            btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+            btns.accepted.connect(dlg.accept)
+            btns.rejected.connect(dlg.reject)
+            lay.addWidget(btns)
+            if dlg.exec_() != QDialog.Accepted:
+                return
+            new_table = type(table)()
+            try:
+                for ln in edit.toPlainText().splitlines():
+                    ln = ln.strip()
+                    if not ln or ln.startswith("#"):
+                        continue
+                    if "=" not in ln:
+                        raise ValueError(f"缺 '='：{ln}")
+                    name, expr = ln.split("=", 1)
+                    new_table.set(name.strip(), expr.strip())
+                new_table.resolve()          # validate before commit
+            except Exception as exc:
+                QMessageBox.critical(self, "参数", f"参数无效：{exc}")
+                return
+            ses.kdoc.param_table = new_table
+            # drive parametric bodies whose params reference the table
+            for p in ses.kdoc.parametrics:
+                p.table = new_table
+                ses.kdoc.rebuild_parametric(p, ses.scale)
+            self._commit(f"参数已更新（{len(new_table.names())} 个）并重建")
+
         def _do_repair_check(self):
             """H4 检查几何：全项检出 + 一键修复向导。"""
             body = self._selected_kbody()

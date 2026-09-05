@@ -216,6 +216,9 @@ class Makers:
         self.extras = {
             bi: (items[bi][4] if len(items[bi]) > 4 else {})
             for bi in range(len(items))}
+        # document-id base: when writing one body per part, each part's SAB
+        # attrib ids must carry the body's GLOBAL document id (23+60*body)
+        self.id_body_base = 0
         self._build_model()
 
     def _build_model(self):
@@ -843,7 +846,7 @@ class Makers:
         sub = key[1]
         if sub == "bname":
             owner = wl.ref(("body", key[2]))
-            rec = _attrib(owner, "0:%d" % (23 + 60 * key[2]),
+            rec = _attrib(owner, "0:%d" % (23 + 60 * (self.id_body_base + key[2])),
                           wl.ref(("attrib", "bpn", key[2])), None)
             return rec
         if sub == "bpn":
@@ -857,7 +860,7 @@ class Makers:
             # sphere/torus faces carry no rgb_color chain (matches official)
             closed = self.item(bi)[0] in ("sphere", "torus")
             nxt = None if closed else wl.ref(("attrib", "frgb", bi, fi))
-            return _attrib(owner, "0:%d" % (27 + 3 * fi + 60 * bi), nxt, None,
+            return _attrib(owner, "0:%d" % (27 + 3 * fi + 60 * (self.id_body_base + bi)), nxt, None,
                            name_tag="%6")
         if sub == "frgb":
             bi, fi = key[2], key[3]
@@ -871,7 +874,7 @@ class Makers:
         if sub == "ename":
             bi, ei = key[2], key[3]
             owner = wl.ref(("edge", bi, ei))
-            return _attrib(owner, "0:%d" % (45 + 3 * ei + 60 * bi),
+            return _attrib(owner, "0:%d" % (45 + 3 * ei + 60 * (self.id_body_base + bi)),
                            name_tag="%6")
         raise ValueError("attrib key " + repr(key))
 

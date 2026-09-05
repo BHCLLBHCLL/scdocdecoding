@@ -1158,9 +1158,10 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
     from scdm.sab_emit import (Worklist, Makers, MAGIC, END_NAME, _s, _ri,
                                _td, T_FLAG_A, T_RECORD)
 
-    def build_sab_for(items, colors):
+    def build_sab_for(items, colors, id_base: int = 0):
         wl = Worklist()
         makers = Makers(items, colors)
+        makers.id_body_base = id_base
         body = wl.run([("body", bi) for bi in range(len(items))], makers)
         out = bytearray()
         out += MAGIC
@@ -1235,7 +1236,8 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
                 for body in kdoc.bodies:
                     sols = K.explore(body.shape, "solid") or [body.shape]
                     sol = sols[0]
-                    if _cyl_info(sol) is None and _sphere_info(sol) is None                             and _torus_info(sol) is None:
+                    if (_cyl_info(sol) is None and _sphere_info(sol) is None
+                            and _torus_info(sol) is None):
                         continue
                     items_all.append(_item_of(body))
                     try:
@@ -1248,10 +1250,11 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
                              _facets_bytes(items_all, tessellations))
             except Exception:
                 pass
-        for gi, (_gname, items, colors) in enumerate(groups):
+        for gi, (gname, items, colors) in enumerate(groups):
             items2 = [it[:4] for it in items]
+            # attrib ids carry the GLOBAL body index (document-id alignment)
             out.writestr("SpaceClaim/Geometry/part%dbodies.sab" % (gi + 1),
-                         build_sab_for(items2, colors))
+                         build_sab_for(items2, colors, id_base=gi))
     return len(groups)
 
 
@@ -1272,13 +1275,43 @@ def _item_of(body):
 
 
 def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
-    """Full-generation document.xml: PartDef per component, per-face ids
-    matching each part's SAB attrib ids, layer + named-view sections."""
-    parts = []
-    captions = []
+    """Full-generation document.xml with the component hierarchy:
+
+    Design > PartDef(root) > ComponentDef(per kdoc component)
+        > PartDef(per body) > NominalBodyDef + face/edge ids
+
+    Body ids 0:23+60*body_index match each partN.sab's attrib values (the
+    SAB is written with id_body_base = body index).  Layers, saved views
+    and per-body captions follow.
+    """
+    # component membership: body id -> owning component (first wins)
+    comp_of = {}
+    for comp in getattr(kdoc, "components", []):
+        for bid in comp.body_ids:
+            comp_of.setdefault(bid, comp)
+    # ordered component groups: components first, then loose bodies under
+    # a synthetic root component
+    ordered = []          # [(comp_or_None, comp_name, [(gi, body, items)])]
+    by_comp = {}
+    loose = []
     for gi, (gname, items, colors) in enumerate(groups):
-        pid = 2 + gi * 60
-        bid = 23 + gi * 60
+        body = kdoc.bodies[gi]
+        comp = comp_of.get(body.id)
+        if comp is not None:
+            by_comp.setdefault(comp.id, []).append((gi, body, items, colors))
+        else:
+            loose.append((gi, body, items, colors))
+    for comp in getattr(kdoc, "components", []):
+        members = by_comp.get(comp.id, [])
+        if members:
+            ordered.append((comp, comp.name, members))
+    if loose:
+        ordered.append((None, name + " 根部件", loose))
+
+    part_xml = []
+    captions = []
+
+    def body_part_def(gi, body, items, colors):
         face_n = sum(len(it[3]) if it[0] == "planar"
                      else (1 if it[0] in ("sphere", "torus") else 3)
                      for it in items)
@@ -1288,27 +1321,45 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
         c = colors[0] if colors else (0.745, 0.902, 0.961)
         rgb = "%d, %d, %d" % (int(c[0] * 255), int(c[1] * 255),
                               int(c[2] * 255))
-        faces = "".join(
-            '<NominalFaceDef Id="0:%d"/>' % (27 + 3 * k + gi * 60)
-            for k in range(face_n))
+        faces = "".join('<NominalFaceDef Id="0:%d"/>'
+                        % (27 + 3 * k + gi * 60) for k in range(face_n))
         edges = "".join(
             '<NominalEdgeDef Id="0:%d"><isReversed>False</isReversed>'
             '</NominalEdgeDef>' % (45 + 3 * k + gi * 60)
             for k in range(edge_n))
-        parts.append(
-            '<PartDef Id="0:%d"><DefaultEdgeTreatmentDef Id="0:%d">'
-            '<blendRadius>0</blendRadius></DefaultEdgeTreatmentDef>'
-            '<NominalBodyDef Id="0:%d"><layerId>0:9</layerId>'
-            '<type>Solid</type><color>%s</color>'
-            '<renderingStyle>Plastic</renderingStyle>'
-            '<fillStyle>Opaque</fillStyle>'
-            '<finishStyle>MediumGloss</finishStyle>%s%s'
-            '</NominalBodyDef></PartDef>'
-            % (pid, 13 + gi * 60, bid, rgb, faces, edges))
+        bid = 23 + gi * 60
+        pid = 2 + gi * 60
         captions.append(
             '<CaptionDef Id="0:%d"><subjectId>0:%d</subjectId>'
             '<name>%s</name><type>Mutable</type></CaptionDef>'
-            % (85 + gi * 60, bid, gname))
+            % (85 + gi * 60, bid, body.name))
+        return ('<PartDef Id="0:%d"><DefaultEdgeTreatmentDef Id="0:%d">'
+                '<blendRadius>0</blendRadius></DefaultEdgeTreatmentDef>'
+                '<NominalBodyDef Id="0:%d"><layerId>0:9</layerId>'
+                '<type>Solid</type><color>%s</color>'
+                '<renderingStyle>Plastic</renderingStyle>'
+                '<fillStyle>Opaque</fillStyle>'
+                '<finishStyle>MediumGloss</finishStyle>%s%s'
+                '</NominalBodyDef></PartDef>'
+                % (pid, 13 + gi * 60, bid, rgb, faces, edges))
+
+    root_bodies = []
+    for comp, comp_name, members in ordered:
+        inner = "".join(body_part_def(gi, body, items, colors)
+                        for gi, body, items, colors in members)
+        part_xml.append(
+            '<ComponentDef Id="0:%d"><name>%s</name>'
+            '<type>Normal</type><children>%s</children>'
+            '</ComponentDef>'
+            % (200 + hash(comp.id if comp else comp_name) % 5000,
+               comp_name, inner))
+        root_bodies.extend(members)
+
+    # root part def wrapping the component tree
+    root_inner = "".join(
+        '<NominalFaceDef Id="0:%d"/>' % (27 + 3 * k + gi * 60)
+        for gi, body, items, colors in root_bodies
+        for k in range(1))  # placeholder — root keeps only the tree
     layer = ('<PresentationDef sectionId="22222222-2222-2222-2222-'
              '222222222222" Id="0:5" xmlns="urn:presentation">'
              '<LayerDef Id="0:9"><name>Layer 1</name><visible>True</visible>'
@@ -1331,11 +1382,12 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
     xml = ('<?xml version="1.0" encoding="utf-8"?>'
            '<Document version="1.520" '
            'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
-           'xmlns="urn:core"><nextId>109</nextId>'
+           'xmlns="urn:core"><nextId>1000</nextId>'
            '<importPath>%s.scdoc</importPath>'
            '<importTimestamp>01/01/2026 00:00:00</importTimestamp>'
            '<Design sectionId="11111111-1111-1111-1111-111111111111" '
-           'Id="0:1" xmlns="urn:nom">%s</Design>%s%s'
+           'Id="0:1" xmlns="urn:nom">'
+           '<PartDef Id="0:2"><type>Normal</type>%s</PartDef></Design>%s%s'
            '<DocumentSettingsDef sectionId="33333333-3333-3333-3333-'
            '333333333333" Id="0:16" xmlns="urn:presentation">'
            '<DocumentUnitsDef Id="0:17"><units><lengthProperties>'
@@ -1345,7 +1397,7 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
            '<PresentationDef2 sectionId="55555555-5555-5555-5555-'
            '555555555555" Id="0:7" xmlns="urn:nom">%s'
            '</PresentationDef2></Document>'
-           % (name, "".join(parts), layer, views, "".join(captions)))
+           % (name, "".join(part_xml), layer, views, "".join(captions)))
     return xml.encode("utf-8")
 
 

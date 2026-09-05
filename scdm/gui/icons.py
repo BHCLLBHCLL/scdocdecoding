@@ -664,6 +664,13 @@ def _draw(g: _G, key: str):
             g.node(0.18, fy + 0.06, 0.055, AXIS_B)
             g.stroke(INK, g.sw * 0.85)
             g.line((0.30, fy + 0.06), (0.88, fy + 0.06))
+    elif key == "params":
+        # three slider lines with knobs
+        for fy, kx in ((0.30, 0.62), (0.50, 0.30), (0.70, 0.70)):
+            g.stroke(INK)
+            g.line((0.14, fy), (0.86, fy))
+            g.fill(BLUE[1])
+            g.ellipse(kx - 0.07, fy - 0.07, 0.14, 0.14)
     elif key == "check":
         # magnifier with a red tick over a small solid
         g.iso(0.36, 0.62, 0.60, GREEN)
