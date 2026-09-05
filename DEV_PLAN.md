@@ -952,6 +952,19 @@ T_RECORD "surface" [id]
 | 脚本 | `repair.check` op（阈值参数化） | 录制回放 |
 | 测试 | `tests/test_h4.py` 7 项 | **129 passed** |
 
+### 21.3.f H5 实施记录（2026-09-05，完成）
+
+| 工作包 | 交付 | 验证 |
+| --- | --- | --- |
+| K 因子折弯 | `sheetmetal.bend_allowance`（BA=θ·(R+K·t)）+ `bend_from_flat`（物理正确 L 弯：内半径切上表面、轴 z=t+R、绕 −Y 旋转；flat2 预置弯后旋转升起；体积=flat1+弧+flat2 精确） | 体积 1e-6 精度 |
+| 折弯检测 | `detect_bends`：共轴圆柱组→单折弯（r_inner=min）；扫掠角取邻接平面法向夹角（法向∥轴的侧壁过滤）；flat 长度用 (轴×法向) 方向 bbox 跨度 | R/角/flat1/flat2/t/w 全对 |
+| 展开 | `unfold`：展开长=flat1+BA+flat2；K 单调（0.2→0.8 长度递增） | 0.053801 精确 |
+| 撕裂 | `rip`：沿面最长边切缝（gap×厚度截面，中心缝=半 gap） | 缝宽精确 |
+| 角落释放 | `corner_relief`（圆/方）：中心钉入材料内侧 1/4 尺寸（贴边布尔不可靠） | 体积减少 |
+| 折叠 | `jog`：Z 形三盒（平角，后续可倒圆） | 体积/包盒精确 |
+| 页签 UI | 钣金页 5 命令（折弯/展开/撕裂/角落释放/折叠）+ K 因子参数对话框 + 图标 | catalog 守卫通过 |
+| 测试 | `tests/test_sheetmetal.py` 9 项 | **138 passed** |
+
 ### 21.4 统一验收协议
 
 1. 每工作包单测（pytest，OCCT 级断言）
