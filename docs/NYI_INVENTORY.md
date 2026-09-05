@@ -31,7 +31,8 @@
 | TODO-5 | 工程图图幅版式 | HLR 三视图 + BOM/尺寸已有；无标准图幅 | 解析 Library/DrawingFormats A0–E 官方图框 → 模板 | 3–5 天 |
 | TODO-6 | 命名选择组（NamedSelection）写回 | 读端已解码 group 类记录；写端未生成 | document.xml NamedSelectionDef + SAB group attrib | 2 天 |
 | TODO-7 | 保存视图读回 | SavedViewsDef 已写端生成；读端 parse_document 未还原 | document 解析分支补 SavedViewsDef → session.views | 1 天 |
-| TODO-8 | 草图约束完整求解器 | 7 种约束简化解算 | 图自由度分析 + 过约束检测 + 数值求解循环 | 1–2 周 |
+| TODO-8 | 草图约束完整求解器 | **已关闭**：sketch_solver.py LM 求解器（DOF/冲突/表达式） | — | ✅ |
+| TODO-9 | 整装配官方打开 | 写回已对齐官方引用机制（refId+trans+moniker rels），官方打开 bodies=0 | 官方读取的 updateState moniker 解析链（对官方样本逐字段 diff 其余差异） | 3–5 天 |
 
 ## C. GUI 占位（2 项，均非功能缺口）
 

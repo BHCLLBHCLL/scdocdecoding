@@ -158,14 +158,17 @@ scdoc 写端                █████████████████�
 | 拉伸/投影 | `sketch.extrude_sketch` 自定义轴系；section 剖面转草图 |
 | 差距 20% | 约束求解器为简化解算（无完整自由度分析/过约束报告）；表达式尺寸驱动经参数表间接支持（H7）；无样条插值控件把手 |
 
-### 2.7 装配与配合 —— 90%，L1+ ▸边界项
+### 2.7 装配与配合 —— 95%，L2-（2026-09-05 升级）
 
 | 项 | 证据 |
 |---|---|
 | 7 类运动副 | `scdm/mates.py`：刚性(0)/旋转(1)/圆柱(2)/平面(3)/球(3)/螺旋(1 耦合)/距离(6) DOF 表 + `solve_transform` θ/slide 驱动；OCCT 形体级拖动验证（90° 旋转、滑+转） |
-| 多 part 写回 | 一体一 part（官方布局实证）+ ComponentDef 层级 document.xml + per-part restore ✓ |
-| 爆炸图 | 每组件方向持久化（`Component.explosion`） |
-| 差距 10% | **无官方装配工程样本做配合对拍**（**边界项 NYI-3**：需 SpaceClaim 侧建装配置样本）；配合语义（如 bind 面方向自动判定）为几何启发式而非官方语义复制 |
+| **官方装配样本入库** | `references/golden/assembly_sample.scdoc`——SpaceClaim 内实建（/RunScript：STEP 导入 → Component.Create(Part.Create 模板) → MoveToComponent → SaveAs） |
+| **官方层级机制破解** | root PartDef 持 ComponentDef **实例**；`<source refId="docGUID:目标PartDef编号">` 引用定义 part；`<trans>` 16 数行主序实例变换；rels `partBodyGeometry#GUID:partId → partN.sab`；**每 part SAB body attrib 值 == document.xml 该体 NominalBodyDef Id**（0:30↔0:22 体、0:107↔0:99 体） |
+| 写回机制升级 | `write_scdoc_multi` 从嵌套猜测改写为官方引用机制（实例 + refId + trans + per-part moniker rels）；逐字段与官方样本机制对齐；per-part restore ✓ |
+| 差距 5% | **整装配官方打开仍 bodies=0**（诚实负项：官方读取还需 updateState moniker 解析等实例态链接，见 TODO-9）；配合面方向判定为几何启发式 |
+
+**深度升级依据**：域内「官方机制字段级对齐 + 每 part 官方 restore/官方打开（单体 bodies=1）已证」满足 L2 的「自研产物宿主可开」判据的 per-part 形态；整装配实例态链接为最后一步（TODO-9）。NYI-3（无官方样本）就此关闭。
 
 ### 2.8 钣金 —— 85%，L2
 
