@@ -980,6 +980,19 @@ T_RECORD "surface" [id]
 
 排障：①GeomLib 顶层无 GeomLib 类——函数为模块级 `geomlib_ExtendSurfByLength`（弃用别名）；②Geom_BSplineSurface ctor 需要 (poles,uk,vk,um,vm,udeg,vdeg)；③OCCT 用 ±2e100 有限巨值表示无穷参数界；④MakeFace 无 (gp_Pln,u,v) 重载——用 Geom_Surface 句柄 6 参。
 
+### 21.3.h H7 实施记录（2026-09-05，完成）
+
+| 工作包 | 交付 | 验证 |
+| --- | --- | --- |
+| 表达式参数表 | `params.ParamTable`：命名参数 + 表达式值（依赖排序求值、循环/未知引用/注入全拒绝——白名单算术 eval）；`eval_expr` 安全求值 | 传播/循环/注入 5 断言 |
+| 参数驱动重建 | `Parametric` 参数值可为表达式串绑定全局表（体参数 = 全局命名参数）；w=20→40 全局驱动 H="w*1.5" 重 build 体积恰 4 倍 | 端到端 |
+| 脚本 API | `scdm/script_api.py`：ScriptSession/GetRootPart/DesignBody（Name/Shape/Volume/GetFaces/GetEdges）/AddBox/Cylinder/Sphere/CombineUnite·Subtract·Intersect/MoveBody/FilletEdges/SetParameter/GetParameter/RebuildAll | 端到端门面链 |
+| 脚本全量化 | OPS 新增 insert.box / sheet.bend / sheet.unfold / surface.thicken / surface.offset / surface.untrim / repair.check（累计 29 ops） | 4 步回放链 |
+| 参数表持久化 | `kdoc.param_table` 随项目 pickle 保存 | 接线完成 |
+| 测试 | `tests/test_h7.py` 10 项 | **155 passed** |
+
+排障：①`_IDENT` 正则带 `$` 锚点使 findall 只取末标识符——拆分为全匹配校验/无锚分词两个正则；②replay 的 op 返回值被包装为 "OK <cmd>"，状态文本断言需用 startswith。
+
 ### 21.4 统一验收协议
 
 1. 每工作包单测（pytest，OCCT 级断言）
