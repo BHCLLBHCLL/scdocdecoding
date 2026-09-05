@@ -158,6 +158,27 @@ class Worklist:
         return bytes(out)
 
 
+class _SeqCounter:
+    """Document-global Nominal*Def creation-order counter.
+
+    The official SAB writer stores, as token#1 of every body/face/edge
+    record, the def's creation sequence across the WHOLE document:
+    per part (in write order) the body first, then its faces, then its
+    edges.  The official assembly sample: box body 0, faces 1..6,
+    edges 7..18, cylinder body 19, faces 20..22, edges 23..25.  The
+    reader uses these to bind SAB entities to their component parts --
+    two bodies sharing sequence 0 collapse to one body on open.
+    """
+
+    def __init__(self):
+        self.n = 0
+
+    def next(self) -> int:
+        v = self.n
+        self.n += 1
+        return v
+
+
 # ----------------------------------------------------------------------
 # geometry helpers (shared with scdoc_write.py's extractor)
 # ----------------------------------------------------------------------
@@ -198,8 +219,9 @@ def _circ_bbox(center, R, axis):
 class Makers:
     """Builds records for every entity key; keys are ('kind', bi, ...)."""
 
-    def __init__(self, items, colors=None):
+    def __init__(self, items, colors=None, seq=None):
         self.items = items            # [('planar', verts, edges, faces) | ('cyl', info)]
+        self.seq = seq if seq is not None else _SeqCounter()
         self.col = {
             bi: (colors[bi] if colors and bi < len(colors)
                  else (0.745, 0.902, 0.961))
@@ -220,6 +242,25 @@ class Makers:
         # attrib ids must carry the body's GLOBAL document id (23+60*body)
         self.id_body_base = 0
         self._build_model()
+        # per-document def-creation sequence (official token#1): body first,
+        # then its faces, then its edges; the counter is shared across parts.
+        self._seq_body = {}
+        self._seq_face = {}
+        self._seq_edge = {}
+        for bi, it in enumerate(self.items):
+            self._seq_body[bi] = self.seq.next()
+            if it[0] == "planar":
+                nf, ne = len(it[3]), len(it[2])
+            elif it[0] == "cyl":
+                nf, ne = 3, 3
+            elif it[0] == "sphere":
+                nf, ne = 1, 1
+            else:  # torus
+                nf, ne = 1, 2
+            for fi in range(nf):
+                self._seq_face[("face", bi, fi)] = self.seq.next()
+            for ei in range(ne):
+                self._seq_edge[("edge", bi, ei)] = self.seq.next()
 
     def _build_model(self):
         for bi, it in enumerate(self.items):
@@ -266,7 +307,8 @@ class Makers:
             smin, smax = (it[1]["bbox"] if it[0] in ("cyl", "sphere", "torus")
                           else _bbox(it[1]))
             return (_Rec("body", 1)
-                    .add(_p(wl.ref(("attrib", "bname", key[1]))), _ti(0),
+                    .add(_p(wl.ref(("attrib", "bname", key[1]))),
+                         _ti(self._seq_body[key[1]]),
                          _ti(-1), _p(-1), _ti(0), _p(wl.ref(("lump", key[1]))),
                          _p(-1), _p(-1), bytes([T_FLAG_A]), _v3(*smin),
                          _v3(*smax)))
@@ -368,7 +410,8 @@ class Makers:
                     if fi in self.extras.get(bi, {}).get("face_surf", {})
                     else ("plane", bi, fi))
         return (_Rec("face", 10)
-                .add(_p(wl.ref(("attrib", "fname", bi, fi))), _ti(-1),
+                .add(_p(wl.ref(("attrib", "fname", bi, fi))),
+                     _ti(self._seq_face[key]),
                      _ti(-1), _p(-1), _p(wl.ref(nxt)), _p(wl.ref(("loop", bi, fi))),
                      _p(wl.ref(("shell", bi))), _p(-1),
                      _p(wl.ref(surf_key)),
@@ -422,7 +465,7 @@ class Makers:
                      else ("straight", bi, ei))
         return (_Rec("edge", 17)
                 .add(_p(wl.ref(("attrib", "ename", bi, ei))),
-                     _ti(-1), _ti(-1), _p(-1),
+                     _ti(self._seq_edge[key]), _ti(-1), _p(-1),
                      _p(wl.ref(("vertex", bi, v1))), _td(0.0),
                      _p(wl.ref(("vertex", bi, v2))), _td(length),
                      _p(wl.ref(first_co)), _p(wl.ref(curve_key)),
@@ -496,7 +539,8 @@ class Makers:
         uv = (0.0, h / R, -math.pi, math.pi) if fi == 0 else (-R, R, -R, R)
         nxt = ("face", bi, fi + 1) if fi < 2 else None
         return (_Rec("face", 10)
-                .add(_p(wl.ref(("attrib", "fname", bi, fi))), _ti(-1),
+                .add(_p(wl.ref(("attrib", "fname", bi, fi))),
+                     _ti(self._seq_face[key]),
                      _ti(-1), _p(-1), _p(wl.ref(nxt)),
                      _p(wl.ref(("loop", bi, fi))), _p(wl.ref(("shell", bi))),
                      _p(-1), _p(wl.ref(surf)),
@@ -557,7 +601,8 @@ class Makers:
         if ei == 0:
             bmin, bmax = _circ_bbox(cap_b, R, axis)
             return (_Rec("edge", 17)
-                    .add(_p(wl.ref(("attrib", "ename", bi, ei))), _ti(4),
+                    .add(_p(wl.ref(("attrib", "ename", bi, ei))),
+                         _ti(self._seq_edge[key]),
                          _ti(-1), _p(-1), _p(wl.ref(("vertex", bi, 0))), _td(0.0),
                          _p(wl.ref(("vertex", bi, 0))), _td(2.0 * math.pi),
                          _p(wl.ref(("coedge", bi, 0))),
@@ -572,7 +617,8 @@ class Makers:
             bmin = (min(v0[0], v1[0]), min(v0[1], v1[1]), min(v0[2], v1[2]))
             bmax = (max(v0[0], v1[0]), max(v0[1], v1[1]), max(v0[2], v1[2]))
             return (_Rec("edge", 17)
-                    .add(_p(wl.ref(("attrib", "ename", bi, ei))), _ti(5),
+                    .add(_p(wl.ref(("attrib", "ename", bi, ei))),
+                         _ti(self._seq_edge[key]),
                          _ti(-1), _p(-1), _p(wl.ref(("vertex", bi, 1))), _td(0.0),
                          _p(wl.ref(("vertex", bi, 0))), _td(info["h"]),
                          _p(wl.ref(("coedge", bi, 1))),
@@ -581,7 +627,8 @@ class Makers:
                          bytes([T_FLAG_A]), _v3(*bmin), _v3(*bmax)))
         bmin, bmax = _circ_bbox(cap_a, R, axis)
         return (_Rec("edge", 17)
-                .add(_p(wl.ref(("attrib", "ename", bi, ei))), _ti(6),
+                .add(_p(wl.ref(("attrib", "ename", bi, ei))),
+                     _ti(self._seq_edge[key]),
                      _ti(-1), _p(-1), _p(wl.ref(("vertex", bi, 1))), _td(0.0),
                      _p(wl.ref(("vertex", bi, 1))), _td(2.0 * math.pi),
                      _p(wl.ref(("coedge", bi, 2))),
@@ -627,7 +674,8 @@ class Makers:
         info = self._sph(bi)
         lo, hi = info["bbox"]
         return (_Rec("face", 10)
-                .add(_p(wl.ref(("attrib", "fname", bi, 0))), _ti(1),
+                .add(_p(wl.ref(("attrib", "fname", bi, 0))),
+                     _ti(self._seq_face[key]),
                      _ti(-1), _p(-1), _p(-1), _p(wl.ref(("loop", bi, 0))),
                      _p(wl.ref(("shell", bi))), _p(-1),
                      _p(wl.ref(("sphere", bi))),
@@ -664,7 +712,7 @@ class Makers:
         bi = key[1]
         lo, hi = self._sph(bi)["bbox"]
         return (_Rec("edge", 17)
-                .add(_p(-1), _ti(-1), _ti(-1), _p(-1),
+                .add(_p(-1), _ti(self._seq_edge[key]), _ti(-1), _p(-1),
                      _p(wl.ref(("vertex", bi, 0))), _td(1.0),
                      _p(wl.ref(("vertex", bi, 0))), _td(0.0),
                      _p(wl.ref(("coedge", bi, 0))), _p(-1),
@@ -704,7 +752,8 @@ class Makers:
         bi = key[1]
         lo, hi = self._tor(bi)["bbox"]
         return (_Rec("face", 10)
-                .add(_p(wl.ref(("attrib", "fname", bi, 0))), _ti(1),
+                .add(_p(wl.ref(("attrib", "fname", bi, 0))),
+                     _ti(self._seq_face[key]),
                      _ti(-1), _p(-1), _p(-1), _p(wl.ref(("loop", bi, 0))),
                      _p(wl.ref(("shell", bi))), _p(-1),
                      _p(wl.ref(("torus", bi))),
@@ -1289,7 +1338,7 @@ def _planar_layouts():
 
     layouts["body"] = L("body", [
         _P(lambda ctx: ("attrib", "bname", ctx.key[1])),
-        _I(0), _I(-1), _P(), _I(0),
+        F("int", lambda ctx: ctx.m._seq_body[ctx.key[1]]), _I(-1), _P(), _I(0),
         _P(lambda ctx: ("lump", ctx.key[1])),
         _P(), _P(), _FA(),
         _V3(lambda ctx: body_bbox(ctx.key, ctx.wl, ctx.m)[0]),
@@ -1327,7 +1376,8 @@ def _planar_layouts():
 
     layouts["face"] = L("face", [
         _P(lambda ctx: ("attrib", "fname", ctx.key[1], ctx.key[2])),
-        _I(-1), _I(-1), _P(), _P(face_next),
+        F("int", lambda ctx: ctx.m._seq_face[ctx.key]), _I(-1), _P(),
+        _P(face_next),
         _P(lambda ctx: ("loop", ctx.key[1], ctx.key[2])),
         _P(lambda ctx: ("shell", ctx.key[1])),
         _P(),
@@ -1363,7 +1413,7 @@ def _planar_layouts():
 
     layouts["edge"] = L("edge", [
         _P(lambda ctx: ("attrib", "ename", ctx.key[1], ctx.key[2])),
-        _I(-1), _I(-1), _P(),
+        F("int", lambda ctx: ctx.m._seq_edge[ctx.key]), _I(-1), _P(),
         _P(lambda ctx: ("vertex", ctx.key[1], ctx.m.ei[ctx.key]["v1"])),
         _D(lambda ctx: 0.0),
         _P(lambda ctx: ("vertex", ctx.key[1], ctx.m.ei[ctx.key]["v2"])),

@@ -158,17 +158,17 @@ scdoc 写端                █████████████████�
 | 拉伸/投影 | `sketch.extrude_sketch` 自定义轴系；section 剖面转草图 |
 | 差距 20% | 约束求解器为简化解算（无完整自由度分析/过约束报告）；表达式尺寸驱动经参数表间接支持（H7）；无样条插值控件把手 |
 
-### 2.7 装配与配合 —— 95%，L2-（2026-09-05 升级）
+### 2.7 装配与配合 —— 99%，L2（2026-09-06 升级）
 
 | 项 | 证据 |
 |---|---|
 | 7 类运动副 | `scdm/mates.py`：刚性(0)/旋转(1)/圆柱(2)/平面(3)/球(3)/螺旋(1 耦合)/距离(6) DOF 表 + `solve_transform` θ/slide 驱动；OCCT 形体级拖动验证（90° 旋转、滑+转） |
 | **官方装配样本入库** | `references/golden/assembly_sample.scdoc`——SpaceClaim 内实建（/RunScript：STEP 导入 → Component.Create(Part.Create 模板) → MoveToComponent → SaveAs） |
 | **官方层级机制破解** | root PartDef 持 ComponentDef **实例**；`<source refId="docGUID:目标PartDef编号">` 引用定义 part；`<trans>` 16 数行主序实例变换；rels `partBodyGeometry#GUID:partId → partN.sab`；**每 part SAB body attrib 值 == document.xml 该体 NominalBodyDef Id**（0:30↔0:22 体、0:107↔0:99 体） |
-| 写回机制升级 | `write_scdoc_multi` 从嵌套猜测改写为官方引用机制（实例 + refId + trans + per-part moniker rels）；逐字段与官方样本机制对齐；per-part restore ✓ |
-| 差距 5% | **整装配官方打开仍 bodies=0**（诚实负项：官方读取还需 updateState moniker 解析等实例态链接，见 TODO-9）；配合面方向判定为几何启发式 |
+| 写回机制升级 | `write_scdoc_multi` 从嵌套猜测改写为官方引用机制（实例 + refId + trans + per-part moniker rels）；逐字段与官方样本机制对齐；per-part restore ✓；**官方打开哨兵实测 `done bodies=2`**（TODO-9 关闭，六项差分定位见 tests/test_todo9_assembly.py） |
+| 差距 ~1% | 配合面方向判定为几何启发式（装配官方互操作已闭环） |
 
-**深度升级依据**：域内「官方机制字段级对齐 + 每 part 官方 restore/官方打开（单体 bodies=1）已证」满足 L2 的「自研产物宿主可开」判据的 per-part 形态。**哨兵修正**：verify_open 原只数根部件直属体——装配体的体在组件内，官方样本实测 bodies=2（修复后），此前 bodies=0 为测量偏差。整装配实例态绑定仍有最后一环（TODO-9：renderlist 实例 Path 挂体/updateState moniker 链）。NYI-3（无官方样本）就此关闭。
+**深度升级依据**：「自研产物宿主可开」判据由 per-part 形态升为**整装配形态**：我们的两体装配在官方 SpaceClaim 2019 R3 打开哨兵实测 `done bodies=2`（根 0 体 + 两组件各 1 体，与官方样本同构）。**哨兵修正**：verify_open 原只数根部件直属体——装配体的体在组件内，官方样本实测 bodies=2（修复后），此前 bodies=0 为测量偏差。TODO-9 关闭路径为差分定位（非 renderlist）：①sectionId 为读者固定节键；②sctype moniker 逐字精确；③versions.xml/windows.xml 载文档 GUID；④SAB 实体 token#1 文档级序号；⑤柱面 3 边计数一致；⑥ComponentDef 编号避让面/边 id。NYI-3（无官方样本）就此关闭。
 
 ### 2.8 钣金 —— 85%，L2
 

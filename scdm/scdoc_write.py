@@ -1155,12 +1155,16 @@ def _reorder_to_template(sab_bytes, kind_template):
 def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
     """H9: multi-part assembly scdoc — one SAB per component plus a
     component-hierarchy document.xml.  Returns the number of parts."""
-    from scdm.sab_emit import (Worklist, Makers, MAGIC, END_NAME, _s, _ri,
-                               _td, T_FLAG_A, T_RECORD)
+    from scdm.sab_emit import (Worklist, Makers, _SeqCounter, MAGIC,
+                               END_NAME, _s, _ri, _td, T_FLAG_A, T_RECORD)
 
-    def build_sab_for(items, colors, id_base: int = 0):
+    # one document-global def-creation counter across all part SABs
+    # (official token#1 sequence: per part, body -> faces -> edges)
+    doc_seq = _SeqCounter()
+
+    def build_sab_for(items, colors, id_base: int = 0, seq=None):
         wl = Worklist()
-        makers = Makers(items, colors)
+        makers = Makers(items, colors, seq=seq)
         makers.id_body_base = id_base
         body = wl.run([("body", bi) for bi in range(len(items))], makers)
         out = bytearray()
@@ -1193,6 +1197,7 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
     import zipfile
     template = os.path.join(os.path.dirname(os.path.dirname(
         os.path.abspath(__file__))), "box.scdoc")
+    DOC_GUID = "9d32a3b4-809e-4cc1-8dd7-f73febd3c257"
     doc_xml = _assembly_document_xml(kdoc, groups, name or "design")
     with zipfile.ZipFile(template) as src, \
             zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as out:
@@ -1204,10 +1209,12 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
             if n.endswith("document.xml"):
                 out.writestr(n, doc_xml)
             elif n.endswith("document.xml.rels"):
-                DOC_GUID = "9d32a3b4-809e-4cc1-8dd7-f73febd3c257"
                 rels = ['<?xml version="1.0" encoding="utf-8"?>',
                         '<Relationships xmlns="http://schemas.openxmlformats'
-                        '.org/package/2006/relationships">']
+                        '.org/package/2006/relationships">',
+                        '  <Relationship Type="http://www.spaceclaim.com/'
+                        'relationships/internal/versionHistory" '
+                        'Target="/SpaceClaim/versions.xml" Id="Rv1"/>']
                 for gi in range(len(groups)):
                     rels.append(
                         '  <Relationship Type="http://www.spaceclaim.com/'
@@ -1233,6 +1240,20 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
                     'Target="/SpaceClaim/UI/windows.xml" Id="Rw1"/>')
                 rels.append('</Relationships>')
                 out.writestr(n, "\n".join(rels).encode("utf-8"))
+            elif n.endswith("windows.xml"):
+                # the template's windows.xml carries the TEMPLATE document
+                # GUID; the reader resolves rootPartMoniker/currentPartMoniker
+                # against our document's GUID -- a mismatched GUID breaks
+                # document initialization on open.
+                out.writestr(n, src.read(n).replace(
+                    b"fc598e53-8ab6-41b2-b8ea-b7917346ae70",
+                    DOC_GUID.encode("latin-1")))
+            elif n.endswith("versions.xml"):
+                # versions.xml registers the DOCUMENT GUID; it must match the
+                # moniker GUID used in document.xml + rels.
+                out.writestr(n, src.read(n).replace(
+                    b"fc598e53-8ab6-41b2-b8ea-b7917346ae70",
+                    DOC_GUID.encode("latin-1")))
             else:
                 out.writestr(n, src.read(n))
         np_groups = [(gname, [it for it in items
@@ -1264,7 +1285,8 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
             items2 = [it[:4] for it in items]
             # attrib ids carry the GLOBAL body index (document-id alignment)
             out.writestr("SpaceClaim/Geometry/part%dbodies.sab" % (gi + 1),
-                         build_sab_for(items2, colors, id_base=gi))
+                         build_sab_for(items2, colors, id_base=gi,
+                                       seq=doc_seq))
     return len(groups)
 
 
@@ -1285,39 +1307,45 @@ def _item_of(body):
 
 
 def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
-    """Official-mechanism assembly document.xml (from assembly_sample.scdoc):
+    """Assembly document.xml replicating the OFFICIAL save skeleton.
 
-    root PartDef > ComponentDef(per component, source@refId = docGUID:target
-    PartDef number, trans = instance transform) ...; each body part is a
-    top-level PartDef holding its NominalBodyDef; rels tie partN.sab to
-    partBodyGeometry#GUID:partId.  Body doc-ids are global (0:23+60*bi) and
-    match each part SAB's attrib values.
+    Field-level provenance: references/golden/assembly_sample.scdoc (the
+    official SpaceClaim-written assembly) plus the TODO-9 differential
+    bisection.  The official reader deserializes the WHOLE document.xml
+    schema-first: a single invalid/unknown element anywhere makes it fall
+    back to a blank document (root part only, no bodies) instead of
+    raising.  So every section -- document-level fields, Design,
+    PresentationDef, DocumentSettingsDef -- must follow the official
+    skeleton verbatim; only ids / names / colors / component sources are
+    substituted.
+
+    Id scheme (document-global, verified against the official sample):
+      root part 0:2, DefaultEdgeTreatmentDef 0:13,
+      per body gi:  part 0:{22+60gi}, body def 0:{23+60gi},
+                    faces 0:{27+3k+60gi}, edges 0:{45+3k+60gi},
+                    part caption 0:{86+60gi}, body caption 0:{85+60gi},
+      ComponentDefs 0:{200+i} (dedicated range, never colliding with
+      body-part ids), Design 0:1, PresentationDef 0:5, AttributeTableDef
+      0:6, LayerDef 0:9, RootCaptionDef 0:11, DocumentSettingsDef 0:16,
+      DocumentUnitsDef 0:17, DocumentDetailSettingsDef 0:19.
     """
-    comp_of = {}
-    for comp in getattr(kdoc, "components", []):
-        for bid in comp.body_ids:
-            comp_of.setdefault(bid, comp)
-    comp_members = {}
-    loose = []
-    for gi, (gname, items, colors) in enumerate(groups):
-        body = kdoc.bodies[gi]
-        comp = comp_of.get(body.id)
-        if comp is not None:
-            comp_members.setdefault(comp.id, []).append((gi, body))
-        else:
-            loose.append((gi, body))
-    ordered = []
-    for comp in getattr(kdoc, "components", []):
-        if comp.id in comp_members:
-            ordered.append(comp)
     DOC_GUID = "9d32a3b4-809e-4cc1-8dd7-f73febd3c257"
+    # sectionIds are FIXED section-type keys in the official reader (identical
+    # in every official document); unknown sectionIds make the reader skip the
+    # section and fall back to a blank document (TODO-9 bisection finding).
+    SECTION_DESIGN = "6ab505a9-1afc-4b43-a7db-eb0258edde3e"
+    SECTION_PRES = "595f79a0-e194-4d77-946d-55f551b8663a"
+    SECTION_SETTINGS = "0ac8f8e0-608c-4b1e-a830-61e2a4bad599"
 
     def body_part_def(gi, body, items, colors):
         face_n = sum(len(it[3]) if it[0] == "planar"
                      else (1 if it[0] in ("sphere", "torus") else 3)
                      for it in items)
+        # cyl SAB carries 3 edges (2 circles + seam); sphere 1 (seam),
+        # torus 2 (2 seam edges) -- must match the emitted SAB entity counts
         edge_n = sum(len(it[2]) if it[0] == "planar"
-                     else (1 if it[0] in ("sphere", "torus") else 2)
+                     else (1 if it[0] == "sphere"
+                           else (2 if it[0] == "torus" else 3))
                      for it in items)
         c = colors[0] if colors else (0.745, 0.902, 0.961)
         rgb = "%d, %d, %d" % (int(c[0] * 255), int(c[1] * 255),
@@ -1336,11 +1364,7 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
         pid = 22 + gi * 60
         return ('<PartDef Id="0:%d"><updateState>0:%d</updateState>'
                 '<patternBase /><materialId>0:0</materialId>'
-                '<type>Normal</type>'
-                '<shareTopologyOption>None</shareTopologyOption>'
-                '<DefaultEdgeTreatmentDef Id="0:%d">'
-                '<updateState>0:%d</updateState>'
-                '<blendRadius>0</blendRadius></DefaultEdgeTreatmentDef>'
+                '<type>Normal</type><shareTopologyOption>None</shareTopologyOption>'
                 '<NominalBodyDef Id="0:%d"><updateState>0:%d</updateState>'
                 '<layerId>0:9</layerId><type>Solid</type><color>%s</color>'
                 '<renderingStyle>Plastic</renderingStyle>'
@@ -1348,34 +1372,28 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
                 '<modificationLock>None</modificationLock>'
                 '<finishStyle>MediumGloss</finishStyle>%s%s'
                 '</NominalBodyDef></PartDef>'
-                % (pid, 60 + gi * 60, 13 + gi * 60, 13 + gi * 60, bid,
-                   bid, rgb, faces, edges))
+                % (pid, 60 + gi * 60, bid, bid, rgb, faces, edges))
 
     comp_xml = []
     part_xml = []
     captions = []
     for gi, (gname, items, colors) in enumerate(groups):
-        part_xml.append(body_part_def(gi, kdoc.bodies[gi], items, colors))
+        body = kdoc.bodies[gi]
+        part_xml.append(body_part_def(gi, body, items, colors))
         captions.append(
-            '<CaptionDef Id="0:%d"><subjectId>0:%d</subjectId>'
-            '<name>%s</name><type>Mutable</type></CaptionDef>'
-            % (85 + gi * 60, 23 + gi * 60, kdoc.bodies[gi].name))
-    # one component instance per component; members = its bodies' parts
-    for comp in ordered:
-        members = comp_members[comp.id]
-        children = "".join(
-            '<ComponentDef Id="0:%d"><updateState>0:%d</updateState>'
-            '<source sctype="SpaceClaim.BasicMoniker`1[[SpaceClaim.IEvaluation,'
-            ' Core]], Core" refId="%s:%d" /><trans>1 0 0 0 0 1 0 0 0 0 1 0 '
-            '0 0 0 1</trans><lastAccuracy>0</lastAccuracy>'
-            '<lastEvaluatedTrans>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1'
-            '</lastEvaluatedTrans></ComponentDef>'
-            % (200 + (hash(comp.id + str(gi)) % 5000),
-               200 + (hash(comp.id + str(gi)) % 5000),
-               DOC_GUID, 22 + gi * 60)
-            for gi, _b in members)
-        comp_xml.append(children)
-    for gi, body in loose:
+            '<CaptionDef Id="0:%d"><updateState>0:%d</updateState>'
+            '<subjectId>0:%d</subjectId><name>%s</name><description></description>'
+            '<type version="82">Normal</type></CaptionDef>'
+            % (85 + gi * 60, 85 + gi * 60, 23 + gi * 60,
+               _xml_esc(body.name)))
+        captions.append(
+            '<CaptionDef Id="0:%d"><updateState>0:%d</updateState>'
+            '<subjectId>0:%d</subjectId><name>%s</name><description></description>'
+            '<type version="82">Normal</type></CaptionDef>'
+            % (86 + gi * 60, 86 + gi * 60, 22 + gi * 60,
+               _xml_esc(body.name)))
+    # one component instance per body part (official per-body externalization)
+    for gi in range(len(groups)):
         comp_xml.append(
             '<ComponentDef Id="0:%d"><updateState>0:%d</updateState>'
             '<source sctype="SpaceClaim.BasicMoniker`1[[SpaceClaim.IEvaluation,'
@@ -1383,44 +1401,305 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
             '0 0 0 1</trans><lastAccuracy>0</lastAccuracy>'
             '<lastEvaluatedTrans>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1'
             '</lastEvaluatedTrans></ComponentDef>'
-            % (200 + (hash("loose" + str(gi)) % 5000),
-               200 + (hash("loose" + str(gi)) % 5000),
-               DOC_GUID, 22 + gi * 60))
+            % (200 + gi, 200 + gi, DOC_GUID, 22 + gi * 60))
 
-    layer = ('<PresentationDef sectionId="22222222-2222-2222-2222-'
-             '222222222222" Id="0:5" xmlns="urn:presentation">'
-             '<LayerDef Id="0:9"><name>Layer 1</name><visible>True</visible>'
-             '<locked>False</locked><color>143, 175, 143</color></LayerDef>'
-             '</PresentationDef>')
-    views = ('<SavedViewsDef sectionId="44444444-4444-4444-4444-'
-             '444444444444" Id="0:6" xmlns="urn:view"></SavedViewsDef>')
+    next_id = 60 * len(groups) + 300
+    design = ('<Design sectionId="%s" Id="0:1" xmlns="urn:nom">'
+              '<updateState>0:141</updateState><nextId>1</nextId>'
+              '<PartDef Id="0:2"><updateState>0:%d</updateState>'
+              '<patternBase /><defaultEdgeTreatment sctype='
+              '"SpaceClaim.BasicMoniker`1[[SpaceClaim.IDefaultEdgeTreatment,'
+              ' Nom]], Core" refId="%s:13" /><materialId>0:0</materialId>'
+              '<type>Normal</type><shareTopologyOption>None</shareTopologyOption>'
+              '<DefaultEdgeTreatmentDef Id="0:13"><updateState>0:13</updateState>'
+              '<blendRadius>0</blendRadius></DefaultEdgeTreatmentDef>%s</PartDef>'
+              '%s</Design>'
+              % (SECTION_DESIGN, next_id - 1, DOC_GUID, "".join(comp_xml),
+                 "".join(part_xml)))
+
+    presentation = (
+        '<PresentationDef sectionId="%s" Id="0:5" xmlns="urn:presentation">'
+        '<updateState>0:143</updateState><nextLayerHue>270</nextLayerHue>'
+        '<decorationTableKeys /><decorationTableValues />'
+        '<AttributeTableDef Id="0:6"><updateState>0:6</updateState><paths />'
+        '<versionNumbers /><idRanges /><attributeIndex /><keys />'
+        '<layerNames /><layerAttributes /><createdInVersion>520</createdInVersion>'
+        '</AttributeTableDef>'
+        '<LayerDef Id="0:9"><updateState>0:9</updateState><name>Layer 1</name>'
+        '<visible>True</visible><locked>False</locked>'
+        '<color>143, 175, 143</color><fillStyle>Opaque</fillStyle>'
+        '<lineWeight /></LayerDef>'
+        '<RootCaptionDef Id="0:11" xmlns="urn:nom"><updateState>0:21</updateState>'
+        '<subjectId>0:2</subjectId><name>%s</name><description></description>'
+        '<type version="82">Normal</type><isNameLocked>True</isNameLocked>'
+        '</RootCaptionDef>%s</PresentationDef>'
+        % (SECTION_PRES, _xml_esc(name), "".join(captions)))
+
+    settings = (
+        '<DocumentSettingsDef sectionId="%s" Id="0:16" xmlns="urn:presentation">'
+        '<updateState>0:20</updateState><topViewDirection>Y</topViewDirection>'
+        '<DocumentUnitsDef Id="0:17"><updateState>0:17</updateState><units>'
+        '<massFactor>1</massFactor><derivedDensity>True</derivedDensity>'
+        '<timeFactor>1</timeFactor>'
+        '<lengthProperties><type>MM</type><factor>1000</factor>'
+        '<symbolDisplay>True</symbolDisplay><annotationSymbolDisplay>True'
+        '</annotationSymbolDisplay><trailingZeros>False</trailingZeros>'
+        '<symbol>mm</symbol><secondSymbol>""</secondSymbol>'
+        '<fractionSeparator> </fractionSeparator><decimalPlaces>2</decimalPlaces>'
+        '<largestDenominator>0</largestDenominator><minorsInMajor>10</minorsInMajor>'
+        '<minorTickInterval>0.001</minorTickInterval><angularPrecision>1'
+        '</angularPrecision><angularTrailingZeros>False</angularTrailingZeros>'
+        '</lengthProperties>'
+        '<angleFactor>57.295779513082323</angleFactor><textHeightUnits>MM'
+        '</textHeightUnits><newMassSymbol>g</newMassSymbol>'
+        '<newMassType>GRAMS</newMassType><newMassFactor>1000</newMassFactor>'
+        '<dualDimensionDisplay>False</dualDimensionDisplay>'
+        '<extendedInformationDisplay>None</extendedInformationDisplay>'
+        '<nearestFractionLargestDenominator>16</nearestFractionLargestDenominator>'
+        '<showNearestFromBothSides>False</showNearestFromBothSides>'
+        '<useTightTolerance>False</useTightTolerance>'
+        '<useWorkbenchProjectUnit>False</useWorkbenchProjectUnit>'
+        '<densityProperties><massType>GRAMS</massType><lengthType>MM</lengthType>'
+        '<massSymbol>g</massSymbol><lengthSymbol>mm</lengthSymbol>'
+        '<massFactor>1000</massFactor><lengthFactor>1000</lengthFactor>'
+        '</densityProperties><angularUnits>Degrees</angularUnits></units>'
+        '<alternateUnits><massFactor>1</massFactor><derivedDensity>True'
+        '</derivedDensity><timeFactor>1</timeFactor>'
+        '<lengthProperties><type>INCHES</type><factor>39.370078740157481</factor>'
+        '<symbolDisplay>True</symbolDisplay><annotationSymbolDisplay>True'
+        '</annotationSymbolDisplay><trailingZeros>True</trailingZeros>'
+        '<symbol>in</symbol><secondSymbol>in</secondSymbol>'
+        '<fractionSeparator>-</fractionSeparator><decimalPlaces>3</decimalPlaces>'
+        '<largestDenominator>0</largestDenominator><minorsInMajor>8</minorsInMajor>'
+        '<minorTickInterval>0.003175</minorTickInterval><angularPrecision>1'
+        '</angularPrecision><angularTrailingZeros>False</angularTrailingZeros>'
+        '</lengthProperties>'
+        '<angleFactor>57.295779513082323</angleFactor><textHeightUnits>INCHES'
+        '</textHeightUnits><newMassSymbol>lb</newMassSymbol>'
+        '<newMassType>POUNDS</newMassType><newMassFactor>2.20462</newMassFactor>'
+        '<dualDimensionDisplay>False</dualDimensionDisplay>'
+        '<extendedInformationDisplay>None</extendedInformationDisplay>'
+        '<nearestFractionLargestDenominator>16</nearestFractionLargestDenominator>'
+        '<showNearestFromBothSides>False</showNearestFromBothSides>'
+        '<useTightTolerance>False</useTightTolerance>'
+        '<useWorkbenchProjectUnit>False</useWorkbenchProjectUnit>'
+        '<densityProperties><massType>POUNDS</massType><lengthType>INCHES'
+        '</lengthType><massSymbol>lb</massSymbol><lengthSymbol>in</lengthSymbol>'
+        '<massFactor>2.20462</massFactor><lengthFactor>39.370078740157481'
+        '</lengthFactor></densityProperties><angularUnits>Degrees'
+        '</angularUnits></alternateUnits>'
+        '<unitsSecondary><massFactor>1</massFactor><derivedDensity>True'
+        '</derivedDensity><timeFactor>1</timeFactor>'
+        '<lengthProperties><type>INCHES</type><factor>39.370078740157481</factor>'
+        '<symbolDisplay>True</symbolDisplay><annotationSymbolDisplay>False'
+        '</annotationSymbolDisplay><trailingZeros>True</trailingZeros>'
+        '<symbol>in</symbol><secondSymbol></secondSymbol>'
+        '<fractionSeparator></fractionSeparator><decimalPlaces>3</decimalPlaces>'
+        '<largestDenominator>0</largestDenominator><minorsInMajor>10</minorsInMajor>'
+        '<minorTickInterval>0.0025399999999999997</minorTickInterval>'
+        '<angularPrecision>1</angularPrecision>'
+        '<angularTrailingZeros>False</angularTrailingZeros></lengthProperties>'
+        '<angleFactor>57.295779513082323</angleFactor><textHeightUnits>INCHES'
+        '</textHeightUnits><newMassSymbol>lb</newMassSymbol>'
+        '<newMassType>POUNDS</newMassType><newMassFactor>2.20462</newMassFactor>'
+        '<dualDimensionDisplay>False</dualDimensionDisplay>'
+        '<extendedInformationDisplay>None</extendedInformationDisplay>'
+        '<nearestFractionLargestDenominator>16</nearestFractionLargestDenominator>'
+        '<showNearestFromBothSides>False</showNearestFromBothSides>'
+        '<useTightTolerance>False</useTightTolerance>'
+        '<useWorkbenchProjectUnit>False</useWorkbenchProjectUnit>'
+        '<densityProperties><massType>OUNCES</massType><lengthType>INCHES'
+        '</lengthType><massSymbol>oz</massSymbol><lengthSymbol>in</lengthSymbol>'
+        '<massFactor>35.27392</massFactor><lengthFactor>39.370078740157481'
+        '</lengthFactor></densityProperties><angularUnits>Degrees'
+        '</angularUnits></unitsSecondary>'
+        '<alternateUnitsSecondary><massFactor>1</massFactor>'
+        '<derivedDensity>True</derivedDensity><timeFactor>1</timeFactor>'
+        '<lengthProperties><type>MM</type><factor>1000</factor>'
+        '<symbolDisplay>True</symbolDisplay><annotationSymbolDisplay>False'
+        '</annotationSymbolDisplay><trailingZeros>False</trailingZeros>'
+        '<symbol>mm</symbol><secondSymbol></secondSymbol>'
+        '<fractionSeparator></fractionSeparator><decimalPlaces>2</decimalPlaces>'
+        '<largestDenominator>0</largestDenominator><minorsInMajor>10</minorsInMajor>'
+        '<minorTickInterval>0.0001</minorTickInterval><angularPrecision>1'
+        '</angularPrecision><angularTrailingZeros>False</angularTrailingZeros>'
+        '</lengthProperties>'
+        '<angleFactor>57.295779513082323</angleFactor><textHeightUnits>MM'
+        '</textHeightUnits><newMassSymbol>kg</newMassSymbol>'
+        '<newMassType>KILOGRAMS</newMassType><newMassFactor>1</newMassFactor>'
+        '<dualDimensionDisplay>False</dualDimensionDisplay>'
+        '<extendedInformationDisplay>None</extendedInformationDisplay>'
+        '<nearestFractionLargestDenominator>16</nearestFractionLargestDenominator>'
+        '<showNearestFromBothSides>False</showNearestFromBothSides>'
+        '<useTightTolerance>False</useTightTolerance>'
+        '<useWorkbenchProjectUnit>False</useWorkbenchProjectUnit>'
+        '<densityProperties><massType>GRAMS</massType><lengthType>CM</lengthType>'
+        '<massSymbol>g</massSymbol><lengthSymbol>cm</lengthSymbol>'
+        '<massFactor>1000</massFactor><lengthFactor>100</lengthFactor>'
+        '</densityProperties><angularUnits>Degrees</angularUnits>'
+        '</alternateUnitsSecondary></DocumentUnitsDef>'
+        '<DocumentDetailSettingsDef Id="0:19"><updateState>0:19</updateState>'
+        '<settings><defaultViewProjection>ThirdAngle</defaultViewProjection>'
+        '<defaultViewLayout>BottomLeft</defaultViewLayout>'
+        '<sectionLineArrowSize>0.0028</sectionLineArrowSize>'
+        '<sectionLineLength>0.014</sectionLineLength>'
+        '<leaderCircleSize>0.0009</leaderCircleSize>'
+        '<leaderArrowLength>0.0025</leaderArrowLength>'
+        '<leaderArrowWidth>0.0006</leaderArrowWidth>'
+        '<defaultLeaderShoulderLength>0.00564444444</defaultLeaderShoulderLength>'
+        '<leaderTextBoxGap>0.00141111111</leaderTextBoxGap>'
+        '<defaultFillStyle>Filled</defaultFillStyle>'
+        '<enforceDimensionLine>False</enforceDimensionLine>'
+        '<dimensionTextIsHorizontal>True</dimensionTextIsHorizontal>'
+        '<defaultDimensionTextLocation>MiddleOfTopLine</defaultDimensionTextLocation>'
+        '<tightDimensionTextDistance>False</tightDimensionTextDistance>'
+        '<dimensionTextOffset>0</dimensionTextOffset>'
+        '<defaultGtolFontName>SpaceClaim ASME CB</defaultGtolFontName>'
+        '<extensionLineGap>0.001</extensionLineGap>'
+        '<extensionLineExtend>0.002</extensionLineExtend>'
+        '<dimensionLineExtend>0.006</dimensionLineExtend>'
+        '<annotationCreationColor>Black</annotationCreationColor>'
+        '<detailViewClippedEdgesColor>Black</detailViewClippedEdgesColor>'
+        '<brokenViewClippedEdgesColor>Black</brokenViewClippedEdgesColor>'
+        '<defaultToleranceVerticalPosition>Middle</defaultToleranceVerticalPosition>'
+        '<fractionalScaleDivider>:</fractionalScaleDivider>'
+        '<minimumDefaultHatchSpacing>0.0007</minimumDefaultHatchSpacing>'
+        '<maximumDefaultHatchSpacing>0.02</maximumDefaultHatchSpacing>'
+        '<detailViewBoundaryRendering>PhantomThin</detailViewBoundaryRendering>'
+        '<detailViewNoteLayout>TwoLines</detailViewNoteLayout>'
+        '<crossSectionArrowsRendering>PhantomThick</crossSectionArrowsRendering>'
+        '<detailViewNoteScaleText>SCALE</detailViewNoteScaleText>'
+        '<detailViewNoteDetailText>DETAIL</detailViewNoteDetailText>'
+        '<defaultTextHeight>0.0035</defaultTextHeight>'
+        '<detailViewNameTextHeightRatio>1.4</detailViewNameTextHeightRatio>'
+        '<detailViewNotePlacement>Centered</detailViewNotePlacement>'
+        '<crossSectionArrowOutwardDistance>0</crossSectionArrowOutwardDistance>'
+        '<crossSectionArrowPenetrationDistance>0.0075</crossSectionArrowPenetrationDistance>'
+        '<crossSectionArrowDirectionDisplayStyle>From</crossSectionArrowDirectionDisplayStyle>'
+        '<defaultSectionNameNotePrefix>SECTION</defaultSectionNameNotePrefix>'
+        '<defaultThickLineWeight>0.0007</defaultThickLineWeight>'
+        '<defaultThinLineWeight>0.00035</defaultThinLineWeight>'
+        '<defaultMediumLineWeight>0.000525</defaultMediumLineWeight>'
+        '<defaultDetailViewClippedEdgeExtent>0</defaultDetailViewClippedEdgeExtent>'
+        '<defaultBrokenViewClippedEdgeExtent>0</defaultBrokenViewClippedEdgeExtent>'
+        '<defaultForeshortenedCenterSize>0.004</defaultForeshortenedCenterSize>'
+        '<useThickLineWeightForAreaCrossSectionBorderLines>True'
+        '</useThickLineWeightForAreaCrossSectionBorderLines>'
+        '<threadDisplayStandard>AsmeSimplified</threadDisplayStandard>'
+        '<centerLinesExtend>0.003</centerLinesExtend>'
+        '<crossSectionArrowLineWeight>THICK</crossSectionArrowLineWeight>'
+        '<detailViewBoundaryLineWeight>THIN</detailViewBoundaryLineWeight>'
+        '<virtualSharpRendering>None</virtualSharpRendering>'
+        '<centermarkCrossRadius>0</centermarkCrossRadius>'
+        '<defaultDimensionArrowShape>Arrow</defaultDimensionArrowShape>'
+        '<ordinateDimsShowZeroBaseline>True</ordinateDimsShowZeroBaseline>'
+        '<ordinateDimsDimensionLineAndTextOrientation>'
+        'HideCommonDimensionLineTextVertical'
+        '</ordinateDimsDimensionLineAndTextOrientation>'
+        '<datumSymbolAttachment>Triangle</datumSymbolAttachment>'
+        '<datumSymbolFrame>Rectangular</datumSymbolFrame>'
+        '<isTrimBackProportional>False</isTrimBackProportional>'
+        '<showConstructionCurvesOffPlane>True</showConstructionCurvesOffPlane>'
+        '<threadDiameterDimensionDesignationTextOption>Never'
+        '</threadDiameterDimensionDesignationTextOption>'
+        '<datumCalloutTextHeightRatio>3.5</datumCalloutTextHeightRatio>'
+        '<datumTargetPointSize>0.00494975</datumTargetPointSize>'
+        '<datumTargetHatchSpacing>0.001</datumTargetHatchSpacing>'
+        '<datumTargetHatchAngle>0.78539816339744828</datumTargetHatchAngle>'
+        '<datumCalloutLeaderShape>None</datumCalloutLeaderShape>'
+        '<datumTargetLineShowEndPoints>True</datumTargetLineShowEndPoints>'
+        '<weldingSymbolStandard>AWS</weldingSymbolStandard>'
+        '<gdtStandard>ASME</gdtStandard>'
+        '<hideAnnotationsBehindModel>False</hideAnnotationsBehindModel>'
+        '<projectionArrowsStyle>Double</projectionArrowsStyle>'
+        '<chamferDimensionStyle>Linear</chamferDimensionStyle>'
+        '<chamferDimensionTextStyle>X45</chamferDimensionTextStyle>'
+        '<showNotesForProjectedViews>False</showNotesForProjectedViews>'
+        '<showNotesForAuxiliaryViews>False</showNotesForAuxiliaryViews>'
+        '<projectedViewLabelPrefix>VIEW</projectedViewLabelPrefix>'
+        '<auxiliaryViewLabelPrefix>VIEW</auxiliaryViewLabelPrefix>'
+        '<showProjectedViewArrows>False</showProjectedViewArrows>'
+        '<showAuxiliaryViewArrows>False</showAuxiliaryViewArrows>'
+        '<projectionArrowLength>0.014</projectionArrowLength>'
+        '<systemOfFits>HoleBasis</systemOfFits>'
+        '<holeFundamentalDeviation>H_H</holeFundamentalDeviation>'
+        '<shaftFundamentalDeviation>S_h</shaftFundamentalDeviation>'
+        '<holeInternationalToleranceGrade>IT7</holeInternationalToleranceGrade>'
+        '<shaftInternationalToleranceGrade>IT6</shaftInternationalToleranceGrade>'
+        '<methodOfDesignatingTolerances>ToleranceClass'
+        '</methodOfDesignatingTolerances>'
+        '<assignmentArray>'
+        '<item><key>Annotation</key><value><linestyleId>Solid</linestyleId>'
+        '<lineWeight>THIN</lineWeight></value></item>'
+        '<item><key>AreaCrossHatchingBorderLines</key><value>'
+        '<linestyleId>Solid</linestyleId><lineWeight>THICK</lineWeight>'
+        '</value></item>'
+        '<item><key>BrokenOutSectionClippingEdges</key><value>'
+        '<linestyleId>Solid</linestyleId><lineWeight>THIN</lineWeight>'
+        '</value></item>'
+        '<item><key>BrokenViewClippingEdges</key><value>'
+        '<linestyleId>Solid</linestyleId><lineWeight>THIN</lineWeight>'
+        '</value></item>'
+        '<item><key>CenterLines</key><value>'
+        '<linestyleId>LongDashDash</linestyleId><lineWeight>THIN</lineWeight>'
+        '</value></item>'
+        '<item><key>CrossHatching</key><value>'
+        '<linestyleId>Solid</linestyleId><lineWeight>THIN</lineWeight>'
+        '</value></item>'
+        '<item><key>CrossHatchingBorderLines</key><value>'
+        '<linestyleId>Solid</linestyleId><lineWeight>THICK</lineWeight>'
+        '</value></item>'
+        '<item><key>CrossSectionCutLineTips</key><value>'
+        '<linestyleId>Solid</linestyleId><lineWeight>THIN</lineWeight>'
+        '</value></item>'
+        '<item><key>DatumTargetAreaBorder</key><value>'
+        '<linestyleId>LongDashDoubleDotted</linestyleId><lineWeight>THIN'
+        '</lineWeight></value></item>'
+        '<item><key>DatumTargetLine</key><value>'
+        '<linestyleId>LongDashDoubleDotted</linestyleId><lineWeight>THIN'
+        '</lineWeight></value></item>'
+        '<item><key>DetailViewClippingEdges</key><value>'
+        '<linestyleId>Solid</linestyleId><lineWeight>THIN</lineWeight>'
+        '</value></item>'
+        '<item><key>DrawingHiddenEdges</key><value>'
+        '<linestyleId>Dash</linestyleId><lineWeight>THIN</lineWeight>'
+        '</value></item>'
+        '<item><key>DrawingVisibleEdges</key><value>'
+        '<linestyleId>Solid</linestyleId><lineWeight>THICK</lineWeight>'
+        '</value></item>'
+        '<item><key>ProjectionArrowTipsType</key><value>'
+        '<linestyleId>Solid</linestyleId><lineWeight>THIN</lineWeight>'
+        '</value></item>'
+        '<item><key>ProjectionArrowType</key><value>'
+        '<linestyleId>LongDashDotted</linestyleId><lineWeight>THICK</lineWeight>'
+        '</value></item>'
+        '</assignmentArray></settings></DocumentDetailSettingsDef>'
+        '</DocumentSettingsDef>' % SECTION_SETTINGS)
+
     xml = ('<?xml version="1.0" encoding="utf-8"?>'
            '<Document version="1.520" '
            'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
-           'xmlns="urn:core"><nextId>2000</nextId>'
+           'xmlns="urn:core"><nextId>%d</nextId>'
+           '<isNotCompletable>False</isNotCompletable>'
            '<importPath>%s.scdoc</importPath>'
+           '<importComponentName></importComponentName>'
            '<importTimestamp>01/01/2026 00:00:00</importTimestamp>'
-           '<Design sectionId="11111111-1111-1111-1111-111111111111" '
-           'Id="0:1" xmlns="urn:nom">'
-           '<PartDef Id="0:2"><updateState>0:1999</updateState>'
-           '<patternBase /><defaultEdgeTreatment sctype='
-           '"SpaceClaim.BasicMoniker`1[[SpaceClaim.IDefaultEdgeTreatment,'
-           ' Nom]], Core" refId="%s:13" />'
-           '<materialId>0:0</materialId><type>Normal</type>'
-           '<shareTopologyOption>None</shareTopologyOption>%s</PartDef>'
-           '%s</Design>%s%s'
-           '<DocumentSettingsDef sectionId="33333333-3333-3333-3333-'
-           '333333333333" Id="0:16" xmlns="urn:presentation">'
-           '<DocumentUnitsDef Id="0:17"><units><lengthProperties>'
-           '<type>MM</type><factor>1000</factor><symbol>mm</symbol>'
-           '<decimalPlaces>2</decimalPlaces></lengthProperties></units>'
-           '</DocumentUnitsDef></DocumentSettingsDef>'
-           '<PresentationDef2 sectionId="55555555-5555-5555-5555-'
-           '555555555555" Id="0:7" xmlns="urn:nom">%s'
-           '</PresentationDef2></Document>'
-           % (name, DOC_GUID, "".join(comp_xml), "".join(part_xml), layer,
-              views, "".join(captions)))
+           '<loadTime>0</loadTime>'
+           '<originalToReplacements_Keys /><originalToReplacements_Values />'
+           '<monikerOriginalToReplacements_Keys />'
+           '<monikerOriginalToReplacements_Values />'
+           '<locked>False</locked>'
+           '%s%s%s</Document>'
+           % (next_id, _xml_esc(name), design, presentation, settings))
     return xml.encode("utf-8")
+
+
+def _xml_esc(s: str) -> str:
+    return (str(s).replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace('"', "&quot;"))
+
+
+
 
 
 def write_scdoc(path: str, kdoc, name: str = "design") -> None:
