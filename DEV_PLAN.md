@@ -941,6 +941,17 @@ T_RECORD "surface" [id]
 
 运动学语义：配合求解先把 B 参考系落到关节（fb.origin→fa.origin），再按 θ 绕 A 轴转动 / 沿轴滑移——与标准运动副约定一致。
 
+### 21.3.e H4 实施记录（2026-09-05，完成）
+
+| 工作包 | 交付 | 验证 |
+| --- | --- | --- |
+| 检出器 | `kernel.check_geometry`：小面（面积阈值）、尖刺/薄片（面积↔边跨比）、短边、自交（BRepAlgoAPI_Check）、反向面（定向法向↔重心点积启发式）、开壳（单面使用的边） | 干净盒零发现；缺陷体逐项检出 |
+| 自动修复 | `kernel.repair_geometry`：短边/缝隙 ShapeFix_Wireframe；反向面 ShapeBuild_ReShape 替换**重建面**（同 TShape 替换被忽略的关键坑）；小面/薄片 unify-same-domain 愈合 | 反向面检出→修复→归零，体积保持 |
+| 逐面反转 | `kernel.reverse_face` 公开 | 单测 |
+| GUI | `repair.check`（检查几何）命令 + 放大镜图标 + 一键修复报告 | catalog 守卫通过 |
+| 脚本 | `repair.check` op（阈值参数化） | 录制回放 |
+| 测试 | `tests/test_h4.py` 7 项 | **129 passed** |
+
 ### 21.4 统一验收协议
 
 1. 每工作包单测（pytest，OCCT 级断言）
