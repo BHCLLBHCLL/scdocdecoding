@@ -1004,6 +1004,14 @@ T_RECORD "surface" [id]
 - 验证：双体装配（box+cyl）双 part 均过官方 SabSatConverter restore；自读合并 2 体（box B-rep + cyl 网格兜底）
 - 测试 `tests/test_h8h9.py` 6 项；**161 passed**
 
+### 21.3.j 组件树写回 + 参数对话框（2026-09-05，完成）
+
+**组件树写回（H3 归项落地）**：官方 samplemodel2 实证层级 = `Design > root PartDef > ComponentDef(组件) > PartDef(体) > NominalBodyDef`。`_assembly_document_xml` 重写为该嵌套；**id 对齐机制**：Makers 增加 `id_body_base`（一体一 part 时 attrib doc-id 携带全局体序号 0:23+60·body），document.xml 体 Id 与每个 part 的 SAB attrib **逐 part 对齐**（0:23/0:83 双 part 验证）。体标签 CaptionDef 按体生成；组件 LayerDef 保留。
+
+**H7 参数编辑对话框 UI**：`det.params` 命令 + 滑杆图标；多行 `名称 = 表达式` 编辑器——白名单表预校验（原子提交，失败弹窗不落地）+ 全体参数化重建；解析/重建逻辑 2 项单测（含坏行拒绝）。
+
+测试 `tests/test_h3writeback.py` 6 项；**167 passed**。
+
 ### 21.4 统一验收协议
 
 1. 每工作包单测（pytest，OCCT 级断言）
