@@ -1204,14 +1204,15 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
             if n.endswith("document.xml"):
                 out.writestr(n, doc_xml)
             elif n.endswith("document.xml.rels"):
+                DOC_GUID = "9d32a3b4-809e-4cc1-8dd7-f73febd3c257"
                 rels = ['<?xml version="1.0" encoding="utf-8"?>',
                         '<Relationships xmlns="http://schemas.openxmlformats'
                         '.org/package/2006/relationships">']
                 for gi in range(len(groups)):
                     rels.append(
                         '  <Relationship Type="http://www.spaceclaim.com/'
-                        'relationships/internal/partBodyGeometry#fc598e53-'
-                        '8ab6-41b2-b8ea-b7917346ae70:' + str(gi + 2) +
+                        'relationships/internal/partBodyGeometry#' +
+                        DOC_GUID + ':' + str(2 + gi * 60) +
                         '" Target="/SpaceClaim/Geometry/part' +
                         str(gi + 1) + 'bodies.sab" Id="Rg' + str(gi + 1) +
                         '"/>')
@@ -1221,6 +1222,15 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
                         'relationships/internal/bodyFacets" '
                         'Target="/SpaceClaim/Graphics/facets.bin" '
                         'Id="Rf1"/>')
+                rels.append(
+                    '  <Relationship Type="http://www.spaceclaim.com/'
+                    'relationships/internal/renderlists" '
+                    'Target="/SpaceClaim/Graphics/renderlist.xml" '
+                    'Id="Rr1"/>')
+                rels.append(
+                    '  <Relationship Type="http://www.spaceclaim.com/'
+                    'relationships/internal/windows" '
+                    'Target="/SpaceClaim/UI/windows.xml" Id="Rw1"/>')
                 rels.append('</Relationships>')
                 out.writestr(n, "\n".join(rels).encode("utf-8"))
             else:
@@ -1275,41 +1285,32 @@ def _item_of(body):
 
 
 def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
-    """Full-generation document.xml with the component hierarchy:
+    """Official-mechanism assembly document.xml (from assembly_sample.scdoc):
 
-    Design > PartDef(root) > ComponentDef(per kdoc component)
-        > PartDef(per body) > NominalBodyDef + face/edge ids
-
-    Body ids 0:23+60*body_index match each partN.sab's attrib values (the
-    SAB is written with id_body_base = body index).  Layers, saved views
-    and per-body captions follow.
+    root PartDef > ComponentDef(per component, source@refId = docGUID:target
+    PartDef number, trans = instance transform) ...; each body part is a
+    top-level PartDef holding its NominalBodyDef; rels tie partN.sab to
+    partBodyGeometry#GUID:partId.  Body doc-ids are global (0:23+60*bi) and
+    match each part SAB's attrib values.
     """
-    # component membership: body id -> owning component (first wins)
     comp_of = {}
     for comp in getattr(kdoc, "components", []):
         for bid in comp.body_ids:
             comp_of.setdefault(bid, comp)
-    # ordered component groups: components first, then loose bodies under
-    # a synthetic root component
-    ordered = []          # [(comp_or_None, comp_name, [(gi, body, items)])]
-    by_comp = {}
+    comp_members = {}
     loose = []
     for gi, (gname, items, colors) in enumerate(groups):
         body = kdoc.bodies[gi]
         comp = comp_of.get(body.id)
         if comp is not None:
-            by_comp.setdefault(comp.id, []).append((gi, body, items, colors))
+            comp_members.setdefault(comp.id, []).append((gi, body))
         else:
-            loose.append((gi, body, items, colors))
+            loose.append((gi, body))
+    ordered = []
     for comp in getattr(kdoc, "components", []):
-        members = by_comp.get(comp.id, [])
-        if members:
-            ordered.append((comp, comp.name, members))
-    if loose:
-        ordered.append((None, name + " 根部件", loose))
-
-    part_xml = []
-    captions = []
+        if comp.id in comp_members:
+            ordered.append(comp)
+    DOC_GUID = "9d32a3b4-809e-4cc1-8dd7-f73febd3c257"
 
     def body_part_def(gi, body, items, colors):
         face_n = sum(len(it[3]) if it[0] == "planar"
@@ -1329,10 +1330,6 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
             for k in range(edge_n))
         bid = 23 + gi * 60
         pid = 2 + gi * 60
-        captions.append(
-            '<CaptionDef Id="0:%d"><subjectId>0:%d</subjectId>'
-            '<name>%s</name><type>Mutable</type></CaptionDef>'
-            % (85 + gi * 60, bid, body.name))
         return ('<PartDef Id="0:%d"><DefaultEdgeTreatmentDef Id="0:%d">'
                 '<blendRadius>0</blendRadius></DefaultEdgeTreatmentDef>'
                 '<NominalBodyDef Id="0:%d"><layerId>0:9</layerId>'
@@ -1343,51 +1340,59 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
                 '</NominalBodyDef></PartDef>'
                 % (pid, 13 + gi * 60, bid, rgb, faces, edges))
 
-    root_bodies = []
-    for comp, comp_name, members in ordered:
-        inner = "".join(body_part_def(gi, body, items, colors)
-                        for gi, body, items, colors in members)
-        part_xml.append(
-            '<ComponentDef Id="0:%d"><name>%s</name>'
-            '<type>Normal</type><children>%s</children>'
-            '</ComponentDef>'
-            % (200 + hash(comp.id if comp else comp_name) % 5000,
-               comp_name, inner))
-        root_bodies.extend(members)
+    comp_xml = []
+    part_xml = []
+    captions = []
+    for gi, (gname, items, colors) in enumerate(groups):
+        part_xml.append(body_part_def(gi, kdoc.bodies[gi], items, colors))
+        captions.append(
+            '<CaptionDef Id="0:%d"><subjectId>0:%d</subjectId>'
+            '<name>%s</name><type>Mutable</type></CaptionDef>'
+            % (85 + gi * 60, 23 + gi * 60, kdoc.bodies[gi].name))
+    # one component instance per component; members = its bodies' parts
+    for comp in ordered:
+        members = comp_members[comp.id]
+        children = "".join(
+            '<ComponentDef Id="0:%d"><updateState>0:%d</updateState>'
+            '<source sctype="SpaceClaim.BasicMoniker`1[[SpaceClaim.IEvaluation,'
+            ' Core]], Core" refId="%s:%d" /><trans>1 0 0 0 0 1 0 0 0 0 1 0 '
+            '0 0 0 1</trans><lastAccuracy>0</lastAccuracy>'
+            '<lastEvaluatedTrans>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1'
+            '</lastEvaluatedTrans></ComponentDef>'
+            % (200 + (hash(comp.id + str(gi)) % 5000),
+               200 + (hash(comp.id + str(gi)) % 5000),
+               DOC_GUID, 2 + gi * 60)
+            for gi, _b in members)
+        comp_xml.append(children)
+    for gi, body in loose:
+        comp_xml.append(
+            '<ComponentDef Id="0:%d"><updateState>0:%d</updateState>'
+            '<source sctype="SpaceClaim.BasicMoniker`1[[SpaceClaim.IEvaluation,'
+            ' Core]], Core" refId="%s:%d" /><trans>1 0 0 0 0 1 0 0 0 0 1 0 '
+            '0 0 0 1</trans><lastAccuracy>0</lastAccuracy>'
+            '<lastEvaluatedTrans>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1'
+            '</lastEvaluatedTrans></ComponentDef>'
+            % (200 + (hash("loose" + str(gi)) % 5000),
+               200 + (hash("loose" + str(gi)) % 5000),
+               DOC_GUID, 2 + gi * 60))
 
-    # root part def wrapping the component tree
-    root_inner = "".join(
-        '<NominalFaceDef Id="0:%d"/>' % (27 + 3 * k + gi * 60)
-        for gi, body, items, colors in root_bodies
-        for k in range(1))  # placeholder — root keeps only the tree
     layer = ('<PresentationDef sectionId="22222222-2222-2222-2222-'
              '222222222222" Id="0:5" xmlns="urn:presentation">'
              '<LayerDef Id="0:9"><name>Layer 1</name><visible>True</visible>'
-             '<locked>False</locked><color>143, 175, 143</color></LayerDef>')
-    for comp in getattr(kdoc, "components", []):
-        layer += ('<LayerDef Id="0:%d"><name>%s</name>'
-                  '<visible>%s</visible><locked>%s</locked>'
-                  '<color>143, 175, 143</color></LayerDef>'
-                  % (100 + (hash(comp.id) % 500), comp.name,
-                     comp.visible, comp.anchored))
-    layer += '</PresentationDef>'
+             '<locked>False</locked><color>143, 175, 143</color></LayerDef>'
+             '</PresentationDef>')
     views = ('<SavedViewsDef sectionId="44444444-4444-4444-4444-'
-             '444444444444" Id="0:6" xmlns="urn:view">')
-    for v in getattr(kdoc, "views", []):
-        views += ('<ViewDef><name>%s</name><position>%s</position>'
-                  '<focal>%s</focal></ViewDef>'
-                  % (v.get("name", "view"), v.get("pos", (0, 0, 1)),
-                     v.get("focal", (0, 0, 0))))
-    views += '</SavedViewsDef>'
+             '444444444444" Id="0:6" xmlns="urn:view"></SavedViewsDef>')
     xml = ('<?xml version="1.0" encoding="utf-8"?>'
            '<Document version="1.520" '
            'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
-           'xmlns="urn:core"><nextId>1000</nextId>'
+           'xmlns="urn:core"><nextId>2000</nextId>'
            '<importPath>%s.scdoc</importPath>'
            '<importTimestamp>01/01/2026 00:00:00</importTimestamp>'
            '<Design sectionId="11111111-1111-1111-1111-111111111111" '
            'Id="0:1" xmlns="urn:nom">'
-           '<PartDef Id="0:2"><type>Normal</type>%s</PartDef></Design>%s%s'
+           '<PartDef Id="0:2"><type>Normal</type>%s</PartDef>'
+           '%s</Design>%s%s'
            '<DocumentSettingsDef sectionId="33333333-3333-3333-3333-'
            '333333333333" Id="0:16" xmlns="urn:presentation">'
            '<DocumentUnitsDef Id="0:17"><units><lengthProperties>'
@@ -1397,7 +1402,8 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
            '<PresentationDef2 sectionId="55555555-5555-5555-5555-'
            '555555555555" Id="0:7" xmlns="urn:nom">%s'
            '</PresentationDef2></Document>'
-           % (name, "".join(part_xml), layer, views, "".join(captions)))
+           % (name, "".join(comp_xml), "".join(part_xml), layer, views,
+              "".join(captions)))
     return xml.encode("utf-8")
 
 

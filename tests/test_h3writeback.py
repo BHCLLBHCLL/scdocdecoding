@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import math
 import os
+import re
 import shutil
 import tempfile
 import zipfile
@@ -35,15 +36,22 @@ def asm_path():
 
 
 def test_document_xml_component_hierarchy(asm_path):
+    """Official mechanism (assembly_sample.scdoc): root PartDef holds
+    ComponentDef instances whose source@refId points at the target body
+    PartDef; each body PartDef is top-level with its NominalBodyDef; the
+    NominalBodyDef id matches the part SAB's body attrib value."""
     xml = zipfile.ZipFile(asm_path).read("SpaceClaim/document.xml").decode()
-    # hierarchy: root PartDef > ComponentDef > body PartDefs
-    assert xml.count("<ComponentDef") == 1
-    assert xml.count("<PartDef") == 3          # root + 2 bodies
-    assert xml.index("<ComponentDef") > xml.index("<PartDef")
+    assert xml.count("<PartDef") == 3                    # root + 2 bodies
+    assert xml.count("<ComponentDef") == 2               # one per body part
+    assert "<ComponentDef" in xml.split("</PartDef>")[0]  # nested in root
+    # component instance references the target part number
+    ref = re.search(r'<source[^>]*refId="[^":]+:(\d+)"', xml)
+    assert ref and ref.group(1) == "2"                   # body part 0:2
     # per-body PartDef ids follow the global body index scheme
-    assert 'Id="0:23"' in xml                  # body 0 NominalBodyDef
-    assert 'Id="0:83"' in xml                  # body 1 (23 + 60)
-    assert "Base" in xml and "Boss" in xml and "Assembly1" in xml
+    assert 'Id="0:23"' in xml and 'Id="0:83"' in xml
+    assert "Base" in xml and "Boss" in xml
+    # instance transform present (identity)
+    assert "<trans>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</trans>" in xml
 
 
 def test_part_sab_attrib_ids_align_with_document(asm_path):
