@@ -331,6 +331,83 @@ def op_repair_check(kdoc, opts, scale):
     return body, f"检查几何：{total} 项问题，已修复 {fixedn}"
 
 
+def op_insert_box(kdoc, opts, scale):
+    from scdm.kdoc import KBody
+    w = opts.get("w", 10.0) / scale
+    h = opts.get("h", 10.0) / scale
+    d = opts.get("d", 10.0) / scale
+    org = tuple(o / scale for o in opts.get("origin", (0, 0, 0)))
+    name = opts.get("name", "Box")
+    body = kdoc.add_body(K.make_box(w, h, d, origin=org), name=name)
+    return body, f"已创建盒体 {name}"
+
+
+def op_sheet_bend(kdoc, opts, scale):
+    from scdm import sheetmetal as SM
+    import math
+    if opts.get("create", True):
+        w = opts.get("width", 20.0) / scale
+        t = opts.get("thickness", 1.0) / scale
+        l1 = opts.get("flat1", 30.0) / scale
+        l2 = opts.get("flat2", 20.0) / scale
+        r = opts.get("r_inner", 2.0) / scale
+        k = min(max(opts.get("k", 0.42), 0.0), 1.0)
+        ang = math.radians(opts.get("angle", 90.0))
+        body = _mk_body(kdoc, opts.get("name", "折弯件"))
+        body.shape = SM.bend_from_flat(w, t, l1, l2, ang, r, k)
+        return body, "折弯件已创建"
+    raise ValueError("折弯：需要 create=true")
+
+
+def _mk_body(kdoc, name):
+    return kdoc.add_body(K.make_box(0.001, 0.001, 0.001), name=name)
+
+
+def op_sheet_unfold(kdoc, opts, scale):
+    from scdm import sheetmetal as SM
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("展开：实体不存在")
+    k = min(max(opts.get("k", 0.42), 0.0), 1.0)
+    body.shape = SM.unfold(body.shape, k=k)
+    return body, f"已展开（K={k:g}）"
+
+
+def op_surface_thicken(kdoc, opts, scale):
+    from scdm import surface as S
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("加厚：实体不存在")
+    faces = K.explore(body.shape, "face")
+    fi = opts.get("face", 0)
+    t = opts.get("thickness", 1.0) / scale
+    solid = S.thicken(faces[fi], t, reverse=opts.get("reverse", False))
+    kdoc.add_body(solid, name="加厚体")
+    return body, "已加厚"
+
+
+def op_surface_offset(kdoc, opts, scale):
+    from scdm import surface as S
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("偏移面：实体不存在")
+    faces = K.explore(body.shape, "face")
+    of = S.offset_face(faces[opts.get("face", 0)],
+                       opts.get("distance", 1.0) / scale)
+    kdoc.add_body(of, name="偏移面")
+    return body, "已偏移"
+
+
+def op_surface_untrim(kdoc, opts, scale):
+    from scdm import surface as S
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("去修剪：实体不存在")
+    faces = K.explore(body.shape, "face")
+    body.shape = S.untrim(faces[opts.get("face", 0)])
+    return body, "已去修剪"
+
+
 OPS = {
     "insert.cyl": op_insert_cyl,
     "insert.sphere": op_insert_sphere,
@@ -355,6 +432,12 @@ OPS = {
     "create.draft_neutral": op_draft_neutral,
     "tool.pull_auto": op_pull_auto,
     "repair.check": op_repair_check,
+    "insert.box": op_insert_box,
+    "sheet.bend": op_sheet_bend,
+    "sheet.unfold": op_sheet_unfold,
+    "surface.thicken": op_surface_thicken,
+    "surface.offset": op_surface_offset,
+    "surface.untrim": op_surface_untrim,
 }
 
 

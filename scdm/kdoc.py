@@ -61,6 +61,7 @@ class KernelDoc:
         self.mates: List[dict] = []   # {"type", "a": comp_id, "b": comp_id,
         #                               "value", "angle", "slide"}
         self.parametrics: List[Any] = []  # scdm.params.Parametric
+        self.param_table = None           # scdm.params.ParamTable (optional)
         self.notes: List[dict] = []  # viewport annotations: {"pos": (x,y,z), "text": str}
         self.named: List[dict] = []  # named selections: {"name": str, "items": [(kind,id)]}
         self.groups: List[dict] = []  # user groups: same shape as named
