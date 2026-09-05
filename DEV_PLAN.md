@@ -993,6 +993,17 @@ T_RECORD "surface" [id]
 
 排障：①`_IDENT` 正则带 `$` 锚点使 findall 只取末标识符——拆分为全匹配校验/无锚分词两个正则；②replay 的 op 返回值被包装为 "OK <cmd>"，状态文本断言需用 startswith。
 
+### 21.3.i H8+H9 实施记录（2026-09-05，完成）
+
+**H8 Simulation/Markup 页**：`scdm/simprep.py` 数据模型（Load/Support/Contact/MarkupNote + describe/summary）；`kdoc.sim` 随项目 pickle 持久化；catalog 新增仿真页（载荷/支撑/接触/报告）与标记页（便签/列表），GUI 处理器把对象记录到所选面；`kdoc.notes` property 把标记桥接到视口标注渲染（旧格式经 setter 迁移）。
+
+**H9 scdoc 写回深度**：
+- **`write_scdoc_multi`**：**一体一 part**（官方 samplemodel2 实证布局）——每体独立 partN.sab；document.xml 全量生成（每体 PartDef + NominalFaceDef/NominalEdgeDef id 与各 part 的 SAB attrib id 对齐 + 组件 LayerDef + SavedViewsDef）；bodyFacets rel 仅在含非平面体时写入
+- **关键发现：官方多体 SAB 为逐体深度优先**（每体子树耗尽才引用下一体）——原全体预入队 breadth 序官方 restore 报 `indexing mechanism failed`；`Worklist.run` 改惰性逐体 seeding（单 body 流不变）
+- **读取端**：`load_scdoc` 解析全部 geometry parts 为 `models[]`；`import_scdoc_bundle` 逐 part 合并（B-rep sew 失败的非平面 part 走 facets 网格兜底）
+- 验证：双体装配（box+cyl）双 part 均过官方 SabSatConverter restore；自读合并 2 体（box B-rep + cyl 网格兜底）
+- 测试 `tests/test_h8h9.py` 6 项；**161 passed**
+
 ### 21.4 统一验收协议
 
 1. 每工作包单测（pytest，OCCT 级断言）
