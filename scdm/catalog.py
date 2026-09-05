@@ -199,7 +199,17 @@ TABS: Tuple[Tab, ...] = (
             C("wb.publish", "发布", "Publish", "M5", "save"),
         )),
     )),
-        Tab("sheet", "钣金", "Sheet Metal", (
+        Tab("surface", "曲面", "Surface", (
+        Group("曲面", "Surface", (
+            C("surface.thicken", "加厚", "Thicken", "M5", "thick"),
+            C("surface.offset", "偏移面", "Offset", "M5", "offace"),
+            C("surface.untrim", "去修剪", "Untrim", "M5", "untrim"),
+            C("surface.extend", "延伸", "Extend", "M5", "extend"),
+            C("surface.patch", "补面", "Patch", "M5", "patch"),
+            C("surface.blend", "过渡", "Blend", "M5", "blend"),
+        )),
+    )),
+    Tab("sheet", "钣金", "Sheet Metal", (
         Group("钣金", "Sheet Metal", (
             C("sheet.bend", "折弯", "Bend", "M5", "bend"),
             C("sheet.unfold", "展开", "Unfold", "M5", "unfold"),
@@ -307,6 +317,8 @@ M4_LIVE = {
 
 M5_LIVE = {
     "sheet.bend", "sheet.unfold", "sheet.rip", "sheet.corner", "sheet.jog",
+    "surface.thicken", "surface.offset", "surface.untrim", "surface.extend",
+    "surface.patch", "surface.blend",
     "prep.enclose", "prep.share", "prep.mid", "file.print",
     "facet.reverse", "facet.smooth", "facet.reduce", "facet.fill", "facet.convert",
     "wb.params", "wb.publish",

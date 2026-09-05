@@ -1164,6 +1164,122 @@ else:
             except Exception as exc:
                 self._set_status(f"折叠失败: {exc}")
 
+        def _selected_face(self):
+            """The selected face subshape of the selected body, else None."""
+            ses = self.session()
+            faces = [sid for k, sid in self.sel.items if k == "face"]
+            if not faces:
+                return None, None
+            bid, fi = faces[-1].split(":", 1)
+            b = ses.kdoc.body_by_id(bid)
+            if b is None:
+                return None, None
+            return b, K.explore(b.shape, "face")[int(fi)]
+
+        def _do_surface_thicken(self):
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("加厚：请选择一个面")
+                return
+            vals = self._ask_numbers("加厚", [("厚度 mm", 1.0),
+                                              ("反向 0/1", 0.0)])
+            if not vals:
+                return
+            from scdm import surface as S
+            try:
+                solid = S.thicken(face, vals[0] / ses.scale,
+                                  round(vals[1]) == 1)
+                ses.kdoc.add_body(solid, name="加厚体")
+                self._commit(f"已加厚 {vals[0]:g}mm")
+            except Exception as exc:
+                self._set_status(f"加厚失败: {exc}")
+
+        def _do_surface_offset(self):
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("偏移面：请选择一个面")
+                return
+            vals = self._ask_numbers("偏移面", [("距离 mm（负=反向）", 1.0)])
+            if not vals:
+                return
+            from scdm import surface as S
+            try:
+                of = S.offset_face(face, vals[0] / ses.scale)
+                ses.kdoc.add_body(of, name="偏移面")
+                self._commit(f"已偏移 {vals[0]:g}mm")
+            except Exception as exc:
+                self._set_status(f"偏移失败: {exc}")
+
+        def _do_surface_untrim(self):
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("去修剪：请选择一个面")
+                return
+            from scdm import surface as S
+            try:
+                body.shape = S.untrim(face)
+                self._commit("已去修剪（自然边界）")
+            except Exception as exc:
+                self._set_status(f"去修剪失败: {exc}")
+
+        def _do_surface_extend(self):
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("延伸：请选择一个面")
+                return
+            vals = self._ask_numbers("延伸", [("长度 mm", 5.0)])
+            if not vals:
+                return
+            from scdm import surface as S
+            try:
+                body.shape = S.extend_face(face, vals[0] / ses.scale)
+                self._commit(f"已延伸 {vals[0]:g}mm")
+            except Exception as exc:
+                self._set_status(f"延伸失败: {exc}")
+
+        def _do_surface_patch(self):
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("补面：请选择一个面（用其边界）")
+                return
+            from scdm import surface as S
+            try:
+                edges = K.explore(face, "edge")
+                pf = S.patch_fill(edges)
+                ses.kdoc.add_body(pf, name="补面")
+                self._commit("补面完成")
+            except Exception as exc:
+                self._set_status(f"补面失败: {exc}")
+
+        def _do_surface_blend(self):
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("过渡：请选择一个面（用其边界线框）")
+                return
+            from scdm import surface as S
+            try:
+                edges = K.explore(face, "edge")
+                w1 = S.make_wire_from_edges(edges)
+                # second profile: the same wire translated along its normal
+                n, _c = K.face_normal_center(face)
+                w2v = ses.kdoc
+                from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_Transform
+                o = K._occ()
+                tr = o["gp"].gp_Trsf()
+                tr.SetTranslation(o["gp"].gp_Vec(n[0] * 0.01,
+                                                 n[1] * 0.01,
+                                                 n[2] * 0.01))
+                w2 = BRepBuilderAPI_Transform(w1, tr, True).Shape()
+                bl = S.blend_loft(w1, w2)
+                ses.kdoc.add_body(bl, name="过渡面")
+                self._commit("过渡面完成")
+            except Exception as exc:
+                self._set_status(f"过渡失败: {exc}")
+
         def _do_repair_check(self):
             """H4 检查几何：全项检出 + 一键修复向导。"""
             body = self._selected_kbody()
