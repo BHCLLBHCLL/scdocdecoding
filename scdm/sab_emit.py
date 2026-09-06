@@ -235,8 +235,13 @@ def _circ_bbox(center, R, axis):
 class Makers:
     """Builds records for every entity key; keys are ('kind', bi, ...)."""
 
-    def __init__(self, items, colors=None, seq=None, xacis=False):
+    def __init__(self, items, colors=None, seq=None, xacis=False,
+                 doc_ids=None):
         self.items = items            # [('planar', verts, edges, faces) | ('cyl', info)]
+        # per-body document-id plan ({"body", "faces": [...], "edges": [...]})
+        # from the assembly allocator; when absent the 60-stride arithmetic
+        # below applies (single-body path, official layout)
+        self.doc_ids = doc_ids
         self.seq = seq if seq is not None else _SeqCounter()
         self.xacis = xacis            # emit the official XACIS wstring identity chain
         self._xid = {}
@@ -317,6 +322,28 @@ class Makers:
 
     def cyl(self, bi):
         return self.items[bi][1]
+
+    def _doc_id(self, bi: int, kind: str, idx: int) -> int:
+        """Document id of a body/face/edge from the assembly id plan;
+        falls back to the official 60-stride arithmetic (single-body)."""
+        did = None
+        if self.doc_ids:
+            # assembly path: doc_ids is ONE body's plan (each part file
+            # carries exactly one body, bi == 0)
+            did = self.doc_ids if isinstance(self.doc_ids, dict) else (
+                self.doc_ids[bi] if bi < len(self.doc_ids) else None)
+        if did is not None:
+            if kind == "body":
+                return did["body"]
+            seq_list = did[kind + "s"]
+            if idx < len(seq_list):
+                return seq_list[idx]
+        base = self.id_body_base + bi
+        if kind == "body":
+            return 23 + 60 * base
+        if kind == "face":
+            return 27 + 3 * idx + 60 * base
+        return 45 + 3 * idx + 60 * base
 
     def _xacis_id(self, key) -> str:
         """Per-entity XACIS identity string ('1V' + base32 counter; the
@@ -950,7 +977,7 @@ class Makers:
             owner = wl.ref(("body", key[2]))
             nxt = (wl.ref(("attrib", "bid", key[2])) if self.xacis
                    else wl.ref(("attrib", "bpn", key[2])))
-            return _attrib(owner, "0:%d" % (23 + 60 * (self.id_body_base + key[2])),
+            return _attrib(owner, "0:%d" % self._doc_id(key[2], "body", 0),
                            nxt, None)
         if sub == "bid":
             owner = wl.ref(("body", key[2]))
@@ -992,7 +1019,7 @@ class Makers:
                 # sphere/torus faces carry no rgb_color chain (matches official)
                 closed = self.item(bi)[0] in ("sphere", "torus")
                 nxt = None if closed else wl.ref(("attrib", "frgb", bi, fi))
-            return _attrib(owner, "0:%d" % (27 + 3 * fi + 60 * (self.id_body_base + bi)), nxt, None,
+            return _attrib(owner, "0:%d" % self._doc_id(bi, "face", fi), nxt, None,
                            name_tag="%6")
         if sub == "fid":
             bi, fi = key[2], key[3]
@@ -1012,7 +1039,7 @@ class Makers:
             bi, ei = key[2], key[3]
             owner = wl.ref(("edge", bi, ei))
             nxt = wl.ref(("attrib", "eid", bi, ei)) if self.xacis else None
-            return _attrib(owner, "0:%d" % (45 + 3 * ei + 60 * (self.id_body_base + bi)),
+            return _attrib(owner, "0:%d" % self._doc_id(bi, "edge", ei),
                            nxt, name_tag="%6")
         if sub == "eid":
             bi, ei = key[2], key[3]

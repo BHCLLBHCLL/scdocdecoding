@@ -1198,12 +1198,13 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
     # (official token#1 sequence: per part, body -> faces -> edges)
     doc_seq = _SeqCounter()
 
-    def build_sab_for(items, colors, id_base: int = 0, seq=None):
+    def build_sab_for(items, colors, id_base: int = 0, seq=None,
+                      doc_ids=None):
         wl = Worklist()
         # multi-part parts carry the official XACIS wstring identity chain
         # (assembly/STEP-import provenance; the single-part path keeps the
         # box.scdoc PNAME/rgb_color layout)
-        makers = Makers(items, colors, seq=seq, xacis=True)
+        makers = Makers(items, colors, seq=seq, xacis=True, doc_ids=doc_ids)
         makers.id_body_base = id_base
         body = wl.run([("body", bi) for bi in range(len(items))], makers)
         out = bytearray()
@@ -1237,7 +1238,9 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
     template = os.path.join(os.path.dirname(os.path.dirname(
         os.path.abspath(__file__))), "box.scdoc")
     DOC_GUID = "9d32a3b4-809e-4cc1-8dd7-f73febd3c257"
-    doc_xml = _assembly_document_xml(kdoc, groups, name or "design")
+    doc_plan = _allocate_assembly_ids(groups, kdoc)
+    doc_xml = _assembly_document_xml(kdoc, groups, name or "design",
+                                     ids=doc_plan)
     with zipfile.ZipFile(template) as src, \
             zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as out:
         for n in src.namelist():
@@ -1258,7 +1261,7 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
                     rels.append(
                         '  <Relationship Type="http://www.spaceclaim.com/'
                         'relationships/internal/partBodyGeometry#' +
-                        DOC_GUID + ':' + str(22 + gi * 60) +
+                        DOC_GUID + ':' + str(doc_plan["part"][gi]) +
                         '" Target="/SpaceClaim/Geometry/part' +
                         str(gi + 1) + 'bodies.sab" Id="Rg' + str(gi + 1) +
                         '"/>')
@@ -1305,7 +1308,7 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
             for gi, body in enumerate(kdoc.bodies):
                 it = _item_of(body)
                 items_all.append(it)
-                ids_all.append(_facet_ids(it, gi))
+                ids_all.append(doc_plan["facet_ids"][gi])
                 if it[0] == "planar":
                     tessellations.append([])
                     continue
@@ -1326,7 +1329,8 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
             # attrib ids carry the GLOBAL body index (document-id alignment)
             out.writestr("SpaceClaim/Geometry/part%dbodies.sab" % (gi + 1),
                          build_sab_for(items2, colors, id_base=gi,
-                                       seq=doc_seq))
+                                       seq=doc_seq,
+                                       doc_ids=doc_plan["sab_ids"][gi]))
     return len(groups)
 
 
@@ -1346,7 +1350,60 @@ def _item_of(body):
     return ("planar",) + _extract_solid(s)
 
 
-def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
+def _counts_of(items) -> "tuple[int, int]":
+    """(n_faces, n_edges) for one body item tuple (matches the SAB emitter's
+    entity counts: cyl 3 edges / sphere 1 / torus 2)."""
+    if items[0] == "planar":
+        return len(items[3]), len(items[2])
+    if items[0] == "cyl":
+        return 3, 3
+    if items[0] == "sphere":
+        return 1, 1
+    return 1, 2
+
+
+def _allocate_assembly_ids(groups, kdoc):
+    """P0-1: one document-global id plan consumed by document.xml, the
+    per-part SAB attribs, facets.bin and rels -- they can never diverge.
+
+    Official 60-stride layout (golden/assembly_sample.scdoc) is preserved
+    while collision-free; collisions (>=4 bodies, dense bodies) bump to the
+    next free id via _DocIdAllocator.
+    """
+    alloc = _DocIdAllocator()
+    plan = {"part": [], "body": [], "faces": [], "edges": [],
+            "cap_body": [], "cap_part": [], "comp": [],
+            "cont_part": [], "cont_comp": [], "cont_cap": [],
+            "facet_ids": []}
+    for gi, (gname, items, colors) in enumerate(groups):
+        nf, ne = _counts_of(items[0])
+        pid = alloc.take_desired(22 + 60 * gi)
+        bid = alloc.take_desired(23 + 60 * gi)
+        faces = [alloc.take_desired(27 + 3 * k + 60 * gi) for k in range(nf)]
+        edges = [alloc.take_desired(45 + 3 * k + 60 * gi) for k in range(ne)]
+        cb = alloc.take_desired(85 + 60 * gi)
+        cp = alloc.take_desired(86 + 60 * gi)
+        plan["part"].append(pid)
+        plan["body"].append(bid)
+        plan["faces"].append(faces)
+        plan["edges"].append(edges)
+        plan["cap_body"].append(cb)
+        plan["cap_part"].append(cp)
+        plan["comp"].append(alloc.take_desired(200 + gi))
+        plan["facet_ids"].append({"body": bid, "update": bid,
+                                  "faces": faces, "edges": edges})
+        plan.setdefault("sab_ids", [])
+        plan["sab_ids"].append({"body": bid, "faces": faces, "edges": edges})
+    for ci in range(len(getattr(kdoc, "components", []))):
+        plan["cont_part"].append(alloc.take_desired(240 + ci))
+        plan["cont_comp"].append(alloc.take_desired(260 + ci))
+        plan["cont_cap"].append(alloc.take_desired(280 + ci))
+    plan["next"] = max(alloc.used) + 1
+    return plan
+
+
+def _assembly_document_xml(kdoc, groups, name: str,
+                           ids: "dict | None" = None) -> bytes:
     """Assembly document.xml replicating the OFFICIAL save skeleton.
 
     Field-level provenance: references/golden/assembly_sample.scdoc (the
@@ -1380,31 +1437,35 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
     SECTION_PRES = "595f79a0-e194-4d77-946d-55f551b8663a"
     SECTION_SETTINGS = "0ac8f8e0-608c-4b1e-a830-61e2a4bad599"
 
+    ids = ids or {}
+    part_ids = ids.get("part", [22 + gi for gi in range(len(groups))])
+    body_ids = ids.get("body", [23 + gi for gi in range(len(groups))])
+    face_ids = ids.get("faces", [])
+    edge_ids = ids.get("edges", [])
+    cap_body_ids = ids.get("cap_body", [85 + gi for gi in range(len(groups))])
+    cap_part_ids = ids.get("cap_part", [86 + gi for gi in range(len(groups))])
+    comp_ids = ids.get("comp", [200 + gi for gi in range(len(groups))])
+    cont_part_ids = ids.get("cont_part", [])
+    cont_comp_ids = ids.get("cont_comp", [])
+    cont_cap_ids = ids.get("cont_cap", [])
+
     def body_part_def(gi, body, items, colors):
-        face_n = sum(len(it[3]) if it[0] == "planar"
-                     else (1 if it[0] in ("sphere", "torus") else 3)
-                     for it in items)
-        # cyl SAB carries 3 edges (2 circles + seam); sphere 1 (seam),
-        # torus 2 (2 seam edges) -- must match the emitted SAB entity counts
-        edge_n = sum(len(it[2]) if it[0] == "planar"
-                     else (1 if it[0] == "sphere"
-                           else (2 if it[0] == "torus" else 3))
-                     for it in items)
+        fid = face_ids[gi]
+        eid = edge_ids[gi]
         c = colors[0] if colors else (0.745, 0.902, 0.961)
         rgb = "%d, %d, %d" % (int(c[0] * 255), int(c[1] * 255),
                               int(c[2] * 255))
         faces = "".join(
             '<NominalFaceDef Id="0:%d"><updateState>0:%d</updateState>'
-            '</NominalFaceDef>' % (27 + 3 * k + gi * 60,
-                                   27 + 3 * k + gi * 60)
-            for k in range(face_n))
+            '</NominalFaceDef>' % (fid[k], fid[k])
+            for k in range(len(fid)))
         edges = "".join(
             '<NominalEdgeDef Id="0:%d"><updateState>0:%d</updateState>'
             '<isReversed>False</isReversed></NominalEdgeDef>'
-            % (45 + 3 * k + gi * 60, 45 + 3 * k + gi * 60)
-            for k in range(edge_n))
-        bid = 23 + gi * 60
-        pid = 22 + gi * 60
+            % (eid[k], eid[k])
+            for k in range(len(eid)))
+        bid = body_ids[gi]
+        pid = part_ids[gi]
         return ('<PartDef Id="0:%d"><updateState>0:%d</updateState>'
                 '<patternBase /><materialId>0:0</materialId>'
                 '<type>Normal</type><shareTopologyOption>None</shareTopologyOption>'
@@ -1427,13 +1488,13 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
             '<CaptionDef Id="0:%d"><updateState>0:%d</updateState>'
             '<subjectId>0:%d</subjectId><name>%s</name><description></description>'
             '<type version="82">Normal</type></CaptionDef>'
-            % (85 + gi * 60, 85 + gi * 60, 23 + gi * 60,
+            % (cap_body_ids[gi], cap_body_ids[gi], body_ids[gi],
                _xml_esc(body.name)))
         captions.append(
             '<CaptionDef Id="0:%d"><updateState>0:%d</updateState>'
             '<subjectId>0:%d</subjectId><name>%s</name><description></description>'
             '<type version="82">Normal</type></CaptionDef>'
-            % (86 + gi * 60, 86 + gi * 60, 22 + gi * 60,
+            % (cap_part_ids[gi], cap_part_ids[gi], part_ids[gi],
                _xml_esc(body.name)))
     # one component instance per body part (official per-body externalization)
     for gi in range(len(groups)):
@@ -1444,13 +1505,13 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
             '0 0 0 1</trans><lastAccuracy>0</lastAccuracy>'
             '<lastEvaluatedTrans>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1'
             '</lastEvaluatedTrans></ComponentDef>'
-            % (200 + gi, 200 + gi, DOC_GUID, 22 + gi * 60))
+            % (comp_ids[gi], comp_ids[gi], DOC_GUID, part_ids[gi]))
     # container component parts: one EMPTY PartDef per kdoc component plus its
     # ComponentDef instance (official assembly_sample.scdoc layout: bodies stay
     # externalized as root-level instances, the container part carries no body)
     container_parts = []
     for ci, comp in enumerate(getattr(kdoc, "components", [])):
-        pid, cid = 240 + ci, 260 + ci
+        pid, cid = cont_part_ids[ci], cont_comp_ids[ci]
         container_parts.append(
             '<PartDef Id="0:%d"><updateState>0:%d</updateState>'
             '<patternBase /><materialId>0:0</materialId>'
@@ -1468,11 +1529,12 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
             '<CaptionDef Id="0:%d"><updateState>0:%d</updateState>'
             '<subjectId>0:%d</subjectId><name>%s</name><description></description>'
             '<type version="82">Normal</type></CaptionDef>'
-            % (280 + ci, 280 + ci, pid, _xml_esc(comp.name)))
+            % (cont_cap_ids[ci], cont_cap_ids[ci], pid, _xml_esc(comp.name)))
         part_xml.append(container_parts[-1])
 
     n_containers = len(container_parts)
-    next_id = max(60 * len(groups) + 300, 280 + n_containers + 40)
+    next_id = max(ids.get("next", 0),
+                  60 * len(groups) + 300, 280 + n_containers + 40)
     design = ('<Design sectionId="%s" Id="0:1" xmlns="urn:nom">'
               '<updateState>0:141</updateState><nextId>1</nextId>'
               '<PartDef Id="0:2"><updateState>0:%d</updateState>'
@@ -1761,6 +1823,43 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
            '%s%s%s</Document>'
            % (next_id, _xml_esc(name), design, presentation, settings))
     return xml.encode("utf-8")
+
+
+class _DocIdAllocator:
+    """Document-global id allocator for assembly document.xml.
+
+    Official-layout-first: every element asks for its DESIRED id (the
+    per-body 60-stride layout validated against
+    references/golden/assembly_sample.scdoc); when that id is already taken
+    -- which happens for >=4 bodies or bodies with many edges/faces -- the
+    allocator bumps to the next free number above.  Uniqueness across the
+    whole document is guaranteed; small assemblies keep the exact official
+    numbering.
+
+    Reserved (fixed skeleton ids): 1 Design, 2 root part, 5
+    PresentationDef, 6 AttributeTableDef, 7 PresentationDef2, 9 LayerDef,
+    11 RootCaptionDef, 13 root DefaultEdgeTreatmentDef, 16
+    DocumentSettingsDef, 17 DocumentUnitsDef, 19
+    DocumentDetailSettingsDef, and the root state trio 141/143/145.
+    """
+
+    RESERVED = frozenset({1, 2, 5, 6, 7, 9, 11, 13, 16, 17, 19,
+                          141, 143})
+
+    def __init__(self):
+        self.used: set = set(self.RESERVED)
+
+    def take_desired(self, desired: int) -> int:
+        """Allocate `desired`, or the next free id >= 21 when taken."""
+        d = max(int(desired), 21)
+        if d not in self.used and d not in self.RESERVED:
+            self.used.add(d)
+            return d
+        d = max(d, 21)
+        while d in self.used or d in self.RESERVED:
+            d += 1
+        self.used.add(d)
+        return d
 
 
 def _xml_esc(s: str) -> str:
