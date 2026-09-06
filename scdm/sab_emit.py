@@ -72,6 +72,22 @@ def _v3b(x, y, z) -> bytes:
     return bytes([T_VEC3B]) + _rd(x) + _rd(y) + _rd(z)
 
 
+# Class-id override table (official ACIS kernel subtype ids).  The
+# converter restores streams whose declared ids follow the official table
+# when wstring_attrib records are present; the legacy box.scdoc table
+# (shell=9, face=10, ...) stays valid for streams WITHOUT wstrings.  Set by
+# Makers.__init__ per emission mode (single-threaded emission).
+CID_MAP: Dict[int, int] = {}
+OFFICIAL_CID_MAP = {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 7: 7, 8: 8,
+                    9: 10, 10: 12, 11: 13, 12: 16, 13: 15,
+                    14: 14, 15: 15, 16: 17, 17: 18, 18: 19,
+                    19: 22, 20: 21, 21: 23, 22: 14, 23: 20}
+
+
+def _cid(cid: int) -> int:
+    return CID_MAP.get(cid, cid)
+
+
 class _Rec:
     def __init__(self, name: str, class_id: Optional[int], chain=()):
         self.name = name
@@ -89,22 +105,22 @@ class _Rec:
         out = bytearray()
         for cname, cid in self.chain:
             if cid is not None and seen.get(cname) == cid:
-                out += bytes([T_CHAIN, 5, T_ID]) + _ri(cid)
+                out += bytes([T_CHAIN, 5, T_ID]) + _ri(_cid(cid))
                 continue
             hdrlen = len(cname) + (5 if cid is not None else 0)
             out += bytes([T_CHAIN, hdrlen]) + cname.encode("latin-1")
             if cid is not None:
-                out += bytes([T_ID]) + _ri(cid)
+                out += bytes([T_ID]) + _ri(_cid(cid))
                 seen[cname] = cid
         if self.class_id is not None and seen.get(self.name) == self.class_id:
-            out += bytes([T_RECORD, 5, T_ID]) + _ri(self.class_id)
+            out += bytes([T_RECORD, 5, T_ID]) + _ri(_cid(self.class_id))
             out += self.tokens
             out += bytes([T_TERM])
             return bytes(out)
         hdrlen = len(self.name) + (5 if self.class_id is not None else 0)
         out += bytes([T_RECORD, hdrlen]) + self.name.encode("latin-1")
         if self.class_id is not None:
-            out += bytes([T_ID]) + _ri(self.class_id)
+            out += bytes([T_ID]) + _ri(_cid(self.class_id))
             seen[self.name] = self.class_id
         out += self.tokens
         out += bytes([T_TERM])
@@ -219,9 +235,14 @@ def _circ_bbox(center, R, axis):
 class Makers:
     """Builds records for every entity key; keys are ('kind', bi, ...)."""
 
-    def __init__(self, items, colors=None, seq=None):
+    def __init__(self, items, colors=None, seq=None, xacis=False):
         self.items = items            # [('planar', verts, edges, faces) | ('cyl', info)]
         self.seq = seq if seq is not None else _SeqCounter()
+        self.xacis = xacis            # emit the official XACIS wstring identity chain
+        self._xid = {}
+        self._xid_n = 0
+        global CID_MAP
+        CID_MAP = OFFICIAL_CID_MAP if xacis else {}
         self.col = {
             bi: (colors[bi] if colors and bi < len(colors)
                  else (0.745, 0.902, 0.961))
@@ -297,6 +318,20 @@ class Makers:
     def cyl(self, bi):
         return self.items[bi][1]
 
+    def _xacis_id(self, key) -> str:
+        """Per-entity XACIS identity string ('1V' + base32 counter; the
+        official loop constant '1VFBE' is handled by the caller)."""
+        if key not in self._xid:
+            self._xid[key] = "1V" + _b32_code(1000 + self._xid_n, 5)
+            self._xid_n += 1
+        return self._xid[key]
+
+    @property
+    def _product_id(self) -> str:
+        """Per-part XSTEP product id (official 60-char '1VH4…' pattern)."""
+        return "1VH4" + "".join(
+            _B32[(i * 5 + 3 * self.id_body_base) % 32] for i in range(56))
+
     # -- planar topology ------------------------------------------------
     def make(self, key, wl):
         kind = key[0]
@@ -317,7 +352,9 @@ class Makers:
             smin, smax = (it[1]["bbox"] if it[0] in ("cyl", "sphere", "torus")
                           else _bbox(it[1]))
             return (_Rec("lump", 7)
-                    .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1),
+                    .add(_p(wl.ref(("attrib", "lname", key[1]))
+                           if self.xacis else -1),
+                         _ti(-1), _ti(-1), _p(-1), _p(-1),
                          _p(wl.ref(("shell", key[1]))), _p(wl.ref(("body", key[1]))),
                          bytes([T_FLAG_A]), _v3(*smin), _v3(*smax)))
         if kind == "shell":
@@ -425,7 +462,9 @@ class Makers:
         lmin, lmax = _bbox(d["verts"], d["loop"])
         coeds = self.lc[key]
         return (_Rec("loop", 11)
-                .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1),
+                .add(_p(wl.ref(("attrib", "loopname", bi, fi))
+                       if self.xacis else -1),
+                     _ti(-1), _ti(-1), _p(-1), _p(-1),
                      _p(wl.ref(coeds[0])), _p(wl.ref(("face", bi, fi))),
                      bytes([T_FLAG_A]), _v3(*lmin), _v3(*lmax),
                      bytes([T_INT15]) + _ri(0)))
@@ -475,7 +514,9 @@ class Makers:
     def _vertex(self, key, wl):
         bi, vi = key[1], key[2]
         return (_Rec("vertex", 18)
-                .add(_p(-1), _ti(-1), _ti(-1), _p(-1),
+                .add(_p(wl.ref(("attrib", "vname", bi, vi))
+                       if self.xacis else -1),
+                     _ti(-1), _ti(-1), _p(-1),
                      _p(wl.ref(self.vp.get(key))), _p(wl.ref(("point", bi, vi)))))
 
     def _point(self, key, wl):
@@ -564,7 +605,9 @@ class Makers:
         else:
             lmin, lmax = _circ_bbox(cap_a, R, axis)
         return (_Rec("loop", 11)
-                .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1),
+                .add(_p(wl.ref(("attrib", "loopname", bi, fi))
+                       if self.xacis else -1),
+                     _ti(-1), _ti(-1), _p(-1), _p(-1),
                      _p(wl.ref(head)), _p(wl.ref(("face", bi, fi))),
                      bytes([T_FLAG_A]), _v3(*lmin), _v3(*lmax),
                      bytes([T_INT15]) + _ri(0)))
@@ -642,7 +685,9 @@ class Makers:
         # bottom vertex -> seam edge(e1)
         edge_key = ("edge", bi, 0) if vi == 0 else ("edge", bi, 1)
         return (_Rec("vertex", 18)
-                .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(wl.ref(edge_key)),
+                .add(_p(wl.ref(("attrib", "vname", bi, vi))
+                       if self.xacis else -1),
+                     _ti(-1), _ti(-1), _p(-1), _p(wl.ref(edge_key)),
                      _p(wl.ref(("point", bi, vi)))))
 
     def _cpoint(self, key, wl):
@@ -692,7 +737,9 @@ class Makers:
         # the seam loop is a degenerate single point at the pole
         p = (org[0] - axis[0] * R, org[1] - axis[1] * R, org[2] - axis[2] * R)
         return (_Rec("loop", 11)
-                .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1),
+                .add(_p(wl.ref(("attrib", "loopname", bi, 0))
+                       if self.xacis else -1),
+                     _ti(-1), _ti(-1), _p(-1), _p(-1),
                      _p(wl.ref(("coedge", bi, 0))), _p(wl.ref(("face", bi, 0))),
                      bytes([T_FLAG_A]), _v3(*p), _v3(*p),
                      bytes([T_INT15]) + _ri(4), _p(wl.ref(("sphere", bi))),
@@ -722,7 +769,9 @@ class Makers:
     def _sphere_vertex(self, key, wl):
         bi = key[1]
         return (_Rec("vertex", 18)
-                .add(_p(-1), _ti(-1), _ti(-1), _p(-1),
+                .add(_p(wl.ref(("attrib", "vname", bi, 0))
+                       if self.xacis else -1),
+                     _ti(-1), _ti(-1), _p(-1),
                      _p(wl.ref(("edge", bi, 0))), _p(wl.ref(("point", bi, 0)))))
 
     def _sphere_point(self, key, wl):
@@ -766,7 +815,9 @@ class Makers:
         bi = key[1]
         lo, hi = self._tor(bi)["bbox"]
         return (_Rec("loop", 11)
-                .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(-1),
+                .add(_p(wl.ref(("attrib", "loopname", bi, 0))
+                       if self.xacis else -1),
+                     _ti(-1), _ti(-1), _p(-1), _p(-1),
                      _p(wl.ref(("coedge", bi, 0))), _p(wl.ref(("face", bi, 0))),
                      bytes([T_FLAG_A]), _v3(*lo), _v3(*hi),
                      bytes([T_INT15]) + _ri(0)))
@@ -822,7 +873,9 @@ class Makers:
     def _torus_vertex(self, key, wl):
         bi = key[1]
         return (_Rec("vertex", 18)
-                .add(_p(-1), _ti(-1), _ti(-1), _p(-1),
+                .add(_p(wl.ref(("attrib", "vname", bi, 0))
+                       if self.xacis else -1),
+                     _ti(-1), _ti(-1), _p(-1),
                      _p(wl.ref(("edge", bi, 0))), _p(wl.ref(("point", bi, 0)))))
 
     def _torus_point(self, key, wl):
@@ -895,22 +948,57 @@ class Makers:
         sub = key[1]
         if sub == "bname":
             owner = wl.ref(("body", key[2]))
-            rec = _attrib(owner, "0:%d" % (23 + 60 * (self.id_body_base + key[2])),
-                          wl.ref(("attrib", "bpn", key[2])), None)
-            return rec
+            nxt = (wl.ref(("attrib", "bid", key[2])) if self.xacis
+                   else wl.ref(("attrib", "bpn", key[2])))
+            return _attrib(owner, "0:%d" % (23 + 60 * (self.id_body_base + key[2])),
+                           nxt, None)
+        if sub == "bid":
+            owner = wl.ref(("body", key[2]))
+            return _wattrib(owner, self._xacis_id(("body", key[2])),
+                            wl.ref(("attrib", "bstep", key[2])),
+                            wl.ref(("attrib", "bname", key[2])),
+                            name_tag="ATTRIB_XACIS_ID%9")
+        if sub == "bstep":
+            owner = wl.ref(("body", key[2]))
+            return _wattrib(owner, self._product_id, None,
+                            wl.ref(("attrib", "bid", key[2])),
+                            name_tag="ATTRIB_XSTEP_PRODUCT_ID%11")
         if sub == "bpn":
             owner = wl.ref(("body", key[2]))
             return _attrib(owner, "SC:0", None,
                            wl.ref(("attrib", "bname", key[2])),
                            name_tag="ATTRIB_XACIS_PNAME%8")
+        if sub == "lname":
+            owner = wl.ref(("lump", key[2]))
+            return _wattrib(owner, self._xacis_id(("body", key[2])),
+                            wl.ref(("attrib", "lstep", key[2])), None)
+        if sub == "lstep":
+            owner = wl.ref(("lump", key[2]))
+            return _wattrib(owner, self._product_id,
+                            wl.ref(("attrib", "lstep6", key[2])),
+                            wl.ref(("attrib", "lname", key[2])),
+                            name_tag="%11")
+        if sub == "lstep6":
+            owner = wl.ref(("lump", key[2]))
+            return _wattrib(owner, self._product_id, None,
+                            wl.ref(("attrib", "lstep", key[2])),
+                            name_tag="%6")
         if sub == "fname":
             bi, fi = key[2], key[3]
             owner = wl.ref(("face", bi, fi))
-            # sphere/torus faces carry no rgb_color chain (matches official)
-            closed = self.item(bi)[0] in ("sphere", "torus")
-            nxt = None if closed else wl.ref(("attrib", "frgb", bi, fi))
+            if self.xacis:
+                nxt = wl.ref(("attrib", "fid", bi, fi))
+            else:
+                # sphere/torus faces carry no rgb_color chain (matches official)
+                closed = self.item(bi)[0] in ("sphere", "torus")
+                nxt = None if closed else wl.ref(("attrib", "frgb", bi, fi))
             return _attrib(owner, "0:%d" % (27 + 3 * fi + 60 * (self.id_body_base + bi)), nxt, None,
                            name_tag="%6")
+        if sub == "fid":
+            bi, fi = key[2], key[3]
+            owner = wl.ref(("face", bi, fi))
+            return _wattrib(owner, self._xacis_id(("face", bi, fi)), None,
+                            wl.ref(("attrib", "fname", bi, fi)))
         if sub == "frgb":
             bi, fi = key[2], key[3]
             owner = wl.ref(("face", bi, fi))
@@ -923,8 +1011,24 @@ class Makers:
         if sub == "ename":
             bi, ei = key[2], key[3]
             owner = wl.ref(("edge", bi, ei))
+            nxt = wl.ref(("attrib", "eid", bi, ei)) if self.xacis else None
             return _attrib(owner, "0:%d" % (45 + 3 * ei + 60 * (self.id_body_base + bi)),
-                           name_tag="%6")
+                           nxt, name_tag="%6")
+        if sub == "eid":
+            bi, ei = key[2], key[3]
+            owner = wl.ref(("edge", bi, ei))
+            return _wattrib(owner, self._xacis_id(("edge", bi, ei)), None,
+                            wl.ref(("attrib", "ename", bi, ei)))
+        if sub == "vname":
+            bi, vi = key[2], key[3]
+            owner = wl.ref(("vertex", bi, vi))
+            return _wattrib(owner, self._xacis_id(("vertex", bi, vi)),
+                            None, None)
+        if sub == "loopname":
+            bi, fi = key[2], key[3]
+            owner = wl.ref(("loop", bi, fi))
+            # official constant: every loop carries the shared id '1VFBE'
+            return _wattrib(owner, "1VFBE", None, None)
         raise ValueError("attrib key " + repr(key))
 
 
@@ -1141,6 +1245,33 @@ def _attrib(owner_idx, value, nxt_idx=None, prv_idx=None, type_id=14675622,
             .add(_p(-1), _ti(-1), _p(-1 if nxt_idx is None else nxt_idx),
                  _p(-1 if prv_idx is None else prv_idx), _p(owner_idx),
                  _ti(type_id), _s(name_tag), _s(value)))
+
+
+def _wattrib(owner_idx, value, nxt_idx=None, prv_idx=None, type_id=14675622,
+             name_tag="%9"):
+    """Official wide-string attrib record (class chain wstring_attrib=8 /
+    name_attrib=3 / gen=4, record 'attrib'=5) -- the XACIS identity chain
+    carried by STEP-import provenance parts: ATTRIB_XACIS_ID%9 on the body,
+    %9/%11/%6 on the lump, %9 on every face/edge/vertex/loop."""
+    return (_Rec("attrib", 5, chain=[("wstring_attrib", 8),
+                                     ("name_attrib", 3), ("gen", 4)])
+            .add(_p(-1), _ti(-1), _p(-1 if nxt_idx is None else nxt_idx),
+                 _p(-1 if prv_idx is None else prv_idx), _p(owner_idx),
+                 _ti(type_id), _s(name_tag), _s(value)))
+
+
+_B32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"  # Crockford base32 (official XACIS ids)
+
+
+def _b32_code(seed: int, ndigits: int) -> str:
+    """Deterministic Crockford-base32 code (official '1V…' id look-alike;
+    LCG spread so consecutive seeds produce random-looking digits)."""
+    n = (int(seed) * 2654435761 + 12345) & 0x7FFFFFFF
+    out = []
+    for _ in range(ndigits):
+        out.append(_B32[n & 31])
+        n = (n * 1103515245 + 12345) & 0x7FFFFFFF
+    return "".join(out)
 
 
 # ----------------------------------------------------------------------

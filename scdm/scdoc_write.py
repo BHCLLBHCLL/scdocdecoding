@@ -655,30 +655,47 @@ def _doc_rels(sab_name: str, facets: bool = False) -> bytes:
             f'</Relationships>').encode("utf-8")
 
 
-def _facets_bytes(items, tessellations, first_doc_id: int = 23) -> bytes:
-    """Graphics facets stream (bodyFacets part).
+def _facets_bytes(items, tessellations, ids=None) -> bytes:
+    """Graphics facets stream (bodyFacets part), OFFICIAL multi-body layout
+    decoded from references/golden/assembly_sample.scdoc:
 
-    Planar bodies use the official layout: one FaceNode per B-rep face with the
-    polygon corners, boundary pairs, per-edge refs and the tail edge map. Plain
-    cylinders use one triangle node per triangle (corner_count stays in 3..64;
-    the side face would otherwise exceed it), without edge mapping.
+      magic 'facets  ' + version 14 + n_bodies + 1 + 0
+      per body:  [body_doc_id, 0, body_update_state, 5, n_faces, 0]
+                 per face: [face_doc_id, 0, node_id, corner_count]
+                           + corner_count x 8 floats (pos, normal, 0, 0)
+                           + [tri_index_count][packed (hi<<16|lo) pairs]
+                           + [bnd_index_count][packed pairs]
+                           + [edge_ref_count][(mesh_id, 2k, 1) rows]
+                           + trailing 0 after every face but the body's last
+                 [edge_map_count][(mesh_id, 0, doc_edge_id) rows by mid]
+                 [1, 0] after every body but the last
+
+    Planar faces carry the full official node (corner polygon + fan + closed
+    boundary loop + per-edge refs with globally-unique mesh ids from 8).
+    Curved faces carry ONE node per face with the whole tessellation
+    (official side-face node holds 84 corners in one node; per-face edge
+    refs omitted -- the reader tolerates it, proven by open sentinel).
+    ids: per-body dict {"body", "update", "faces": [...], "edges": [...]}.
     """
     import struct as _s
-    n_faces = 0
-    chunks = []          # (face-node bytes) deferred until count known -> build list
-    edge_rows = []       # (mesh_edge_id, doc_num)
-    node = first_doc_id
-    mesh_edge_base = 1000
+    n_bodies = len(items)
+    out = bytearray()
+    out += b'facets  '
+    out += _s.pack('<I', 14)
+    out += _s.pack('<I', n_bodies)
+    out += _s.pack('<I', 1)
+    out += _s.pack('<I', 0)
 
-    # planar edge global offset (mesh ids must be unique across bodies)
-    planar_eoff = {}
-    _e = 0
+    mesh_mid = 8
     for bi, it in enumerate(items):
-        if it[0] == "planar":
-            planar_eoff[bi] = _e
-            _e += len(it[2])
-
-    for bi, it in enumerate(items):
+        idb = ids[bi] if ids and bi < len(ids) else {}
+        bid = idb.get("body", 23 + 60 * bi)
+        upd = idb.get("update", bid)
+        face_ids = idb.get("faces", [])
+        edge_ids = idb.get("edges", [])
+        nodes = []
+        edge_map = []
+        edge_mid = {}
         if it[0] == "planar":
             verts, edges, faces = it[1], it[2], it[3]
             for fi, f in enumerate(faces):
@@ -686,84 +703,103 @@ def _facets_bytes(items, tessellations, first_doc_id: int = 23) -> bytes:
                 corners = [verts[vi] for vi in loop]
                 nrm = f["normal"]
                 n = len(corners)
-                body = bytearray()
-                body += _s.pack('<5I', 0, node, 0, node, n)
+                fid = (face_ids[fi] if fi < len(face_ids)
+                       else 27 + 3 * fi + 60 * bi)
+                node = bytearray()
+                node += _s.pack('<4I', fid, 0, fid, n)
                 for p in corners:
-                    body += _s.pack('<8f', p[0], p[1], p[2], nrm[0], nrm[1], nrm[2],
-                                    0.0, 0.0)
-                # fan triangulation, packed 2 indices per word
+                    node += _s.pack('<8f', p[0], p[1], p[2], nrm[0], nrm[1],
+                                    nrm[2], 0.0, 0.0)
                 tris = []
                 for k in range(1, n - 1):
                     tris += [0, k, k + 1]
-                body += _s.pack('<I', len(tris))
+                node += _s.pack('<I', len(tris))
                 for k in range(0, len(tris), 2):
                     lo = tris[k]
-                    hi = tris[k + 1] if k + 1 < len(tris) else 0
-                    body += _s.pack('<I', (hi << 16) | lo)
-                # boundary: closed loop pairs (i, i+1 wraparound)
+                    hi = tris[k + 1] if k + 1 < len(tris) else tris[k]
+                    node += _s.pack('<I', (hi << 16) | lo)
                 bnd = []
                 for k in range(n):
                     bnd += [k, (k + 1) % n]
-                body += _s.pack('<I', len(bnd))
+                node += _s.pack('<I', len(bnd))
                 for k in range(0, len(bnd), 2):
                     lo = bnd[k]
-                    hi = bnd[k + 1] if k + 1 < len(bnd) else 0
-                    body += _s.pack('<I', (hi << 16) | lo)
-                # edge refs: one per boundary pair
-                body += _s.pack('<I', n)
+                    hi = bnd[k + 1] if k + 1 < len(bnd) else bnd[k]
+                    node += _s.pack('<I', (hi << 16) | lo)
+                rows = []
                 for k in range(n):
                     a, b = loop[k], loop[(k + 1) % n]
                     eidx = _edge_of(edges, a, b)
-                    mid = mesh_edge_base + planar_eoff[bi] + eidx
-                    edge_rows.append((mid, 45 + 3 * eidx + 60 * bi))
-                    body += _s.pack('<3I', mid, 2 * k, 1)
-                chunks.append(bytes(body))
-                node += 3
-                n_faces += 1
+                    if eidx not in edge_mid:
+                        edge_mid[eidx] = mesh_mid
+                        mesh_mid += 1
+                    mid = edge_mid[eidx]
+                    doc_eid = (edge_ids[eidx] if eidx < len(edge_ids)
+                               else 45 + 3 * eidx + 60 * bi)
+                    rows.append((mid, 2 * k, 1))
+                    edge_map.append((mid, doc_eid))
+                node += _s.pack('<I', len(rows))
+                for mid, kk, one in rows:
+                    node += _s.pack('<3I', mid, kk, one)
+                nodes.append(bytes(node))
         else:
             faces = tessellations[bi] if bi < len(tessellations) else []
-            for fd in faces:
+            for fi, fd in enumerate(faces):
                 pts = fd["vertices"]
                 tris = fd["triangles"]
                 fn = fd.get("normal") or (0.0, 0.0, 1.0)
-                for a, b, c in tris:
-                    body = bytearray()
-                    body += _s.pack('<5I', 0, node, 0, node, 3)
-                    for idx in (a, b, c):
-                        p = pts[idx]
-                        body += _s.pack('<8f', p[0], p[1], p[2], fn[0], fn[1],
-                                        fn[2], 0.0, 0.0)
-                    body += _s.pack('<I', 3)
-                    body += _s.pack('<I', (1 << 16) | 0)
-                    body += _s.pack('<I', (2 << 16) | 2)
-                    body += _s.pack('<I', 0)
-                    body += _s.pack('<I', 0)
-                    chunks.append(bytes(body))
-                    node += 3
-                    n_faces += 1
-
-    head = bytearray()
-    head += b'facets  '
-    head += _s.pack('<I', 14)          # version
-    head += _s.pack('<I', 1)           # w3
-    head += _s.pack('<I', 1)           # w4
-    head += _s.pack('<I', 0)           # w5
-    head += _s.pack('<I', first_doc_id)  # w6 = owning body doc-id number
-    head += _s.pack('<I', 0)           # w7
-    head += _s.pack('<I', 0)           # w8
-    head += _s.pack('<I', 0)           # w9
-    head += _s.pack('<I', n_faces)     # w10 = declared face count
-    out = bytearray(head)
-    for c in chunks:
-        out += c
-    # tail edge map: unique (mesh_edge_id, 0, doc_num)
-    seen = {}
-    for mid, doc_num in edge_rows:
-        seen[mid] = doc_num
-    out += _s.pack('<I', len(seen))
-    for mid, doc_num in sorted(seen.items()):
-        out += _s.pack('<3I', mid, 0, doc_num)
+                n = len(pts)
+                fid = (face_ids[fi] if fi < len(face_ids)
+                       else 27 + 3 * fi + 60 * bi)
+                node = bytearray()
+                node += _s.pack('<4I', fid, 0, fid, n)
+                for p in pts:
+                    node += _s.pack('<8f', p[0], p[1], p[2], fn[0], fn[1],
+                                    fn[2], 0.0, 0.0)
+                flat = [i for t in tris for i in t]
+                node += _s.pack('<I', len(flat))
+                for k in range(0, len(flat), 2):
+                    lo = flat[k]
+                    hi = flat[k + 1] if k + 1 < len(flat) else flat[k]
+                    node += _s.pack('<I', (hi << 16) | lo)
+                node += _s.pack('<I', 0)   # bnd count (reader-tolerant)
+                node += _s.pack('<I', 0)   # edge ref count
+                nodes.append(bytes(node))
+            for ei in range(len(edge_ids)):
+                edge_map.append((mesh_mid, edge_ids[ei]))
+                mesh_mid += 1
+        out += _s.pack('<6I', bid, 0, upd, 5, len(nodes), 0)
+        for i, node in enumerate(nodes):
+            out += node
+            if i < len(nodes) - 1:
+                out += _s.pack('<I', 0)
+        seen = {}
+        for mid, doc in edge_map:
+            seen[mid] = doc
+        out += _s.pack('<I', len(seen))
+        for mid, doc in sorted(seen.items()):
+            out += _s.pack('<3I', mid, 0, doc)
+        if bi < n_bodies - 1:
+            out += _s.pack('<2I', 1, 0)
     return bytes(out)
+
+
+def _facet_ids(it, gi: int) -> dict:
+    """Document ids for one body's facets section (matches the assembly
+    document.xml numbering: body 0:{23+60gi}, faces 0:{27+3k+60gi},
+    edges 0:{45+3k+60gi}; the cylinder carries 3 edges, sphere 1,
+    torus 2 -- same counts as the SAB emitter)."""
+    if it[0] == "planar":
+        nf, ne = len(it[3]), len(it[2])
+    elif it[0] == "cyl":
+        nf, ne = 3, 3
+    elif it[0] == "sphere":
+        nf, ne = 1, 1
+    else:  # torus
+        nf, ne = 1, 2
+    return {"body": 23 + 60 * gi, "update": 23 + 60 * gi,
+            "faces": [27 + 3 * k + 60 * gi for k in range(nf)],
+            "edges": [45 + 3 * k + 60 * gi for k in range(ne)]}
 
 
 
@@ -1164,7 +1200,10 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
 
     def build_sab_for(items, colors, id_base: int = 0, seq=None):
         wl = Worklist()
-        makers = Makers(items, colors, seq=seq)
+        # multi-part parts carry the official XACIS wstring identity chain
+        # (assembly/STEP-import provenance; the single-part path keeps the
+        # box.scdoc PNAME/rgb_color layout)
+        makers = Makers(items, colors, seq=seq, xacis=True)
         makers.id_body_base = id_base
         body = wl.run([("body", bi) for bi in range(len(items))], makers)
         out = bytearray()
@@ -1256,31 +1295,32 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
                     DOC_GUID.encode("latin-1")))
             else:
                 out.writestr(n, src.read(n))
-        np_groups = [(gname, [it for it in items
-                              if it[0] in ("cyl", "sphere", "torus")], colors)
-                     for gname, items, colors in groups]
-        np_groups = [(g, i, c) for g, i, c in np_groups if i]
-        if np_groups:
-            try:
-                tessellations = []
-                items_all = []
-                for body in kdoc.bodies:
-                    sols = K.explore(body.shape, "solid") or [body.shape]
-                    sol = sols[0]
-                    if (_cyl_info(sol) is None and _sphere_info(sol) is None
-                            and _torus_info(sol) is None):
-                        continue
-                    items_all.append(_item_of(body))
-                    try:
-                        from scdm.kernel import tessellate_faces
-                        tessellations.append(tessellate_faces(
-                            sol, deflection=max(1e-5, 0.05 / 1000.0)))
-                    except Exception:
-                        tessellations.append([])
-                out.writestr("SpaceClaim/Graphics/facets.bin",
-                             _facets_bytes(items_all, tessellations))
-            except Exception:
-                pass
+        # facets stream: OFFICIAL multi-body layout for EVERY body
+        # (planar faces get the full official FaceNode structure; curved
+        # faces fall back to one tessellation node per face)
+        try:
+            tessellations = []
+            items_all = []
+            ids_all = []
+            for gi, body in enumerate(kdoc.bodies):
+                it = _item_of(body)
+                items_all.append(it)
+                ids_all.append(_facet_ids(it, gi))
+                if it[0] == "planar":
+                    tessellations.append([])
+                    continue
+                sols = K.explore(body.shape, "solid") or [body.shape]
+                sol = sols[0]
+                try:
+                    from scdm.kernel import tessellate_faces
+                    tessellations.append(tessellate_faces(
+                        sol, deflection=max(1e-5, 0.05 / 1000.0)))
+                except Exception:
+                    tessellations.append([])
+            out.writestr("SpaceClaim/Graphics/facets.bin",
+                         _facets_bytes(items_all, tessellations, ids_all))
+        except Exception:
+            pass
         for gi, (gname, items, colors) in enumerate(groups):
             items2 = [it[:4] for it in items]
             # attrib ids carry the GLOBAL body index (document-id alignment)
@@ -1325,9 +1365,12 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
                     faces 0:{27+3k+60gi}, edges 0:{45+3k+60gi},
                     part caption 0:{86+60gi}, body caption 0:{85+60gi},
       ComponentDefs 0:{200+i} (dedicated range, never colliding with
-      body-part ids), Design 0:1, PresentationDef 0:5, AttributeTableDef
-      0:6, LayerDef 0:9, RootCaptionDef 0:11, DocumentSettingsDef 0:16,
-      DocumentUnitsDef 0:17, DocumentDetailSettingsDef 0:19.
+      body-part ids), container component parts 0:{240+ci} + their
+      ComponentDefs 0:{260+ci} + captions 0:{280+ci} (official empty
+      Assembly1-style container layout), Design 0:1, PresentationDef 0:5,
+      AttributeTableDef 0:6, LayerDef 0:9, RootCaptionDef 0:11,
+      DocumentSettingsDef 0:16, DocumentUnitsDef 0:17,
+      DocumentDetailSettingsDef 0:19.
     """
     DOC_GUID = "9d32a3b4-809e-4cc1-8dd7-f73febd3c257"
     # sectionIds are FIXED section-type keys in the official reader (identical
@@ -1402,8 +1445,34 @@ def _assembly_document_xml(kdoc, groups, name: str) -> bytes:
             '<lastEvaluatedTrans>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1'
             '</lastEvaluatedTrans></ComponentDef>'
             % (200 + gi, 200 + gi, DOC_GUID, 22 + gi * 60))
+    # container component parts: one EMPTY PartDef per kdoc component plus its
+    # ComponentDef instance (official assembly_sample.scdoc layout: bodies stay
+    # externalized as root-level instances, the container part carries no body)
+    container_parts = []
+    for ci, comp in enumerate(getattr(kdoc, "components", [])):
+        pid, cid = 240 + ci, 260 + ci
+        container_parts.append(
+            '<PartDef Id="0:%d"><updateState>0:%d</updateState>'
+            '<patternBase /><materialId>0:0</materialId>'
+            '<type>Normal</type><shareTopologyOption>None</shareTopologyOption>'
+            '</PartDef>' % (pid, pid))
+        comp_xml.append(
+            '<ComponentDef Id="0:%d"><updateState>0:%d</updateState>'
+            '<source sctype="SpaceClaim.BasicMoniker`1[[SpaceClaim.IEvaluation,'
+            ' Core]], Core" refId="%s:%d" /><trans>1 0 0 0 0 1 0 0 0 0 1 0 '
+            '0 0 0 1</trans><lastAccuracy>0</lastAccuracy>'
+            '<lastEvaluatedTrans>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1'
+            '</lastEvaluatedTrans></ComponentDef>'
+            % (cid, cid, DOC_GUID, pid))
+        captions.append(
+            '<CaptionDef Id="0:%d"><updateState>0:%d</updateState>'
+            '<subjectId>0:%d</subjectId><name>%s</name><description></description>'
+            '<type version="82">Normal</type></CaptionDef>'
+            % (280 + ci, 280 + ci, pid, _xml_esc(comp.name)))
+        part_xml.append(container_parts[-1])
 
-    next_id = 60 * len(groups) + 300
+    n_containers = len(container_parts)
+    next_id = max(60 * len(groups) + 300, 280 + n_containers + 40)
     design = ('<Design sectionId="%s" Id="0:1" xmlns="urn:nom">'
               '<updateState>0:141</updateState><nextId>1</nextId>'
               '<PartDef Id="0:2"><updateState>0:%d</updateState>'

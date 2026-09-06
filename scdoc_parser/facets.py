@@ -1,22 +1,27 @@
+# -*- coding: utf-8 -*-
 """SpaceClaim facets.bin triangle-mesh parser (reverse-engineered).
 
 facets.bin is the display-mesh counterpart of the B-rep .sab stream.  Its
-structure was reverse-engineered from box.scdoc and cross-validated against
-the SAB geometry (every facet edge matched its B-rep edge geometrically):
+structure was reverse-engineered from box.scdoc and the official
+assembly_sample.scdoc (multi-body layout), and cross-validated against the
+SAB geometry (every facet edge matched its B-rep edge geometrically):
 
 Layout (all little-endian; "word" = uint32)
 -------------------------------------------
-Header (11 words):
+Header:
   w0..w1   magic  b"facets  "
-  w2       format version (14 in box.scdoc)
-  w3..w10  opaque fields; w6 held the owning body's doc-id number (23 ->
-           body '0:23') and w10 the face-node count (6) in box.scdoc.
+  w2       format version (14)
+  w3       body count
+  w4..w5   1, 0
 
-Face nodes, repeated face-count times:
-  [0, node_id, 0, node_id, corner_count]     (5 words; node ids 27, 30, ...)
-  corner_count x corner records (8 words each, float32):
-      [px, py, pz, nx, ny, nz, u, v]         (metres, like the SAB)
-  Meta block:
+Per body section:
+  [body_doc_id, 0, body_update_state, 5, face_count, 0]
+  face nodes, face_count times (each followed by a 0 separator except the
+  body's last):
+      [face_doc_id, 0, node_id, corner_count]     (4 words; legacy streams
+      used [0, node_id, 0, node_id, corner_count] instead)
+      corner_count x corner records (8 words each, float32):
+          [px, py, pz, nx, ny, nz, u, v]         (metres, like the SAB)
       [n, ceil(n/2) words]   triangle vertex indices, 2 packed per word
                              (low uint16 first); n = 3 x triangle count,
                              winding CCW around the face normal
@@ -26,12 +31,10 @@ Face nodes, repeated face-count times:
                              (mesh_edge_id, boundary_pos, flag)
                              boundary_pos indexes the flat boundary-pair
                              array (== 2 x corner index for quads);
-                             flag observed as 1 (meaning not fully
-                             determined - B-rep edge marker?).
-
-Edge table (rest of the file):
-  [count, count x 3 words]  (mesh_edge_id, 0, doc_id_number) mapping each
-  mesh edge to the design-tree edge id, e.g. (12, 0, 45) -> '0:45'.
+                             flag observed as 1.
+  edge table: [count, count x 3 words]  (mesh_edge_id, 0, doc_id_number)
+  mapping each mesh edge to the design-tree edge id, e.g. (12, 0, 45) ->
+  '0:45'.  A [1, 0] word pair follows every body but the last.
 
 Verification on box.scdoc: 6 quad faces, 24 corners on exact B-rep
 positions, 12 CCW triangles, 12 mesh edges each appearing in exactly 2
@@ -72,15 +75,16 @@ class EdgeRef:
 @dataclass
 class FaceNode:
     node_id: int
+    face_doc_id: int = 0
     corners: List[Corner] = field(default_factory=list)
     triangles: List[Tuple[int, int, int]] = field(default_factory=list)
     boundary: List[Tuple[int, int]] = field(default_factory=list)
     edge_refs: List[EdgeRef] = field(default_factory=list)
 
     def edge_segment(self, ref: EdgeRef):
-        """3D segment of the boundary edge referenced by `ref`.
+        """3D segment of the boundary edge referenced by 'ref'.
 
-        `boundary_pos` indexes the FLAT corner-index array (two values per
+        boundary_pos indexes the FLAT corner-index array (two values per
         boundary pair), so the pair index is boundary_pos // 2."""
         i = ref.boundary_pos // 2
         if 0 <= i < len(self.boundary):
@@ -93,18 +97,17 @@ class FaceNode:
 @dataclass
 class FacetsFile:
     version: int = 0
-    header_words: List[int] = field(default_factory=list)   # w3..w10 raw
+    header_words: List[int] = field(default_factory=list)   # [n_bodies, 1, 0]
+    bodies: List[dict] = field(default_factory=list)        # per-body sections
     faces: List[FaceNode] = field(default_factory=list)
     edge_map: Dict[int, str] = field(default_factory=dict)  # edge_id -> doc id
     node_face_map: Dict[int, int] = field(default_factory=dict)  # node_id -> face idx
 
     @property
     def body_doc_id(self) -> Optional[str]:
-        """Doc id of the owning body (header w6), e.g. '0:23'."""
-        if len(self.header_words) >= 4:
-            n = self.header_words[3]
-            if n > 0:
-                return f'0:{n}'
+        """Doc id of the first owning body, e.g. '0:23'."""
+        if self.bodies:
+            return self.bodies[0].get("body_doc_id")
         return None
 
     def doc_id_of_edge(self, edge_id: int) -> Optional[str]:
@@ -121,14 +124,14 @@ class _Reader:
 
     def u32(self) -> int:
         if self.pos + 4 > len(self.data):
-            raise FacetsError(f'truncated at byte {self.pos}')
+            raise FacetsError('truncated at byte %d' % self.pos)
         v = struct.unpack_from('<I', self.data, self.pos)[0]
         self.pos += 4
         return v
 
     def f32(self) -> float:
         if self.pos + 4 > len(self.data):
-            raise FacetsError(f'truncated at byte {self.pos}')
+            raise FacetsError('truncated at byte %d' % self.pos)
         v = struct.unpack_from('<f', self.data, self.pos)[0]
         self.pos += 4
         return v
@@ -136,7 +139,9 @@ class _Reader:
     def peek_words(self, n: int) -> List[int]:
         end = min(self.pos + 4 * n, len(self.data))
         cnt = max(0, (end - self.pos) // 4)
-        return list(struct.unpack_from(f'<{cnt}I', self.data, self.pos))
+        if cnt == 0:
+            return []
+        return list(struct.unpack_from('<%dI' % cnt, self.data, self.pos))
 
 
 def _packed_indices(reader: _Reader) -> List[int]:
@@ -152,13 +157,27 @@ def _packed_indices(reader: _Reader) -> List[int]:
 
 
 def _face_node(reader: _Reader) -> FaceNode:
-    hdr = [reader.u32() for _ in range(5)]
-    if hdr[0] != 0 or hdr[1] != hdr[3] or hdr[2] != 0:
-        raise FacetsError(f'bad face-node header {hdr} at byte {reader.pos - 20}')
-    node_id, corner_count = hdr[1], hdr[4]
-    if not (3 <= corner_count <= 64):
-        raise FacetsError(f'implausible corner count {corner_count}')
-    face = FaceNode(node_id=node_id)
+    """Official 4-word header [face_doc_id, 0, node_id, corner_count];
+    legacy 5-word streams start with a 0 word instead."""
+    w0 = reader.u32()
+    if w0 == 0:
+        node_id = reader.u32()
+        z = reader.u32()
+        if z != 0:
+            raise FacetsError('bad legacy face-node header at byte %d'
+                              % (reader.pos - 4))
+        face_doc_id = node_id
+    else:
+        face_doc_id = w0
+        z = reader.u32()
+        if z != 0:
+            raise FacetsError('bad face-node header at byte %d'
+                              % (reader.pos - 4))
+        node_id = reader.u32()
+    corner_count = reader.u32()
+    if not (3 <= corner_count <= 1000000):
+        raise FacetsError('implausible corner count %d' % corner_count)
+    face = FaceNode(node_id=node_id, face_doc_id=face_doc_id)
     for _ in range(corner_count):
         p = (reader.f32(), reader.f32(), reader.f32())
         n = (reader.f32(), reader.f32(), reader.f32())
@@ -178,6 +197,21 @@ def _face_node(reader: _Reader) -> FaceNode:
     return face
 
 
+def _edge_table(reader: _Reader, out: FacetsFile) -> None:
+    """[count, count x (edge_id, 0, doc_id_number)]."""
+    if reader.words_left() < 1:
+        return
+    count = reader.u32()
+    for _ in range(count):
+        edge_id = reader.u32()
+        zero = reader.u32()
+        doc_num = reader.u32()
+        if zero != 0:
+            raise FacetsError('edge table entry not (id, 0, doc): (%d, %d, %d)'
+                              % (edge_id, zero, doc_num))
+        out.edge_map[edge_id] = '0:%d' % doc_num
+
+
 def parse_facets(data: bytes) -> FacetsFile:
     if data[:8] != MAGIC:
         raise FacetsError('not a facets stream (bad magic)')
@@ -185,36 +219,58 @@ def parse_facets(data: bytes) -> FacetsFile:
     reader.pos = 8
     out = FacetsFile()
     out.version = reader.u32()
-    out.header_words = [reader.u32() for _ in range(8)]
-
-    declared_faces = out.header_words[7] if len(out.header_words) > 7 else 0
-    face_count = 0
-    while reader.words_left() > 0:
-        peek = reader.peek_words(5)
-        is_face = (len(peek) >= 5 and peek[0] == 0 and peek[1] == peek[3]
-                   and peek[2] == 0 and 3 <= peek[4] <= 64)
-        if declared_faces and face_count >= declared_faces:
-            break
-        if not is_face:
-            break
-        out.faces.append(_face_node(reader))
-        out.node_face_map[out.faces[-1].node_id] = len(out.faces) - 1
-        face_count += 1
-    if declared_faces and face_count != declared_faces:
-        raise FacetsError(
-            f'header declares {declared_faces} faces but parsed {face_count}')
-
-    # edge table: [count, count x (edge_id, 0, doc_id_number)]
-    if reader.words_left() >= 1:
-        count = reader.u32()
-        for _ in range(count):
-            edge_id = reader.u32()
-            zero = reader.u32()
-            doc_num = reader.u32()
-            if zero != 0:
-                raise FacetsError(f'edge table entry not (id, 0, doc): '
-                                  f'({edge_id}, {zero}, {doc_num})')
-            out.edge_map[edge_id] = f'0:{doc_num}'
+    n_bodies = reader.u32()
+    out.header_words = [n_bodies, reader.u32(), reader.u32()]
+    # legacy single-body streams: [body_id, 0, 0, 0, mesh_base, 0] then faces;
+    # official streams: per-body sections [body_id, 0, upd, 5, n_faces, 0].
+    peek = reader.peek_words(6)
+    if len(peek) >= 6 and peek[3] == 5:
+        for bi in range(n_bodies):
+            bid = reader.u32()
+            z0 = reader.u32()
+            upd = reader.u32()
+            five = reader.u32()
+            n_faces = reader.u32()
+            z1 = reader.u32()
+            if five != 5 or z0 != 0 or z1 != 0:
+                raise FacetsError('bad body section header')
+            body = {"body_doc_id": '0:%d' % bid, "update_state": upd,
+                    "faces": []}
+            out.bodies.append(body)
+            for fi in range(n_faces):
+                out.faces.append(_face_node(reader))
+                out.node_face_map[out.faces[-1].node_id] = len(out.faces) - 1
+                body["faces"].append(len(out.faces) - 1)
+                if fi < n_faces - 1:
+                    sep = reader.u32()
+                    if sep != 0:
+                        raise FacetsError(
+                            'face separator %d != 0 at byte %d'
+                            % (sep, reader.pos - 4))
+            _edge_table(reader, out)
+            if bi < n_bodies - 1:
+                t1 = reader.u32()
+                t2 = reader.u32()
+                if (t1, t2) != (1, 0):
+                    raise FacetsError(
+                        'body terminator (%d, %d) != (1, 0)' % (t1, t2))
+    else:
+        # legacy layout: body id + 4 opaque words, face nodes, edge table
+        body_id = reader.u32()
+        for _ in range(4):
+            reader.u32()
+        out.bodies.append({"body_doc_id": '0:%d' % body_id,
+                           "update_state": body_id, "faces": []})
+        while reader.words_left() >= 5:
+            pk = reader.peek_words(5)
+            is_face = (len(pk) >= 5 and pk[0] == 0 and pk[1] == pk[3]
+                       and pk[2] == 0 and 3 <= pk[4] <= 1000000)
+            if not is_face:
+                break
+            out.faces.append(_face_node(reader))
+            out.node_face_map[out.faces[-1].node_id] = len(out.faces) - 1
+            out.bodies[0]["faces"].append(len(out.faces) - 1)
+        _edge_table(reader, out)
     return out
 
 
@@ -233,22 +289,28 @@ def facets_summary(fac: FacetsFile, scale: float = 1000.0) -> Dict:
     def check(name, ok, detail):
         checks.append({'check': name, 'ok': bool(ok), 'detail': detail})
 
-    check('face_count', len(fac.faces) == 6, f'faces={len(fac.faces)} (expect 6)')
-    check('corner_count', n_corners == 24, f'corners={n_corners} (expect 24)')
-    check('triangle_count', n_tris == 12, f'triangles={n_tris} (expect 12)')
+    check('face_count', len(fac.faces) == 6,
+          'faces=%d (expect 6)' % len(fac.faces))
+    check('corner_count', n_corners == 24,
+          'corners=%d (expect 24)' % n_corners)
+    check('triangle_count', n_tris == 12,
+          'triangles=%d (expect 12)' % n_tris)
     check('edge_count', len(fac.edge_map) == 12,
-          f'edges={len(fac.edge_map)} (expect 12)')
+          'edges=%d (expect 12)' % len(fac.edge_map))
     check('edge_shared_by_two_faces',
           edge_faces and all(len(v) == 2 for v in edge_faces.values()),
-          f'{len(edge_faces)} edges, use counts={sorted({len(v) for v in edge_faces.values()})}')
+          '%d edges, use counts=%s' % (len(edge_faces),
+                                       sorted({len(v) for v in edge_faces.values()})))
     check('edge_table_covers_refs',
           set(edge_faces) == set(fac.edge_map),
-          f'{len(set(edge_faces) - set(fac.edge_map))} refs missing from edge table')
+          '%d refs missing from edge table'
+          % len(set(edge_faces) - set(fac.edge_map)))
 
     faces = []
     for fi, f in enumerate(fac.faces):
         faces.append({
             'node_id': f.node_id,
+            'face_doc_id': '0:%d' % f.face_doc_id,
             'corners': [{
                 'position_m': list(c.position),
                 'normal': list(c.normal),
@@ -281,6 +343,10 @@ def facets_summary(fac: FacetsFile, scale: float = 1000.0) -> Dict:
     return {
         'version': fac.version,
         'body_doc_id': fac.body_doc_id,
+        'bodies': [{'body_doc_id': b.get('body_doc_id'),
+                    'update_state': b.get('update_state'),
+                    'face_indices': b.get('faces', [])}
+                   for b in fac.bodies],
         'header_words': fac.header_words,
         'counts': {
             'faces': len(fac.faces),

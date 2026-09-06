@@ -72,15 +72,46 @@
 | `references/verify_open2.py` | part 级富诊断哨兵（逐 part 体数+面数、逐组件 GetBodies） |
 | `docs/NYI_INVENTORY.md`、`function_gap_analysis.md` | TODO-9 关闭；§2.7 装配域升级 99%、L2 |
 
-### 6. 诚实遗留（不影响闭环，保真度打磨项）
+### 6. 诚实遗留 → 本轮三项已闭环
 
-- 容器组件 part 未发（官方样本有空 Assembly1 part + 组件实例；我们为根 + 逐体组件，
-  等价于实测通过的 v26 结构）；
-- `wstring_attrib`（XACIS_ID / STEP 产品 ID 链）未复刻——实测开档不需要；
-- 多体 facets.bin 官方布局未复刻（body 段头 `[体号,0,updateState,5,面数,0]` +
-  面节点 + 尾边表）——实测读端容忍；
-- `_emit_bytes` 身份序重序列化有损（0x0F 嵌套簇不往返）——字节级 patch 不可用，
-  需字段级改 SAB 时先修 token 往返。
+- ~~容器组件 part 未发~~ **已发**：每 kdoc 组件 → 空 PartDef（0:{240+ci}）+ 根
+  ComponentDef（0:{260+ci}）+ caption（0:{280+ci}）；官方打开 components=3
+  （两体 + 空容器）✅；
+- ~~`wstring_attrib` 未复刻~~ **已复刻**：body [XACIS_NAME string, XACIS_ID
+  wstring, XSTEP wstring] + lump [%9/%11/%6] + 面/边 [%6 string + %9 wstring]
+  + 顶点 [%9] + 环 [常量 '1VFBE']；记录数逐类等于官方样本（box 19/37、cyl
+  7/16）；**关键发现：带 wstring 的流必须用官方内核类号表**（shell=10/face=12/
+  loop=13/cone=14/surface=15/plane=16/coedge=17/edge=18/vertex=19/ellipse=20/
+  curve=21/straight=22/point=23，wstring_attrib=8）——旧 box.scdoc 表（shell=9…）
+  与 wstring 混用 → SabSatConverter "Sat file indexing mechanism failed"；
+  xacis 模式经 `CID_MAP` 切换，单体路径保持旧表；
+- ~~多体 facets.bin 官方布局未复刻~~ **已复刻**：magic+版本+n_bodies+[1,0] →
+  逐体段头 [体号,0,updateState,5,面数,0] → 面节点 [面号,0,节点号,角数] + 角×8
+  float + [三角数][打包对] + [边界数][打包对] + [边行数][(mesh_id,2k,1)] +
+  面间 0 分隔 → 体尾边表 [(mesh_id,0,边号)] → 非末体 [1,0] 终结；mesh_id 全局
+  自 8 递增、跨面共享（同 B-rep 边同 id）；平面面全官方结构，曲面面单节点整
+  网格（官方侧面节点 84 角同构）；`scdoc_parser/facets.py` 同步升级双格式兼容
+  （官方 4 字头 + 旧 5 字头）；box/cyl 单体 + 装配官方打开复验 ✅；
+- `_emit_bytes` 身份序重序列化有损（0x0F 嵌套簇不往返）——仍遗留，需字段级
+  改 SAB 时先修 token 往返。
+
+---
+
+## 2026-09-06 续 · 三项保真度打磨闭环（容器 part / wstring / 多体 facets）
+
+- **容器组件 part**：官方样本的"空 Assembly1 part + 组件实例"布局复刻——根持
+  逐体组件 + 容器组件，容器 part 空体；id 专用区间 240/260/280 与体体系 22+60n
+  永不交叉；官方哨兵 components=3、TOTAL=2。
+- **wstring_attrib（XACIS 身份链）**：逐实体链结构、0 基链指针（t2=NEXT/
+  t3=PREV/t4=OWNER）、名称驻留（首全名后续 %N）全部逐字对齐官方样本；值生成
+  '1V' + Crockford-base32（LCG 扩散）+ 60 字符产品号；**官方内核类号表为
+  SabSatConverter 硬要求**（见 §6 关键发现），`CID_MAP` 按 xacis 模式切换。
+- **多体 facets.bin**：完整官方布局解码（段头/面节点/尾边表/[1,0] 终结/0 分隔/
+  mesh_id 共享语义）并重写 `_facets_bytes`；自读解析器双格式兼容；单体 + 装配
+  官方打开复验通过。
+- 验证：**191 passed, 1 skipped**（+4 回归：容器结构/wstring 链/类号表/单体旧
+  布局守夜）；官方 SpaceClaim 哨兵：单体 box bodies=1、cyl bodies=1、
+  装配 bodies=2。
 
 ---
 

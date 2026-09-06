@@ -95,9 +95,28 @@ def test_component_ids_outside_body_part_id_ranges(asm_path):
     faces = {int(x) for x in re.findall(r'<NominalFaceDef Id="0:(\d+)"', xml)}
     edges = {int(x) for x in re.findall(r'<NominalEdgeDef Id="0:(\d+)"', xml)}
     bodies = {int(x) for x in re.findall(r'<NominalBodyDef Id="0:(\d+)"', xml)}
-    assert comps == [200, 201]
+    assert comps == [200, 201, 260], comps   # + container comp
     used = faces | edges | bodies | {2, 13}
     assert not (set(comps) & used)
+
+
+def test_container_component_part_empty_and_instantiated(asm_path):
+    """Official sample layout: every kdoc component becomes an EMPTY
+    container PartDef + a root ComponentDef instance + a caption; bodies
+    stay externalized as their own root-level instances."""
+    xml = zipfile.ZipFile(asm_path).read("SpaceClaim/document.xml").decode()
+    # container part 0:240 is empty (no NominalBodyDef)
+    cont = re.search(r'<PartDef Id="0:240">.*?</PartDef>', xml, re.S).group(0)
+    assert "<NominalBodyDef" not in cont
+    assert "<ComponentDef" not in cont
+    # its ComponentDef 0:260 references it
+    comp = re.search(r'<ComponentDef Id="0:260">.*?</ComponentDef>',
+                     xml, re.S).group(0)
+    assert 'refId="%s:240"' % DOC_GUID in comp
+    # caption subject points at the container part, name = component name
+    cap = re.search(r'<CaptionDef Id="0:280">.*?</CaptionDef>', xml, re.S)
+    assert cap and "<subjectId>0:240</subjectId>" in cap.group(0)
+    assert "Assembly1" in cap.group(0)
 
 
 def test_sab_entity_sequences_document_global(asm_path):
@@ -132,6 +151,97 @@ def test_single_part_sequences_match_official_reference():
     seqs = [r.tokens[1].value for r in sf.records
             if r.kind in ("body", "face", "edge")]
     assert sorted(seqs) == list(range(19)), sorted(seqs)
+
+
+def test_sab_wstring_identity_chains_match_official(asm_path):
+    """Multi-part SABs carry the official XACIS identity chain (STEP-import
+    provenance): body [XACIS_NAME string, XACIS_ID wstring, XSTEP wstring],
+    lump [%9/%11/%6 wstrings], every face/edge [%6 string + %9 wstring],
+    every vertex [%9 wstring], every loop [constant '1VFBE']; NO rgb_color
+    and NO PNAME (record counts equal the official sample: box 19/37,
+    cyl 7/16)."""
+    from scdoc_parser import sab as sab_mod
+    z = zipfile.ZipFile(asm_path)
+    for nm, nstr, nwstr in [("part1bodies.sab", 19, 37),
+                            ("part2bodies.sab", 7, 16)]:
+        sf = sab_mod.tokenize(z.read("SpaceClaim/Geometry/" + nm))
+        kinds = {r.index: r.kind for r in sf.records}
+        per_kind = {}
+        for r in sf.records:
+            if r.kind in ("string_attrib", "wstring_attrib"):
+                owner = kinds.get(r.tokens[4].value + 1)
+                per_kind.setdefault(owner, []).append(
+                    (r.kind, r.tokens[6].value, str(r.tokens[7].value)))
+        assert sum(1 for r in sf.records if r.kind == "string_attrib") == nstr
+        assert sum(1 for r in sf.records if r.kind == "wstring_attrib") == nwstr
+        assert sum(1 for r in sf.records if r.kind == "rgb_color") == 0
+        body = per_kind["body"]
+        assert body[0] == ("string_attrib", "ATTRIB_XACIS_NAME%6", body[0][2])
+        assert body[1][0] == "wstring_attrib" and body[1][1] == "ATTRIB_XACIS_ID%9"
+        assert body[2][0] == "wstring_attrib" and body[2][1] == "ATTRIB_XSTEP_PRODUCT_ID%11"
+        lump = per_kind["lump"]
+        assert [x[1] for x in lump] == ["%9", "%11", "%6"]
+        assert lump[0][2] == body[1][2]            # lump %9 == body XACIS id
+        assert lump[1][2] == lump[2][2] == body[2][2]  # product id repeated
+        # faces/edges: half string %6 (doc id) + half wstring %9 (XACIS id)
+        for owner in ("face", "edge"):
+            recs = per_kind.get(owner, [])
+            strings = [x for x in recs if x[0] == "string_attrib"]
+            wstrings = [x for x in recs if x[0] == "wstring_attrib"]
+            assert len(strings) == len(wstrings) == len(recs) // 2
+            assert all(x[1] == "%6" and x[2].startswith("0:")
+                       for x in strings)
+            assert all(x[1] == "%9" for x in wstrings)
+        assert all(x[0] == "wstring_attrib" and x[1] == "%9"
+                   for x in per_kind.get("vertex", []))
+        assert all(x[1] == "%9" and x[2] == "1VFBE"
+                   for x in per_kind.get("loop", []))
+        # no PNAME record anywhere
+        assert all(x[1] != "ATTRIB_XACIS_PNAME%8"
+                   for recs in per_kind.values() for x in recs)
+
+
+def test_multi_part_class_ids_use_official_kernel_table(asm_path):
+    """With wstrings present the converter requires the official kernel
+    subtype ids (shell=10, face=12, loop=13, cone=14, surface=15, plane=16,
+    coedge=17, edge=18, vertex=19, ellipse=20, curve=21, straight=22,
+    point=23); the legacy box.scdoc table breaks SabSatConverter restore."""
+    from scdoc_parser import sab as sab_mod
+    official = {
+        "shell": 10, "face": 12, "loop": 13, "cone": 14, "surface": 15,
+        "plane": 16, "coedge": 17, "edge": 18, "vertex": 19, "ellipse": 20,
+        "curve": 21, "straight": 22, "point": 23, "wstring_attrib": 8,
+        "attrib": 5, "string_attrib": 2, "name_attrib": 3, "gen": 4,
+        "body": 1, "lump": 7,
+    }
+    z = zipfile.ZipFile(asm_path)
+    for nm in ("part1bodies.sab", "part2bodies.sab"):
+        sf = sab_mod.tokenize(z.read("SpaceClaim/Geometry/" + nm))
+        for r in sf.records:
+            assert r.rec_id == official[r.name], (nm, r.name, r.rec_id)
+            for cname, cid in r.chain:
+                assert cid == official[cname], (nm, cname, cid)
+
+
+def test_single_part_keeps_legacy_layout():
+    """Non-xacis (single-part) emission keeps the proven box.scdoc layout:
+    PNAME + rgb_color present, no wstring records, legacy class ids."""
+    from scdm.scdoc_write import _build_sab, _extract_solid
+    from scdoc_parser import sab as sab_mod
+    box = K.make_box(0.01, 0.01, 0.01)
+    items = [("planar",) + _extract_solid(s)
+             for s in (K.explore(box, "solid") or [box])]
+    data, _f, _e = _build_sab(items)
+    sf = sab_mod.tokenize(data)
+    names = []
+    for r in sf.records:
+        if r.kind in ("string_attrib", "wstring_attrib"):
+            names.append(r.tokens[6].value)
+    assert "ATTRIB_XACIS_PNAME%8" in names
+    assert sum(1 for r in sf.records if r.kind == "wstring_attrib") == 0
+    assert sum(1 for r in sf.records if r.kind == "rgb_color") > 0
+    shell = next(r for r in sf.records if r.kind == "shell")
+    assert shell.rec_id == 9            # legacy table without wstrings
 
 
 def test_official_open_assembly_bodies_two():

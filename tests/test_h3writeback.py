@@ -41,8 +41,8 @@ def test_document_xml_component_hierarchy(asm_path):
     PartDef; each body PartDef is top-level with its NominalBodyDef; the
     NominalBodyDef id matches the part SAB's body attrib value."""
     xml = zipfile.ZipFile(asm_path).read("SpaceClaim/document.xml").decode()
-    assert xml.count("<PartDef") == 3                    # root + 2 bodies
-    assert xml.count("<ComponentDef") == 2               # one per body part
+    assert xml.count("<PartDef") == 4                    # root + 2 bodies + container
+    assert xml.count("<ComponentDef") == 3               # 2 body parts + container
     assert "<ComponentDef" in xml.split("</PartDef>")[0]  # nested in root
     # component instance references the target part number
     ref = re.search(r'<source[^>]*refId="[^":]+:(\d+)"', xml)
