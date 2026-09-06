@@ -42,18 +42,24 @@ def _assert_fifo_invariant(sab_bytes, label):
     recs = sf.records
     refs = [[t.value for t in r.tokens if t.kind == "ptr"] for r in recs]
     n = len(recs)
-    seeds = [i for i, r in enumerate(recs) if r.kind == "body"]
-    assert seeds, f"{label}: no body record found"
-    visited = set(seeds)
-    queue = list(seeds)
+    body_idx = [i for i, r in enumerate(recs) if r.kind == "body"]
+    assert body_idx, f"{label}: no body record found"
+    # official order: each body's full subtree drains before the next body
+    # is referenced (lazy seeding)
+    visited = set()
     seq = []
-    while queue:
-        cur = queue.pop(0)
-        seq.append(cur)
-        for m in refs[cur]:
-            if 0 <= m < n and m not in visited:
-                visited.add(m)
-                queue.append(m)
+    for b in body_idx:
+        if b in visited:
+            continue
+        queue = [b]
+        visited.add(b)
+        while queue:
+            cur = queue.pop(0)
+            seq.append(cur)
+            for m in refs[cur]:
+                if 0 <= m < n and m not in visited:
+                    visited.add(m)
+                    queue.append(m)
     expected = list(range(n))
     assert seq == expected, (
         f"{label}: FIFO pop order != record order; first mismatch at "

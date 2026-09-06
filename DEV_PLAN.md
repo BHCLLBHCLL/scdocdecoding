@@ -873,11 +873,11 @@ T_RECORD "surface" [id]
 
 | 层 | 实测状态 |
 | --- | --- |
-| UI 命令面 | 14 页签 / 125 命令 / **123 live**（仅 prep.small、safety.tab 占位） |
+| UI 命令面 | 18 页签 / 130 命令 / **144 live（内核可用）** / 29 live（无内核）——自动统计：`python tools/gen_devplan_snapshot.py`；占位仅 prep.small、safety.tab |
 | 内核（kernel.py 71 函数） | 基本体×4、拉伸/旋转/螺旋/棱柱、布尔、圆角/倒角/抽壳/拔模/偏移、阵列（线性/圆周）、镜像、分割、修复组（缝隙/缺失面/实体化/缝合）、中面/共享拓扑、干涉/体积/面积/重心、STEP/STL/BREP 读写、离散 |
 | scdoc 数据层 | **读取**：22 类 SAB 记录全解码（含 B 样条深度解码/容忍拓扑）、facets、document.xml；**写入**：FIFO 遍历 + 平面/圆柱/球/环/B 样条体官方 bodies=1；SAT 备用通路；模板打包 |
-| 脚本 | 录制/回放 18 ops |
-| 测试 | 99 passed / 1 skipped |
+| 脚本 | 录制/回放 18 ops（H7 参数表联动后参数化重放） |
+| 测试 | 195 条（`def test_` 扫描，含 kernel 缺失跳过；快照自动生成同上工具） |
 
 ### 21.2 对标差距（三层模型）
 
@@ -1046,3 +1046,15 @@ T_RECORD "surface" [id]
 2. 数据层改动必须过**官方互操作矩阵**：本方写出 → SabSatConverter restore + SpaceClaim `/RunScript` 哨兵 bodies>0
 3. UI 命令 live 状态与 catalog 守卫测试联动（tests/test_g1.py 既有机制）
 4. 每波结束跑全量测试 + push GitHub
+
+
+### 21.7 TODO-9 / P0-1 装配 id 分配器关闭记录（2026-09-06）
+
+- **TODO-9 关闭**：官方哨兵 `bodies=2` 达成（`1d3f46f`：六项绑定要求）；
+  装配域 99%/L2。
+- **P0-1 关闭**（`ae30cd5`）：`_DocIdAllocator`（官方布局优先 + 冲突避让）+
+  `_allocate_assembly_ids` 文档全局 id plan，document.xml / SAB attribs
+  （Makers.doc_ids）/ facets.bin / rels 四方消费永不分歧；参数化测试
+  1..8 体 × {box, cyl} 断言全文档 id 唯一（tests/test_id_allocator.py）。
+- **纪律更新**：「永不交叉」类绝对断言必须配参数化扫描（体数 1..8）——
+  2 体样本验证过的机制不等于 N 体成立。
