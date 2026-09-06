@@ -29,8 +29,8 @@
 | TODO-3 | 折弯槽口（bend relief cuts） | jog 平角三盒（已标注） | 弯折线端部槽口布尔（复用 corner_relief 机制） | 1–2 天 |
 | TODO-4 | 曲面圆角面 / 曲线网络 | blend_loft 已覆盖双线框过渡 | `BRepFill_Filling` 多约束 + face-face blend（ChFi3d） | 3–5 天 |
 | TODO-5 | 工程图图幅版式 | HLR 三视图 + BOM/尺寸已有；无标准图幅 | 解析 Library/DrawingFormats A0–E 官方图框 → 模板 | 3–5 天 |
-| TODO-6 | 命名选择组（NamedSelection）写回 | 读端已解码 group 类记录；写端未生成 | document.xml NamedSelectionDef + SAB group attrib | 2 天 |
-| TODO-7 | 保存视图读回 | SavedViewsDef 已写端生成；读端 parse_document 未还原 | document 解析分支补 SavedViewsDef → session.views | 1 天 |
+| TODO-6 | 命名选择组（NamedSelection）写回 | **已闭环（P1-1）**：官方格式（BeamProfiles/Circular.scdoc 10 样本）——读端 parse_document 还原 name/selections/sectionPlane；写端 `_inject_named_selections` 注入 StoredSelectionTableDef（buckets+name+plane+PullToolProxyDef 官方结构）；`<selections/>` 空成员（moniker GUID 链路未建，读回名字对称已锁测试） | 成员绑定=moniker GUID 子项延后 | ✅ |
+| TODO-7 | 保存视图读回 | **边界定档（P1-1 复核）**：SavedViewsDef 在写端代码与全机官方库（scdm 安装树）均为零命中——「写端已生成」系过时记录；无官方样本则不可凭想象写格式（纪律闸门）。解锁路径=SpaceClaim RunScript（建视图→存→diff document.xml，make_official_ref 基建在位） | 解锁后 1 天 | ⏸ 边界 |
 | TODO-8 | 草图约束完整求解器 | **已关闭**：sketch_solver.py LM 求解器（DOF/冲突/表达式） | — | ✅ |
 | TODO-9 | 整装配官方打开 | **已关闭**：官方 SpaceClaim 2019 R3 哨兵实测 `done bodies=2`（box+cyl 装配，根 0 体 + 两组件各 1 体） | 差分定位链（tests/test_todo9_assembly.py 固化）：①sectionId 是读者固定节键（未知 GUID → 整文档落空）；②sctype moniker 字符串逐字精确（多一个反斜杠 → 组件源解析失败 GetBodies 空引用）；③versions.xml/windows.xml 必须载文档 GUID；④SAB body/face/edge token#1 为文档级实体序号；⑤柱面 part 3 边（两圆+seam）文档与 SAB 计数一致；⑥ComponentDef 编号专用区间，避让面/边 id（官方首组件 0:27 与我们的面 id 0:27 撞号→组件静默丢失）。renderlist 挂体/checksums/facets 经证与开档无关 | ✅ |
 

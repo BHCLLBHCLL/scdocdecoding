@@ -124,7 +124,7 @@ vs 体 PartDef/BodyDef），官方表现为「组件静默丢失」，正是 TOD
 
 | # | 项 | 证据 / 动作 | 成本 |
 | --- | --- | --- | --- |
-| P1-1 | **自写自读元数据闭环** | NYI TODO-6（NamedSelection 写端未生成）、TODO-7（写端已生成 `SavedViewsDef`，读端 `scdoc_parser/document.py` 未还原）→ 自己存的文件回读丢元数据 | 2–3 天 |
+| P1-1 | **自写自读元数据闭环** ✅ 主体闭环 | NamedSelection 读写对称（官方 BeamProfiles 格式背书 + `_inject_named_selections` + 4 测试）；SavedViewsDef 全机零样本 → 边界入册（解锁=RunScript 录制）；成员 moniker 绑定延后 | 主体闭环 |
 | P1-2 | **端到端任务门禁** ✅ | `tests/test_p12_e2e.py`：§20.8 演练链自动化（新建→草图矩形→拉伸→抽壳→阵列→截面→命名选择→存 .scdm→重开→体积恒等 + 录放链 2 测试） | 已闭环 |
 | P1-3 | **CID_MAP 全局可变状态显式化** ✅ | `Makers.cid_map` 实例属性权威，`Worklist.run` 逐记录透传（`_Rec`/`_ClusterRec` 签名同步）、`_cid(cid, map)` 显式参数（全局仅外部调用方回退）；两条断言（乱序构造隔离 + 显式参数确定性） | 已闭环 |
 | P1-4 | **DEV_PLAN 同步** | §21.1 仍是旧快照（14 页签/125 命令/123 live/99 测试），且无 TODO-9 与保真度记录；补 §21.7，并把「页签/命令/live/测试数」改为自动生成块 | 0.5 天 |

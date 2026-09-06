@@ -109,6 +109,14 @@ class Layer:
 
 
 @dataclass
+class NamedSelection:
+    id: str
+    name: str
+    selections: List[str] = field(default_factory=list)   # moniker refIds
+    section_plane: Optional[dict] = None                  # origin/dirX/dirY
+
+
+@dataclass
 class Caption:
     id: str
     subject_id: str
@@ -137,6 +145,7 @@ class DesignDocument:
     layers: List[Layer] = field(default_factory=list)
     captions: List[Caption] = field(default_factory=list)
     sketch_curves: List[SketchCurve] = field(default_factory=list)
+    named: List[NamedSelection] = field(default_factory=list)
     units: Units = field(default_factory=Units)
     default_blend_radius: Optional[float] = None
 
@@ -215,6 +224,30 @@ def parse_document(xml_bytes: bytes) -> DesignDocument:
                 name=_text(el, 'name') or '',
                 type=_text(el, 'type'),
             ))
+        elif tag == 'NamedSelectionDef':
+            sel = NamedSelection(
+                id=el.get('Id', ''),
+                name=_text(el, 'name') or '',
+            )
+            # namespace-tolerant: children live under the stored-selection
+            # urn, so walk with _local filtering
+            in_selections = False
+            for sub in el.iter():
+                st = _local(sub.tag)
+                if st == 'selections':
+                    in_selections = True
+                    continue
+                if st == 'sectionPlane':
+                    in_selections = False
+                if in_selections and st == 'item' and sub.get('refId'):
+                    sel.selections.append(sub.get('refId'))
+                if st == 'sectionPlane' and sel.section_plane is None:
+                    sel.section_plane = {
+                        'origin': _floats(_text(sub, 'origin') or ''),
+                        'dirX': _floats(_text(sub, 'dirX') or ''),
+                        'dirY': _floats(_text(sub, 'dirY') or ''),
+                    }
+            doc.named.append(sel)
         elif tag == 'SketchCurveDef':
             origin = _floats(_deep_text(el, 'origin'))
             direction = _floats(_deep_text(el, 'dir'))

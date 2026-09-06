@@ -960,6 +960,77 @@ def _document_xml(name: str, face_counts: List[int], edge_counts: List[int],
             f'</Document>\n').encode("utf-8")
 
 
+_NS_GUID_SEQ = [0]
+
+
+def _inject_named_selections(document_xml: bytes, named) -> bytes:
+    """P1-1 TODO-6: write NamedSelectionDef into a template-copied
+    document.xml.
+
+    Official format (BeamProfiles/Circular.scdoc): the block nests inside
+    PartDef after DefaultEdgeTreatmentDef:
+
+        <StoredSelectionTableDef Id="0:16" xmlns="urn:stored selection">
+          <updateState>9:7</updateState>
+          <guid>{guid}</guid>
+          <NamedSelectionDef Id="0:{nid}">
+            <updateState>9:11</updateState>
+            <buckets>…</buckets>
+            <selections>…</selections>
+            <name>{name}</name>
+            <sectionPlane sctype="SpaceClaim.Geometry.Plane, Geometry">…</sectionPlane>
+            <PullToolProxyDef Id="9:10" xmlns="urn:spaceclaim">…</PullToolProxyDef>
+          </NamedSelectionDef>
+        </StoredSelectionTableDef>
+
+    Member monikers need session-GUID plumbing that our SAB stream does
+    not carry, so <selections/> is emitted empty (schema-valid; the name
+    and buckets round-trip — member binding stays a deferred sub-item).
+    """
+    if not named:
+        return document_xml
+    import uuid
+    xml = document_xml.decode("utf-8")
+    blocks = []
+    for i, sel in enumerate(named):
+        name = (sel.get("name") if isinstance(sel, dict)
+                else getattr(sel, "name", "")) or f"Selection{i + 1}"
+        nid = 588 + i
+        block = (
+            f'<StoredSelectionTableDef Id="0:{16 + i}" '
+            f'xmlns="urn:stored selection"><updateState>9:7</updateState>'
+            f'<guid>{uuid.uuid4()}</guid>'
+            f'<NamedSelectionDef Id="0:{nid}"><updateState>9:11</updateState>'
+            f'<buckets><item><first>Primary</first>'
+            f'<second>Primary Selection</second></item>'
+            f'<item><first>Secondary</first>'
+            f'<second>DimensionDrivenToolDimension</second></item></buckets>'
+            f'<selections></selections>'
+            f'<name>{name}</name>'
+            f'<sectionPlane sctype="SpaceClaim.Geometry.Plane, Geometry">'
+            f'<origin>0 0 0</origin><dirX>1 0 0</dirX><dirY>0 1 0</dirY>'
+            f'</sectionPlane>'
+            f'<PullToolProxyDef Id="9:{10 + i}" xmlns="urn:spaceclaim">'
+            f'<updateState>9:{10 + i}</updateState><endPoint>0 0 0</endPoint>'
+            f'<mode>None</mode><extrudeType>None</extrudeType>'
+            f'</PullToolProxyDef></NamedSelectionDef>'
+            f'</StoredSelectionTableDef>')
+        blocks.append(block)
+    # nest inside the first PartDef (after its DefaultEdgeTreatmentDef)
+    marker = "</DefaultEdgeTreatmentDef>"
+    idx = xml.find(marker)
+    if idx < 0:
+        # fallback: before the closing Design tag
+        idx = xml.find("</Design>")
+        if idx < 0:
+            return document_xml
+        xml = (xml[:idx] + "".join(blocks) + xml[idx:])
+    else:
+        xml = (xml[:idx + len(marker)] + "".join(blocks)
+               + xml[idx + len(marker):])
+    return xml.encode("utf-8")
+
+
 def _content_types() -> bytes:
     return (b'<?xml version="1.0" encoding="utf-8"?>\n'
             b'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">\n'
@@ -2300,6 +2371,9 @@ def write_scdoc(path: str, kdoc, name: str = "design") -> None:
                 out.writestr(n, sab_bytes)
             elif n.endswith("facets.bin"):
                 out.writestr(n, facets_bytes)
+            elif n.endswith("document.xml"):
+                out.writestr(n, _inject_named_selections(
+                    src.read(n), getattr(kdoc, "named", None) or []))
             else:
                 out.writestr(n, src.read(n))
     if facets_bytes is not None:
