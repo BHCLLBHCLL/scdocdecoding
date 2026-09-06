@@ -133,6 +133,13 @@ else:
             self._autosave_timer = QTimer(self)
             self._autosave_timer.timeout.connect(self._autosave_all)
             self._autosave_timer.start(60 * 1000)
+            if not K.available():
+                # lightweight mode: make the limitation visible up front —
+                # grey out kernel-only tools and tell the user how to fix it
+                self._disable_kernel_tools()
+                self._set_status(
+                    "轻量模式：未检测到 pythonocc-core，直接编辑工具不可用 — "
+                    "请用 run_scdm.bat 启动")
             if path:
                 self.open_path(path)
             self._recover_prompt()
@@ -426,11 +433,13 @@ else:
                     "mode.3d": "三维模式",
                 }.get(cmd_id, cmd.name if cmd else cmd_id)
                 if cmd_id.startswith("mode."):
-                    self.tools.set_mode(cmd_id, cmd.wave if cmd else "M?", live)
+                    self.tools.set_mode(cmd_id, cmd.wave if cmd else "M?", live,
+                                        reason=self._kernel_reason(cmd_id, live))
                     self.ribbon.set_checked(cmd_id, True)
                 else:
                     self.tools.activate(cmd_id, cmd.name if cmd else cmd_id,
-                                        cmd.wave if cmd else "M?", live, hud)
+                                        cmd.wave if cmd else "M?", live, hud,
+                                        reason=self._kernel_reason(cmd_id, live))
                     self.ribbon.set_checked(cmd_id, True)
                 self.left.show_options(cmd_id if cmd_id in (
                     "tool.select", "tool.pull", "tool.move", "tool.fill",
@@ -2492,6 +2501,31 @@ else:
             except Exception as exc:
                 self._set_status(str(exc))
 
+        def _kernel_reason(self, cmd_id: str, live: bool) -> str | None:
+            """Why a non-live command can't commit — say the kernel is
+            missing (lightweight mode) rather than the misleading
+            "M2 未实现" (the tools ARE implemented; this env lacks OCC)."""
+            if live or not cmd_id.startswith(("tool.", "insert.", "mode.",
+                                              "create.", "measure.")):
+                return None
+            if not K.available():
+                return ("轻量模式：{n} 需要 pythonocc-core 内核 — "
+                        "请用 run_scdm.bat 启动（conda activate scdm）".format(
+                            n=(command_by_id(cmd_id).name if command_by_id(cmd_id)
+                               else cmd_id)))
+            return None
+
+        def _disable_kernel_tools(self):
+            """Lightweight mode: grey out every kernel-only ribbon button so
+            the dead-tool click can't happen silently."""
+            from scdm.catalog import (M2_LIVE, M3_LIVE, M4_LIVE, M5_LIVE)
+            for cid in (M2_LIVE | M3_LIVE | M4_LIVE | M5_LIVE):
+                b = self.ribbon.button(cid)
+                if b is not None:
+                    b.setEnabled(False)
+                    tip = b.toolTip() + "\n（轻量模式不可用：缺少 pythonocc-core）"
+                    b.setToolTip(tip)
+
         def _need_kernel(self) -> bool:
             if not K.available():
                 self._set_status("需要 pythonocc-core：conda install -c conda-forge pythonocc-core")
@@ -3996,6 +4030,16 @@ def main(argv=None):
     path = argv[1] if len(argv) > 1 else None
     win = ScdmViewer(path)
     win.show()
+    if not K.available():
+        from PyQt5.QtWidgets import QMessageBox
+        QMessageBox.warning(
+            win, "轻量模式",
+            "未检测到 pythonocc-core，已以轻量模式启动：\n"
+            "可以查看与标注，但直接编辑（拉动/移动/填充/合并/分割）"
+            "等内核工具不可用。\n\n"
+            "解决：运行 run_scdm.bat，或先 conda activate scdm 再 "
+            "python scdm_gui.py。\n"
+            "首次安装内核：setup_env.bat")
     return app.exec_()
 
 
