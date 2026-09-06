@@ -3457,8 +3457,6 @@ else:
                 return
             iren = self.vtk_widget.GetRenderWindow().GetInteractor()
             tool = self.tools.active
-            print("[click] tool=%s pos=%s" % (tool, iren.GetEventPosition()),
-                  flush=True)
             if tool in ("tool.select", "measure.dist"):
                 allow = ["face"]
                 if self.sel.allows("edge"):
@@ -3468,8 +3466,6 @@ else:
             else:
                 allow = ["face"]
             kind, actor, node, world = self.scene.pick_detail(allow)
-            print("[pick] allow=%s -> kind=%s node=%s world=%s" % (
-                allow, kind, node, world), flush=True)
             if tool == "measure.dist" and world:
                 self._measure_pick(kind, node, actor, world)
                 return

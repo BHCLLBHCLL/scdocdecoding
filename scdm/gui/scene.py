@@ -14,13 +14,15 @@ PRE = (1.0, 0.78, 0.16)
 BASE = (0.62, 0.66, 0.70)
 
 
-class CadStyle(vtk.vtkInteractorStyleTrackballCamera):
-    """LMB select, MMB rotate, Shift+MMB pan, RMB context, wheel zoom.
+class CadStyle(vtk.vtkInteractorStyleUser):
+    """Bare style + callback holder for Scene's interactor-level handlers.
 
-    When drag_start_cb/drag_end_cb are set, an LMB press starts a drag gesture:
-    the click_cb fires only if the button is released without moving (plain click);
-    otherwise drag_move_cb streams pixel deltas and drag_end_cb fires once with the
-    total delta. Used by Pull/Move for interactive drag preview.
+    LMB select/tool drag, MMB rotate, Shift+MMB pan, RMB context, wheel zoom
+    are implemented in Scene's observer handlers (see below).  A bare
+    vtkInteractorStyleUser is used because C++->Python virtual dispatch of
+    interactor-style overrides does not fire in some vtk builds: a python
+    subclass of the trackball style silently falls through to the C++
+    default (clicks would camera-rotate and every callback would be dead).
     """
 
     def __init__(self):
@@ -30,56 +32,90 @@ class CadStyle(vtk.vtkInteractorStyleTrackballCamera):
         self.drag_start_cb = None   # callable() at LMB down
         self.drag_move_cb = None    # callable(dx, dy) during drag
         self.drag_end_cb = None     # callable(total_dx, total_dy) at release
-        self._drag_start = None
-        self._dragging = False
-        self._last = None
-
-    def OnLeftButtonDown(self):
-        iren = self.GetInteractor()
-        if iren and self.drag_start_cb:
-            self._drag_start = iren.GetEventPosition()
-            self._last = self._drag_start
-            self._dragging = True
-            self.drag_start_cb()
-            return
-        if self.click_cb:
-            self.click_cb()
-
-    def OnMouseMove(self):
-        iren = self.GetInteractor()
-        if self._dragging and iren and self.drag_move_cb:
-            pos = iren.GetEventPosition()
-            self.drag_move_cb(pos[0] - self._last[0], pos[1] - self._last[1])
-            self._last = pos
-            return
-        vtk.vtkInteractorStyleTrackballCamera.OnMouseMove(self)
-
-    def OnLeftButtonUp(self):
-        if self._dragging and self.drag_end_cb:
-            iren = self.GetInteractor()
-            pos = iren.GetEventPosition() if iren else self._drag_start
-            self.drag_end_cb(pos[0] - self._drag_start[0], pos[1] - self._drag_start[1])
-            self._dragging = False
-            return
-        vtk.vtkInteractorStyleTrackballCamera.OnLeftButtonUp(self)
-
-    def OnMiddleButtonDown(self):
-        iren = self.GetInteractor()
-        if iren is not None and iren.GetShiftKey():
-            vtk.vtkInteractorStyleTrackballCamera.OnMiddleButtonDown(self)
-        else:
-            vtk.vtkInteractorStyleTrackballCamera.OnLeftButtonDown(self)
-
-    def OnMiddleButtonUp(self):
-        vtk.vtkInteractorStyleTrackballCamera.OnMiddleButtonUp(self)
-        vtk.vtkInteractorStyleTrackballCamera.OnLeftButtonUp(self)
-
-    def OnRightButtonDown(self):
-        if self.right_cb:
-            self.right_cb()
 
 
 class Scene:
+    # -- interactor-level input handlers ----------------------------------
+    # (see CadStyle docstring: these replace the style's virtual overrides)
+    ROTATE_DEG_PER_PX = 0.5
+    ZOOM_STEP = 1.1
+
+    def _on_iren_left_down(self, o, e):
+        if self.style.drag_start_cb:
+            self._drag_active = True
+            self._drag_origin = o.GetEventPosition()
+            self._drag_last = self._drag_origin
+            self.style.drag_start_cb()
+        elif self.style.click_cb:
+            self.style.click_cb()
+
+    def _on_iren_move(self, o, e):
+        if self._drag_active and self.style.drag_move_cb:
+            pos = o.GetEventPosition()
+            self.style.drag_move_cb(pos[0] - self._drag_last[0],
+                                    pos[1] - self._drag_last[1])
+            self._drag_last = pos
+            return
+        if self._cam_mode is not None:
+            pos = o.GetEventPosition()
+            dx = pos[0] - self._cam_last[0]
+            dy = pos[1] - self._cam_last[1]
+            self._cam_last = pos
+            self._camera_move(dx, dy)
+
+    def _on_iren_left_up(self, o, e):
+        if self._drag_active:
+            self._drag_active = False
+            if self.style.drag_end_cb:
+                pos = o.GetEventPosition()
+                self.style.drag_end_cb(pos[0] - self._drag_origin[0],
+                                       pos[1] - self._drag_origin[1])
+
+    def _on_iren_middle_down(self, o, e):
+        self._cam_mode = "pan" if o.GetShiftKey() else "rotate"
+        self._cam_last = o.GetEventPosition()
+
+    def _on_iren_middle_up(self, o, e):
+        self._cam_mode = None
+
+    def _on_iren_right_down(self, o, e):
+        if self.style.right_cb:
+            self.style.right_cb()
+
+    def _on_iren_wheel(self, o, e, factor):
+        cam = self.renderer.GetActiveCamera()
+        if cam.GetParallelProjection():
+            cam.SetParallelScale(cam.GetParallelScale() / factor)
+        else:
+            cam.Dolly(factor)
+        self.render()
+
+    def _camera_move(self, dx, dy):
+        """Trackball-style rotate (MMB) / pan (Shift+MMB) in pixels."""
+        cam = self.renderer.GetActiveCamera()
+        if self._cam_mode == "rotate":
+            cam.Azimuth(dx * self.ROTATE_DEG_PER_PX)
+            cam.Elevation(-dy * self.ROTATE_DEG_PER_PX)
+            cam.OrthogonalizeViewUp()
+        else:
+            _, vh = self.renderer.GetRenderWindow().GetSize()
+            k = 2.0 * cam.GetParallelScale() / max(vh, 1)
+            d = cam.GetDirectionOfProjection()
+            up = cam.GetViewUp()
+            right = (d[1] * up[2] - d[2] * up[1],
+                     d[2] * up[0] - d[0] * up[2],
+                     d[0] * up[1] - d[1] * up[0])
+            fp = cam.GetFocalPoint()
+            p = cam.GetPosition()
+            shift = (right[0] * -dx * k + up[0] * dy * k,
+                     right[1] * -dx * k + up[1] * dy * k,
+                     right[2] * -dx * k + up[2] * dy * k)
+            cam.SetFocalPoint(fp[0] + shift[0], fp[1] + shift[1],
+                              fp[2] + shift[2])
+            cam.SetPosition(p[0] + shift[0], p[1] + shift[1],
+                            p[2] + shift[2])
+        self.render()
+
     def __init__(self, vtk_widget):
         self.vtk_widget = vtk_widget
         self.renderer = vtk.vtkRenderer()
@@ -89,6 +125,33 @@ class Scene:
         vtk_widget.GetRenderWindow().AddRenderer(self.renderer)
         self.style = CadStyle()
         vtk_widget.GetRenderWindow().GetInteractor().SetInteractorStyle(self.style)
+        _iren = vtk_widget.GetRenderWindow().GetInteractor()
+        # Custom input runs on interactor-level observers: C++->Python
+        # virtual dispatch of interactor-style overrides does not fire in
+        # some vtk builds (CadStyle.OnLeftButtonDown etc. would never run),
+        # while interactor observers and explicit base-class calls always
+        # do.  The C++ trackball style stays for the wheel (zoom).
+        self._drag_active = False
+        self._drag_origin = (0, 0)
+        self._drag_last = (0, 0)
+        self._cam_mode = None  # None | "rotate" | "pan"
+        _iren.AddObserver("LeftButtonPressEvent", self._on_iren_left_down,
+                          10.0)
+        _iren.AddObserver("LeftButtonReleaseEvent", self._on_iren_left_up,
+                          10.0)
+        _iren.AddObserver("MouseMoveEvent", self._on_iren_move, 10.0)
+        _iren.AddObserver("MiddleButtonPressEvent", self._on_iren_middle_down,
+                          10.0)
+        _iren.AddObserver("MiddleButtonReleaseEvent", self._on_iren_middle_up,
+                          10.0)
+        _iren.AddObserver("RightButtonPressEvent", self._on_iren_right_down,
+                          10.0)
+        _iren.AddObserver("MouseWheelForwardEvent",
+                          lambda o, e: self._on_iren_wheel(o, e, self.ZOOM_STEP),
+                          10.0)
+        _iren.AddObserver("MouseWheelBackwardEvent",
+                          lambda o, e: self._on_iren_wheel(
+                              o, e, 1.0 / self.ZOOM_STEP), 10.0)
         vtk_widget.Initialize()
         vtk_widget.Start()
 
