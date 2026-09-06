@@ -664,11 +664,27 @@ else:
                     save_scdm(path, ses.kdoc)
                 elif low.endswith(".scdoc"):
                     from scdm.scdoc_write import write_scdoc
-                    if ses.kdoc.components:
-                        from scdm.scdoc_write import write_scdoc_multi
-                        write_scdoc_multi(path, ses.kdoc, name=ses.name)
-                    else:
-                        write_scdoc(path, ses.kdoc, name=ses.name)
+                    try:
+                        if ses.kdoc.components:
+                            from scdm.scdoc_write import write_scdoc_multi
+                            write_scdoc_multi(path, ses.kdoc, name=ses.name)
+                        else:
+                            write_scdoc(path, ses.kdoc, name=ses.name)
+                    except Exception as exc:
+                        # P0-2 fallback: .scdoc 失败 → 降级 .sat（不丢
+                        # 用户几何），明确提示而非静默
+                        sat_path = (os.path.splitext(path)[0] + ".sat")
+                        from scdm.sat_write import write_sat
+                        open(sat_path, "w").write(
+                            write_sat(ses.kdoc, name=ses.name))
+                        ses.path = sat_path
+                        ses.name = os.path.splitext(
+                            os.path.basename(sat_path))[0]
+                        ses.dirty = False
+                        self._refresh_title()
+                        self._set_status(
+                            f".scdoc 保存失败（{exc}）已降级保存 {sat_path}")
+                        return
                 else:
                     if not low.endswith((".step", ".stp")):
                         path += ".step"

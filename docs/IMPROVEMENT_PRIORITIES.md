@@ -1,6 +1,6 @@
 # 改进点优先级盘点
 
-> **最新刷新：2026-09-06 09:30（TODO-9 关闭后重评）**
+> **最新刷新：2026-09-06（P0-2 闭环 + 环境解锁）**
 > 依据：工作区代码实测 + `DEV_PLAN.md` §19/§20/§21 + `function_gap_analysis.md`
 > + `docs/NYI_INVENTORY.md` + `DEV_SUMMARY.md`。
 >
@@ -69,7 +69,20 @@ vs 体 PartDef/BodyDef），官方表现为「组件静默丢失」，正是 TOD
 - **成本**：0.5–1 天（+ 官方样本 0.5 天人工）
 - **验收**：4/6/8 体装配结构级无撞号；官方打开 components 与 TOTAL 与体数一致。
 
-### P0-2 · 原生 .scdoc 写出的几何覆盖兜底（未变，仍是价值最高的功能缺口）
+### P0-2 · 原生 .scdoc 写出的几何覆盖兜底 ✅ 已关闭（2026-09-06）
+
+> 触发率实测：**3/3 全通过**（倒圆盒 / 打孔盒 / 圆锥台各写 .scdoc 成功，
+> `tools/_p02_e2e.py` 临时探针）。兜底代码已在位：`_extract_solid` 的
+> `ConvertToBSpline` 预处理 + `_bsurface_data` 的 `GeomConvert_ApproxSurface`
+> 逼近（tol=bbox 对角线 1e-6 量级）；仅 IMPROVEMENT_PRIORITIES 未记录（文档滞后）。
+> 收尾动作（本批）：①三条回归（tests/test_p02_coverage.py ×4，含
+> DeprecationWarning 断言）②DeprecationWarning 修复（shapecustom 实例
+> 访问器 → 静态方法）③**.sat 降级路径**：GUI `.scdoc` 保存失败自动写
+> `.sat` 并明确提示（不丢几何）。
+> 环境注（P0-3 关联）：`scdm` / `occ` conda env 均有 OCC+pytest——全量
+> **212 passed / 1 skipped**；唯一失败 `test_todo9_assembly::test_official_open_assembly_bodies_two`
+> 为官方 SpaceClaim `/RunScript` 哨兵超时（外部应用依赖），非代码回归。
+
 
 - **证据**：`write_scdoc`(:1685) 分派 `_cyl_info`（要求恰好 3 面）→ `_sphere_info`（1 面）
   → `_torus_info`（1 面）→ `_extract_solid`(:302)；后者对非平面面走 `_bsurface_data`(:246)，
@@ -129,7 +142,7 @@ vs 体 PartDef/BodyDef），官方表现为「组件静默丢失」，正是 TOD
 
 1. **P0-1** 装配 id 分配器 + 参数化唯一性测试（0.5–1 天）——成绩单刚拿到，先把它的适用边界
    从 2 体扩到 N 体，否则下一次真实装配会撞同一个坑；
-2. **P0-2 触发率实测**（10 分钟）→ 命中即做兜底 + 保存降级（1.5–2.5 天）；
+2. ~~P0-2 触发率实测 + 兜底 + 保存降级（1.5–2.5 天）~~ **已闭环**（2026-09-06 见 §2）；
 3. **P0-3** 环境与门禁（0.5–1 天）——此后每条结论都可复核；
 4. **P1-2 e2e + P1-3 CID_MAP + P1-4/5/6**（合计 ~3 天）；
 5. **P1-1 元数据闭环** → **P2-1/2/3** 域纵深；**P3** 随改动自然消化。

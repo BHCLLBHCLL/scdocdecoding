@@ -249,13 +249,18 @@ def _bsurface_data(face):
     Returns (u_deg, v_deg, u_knots, u_mults, v_knots, v_mults, poles)
     with poles flat (x, y, z, w) v-slowest, and knot multiplicities in
     ACIS storage form (endpoint mult = standard - 1).
+
+    Non-B-spline surfaces (analytic cylinders/cones/spheres from fillets,
+    holes, cones; periodic surfaces) are approximated with
+    GeomConvert_ApproxSurface — tolerance scaled to the face bbox diagonal
+    (P0-2 geometry-coverage fallback).
     """
     from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
     from OCC.Core.GeomAbs import GeomAbs_BSplineSurface
     from OCC.Core.TopoDS import topods
     ad = BRepAdaptor_Surface(topods.Face(face))
     if ad.GetType() != GeomAbs_BSplineSurface:
-        return None
+        return _approx_bsurface(face)
     bs = ad.BSpline()
     u_deg, v_deg = bs.UDegree(), bs.VDegree()
 
@@ -276,6 +281,86 @@ def _bsurface_data(face):
             w = bs.Weight(i, j)
             poles.append((p.X(), p.Y(), p.Z(), w))
     return (u_deg, v_deg, u_knots, u_mults, v_knots, v_mults, poles)
+
+
+def _approx_bsurface(face, tol_scale: float = 1e-6):
+    """Approximate an arbitrary face surface as a B-spline (P0-2 fallback).
+
+    Tolerance = 1e-6 x the face bbox diagonal so dense fillet faces stay
+    within the document's unit scale.  Returns the _bsurface_data tuple or
+    raises KernelError-shaped ValueError when approximation fails.
+    """
+    import scdm.additive as _A
+    from OCC.Core.GeomConvert import GeomConvert_ApproxSurface
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+    from OCC.Core.GeomAbs import GeomAbs_BSplineSurface
+    from OCC.Core.TopoDS import topods
+    (a0, b0, c0), (a1, b1, c1) = _A.shape_bbox(face)
+    diag = ((a1 - a0) ** 2 + (b1 - b0) ** 2 + (c1 - c0) ** 2) ** 0.5
+    tol = max(diag * tol_scale, 1e-9)
+    from OCC.Core.BRep import BRep_Tool
+    f = topods.Face(face)
+    surf = BRep_Tool().Surface(f)
+    if surf is None:
+        return None
+    # Periodic bases (full cylinders etc.) are rejected by
+    # GeomConvert_ApproxSurface; clip to the face's UV window first so the
+    # approximation sees a finite patch (P0-2 fillet/hole/cone coverage).
+    if surf.IsUPeriodic() or surf.IsVPeriodic():
+        from OCC.Core.BRepTools import breptools
+        from OCC.Core.Geom import Geom_RectangularTrimmedSurface
+        u1, u2, v1, v2 = breptools.UVBounds(f)
+        surf = Geom_RectangularTrimmedSurface(surf, u1, u2, v1, v2)
+    app = GeomConvert_ApproxSurface(surf, tol,
+                                    __import__("OCC.Core.GeomAbs",
+                                               fromlist=["GeomAbs"])
+                                    .GeomAbs_C1, __import__("OCC.Core.GeomAbs",
+                                               fromlist=["GeomAbs"])
+                                    .GeomAbs_C1,
+                                    8, 8, 500, 1)
+    if not app.IsDone() or not app.HasResult():
+        return None
+    bs = app.Surface()  # GeomConvert_ApproxSurface always yields a B-spline
+
+    def stored(mults):
+        out = list(mults)
+        out[0] -= 1
+        out[-1] -= 1
+        return out
+
+    u_mults = stored([bs.UMultiplicity(i) for i in range(1, bs.NbUKnots() + 1)])
+    v_mults = stored([bs.VMultiplicity(i) for i in range(1, bs.NbVKnots() + 1)])
+    u_knots = [bs.UKnot(i) for i in range(1, bs.NbUKnots() + 1)]
+    v_knots = [bs.VKnot(i) for i in range(1, bs.NbVKnots() + 1)]
+    poles = []
+    for j in range(1, bs.NbVPoles() + 1):
+        for i in range(1, bs.NbUPoles() + 1):
+            p = bs.Pole(i, j)
+            w = bs.Weight(i, j)
+            poles.append((p.X(), p.Y(), p.Z(), w))
+    return (bs.UDegree(), bs.VDegree(), u_knots, u_mults, v_knots, v_mults,
+            poles)
+
+
+def _bsurface_raw(face):
+    """The underlying Geom_Surface of a face, B-spline-converted for
+    periodic/trimmed cases that GeomConvert_ApproxSurface rejects."""
+    from OCC.Core.BRep import BRep_Tool
+    from OCC.Core.TopoDS import topods
+    from OCC.Core.Geom import Geom_BSplineSurface
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+    from OCC.Core.GeomAbs import GeomAbs_BSplineSurface
+    f = topods.Face(face)
+    surf = BRep_Tool().Surface_s(f) if hasattr(BRep_Tool(), "Surface_s")         else BRep_Tool().Surface(f)
+    if surf is None:
+        raise ValueError("面无底层曲面")
+    ad = BRepAdaptor_Surface(f)
+    if ad.GetType() == GeomAbs_BSplineSurface:
+        return ad.BSpline()
+    # analytical surfaces convert exactly through GeomConvert
+    from OCC.Core.GeomConvert import geomconvert
+    conv = geomconvert.SurfaceToBSplineSurface(surf)
+    return conv
 
 
 def _bcurve_data(edge):
@@ -308,6 +393,28 @@ def _extract_solid(solid):
                                  TopAbs_VERTEX, TopAbs_WIRE)
     from OCC.Core.TopExp import TopExp_Explorer
     from OCC.Core.TopoDS import topods
+
+    # P0-2 geometry-coverage fallback: convert analytic surfaces (fillet
+    # cylinders, hole walls, cones, spheres beyond the dedicated writers)
+    # to B-splines wholesale, so _bsurface_data sees BSpline faces.  A
+    # pure-plane body is left untouched (byte-validated layout).
+    try:
+        from OCC.Core.BRepAdaptor import BRepAdaptor_Surface as _BAS
+        from OCC.Core.GeomAbs import (GeomAbs_Plane as _Plane,
+                                      GeomAbs_BSplineSurface as _BSP)
+        _needs = False
+        _fexp0 = TopExp_Explorer(solid, TopAbs_FACE)
+        while _fexp0.More():
+            _t = _BAS(topods.Face(_fexp0.Current())).GetType()
+            if _t not in (_Plane, _BSP):
+                _needs = True
+                break
+            _fexp0.Next()
+        if _needs:
+            import OCC.Core.ShapeCustom as _sc
+            solid = _sc.ConvertToBSpline(solid, True, True, True, False)
+    except Exception:
+        pass  # conversion is best-effort; the per-face branch reports errors
 
     verts = []
     vmap = {}
