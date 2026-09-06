@@ -25,7 +25,7 @@
 | # | 项 | 现状 | 解锁路径 | 预估 |
 |---|---|---|---|---|
 | TODO-1 | 官方装配工程对拍样本 | 装配配合 L1+（求解器数学单测精确），缺官方装配 .scdoc 做 diff | SpaceClaim 内手工建装配（两体 + 配合）存档入库 → 逐字段对拍 | 0.5 天（一次性人工） |
-| TODO-2 | 多折弯连续展开 | `unfold` 当前单弯精确 | `detect_bends` 多弯序列化 + 逐弯反向回展 | 2–3 天 |
+| TODO-2 | 多折弯连续展开 | **已闭环（P2-1）**：`unfold` 升级多弯链——detect_bends 记录相邻面句柄、`_flat_sig`/`_same_flat` 中面签名匹配（腹板两侧不同 TShape）、`_chain_order` 共享平板邻接排序、展开长度=各平板恰一次+Σ 折弯余量；双弯 Z 型件测试锁定 | — | ✅ |
 | TODO-3 | 折弯槽口（bend relief cuts） | jog 平角三盒（已标注） | 弯折线端部槽口布尔（复用 corner_relief 机制） | 1–2 天 |
 | TODO-4 | 曲面圆角面 / 曲线网络 | blend_loft 已覆盖双线框过渡 | `BRepFill_Filling` 多约束 + face-face blend（ChFi3d） | 3–5 天 |
 | TODO-5 | 工程图图幅版式 | HLR 三视图 + BOM/尺寸已有；无标准图幅 | 解析 Library/DrawingFormats A0–E 官方图框 → 模板 | 3–5 天 |

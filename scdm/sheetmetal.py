@@ -171,7 +171,8 @@ def detect_bends(solid, min_angle_deg: float = 5.0) -> List[dict]:
         comps = [abs(axd[0]), abs(axd[1]), abs(axd[2])]
         w = ext[comps.index(max(comps))]
         bends.append({"r_inner": r_inner, "angle_rad": ang,
-                      "flat1_len": l1, "flat2_len": l2, "t": t, "width": w})
+                      "flat1_len": l1, "flat2_len": l2, "t": t, "width": w,
+                      "f1": uniq[0][0], "f2": uniq[1][0]})
     return bends
 
 
@@ -206,16 +207,103 @@ def _face_thick(face):
 
 
 def unfold(solid, k: float = 0.42) -> "object":
-    """Unfold a single-bend prismatic sheet to a flat strip, preserving the
-    developed length (flat1 + BA + flat2)."""
+    """Unfold a prismatic sheet to a flat strip, preserving the developed
+    length (TODO-2: multi-bend chains).
+
+    Single bend: flat1 + BA + flat2.  Multi-bend: bends are ordered along
+    the chain via shared planar-face handles (a Z/U profile); intermediate
+    flats are counted once, end flats once:
+
+        total = flat(start) + Σ BA_i + Σ flat(intermediate) + flat(end)
+
+    The result is a strip (length x width x t), same shape class as the
+    single-bend path.
+    """
     bends = detect_bends(solid)
     if not bends:
         raise K.KernelError("展开：未找到折弯（圆柱面）")
-    b = bends[0]
-    ba = bend_allowance(b["angle_rad"], b["r_inner"], k, b["t"])
-    total = b["flat1_len"] + ba + b["flat2_len"]
-    # strip occupies positive quadrant: length x, width y, thickness z
-    return K.make_box(total, b["width"], b["t"])
+    if len(bends) == 1:
+        b = bends[0]
+        ba = bend_allowance(b["angle_rad"], b["r_inner"], k, b["t"])
+        total = b["flat1_len"] + ba + b["flat2_len"]
+        return K.make_box(total, b["width"], b["t"])
+    order = _chain_order(bends)
+    total = 0.0
+    prev_sig = None
+    for idx in order:
+        b = bends[idx]
+        ba = bend_allowance(b["angle_rad"], b["r_inner"], k, b["t"])
+        total += ba
+        s1, s2 = _flat_sig(b, 0), _flat_sig(b, 1)
+        # entry side = the flat not shared with the previous bend; the
+        # two faces of one flat share the midplane up to thickness t;
+        # prev_sig tracks the EXIT side (the flat facing the next bend)
+        if prev_sig is not None and _same_flat(s1, prev_sig, b["t"]):
+            total += b["flat2_len"]   # entry = f2 -> exit = f1
+            prev_sig = s1
+        else:
+            total += b["flat1_len"]   # entry = f1 -> exit = f2
+            prev_sig = s2
+    # trailing flat: the last bend's exit side
+    last = bends[order[-1]]
+    ls1, ls2 = _flat_sig(last, 0), _flat_sig(last, 1)
+    total += last["flat2_len"] if _same_flat(ls2, prev_sig, last["t"])         else last["flat1_len"]
+    return K.make_box(total, bends[0]["width"], bends[0]["t"])
+
+
+def _flat_sig(b, side):
+    """Plane signature (unit normal, offset) of bend side face 0|1."""
+    f = b["f1"] if side == 0 else b["f2"]
+    n, c = K.face_normal_center(f)
+    return (tuple(round(float(x), 9) for x in n),
+            round(float(_dot(n, c)), 9))
+
+
+def _same_flat(sig_a, sig_b, t):
+    """Two faces belong to the same sheet flat when their planes are
+    parallel and their offsets differ by ~thickness (the two sides of
+    one plate)."""
+    na, da = sig_a
+    nb, db = sig_b
+    if abs(_dot(na, nb)) < 0.999:
+        return False
+    return abs(abs(da) - abs(db)) <= 2.0 * t + 1e-9
+
+
+def _chain_order(bends):
+    """Order bend indices along the part chain by shared sheet flats.
+
+    Ends (unshared flats) anchor the walk; disconnected bends (e.g. a
+    branch) are appended in detection order so nothing is dropped.
+    """
+    n = len(bends)
+    adj = [[] for _ in range(n)]
+    for i in range(n):
+        for j in range(i + 1, n):
+            ti = 0.5 * (bends[i]["t"] + bends[j]["t"])
+            if any(_same_flat(_flat_sig(bends[i], a),
+                              _flat_sig(bends[j], b_), ti)
+                   for a in (0, 1) for b_ in (0, 1)):
+                adj[i].append(j)
+                adj[j].append(i)
+    used = [False] * n
+    order = []
+
+    def walk(i):
+        used[i] = True
+        order.append(i)
+        for j in adj[i]:
+            if not used[j]:
+                walk(j)
+
+    # start from chain ends (degree 1) when present
+    for i in range(n):
+        if len(adj[i]) <= 1 and not used[i]:
+            walk(i)
+    for i in range(n):
+        if not used[i]:
+            walk(i)
+    return order
 
 
 # ----------------------------------------------------------------------
