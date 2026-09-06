@@ -104,17 +104,46 @@ class Ent:
 
 
 class SabModel:
-    """Decoded ACIS model with traversal, measurement and validation."""
+    """Decoded ACIS model with traversal, measurement and validation.
+
+    Pointer semantics (validated against official spline.scdoc): pointer
+    values are *entity* indices — every 0x0d record that starts OUTSIDE a
+    nested-subtype scope (0x0F..0x10) is one list entity; records inside a
+    scope (exactsur/nurbs/both of a spline surface, exactcur/nubs/
+    null_surface/nullbs of an intcurve, exppc/nubs of a pcurve) are payload
+    and not addressable.  `entities` is indexed by entity index; inner
+    records decode into `inner` with idx=-1.
+    """
 
     def __init__(self, sab: SabFile):
         self.sab = sab
-        self.entities: List[Optional[Ent]] = [None] * len(sab.records)
+        self._entity_of_pos, self._pos_of_entity = self._scan_scopes()
+        self.entities: List[Optional[Ent]] = [None] * len(self._pos_of_entity)
+        self.inner: List[Ent] = []
         self.strings = self._collect_strings()
         self._decode_all()
         self.attribs_by_owner: Dict[int, List[Ent]] = {}
         for e in self.entities:
             if e is not None and e.kind in ('string_attrib', 'rgb_color'):
                 self.attribs_by_owner.setdefault(e.owner, []).append(e)
+
+    def _scan_scopes(self):
+        """Record position <-> entity index maps via 0x0F/0x10 nesting."""
+        depth = 0
+        entity_of_pos: Dict[int, int] = {}
+        pos_of_entity: Dict[int, int] = {}
+        ent = 0
+        for pos, rec in enumerate(self.sab.records):
+            if depth == 0:
+                entity_of_pos[pos] = ent
+                pos_of_entity[ent] = pos
+                ent += 1
+            for t in rec.tokens:
+                if t.kind == 'mark0f':
+                    depth += 1
+                elif t.kind == 'mark10':
+                    depth = max(0, depth - 1)
+        return entity_of_pos, pos_of_entity
 
     # -- string abbreviation resolution ------------------------------------
     def _collect_strings(self) -> Dict[str, str]:
@@ -172,8 +201,13 @@ class SabModel:
         return self._opt(rec, pos, 'double', lambda t: t.value)
 
     def _decode_all(self):
-        for idx, rec in enumerate(self.sab.records):
-            self.entities[idx] = self._decode(idx, rec)
+        for pos, rec in enumerate(self.sab.records):
+            ent = self._entity_of_pos.get(pos, -1)
+            e = self._decode(ent, rec)
+            if ent >= 0:
+                self.entities[ent] = e
+            else:
+                self.inner.append(e)
 
     def _decode(self, idx: int, rec: EntityRecord) -> Ent:
         e = Ent(idx=idx, kind=rec.kind, record=rec)

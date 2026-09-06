@@ -139,7 +139,14 @@ class _ClusterRec:
 
 
 class Worklist:
-    """save_entity_list mirror: index assignment at first reference + FIFO."""
+    """save_entity_list mirror: index assignment at first reference + FIFO.
+
+    Pointer values are *entity* indices, matching the official writer: a
+    nested-subtype cluster (spline surface / intcurve curve) is ONE list
+    entity even though its save_data emits several 0x0d records.  The
+    reader must likewise skip scope-inner records when binding pointers
+    (see scdoc_parser.topology.SabModel entity indexing).
+    """
 
     def __init__(self):
         self._idx: Dict[object, int] = {}
@@ -296,17 +303,46 @@ class Makers:
             F = len(faces)
             for fi, f in enumerate(faces):
                 loop = f["loop"]
-                n = len(loop)
-                for k in range(n):
-                    a, b = loop[k], loop[(k + 1) % n]
-                    eidx = _edge_of(edges, a, b)
-                    sense = T_FLAG_B if edges[eidx][0] == a else T_FLAG_A
-                    ck = ("coedge", bi, fi, k)
-                    self.ce[ck] = {"loop": ("loop", bi, fi), "sense": sense,
-                                   "edge": ("edge", bi, eidx)}
-                    self.coe.setdefault(("edge", bi, eidx), []).append(ck)
-                self.lc[("loop", bi, fi)] = [("coedge", bi, fi, k)
-                                             for k in range(n)]
+                rings = f.get("loops")
+                if rings:
+                    # general path: precomputed edge-occurrence rings per
+                    # wire (outer first, inner hole loops follow; closed
+                    # circle edges and doubled periodic seams included)
+                    for wi, ring in enumerate(rings):
+                        for k, (eidx, sense) in enumerate(ring):
+                            ck = ("coedge", bi, fi, wi, k)
+                            self.ce[ck] = {"loop": ("loop", bi, fi, wi),
+                                           "sense": sense,
+                                           "edge": ("edge", bi, eidx)}
+                            self.coe.setdefault(
+                                ("edge", bi, eidx), []).append(ck)
+                        self.lc[("loop", bi, fi, wi)] = [
+                            ("coedge", bi, fi, wi, k)
+                            for k in range(len(ring))]
+                elif f.get("loop_edges"):
+                    le = f["loop_edges"]
+                    # general path: precomputed edge-occurrence ring (closed
+                    # circle edges, doubled periodic seams)
+                    for k, (eidx, sense) in enumerate(le):
+                        ck = ("coedge", bi, fi, k)
+                        self.ce[ck] = {"loop": ("loop", bi, fi),
+                                       "sense": sense,
+                                       "edge": ("edge", bi, eidx)}
+                        self.coe.setdefault(("edge", bi, eidx), []).append(ck)
+                    self.lc[("loop", bi, fi)] = [("coedge", bi, fi, k)
+                                                 for k in range(len(le))]
+                else:
+                    n = len(loop)
+                    for k in range(n):
+                        a, b = loop[k], loop[(k + 1) % n]
+                        eidx = _edge_of(edges, a, b)
+                        sense = T_FLAG_B if edges[eidx][0] == a else T_FLAG_A
+                        ck = ("coedge", bi, fi, k)
+                        self.ce[ck] = {"loop": ("loop", bi, fi), "sense": sense,
+                                       "edge": ("edge", bi, eidx)}
+                        self.coe.setdefault(("edge", bi, eidx), []).append(ck)
+                    self.lc[("loop", bi, fi)] = [("coedge", bi, fi, k)
+                                                 for k in range(n)]
                 self.fi[("face", bi, fi)] = {
                     "loop": loop, "verts": verts, "edges": edges, "f": f,
                     "bi": bi, "fi": fi, "n_faces": F}
@@ -456,50 +492,76 @@ class Makers:
     def _face(self, key, wl):
         bi, fi = key[1], key[2]
         d = self.fi[key]
-        fmin, fmax = _bbox(d["verts"], d["loop"])
+        f = d["f"]
+        fmin, fmax = f.get("bbox") or _bbox(d["verts"], d["loop"])
         nxt = ("face", bi, fi + 1) if fi + 1 < d["n_faces"] else None
         # face orientation: our loops run CCW about the surface normal, so
         # every face is FORWARD (flag_b); the official box alternates only
         # because its own loop winding alternates.
         f1 = T_FLAG_B
         # UV parameter domain: the official box deviates per-face (centred
-        # half-extents of the face's bbox in surface param space).
-        dx = (fmax[0] - fmin[0]) / 2.0
-        dy = (fmax[1] - fmin[1]) / 2.0
-        if dx <= 0.0:
-            dx = dy
-        if dy <= 0.0:
-            dy = dx
+        # half-extents of the face's bbox in surface param space); a spline
+        # face uses its own knot span (official spline.scdoc semantics).
+        bsurf = self.extras.get(bi, {}).get("face_surf", {}).get(fi)
+        if bsurf is not None:
+            bdata = bsurf[1]
+            uv = (bdata[2][0], bdata[2][-1], bdata[4][0], bdata[4][-1])
+        else:
+            dx = (fmax[0] - fmin[0]) / 2.0
+            dy = (fmax[1] - fmin[1]) / 2.0
+            if dx <= 0.0:
+                dx = dy
+            if dy <= 0.0:
+                dy = dx
+            uv = (-dx, dx, -dy, dy)
         surf_key = (("bsurf", bi, fi)
-                    if fi in self.extras.get(bi, {}).get("face_surf", {})
+                    if bsurf is not None
                     else ("plane", bi, fi))
+        n_loops = len(f.get("loops") or [0])
         return (_Rec("face", 10)
                 .add(_p(wl.ref(("attrib", "fname", bi, fi))),
                      _ti(self._seq_face[key]),
-                     _ti(-1), _p(-1), _p(wl.ref(nxt)), _p(wl.ref(("loop", bi, fi))),
+                     _ti(-1), _p(-1), _p(wl.ref(nxt)),
+                     _p(wl.ref(("loop", bi, fi, 0) if n_loops >= 1 and
+                               f.get("loops") else ("loop", bi, fi))),
                      _p(wl.ref(("shell", bi))), _p(-1),
                      _p(wl.ref(surf_key)),
                      bytes([f1, T_FLAG_B, T_FLAG_A]),
                      _v3(*fmin), _v3(*fmax), bytes([T_FLAG_A]),
-                     _td(-dx), _td(dx), _td(-dy), _td(dy)))
+                     _td(uv[0]), _td(uv[1]), _td(uv[2]), _td(uv[3])))
 
     def _loop(self, key, wl):
-        bi, fi = key[1], key[2]
+        if len(key) == 4:
+            bi, fi, wi = key[1], key[2], key[3]
+            f = self.fi[("face", bi, fi)]["f"]
+            n_loops = len(f.get("loops") or [0])
+        else:
+            bi, fi = key[1], key[2]
+            wi, n_loops = None, None
         d = self.fi[("face", bi, fi)]
-        lmin, lmax = _bbox(d["verts"], d["loop"])
+        f = d["f"]
+        lmin, lmax = f.get("bbox") or _bbox(d["verts"], d["loop"])
         coeds = self.lc[key]
+        nxt_loop = (("loop", bi, fi, wi + 1)
+                    if n_loops is not None and wi + 1 < n_loops else None)
+        lkey = key if len(key) == 4 else ("loop", bi, fi)
         return (_Rec("loop", 11)
-                .add(_p(wl.ref(("attrib", "loopname", bi, fi))
+                .add(_p(wl.ref(("attrib", "loopname") + tuple(lkey[1:]))
                        if self.xacis else -1),
-                     _ti(-1), _ti(-1), _p(-1), _p(-1),
+                     _ti(-1), _ti(-1), _p(-1), _p(wl.ref(nxt_loop)),
                      _p(wl.ref(coeds[0])), _p(wl.ref(("face", bi, fi))),
                      bytes([T_FLAG_A]), _v3(*lmin), _v3(*lmax),
                      bytes([T_INT15]) + _ri(0)))
 
     def _coedge(self, key, wl):
-        bi, fi, k = key[1], key[2], key[3]
+        if len(key) == 5:
+            bi, fi, wi, k = key[1], key[2], key[3], key[4]
+            lkey = ("loop", bi, fi, wi)
+        else:
+            bi, fi, k = key[1], key[2], key[3]
+            lkey = ("loop", bi, fi)
         info = self.ce[key]
-        coeds = self.lc[("loop", bi, fi)]
+        coeds = self.lc[lkey]
         n = len(coeds)
         nxt = coeds[(k + 1) % n]
         prv = coeds[(k - 1) % n]
@@ -513,7 +575,7 @@ class Makers:
         return (_Rec("coedge", 16)
                 .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _p(wl.ref(nxt)),
                      _p(wl.ref(prv)), _p(wl.ref(partner)), _p(wl.ref(info["edge"])),
-                     bytes([info["sense"]]), _p(wl.ref(("loop", bi, fi))),
+                     bytes([info["sense"]]), _p(wl.ref(lkey)),
                      _p(-1)))
 
     def _edge(self, key, wl):
@@ -523,17 +585,27 @@ class Makers:
         p1, p2 = verts[v1], verts[v2]
         length = ((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2
                   + (p2[2] - p1[2]) ** 2) ** 0.5
-        emin, emax = _bbox(verts, [v1, v2])
         coeds = self.coe.get(key, [])
         first_co = coeds[0] if coeds else None
-        curve_key = (("bcur", bi, ei)
-                     if ei in self.extras.get(bi, {}).get("edge_curve", {})
-                     else ("straight", bi, ei))
+        ec = self.extras.get(bi, {}).get("edge_curve", {}).get(ei)
+        if ec is None:
+            emin, emax = _bbox(verts, [v1, v2])
+            t0, t1v = 0.0, length
+            curve_key = ("straight", bi, ei)
+        else:
+            bbs = self.extras[bi].get("edge_bboxes", {})
+            emin, emax = bbs.get(ei) or _bbox(verts, [v1, v2])
+            if ec[0] == "ellipse":
+                t0, t1v = ec[1][4], ec[1][5]
+                curve_key = ("ellipse", bi, ei)
+            else:
+                t0, t1v = ec[1][4], ec[1][5]
+                curve_key = ("bcur", bi, ei)
         return (_Rec("edge", 17)
                 .add(_p(wl.ref(("attrib", "ename", bi, ei))),
                      _ti(self._seq_edge[key]), _ti(-1), _p(-1),
-                     _p(wl.ref(("vertex", bi, v1))), _td(0.0),
-                     _p(wl.ref(("vertex", bi, v2))), _td(length),
+                     _p(wl.ref(("vertex", bi, v1))), _td(t0),
+                     _p(wl.ref(("vertex", bi, v2))), _td(t1v),
                      _p(wl.ref(first_co)), _p(wl.ref(curve_key)),
                      bytes([T_FLAG_B]), _s("unknown"),
                      bytes([T_FLAG_A]), _v3(*emin), _v3(*emax)))
@@ -950,6 +1022,13 @@ class Makers:
 
     def _ellipse(self, key, wl):
         bi, k = key[1], key[2]
+        ec = self.extras.get(bi, {}).get("edge_curve", {}).get(k)
+        if ec is not None and ec[0] == "ellipse":
+            center, normal, major_vec, ratio = ec[1][:4]
+            return (_Rec("curve", 20, chain=[("ellipse", 23)])
+                    .add(_p(-1), _ti(-1), _ti(-1), _p(-1), _v3(*center),
+                         _v3b(*normal), _v3b(*major_vec),
+                         _td(ratio), bytes([T_FLAG_B, T_FLAG_B])))
         info = self.cyl(bi)
         R, mu, axis = info["R"], info["major_unit"], info["axis"]
         center = info["cap_b"] if k == 0 else info["cap_a"]
@@ -1052,8 +1131,7 @@ class Makers:
             return _wattrib(owner, self._xacis_id(("vertex", bi, vi)),
                             None, None)
         if sub == "loopname":
-            bi, fi = key[2], key[3]
-            owner = wl.ref(("loop", bi, fi))
+            owner = wl.ref(("loop",) + tuple(key[2:]))
             # official constant: every loop carries the shared id '1VFBE'
             return _wattrib(owner, "1VFBE", None, None)
         raise ValueError("attrib key " + repr(key))

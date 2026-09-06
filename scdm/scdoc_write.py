@@ -384,8 +384,155 @@ def _bcurve_data(edge):
     return (deg, knots, mults, poles)
 
 
+def _edge_curve_data(occe):
+    """Classify an OCCT edge's 3D curve for the general write path.
+
+    Returns ("ellipse", (center, normal, major_vec, ratio, t0, t1)) for
+    exact circle/ellipse edges, ("bcur", (deg, knots, mults, poles, t0, t1))
+    for B-spline edges, or None for straight lines (exact) — mirroring the
+    official vocabulary (cyl.scdoc ellipse edges, splineedge.scdoc nubs).
+    """
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
+    from OCC.Core.GeomAbs import (GeomAbs_BSplineCurve, GeomAbs_Circle,
+                                  GeomAbs_Ellipse, GeomAbs_Line)
+    ad = BRepAdaptor_Curve(occe)
+    t = ad.GetType()
+    if t == GeomAbs_Line:
+        return None
+    t0, t1 = ad.FirstParameter(), ad.LastParameter()
+    if t1 < t0:
+        t0, t1 = t1, t0
+    if t in (GeomAbs_Circle, GeomAbs_Ellipse):
+        if t == GeomAbs_Circle:
+            g = ad.Circle()
+            R, ratio = g.Radius(), 1.0
+        else:
+            g = ad.Ellipse()
+            R = g.MajorRadius()
+            ratio = g.MinorRadius() / R if R else 1.0
+        axis = g.Axis().Direction()
+        xdir = g.XAxis().Direction()
+        loc = g.Location()
+        return ("ellipse", ((loc.X(), loc.Y(), loc.Z()),
+                            (axis.X(), axis.Y(), axis.Z()),
+                            (xdir.X() * R, xdir.Y() * R, xdir.Z() * R),
+                            ratio, t0, t1))
+    if t == GeomAbs_BSplineCurve:
+        d = _bcurve_data(occe)
+        if d is not None:
+            return ("bcur", d + (t0, t1))
+    # general analytic curve: non-rational B-spline approximation over the
+    # edge's parameter window (rational results are unsupported by nubs)
+    try:
+        from OCC.Core.BRep import BRep_Tool
+        from OCC.Core.Geom import Geom_TrimmedCurve
+        from OCC.Core.GeomAbs import GeomAbs_C2
+        from OCC.Core.GeomConvert import GeomConvert_ApproxCurve
+        crv, u0, u1 = BRep_Tool().Curve_s(occe)
+        if crv is None:
+            return None
+        if u1 < u0:
+            u0, u1 = u1, u0
+        tc = Geom_TrimmedCurve(crv, u0, u1)
+        app = GeomConvert_ApproxCurve(tc, 1e-7, GeomAbs_C2, 200, 8)
+        if not app.IsDone() or not app.HasResult():
+            return None
+        bs = app.Curve()
+        if bs.IsRational():
+            return None
+        deg = bs.Degree()
+        mults = [bs.Multiplicity(i) for i in range(1, bs.NbKnots() + 1)]
+        mults[0] -= 1
+        mults[-1] -= 1
+        knots = [bs.Knot(i) for i in range(1, bs.NbKnots() + 1)]
+        poles = []
+        for i in range(1, bs.NbPoles() + 1):
+            p = bs.Pole(i)
+            poles.append((p.X(), p.Y(), p.Z()))
+        return ("bcur", (deg, knots, mults, poles, knots[0], knots[-1]))
+    except Exception:
+        return None
+
+
+def _sample_edge_bbox(occe):
+    """Edge bounding box from parameter sampling (64 spans)."""
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
+    ad = BRepAdaptor_Curve(occe)
+    t0, t1 = ad.FirstParameter(), ad.LastParameter()
+    pts = []
+    for i in range(65):
+        p = ad.Value(t0 + (t1 - t0) * i / 64.0)
+        pts.append((p.X(), p.Y(), p.Z()))
+    xs, ys, zs = zip(*pts)
+    return ((min(xs), min(ys), min(zs)), (max(xs), max(ys), max(zs)))
+
+
+def _assemble_ring(occs):
+    """Chain wire edge occurrences head-to-tail into a closed traversal.
+
+    `occs` = [(eidx, v_start, v_end)] in wire order.  A periodic face's seam
+    edge appears once in the wire but must be walked twice (once per side),
+    so a dead-end inserts the reverse traversal of an already-used open
+    edge.  Returns [(eidx, va, vb)] traversal-ordered, or None.
+    """
+    def same(a, b):
+        return a == b
+
+    if not occs:
+        return None
+    ring = [occs[0]]
+    used = {0}
+    cur = occs[0][2]
+    start = occs[0][1]
+    for _ in range(4 * len(occs) + 8):
+        # a single closed edge is a valid ring (official cylinder caps)
+        if len(used) == len(occs) and same(cur, start):
+            return ring
+        nxt = None
+        for i, (eidx, a, b) in enumerate(occs):
+            if i in used:
+                continue
+            if same(a, cur):
+                nxt = (i, (eidx, a, b))
+                break
+            if same(b, cur):
+                nxt = (i, (eidx, b, a))
+                break
+        if nxt is not None:
+            used.add(nxt[0])
+            ring.append(nxt[1])
+            cur = nxt[1][2]
+            continue
+        # dead end: a periodic seam must be walked a second time
+        progressed = False
+        for eidx, a, b in ring:
+            if same(a, b):
+                continue
+            if same(cur, b):
+                ring.append((eidx, b, a))
+                cur = a
+                progressed = True
+                break
+            if same(cur, a):
+                ring.append((eidx, a, b))
+                cur = b
+                progressed = True
+                break
+        if not progressed:
+            return None
+    return None
+
+
 def _extract_solid(solid):
-    """Return (verts, edges, faces) for a planar-faced solid."""
+    """Return (verts, edges, faces, extras) for a solid.
+
+    Pure-plane bodies take the byte-validated corner-polygon path.  Bodies
+    with any analytic/spline face take the general path: per-face wire-walk
+    edge-occurrence loops (closed circle edges, doubled periodic seams),
+    exact ellipse records for circle/ellipse edges and intcurve clusters
+    for true B-spline edges (P0-2 geometry coverage: fillets, holes,
+    cones, torus patches).
+    """
     from OCC.Core.BRep import BRep_Tool
     from OCC.Core.BRepTools import BRepTools_WireExplorer
     from OCC.Core.GeomAbs import GeomAbs_Plane
@@ -431,11 +578,34 @@ def _extract_solid(solid):
         p = BRep_Tool().Pnt(topods.Vertex(shape_v))
         return vmap[(_round(p.X()), _round(p.Y()), _round(p.Z()))]
 
+    def edge_vids_occ(e):
+        """(v_start, v_end) following the edge's own parametric direction."""
+        from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
+        ad = BRepAdaptor_Curve(e)
+        pa = ad.Value(ad.FirstParameter())
+        pb = ad.Value(ad.LastParameter())
+        ka = (_round(pa.X()), _round(pa.Y()), _round(pa.Z()))
+        kb = (_round(pb.X()), _round(pb.Y()), _round(pb.Z()))
+        return vmap[ka], vmap[kb]
+
+    # any non-plane face routes the whole body through the general path
+    general = False
+    _fexp0 = TopExp_Explorer(solid, TopAbs_FACE)
+    while _fexp0.More():
+        from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+        if (BRepAdaptor_Surface(topods.Face(_fexp0.Current())).GetType()
+                != GeomAbs_Plane):
+            general = True
+            break
+        _fexp0.Next()
+
     faces = []
     edges = []
     emap = {}
     face_surf = {}   # face index -> ("bsurf", data)
-    edge_curve = {}  # edge index -> ("bcur", data)
+    edge_curve = {}  # edge index -> ("ellipse"|"bcur", data)
+    edge_bboxes = {}  # edge index -> (min, max)
+    occ_edge = {}    # edge index -> representative OCCT edge
 
     def edge_index(a, b):
         key = (min(a, b), max(a, b))
@@ -444,10 +614,52 @@ def _extract_solid(solid):
             edges.append((key[0], key[1]))
         return emap[key]
 
+    if not general:
+        # ---- planar fast path (byte-validated layout) ----
+        fexp = TopExp_Explorer(solid, TopAbs_FACE)
+        while fexp.More():
+            face = topods.Face(fexp.Current())
+            nrm, ctr = K.face_normal_center(face)
+            outer = None
+            wexp = TopExp_Explorer(face, TopAbs_WIRE)
+            while wexp.More():
+                we = BRepTools_WireExplorer(topods.Wire(wexp.Current()))
+                corners = []
+                while we.More():
+                    e = topods.Edge(we.Current())
+                    ev = TopExp_Explorer(e, TopAbs_VERTEX)
+                    vs = []
+                    while ev.More():
+                        vs.append(vid(ev.Current()))
+                        ev.Next()
+                    corners.append(vs[0] if we.Orientation() == TopAbs_FORWARD
+                                   else vs[1])
+                    we.Next()
+                if outer is None:
+                    outer = corners
+                else:
+                    for k in range(len(corners)):
+                        edge_index(corners[k], corners[(k + 1) % len(corners)])
+                wexp.Next()
+            if outer is None:
+                fexp.Next()
+                continue
+            poly_n = _polygon_normal(outer, verts)
+            if _dot(poly_n, nrm) < 0:
+                outer = list(reversed(outer))
+            for k in range(len(outer)):
+                edge_index(outer[k], outer[(k + 1) % len(outer)])
+            faces.append({"loop": outer, "normal": nrm, "center": ctr})
+            fexp.Next()
+        return verts, edges, faces, {"face_surf": face_surf,
+                                     "edge_curve": edge_curve,
+                                     "edge_bboxes": edge_bboxes}
+
+    # ---- general path (curved faces present) ----
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
     fexp = TopExp_Explorer(solid, TopAbs_FACE)
     while fexp.More():
         face = topods.Face(fexp.Current())
-        from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
         adapt = BRepAdaptor_Surface(face)
         if adapt.GetType() != GeomAbs_Plane:
             data = _bsurface_data(face)
@@ -456,60 +668,78 @@ def _extract_solid(solid):
         else:
             data = None
         nrm, ctr = K.face_normal_center(face)
-        outer = None
+        # all wires -> edge-occurrence rings; outer wire = largest bbox area,
+        # remaining wires are inner hole loops
+        wire_rings = []
         wexp = TopExp_Explorer(face, TopAbs_WIRE)
         while wexp.More():
+            occs = []
             we = BRepTools_WireExplorer(topods.Wire(wexp.Current()))
-            corners = []
             while we.More():
                 e = topods.Edge(we.Current())
-                ev = TopExp_Explorer(e, TopAbs_VERTEX)
-                vs = []
-                while ev.More():
-                    vs.append(vid(ev.Current()))
-                    ev.Next()
-                corners.append(vs[0] if we.Orientation() == TopAbs_FORWARD else vs[1])
+                va, vb = edge_vids_occ(e)
+                if we.Orientation() != TopAbs_FORWARD:
+                    va, vb = vb, va
+                eidx = edge_index(va, vb)
+                occs.append((eidx, va, vb))
+                occ_edge.setdefault(eidx, e)
                 we.Next()
-            if outer is None:
-                outer = corners
-            else:
-                for k in range(len(corners)):
-                    edge_index(corners[k], corners[(k + 1) % len(corners)])
+            ring = _assemble_ring(occs)
+            if ring is not None:
+                wmin = [min(verts[v][k] for _occ in ring for v in _occ[1:])
+                        for k in range(3)]
+                wmax = [max(verts[v][k] for _occ in ring for v in _occ[1:])
+                        for k in range(3)]
+                area = ((wmax[0] - wmin[0]) * (wmax[1] - wmin[1]) *
+                        (wmax[2] - wmin[2]))
+                wire_rings.append((area, ring))
             wexp.Next()
-        if outer is None:
+        if not wire_rings:
             fexp.Next()
             continue
-        poly_n = _polygon_normal(outer, verts)
-        if _dot(poly_n, nrm) < 0:
-            outer = list(reversed(outer))
-        for k in range(len(outer)):
-            edge_index(outer[k], outer[(k + 1) % len(outer)])
-        faces.append({"loop": outer, "normal": nrm, "center": ctr})
+        wire_rings.sort(key=lambda t: -t[0])   # outer first
+        loops = []
+        loop0 = []
+        fbb_min = [None, None, None]
+        fbb_max = [None, None, None]
+
+        def _fb(p):
+            for k in range(3):
+                fbb_min[k] = p[k] if fbb_min[k] is None else min(fbb_min[k], p[k])
+                fbb_max[k] = p[k] if fbb_max[k] is None else max(fbb_max[k], p[k])
+
+        for _area, ring in wire_rings:
+            loop_edges = []
+            loop = []
+            for eidx, va, vb in ring:
+                sense = (T_FLAG_B if edges[eidx] == (va, vb) else T_FLAG_A)
+                loop_edges.append((eidx, sense))
+                loop.append(va)
+                _fb(verts[va])
+                if va != vb:
+                    _fb(verts[vb])
+                if eidx in edge_bboxes:
+                    emin, emax = edge_bboxes[eidx]
+                    _fb(emin)
+                    _fb(emax)
+            loops.append(loop_edges)
+            if not loop0:
+                loop0 = loop
+        faces.append({"loop": loop0, "normal": nrm, "center": ctr,
+                      "loops": loops,
+                      "bbox": (tuple(fbb_min), tuple(fbb_max))})
         if data is not None:
             face_surf[len(faces) - 1] = ("bsurf", data)
         fexp.Next()
-    # capture B-spline edge curves (by vertex-pair edge index)
-    from OCC.Core.GeomAbs import GeomAbs_BSplineCurve
-    from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
-    eexp = TopExp_Explorer(solid, TopAbs_EDGE)
-    while eexp.More():
-        occe = topods.Edge(eexp.Current())
-        vs = []
-        vex = TopExp_Explorer(occe, TopAbs_VERTEX)
-        while vex.More():
-            vs.append(vid(vex.Current()))
-            vex.Next()
-        if len(vs) >= 2:
-            key = (min(vs[0], vs[-1]), max(vs[0], vs[-1]))
-            if key in emap and emap[key] not in edge_curve:
-                ad = BRepAdaptor_Curve(occe)
-                if ad.GetType() == GeomAbs_BSplineCurve:
-                    d = _bcurve_data(occe)
-                    if d is not None:
-                        edge_curve[emap[key]] = ("bcur", d)
-        eexp.Next()
+    # curve records for every non-line edge (exact ellipse / intcurve)
+    for eidx, occe in occ_edge.items():
+        d = _edge_curve_data(occe)
+        if d is not None:
+            edge_curve[eidx] = d
+            edge_bboxes[eidx] = _sample_edge_bbox(occe)
     return verts, edges, faces, {"face_surf": face_surf,
-                                  "edge_curve": edge_curve}
+                                 "edge_curve": edge_curve,
+                                 "edge_bboxes": edge_bboxes}
 
 
 def _polygon_normal(loop, verts):
@@ -803,7 +1033,9 @@ def _facets_bytes(items, tessellations, ids=None) -> bytes:
         nodes = []
         edge_map = []
         edge_mid = {}
-        if it[0] == "planar":
+        if (it[0] == "planar" and not (it[4].get("face_surf") or
+                                       it[4].get("edge_curve")) and
+                all(len(f["loop"]) >= 3 for f in it[3])):
             verts, edges, faces = it[1], it[2], it[3]
             for fi, f in enumerate(faces):
                 loop = f["loop"]
@@ -2008,16 +2240,34 @@ def write_scdoc(path: str, kdoc, name: str = "design") -> None:
     # bodyFacets stream to bind bodies; planar bodies use the official
     # FaceNode layout, cylinders fall back to triangle nodes).
     tessellations = []
-    if any(it[0] in ("cyl", "sphere", "torus") for it in items):
+    if any(it[0] in ("cyl", "sphere", "torus") or
+           (it[0] == "planar" and (it[4].get("face_surf") or
+                                   it[4].get("edge_curve")))
+           for it in items):
         for body in kdoc.bodies:
             sols = K.explore(body.shape, "solid") or [body.shape]
             for s in sols:
+                # deflection relative to the body size: the fixed 0.05 mm
+                # figure explodes on mm-scale models and overflows the
+                # facets stream's 16-bit vertex packing (>65535 corners)
                 try:
-                    from scdm.kernel import tessellate_faces
-                    tessellations.append(tessellate_faces(
-                        s, deflection=max(1e-5, 0.05 / 1000.0)))
+                    (a0, b0, c0), (a1, b1, c1) = _A.shape_bbox(s)
+                    diag = ((a1 - a0) ** 2 + (b1 - b0) ** 2
+                            + (c1 - c0) ** 2) ** 0.5
                 except Exception:
-                    tessellations.append([])
+                    diag = 1.0
+                defl = max(1e-5, 1e-4 * diag)
+                from scdm.kernel import tessellate_faces
+                for _attempt in range(4):
+                    try:
+                        tess = tessellate_faces(s, deflection=defl)
+                    except Exception:
+                        tess = []
+                        break
+                    if all(len(fd["vertices"]) < 0xFFFF for fd in tess):
+                        break
+                    defl *= 4.0
+                tessellations.append(tess)
     else:
         tessellations = [[] for _ in items]
     facets_bytes = _facets_bytes(items, tessellations)

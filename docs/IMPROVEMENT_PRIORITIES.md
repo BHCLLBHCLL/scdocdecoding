@@ -1,6 +1,6 @@
 # 改进点优先级盘点
 
-> **最新刷新：2026-09-06（P0-2 闭环 + 环境解锁）**
+> **最新刷新：2026-09-06（P0-2+P0-3 全闭环；官方 ACIS 内核门禁 4/4 通过）**
 > 依据：工作区代码实测 + `DEV_PLAN.md` §19/§20/§21 + `function_gap_analysis.md`
 > + `docs/NYI_INVENTORY.md` + `DEV_SUMMARY.md`。
 >
@@ -26,7 +26,7 @@ vs 体 PartDef/BodyDef），官方表现为「组件静默丢失」，正是 TOD
 | --- | --- |
 | P0-1 在途 TODO-9 未提交（440 行） | **已关闭** ✅ 三次提交：`1d3f46f`（六项绑定要求，官方 `bodies=2`）、`1f4288b`（DEV_SUMMARY 攻坚记录）、`a62c6ef`（容器 part / XACIS wstring 链 / 官方多体 facets）。NYI TODO-9、gap §2.7（装配 99%/L2）已同步；根目录 50 个 `_v*.scdoc` 二分产物已清理 |
 | 测试 180 条 | **192 条**（新增 `tests/test_todo9_assembly.py` 12 项），lastfailed 空；DEV_SUMMARY 记「191 passed, 1 skipped」 |
-| P0-3 环境不可复现 | **未变**——我仍然跑不了测试（无 pythonocc/pytest 环境）。本页所有「实测」均为代码与缓存读取，非执行验证 |
+| P0-3 环境不可复现 | **已关闭** ✅ conda env `scdm` 可跑全量 219 passed / 1 skipped；`requirements.txt` + `tests/conftest.py` 能力 skip + `official_gate` 标记就位 |
 | P1-3 仓库卫生 | 部分缓解：临时 scdoc 已清；仍剩 `_asm.scdoc`/`_t.sab`/`_t.sat`/`_t.scdoc`、`laptop_3d_geom.stp`(1.5MB)+`.x_t`(2.3MB)，`.gitignore` 未扩 |
 | 文档漂移 | gap / NYI / DEV_SUMMARY 已同步；**`DEV_PLAN.md` §21.1 仍记「14 页签/125 命令/123 live/99 测试」，且无 TODO-9 记录**（实测 18 页签/144 命令全 live/192 条） |
 | 巨型文件 | 未变：`scdm_gui.py` 3987 行、`scdoc_write.py` 1775（`_assembly_document_xml` 383 行且本轮又增）、`sab_emit.py` 1477、`kernel.py` 1468；>150 行函数 10 个 |
@@ -69,26 +69,32 @@ vs 体 PartDef/BodyDef），官方表现为「组件静默丢失」，正是 TOD
 - **成本**：0.5–1 天（+ 官方样本 0.5 天人工）
 - **验收**：4/6/8 体装配结构级无撞号；官方打开 components 与 TOTAL 与体数一致。
 
-### P0-2 · 原生 .scdoc 写出的几何覆盖兜底 ✅ 已关闭（2026-09-06）
+### P0-2 · 原生 .scdoc 写出的几何覆盖兜底 ✅ 已关闭（2026-09-06，含官方内核门禁）
 
-> 触发率实测：**3/3 全通过**（倒圆盒 / 打孔盒 / 圆锥台各写 .scdoc 成功，
-> `tools/_p02_e2e.py` 临时探针）。兜底代码已在位：`_extract_solid` 的
-> `ConvertToBSpline` 预处理 + `_bsurface_data` 的 `GeomConvert_ApproxSurface`
-> 逼近（tol=bbox 对角线 1e-6 量级）；仅 IMPROVEMENT_PRIORITIES 未记录（文档滞后）。
-> 收尾动作（本批）：①三条回归（tests/test_p02_coverage.py ×4，含
-> DeprecationWarning 断言）②DeprecationWarning 修复（shapecustom 实例
-> 访问器 → 静态方法）③**.sat 降级路径**：GUI `.scdoc` 保存失败自动写
-> `.sat` 并明确提示（不丢几何）。
-> 环境注（P0-3 关联）：`scdm` / `occ` conda env 均有 OCC+pytest——全量
-> **212 passed / 1 skipped**；唯一失败 `test_todo9_assembly::test_official_open_assembly_bodies_two`
-> 为官方 SpaceClaim `/RunScript` 哨兵超时（外部应用依赖），非代码回归。
+> **最终状态**：倒圆盒 / 打孔盒 / 圆锥台 / 平滑放样（B 样条边）四类体全部
+> 写出 .scdoc，**官方 ACIS 内核（SabSatConverter.exe）SAB→SAT 转换 4/4 通过**，
+> 官方 SpaceClaim GUI 三类全部载入（窗口标题确认）。全量回归 **219 passed / 1 skipped**。
+>
+> 本批实际改动（比原计划深——官方门禁暴露了一个隐藏的结构性 bug）：
+> ①`_extract_solid` 通用路径：非平面体按线框**边出现序**建环（闭合圆边、
+> 周期缝边双引用、多环面/内孔环），圆/椭圆边写**精确 ellipse 记录**、
+> 真 B 样条边写 **intcurve 簇**（bcur）；
+> ②`_bsurface_data` 去周期化（Geom_RectangularTrimmedSurface）后
+> `GeomConvert_ApproxSurface` 逼近（直接逼近周期面会 done=False）；
+> ③**关键发现：官方指针=实体索引，嵌套子类型簇（spline+exactsur+nurbs+both
+> =1 个实体）内部记录不占索引**——读取器（scdoc_parser/topology.py）原按
+> 记录位置索引，官方 spline.scdoc 的 coedge→edge 指针全数解错；已改为
+> 0x0F/0x10 作用域感知的实体索引，官方四个参考文件指针全部对齐。
+> 写端 Worklist 维持逐键（实体）编号（中途试过按记录编号的 CLUSTER_EXTRA
+> 方案，官方内核 Access violation，已回退并固化为回归）；
+> ④facets：通用体走三角网格路径 + deflection 按体尺寸相对取值
+> （固定 0.05mm 在毫米级模型上 8 万顶点溢出 16 位打包）；
+> ⑤GUI `.scdoc` 保存失败自动降级 `.sat` 并提示（原本已就位）。
+> 测试：test_p02_coverage.py ×10（结构断言）、test_interop.py ×4 官方
+> SabSatConverter 门禁（@official_gate）。
 
-
-- **证据**：`write_scdoc`(:1685) 分派 `_cyl_info`（要求恰好 3 面）→ `_sphere_info`（1 面）
-  → `_torus_info`（1 面）→ `_extract_solid`(:302)；后者对非平面面走 `_bsurface_data`(:246)，
-  而它**只接受原生 `GeomAbs_BSplineSurface`**（:257），否则 :348
-  `raise ValueError("仅支持平面/双样条面的实体写出")`；全文件无 `GeomConvert` 逼近兜底
-  （09-06 三次提交未触碰此路径，已复核）。
+- **证据**：`write_scdoc` 分派 `_cyl_info`（恰好 3 面）→ `_sphere_info`（1 面）
+  → `_torus_info`（1 面）→ `_extract_solid`；后者对非平面面走 `_bsurface_data`。
 - **后果**：倒圆/倒角/打孔/锥台等含**解析**圆柱·锥·球面的体存 .scdoc 直接失败；
   `scdm_gui.py:681` 仅状态栏提示，**无 SAT/STEP 降级**。装配链路越完整，这个缺口越显眼——
   用户能把两体装配存成官方可开文件，却存不了一个带倒圆的零件。
@@ -98,14 +104,18 @@ vs 体 PartDef/BodyDef），官方表现为「组件静默丢失」，正是 TOD
 - **成本**：1–2 天 + 降级 0.5 天
 - **验收**：任意 OCCT 实体可存 .scdoc，或明确降级且不丢用户工作；三条新回归（倒圆/孔/锥）。
 
-### P0-3 · 环境与门禁可复现（未变）
+### P0-3 · 环境与门禁可复现 ✅ 已关闭（2026-09-06）
 
-- 无 `requirements.txt` / `pyproject.toml` / 锁文件 / CI；历史跑出 192 条用例的
-  cpython-311/312 + pythonocc 环境不可定位；本机 3.13/3.14 均无 OCC 与 pytest。
-  `tests/` 20 处依赖 ANSYS / SabSatConverter / RunScript。
-- **动作**：钉依赖版本 → `conftest.py` 按能力 skip（OCC / PyQt5 / SabSatConverter /
-  SpaceClaim 四档）→ 官方门禁统一 `@pytest.mark.official` → CI 跑 `-m "not official"`。
-- **成本**：0.5–1 天｜**验收**：克隆后两条命令跑通非官方门禁；官方门禁有独立入口与说明。
+- 本机环境定位：conda env `scdm`（cpython + pythonocc-core 7.7 + pytest + PySide6/VTK），
+  运行方式 `PYTHONPATH=. C:\Users\sdcll\.conda\envs\scdm\python.exe -m pytest tests/`。
+  已补 `requirements.txt`（说明 pythonocc-core 只能 conda-forge 安装）。
+- `tests/conftest.py` 按能力 skip：`official_gate` 标记（无
+  SabSatConverter.exe 即跳）+ `kernel` 标记（无 OCC 即跳）；官方门禁测试统一
+  `@pytest.mark.official_gate`（test_interop.py ×5：box restore + 倒圆/孔/锥/放样
+  的官方 SAB→SAT 转换）。无 CI——克隆后两条命令可跑非官方门禁，官方门禁需本机装
+  SpaceClaim 2019 R3。
+- **验收达成**：全量 219 passed / 1 skipped（1 skip 为外部应用哨兵）；
+  官方门禁在本机实跑 4/4 通过。
 
 ---
 
@@ -142,8 +152,8 @@ vs 体 PartDef/BodyDef），官方表现为「组件静默丢失」，正是 TOD
 
 1. **P0-1** 装配 id 分配器 + 参数化唯一性测试（0.5–1 天）——成绩单刚拿到，先把它的适用边界
    从 2 体扩到 N 体，否则下一次真实装配会撞同一个坑；
-2. ~~P0-2 触发率实测 + 兜底 + 保存降级（1.5–2.5 天）~~ **已闭环**（2026-09-06 见 §2）；
-3. **P0-3** 环境与门禁（0.5–1 天）——此后每条结论都可复核；
+2. ~~P0-2 触发率实测 + 兜底 + 保存降级（1.5–2.5 天）~~ **已闭环**（2026-09-06 见 §2，含官方内核门禁）；
+3. ~~**P0-3** 环境与门禁（0.5–1 天）~~ **已闭环**（2026-09-06 见 §2）——每条结论本机可复核；
 4. **P1-2 e2e + P1-3 CID_MAP + P1-4/5/6**（合计 ~3 天）；
 5. **P1-1 元数据闭环** → **P2-1/2/3** 域纵深；**P3** 随改动自然消化。
 
