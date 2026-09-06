@@ -10,3 +10,19 @@ venv/
 box_report.json
 _*.py
 *.report.json
+
+
+# P1-6: scratch/generated artifacts (_ prefix family, probe outputs)
+_*.scdoc
+_*.sab
+_*.sat
+_*.scdm
+_t.*
+_tmp/
+*.stp
+*.x_t
+.workbuddy/
+
+# reference geometry assets are committed (negate the scratch rules)
+!references/geometry/*.stp
+!references/geometry/*.x_t

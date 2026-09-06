@@ -244,6 +244,7 @@ def test_single_part_keeps_legacy_layout():
     assert shell.rec_id == 9            # legacy table without wstrings
 
 
+@pytest.mark.official_open
 def test_official_open_assembly_bodies_two():
     """End-to-end: official SpaceClaim opens the assembly with bodies=2.
 

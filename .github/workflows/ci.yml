@@ -1,0 +1,20 @@
+name: non-official gate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: environment.yml
+          auto-activate-base: false
+      - name: Run non-official suite
+        shell: bash -l {0}
+        run: |
+          set QT_QPA_PLATFORM=offscreen
+          python -m pytest tests/ -m "not official" -q

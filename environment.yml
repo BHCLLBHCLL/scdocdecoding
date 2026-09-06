@@ -1,0 +1,11 @@
+name: scdm
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pythonocc-core=7.9.3
+  - pyqt=5.15.11
+  - pytest=9.1.1
+  - numpy=2.4.6
+  - vtk=9.6.1

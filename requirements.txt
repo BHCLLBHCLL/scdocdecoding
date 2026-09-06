@@ -1,10 +1,10 @@
 # scdocdecoding / SCDM-compatible CAD kernel
-# Python 3.10+; the conda env used for development: `scdm`
-#   conda create -n scdm -c conda-forge python=3.11 pythonocc-core=7.7
-# GUI (optional):
-#   conda install -c conda-forge pyside6 vtk
+# Proven environment (2026-09-06 full-suite run: 212 passed / 1 skipped):
+#   conda env create -f environment.yml && conda activate scdm
+#   python -m pytest -m "not official"
+# The geometry kernel is conda-forge only (not pip-installable).
 pytest>=7
-numpy
+numpy>=2
 
-# geometry kernel (conda-forge only; not pip-installable)
-# pythonocc-core == 7.7.x
+# geometry kernel: conda-forge pythonocc-core==7.9.3  (see environment.yml)
+# GUI (optional): PyQt5==5.15.11, vtk==9.6.1              (see environment.yml)

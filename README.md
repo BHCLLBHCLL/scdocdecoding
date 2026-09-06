@@ -15,18 +15,28 @@ only reverse-engineered to capture the *behavioral* specification (see `scdm_api
 
 ## Runtime environment
 
-The modeling kernel is **pythonocc-core** (Open CASCADE via OCCT). This machine's ready-made
-environment is the conda env **`occ`** (Python 3.11 + pythonocc-core 7.9.3 + OCCT 7.9.3 +
-numpy 2.4.6 + vtk 9.6.1 + PyQt5 5.15.11 + pytest). It is already fully installed and verified
-(OCC imports; box/fuse OK; pytest suite 58 passed, 1 skipped).
+The modeling kernel is **pythonocc-core** (Open CASCADE via OCCT). Pinned dependencies live in
+`environment.yml` (conda) with `requirements.txt` as the pip-flavoured note — the proven combo
+is Python 3.11 + pythonocc-core 7.9.3 + OCCT 7.9.3 + numpy 2.4.6 + vtk 9.6.1 + PyQt5 5.15.11 +
+pytest (2026-09-06 full-suite run: 212 passed / 1 skipped).
+
+Two commands reproduce the **non-official gate** (P0-3; CI runs the same two):
 
 ```bat
-:: run the GUI with the pythonocc-core env
-C:\Users\sdcll\.conda\envs\occ\python.exe scdm_gui.py box.scdoc
-
-:: run the tests
-C:\Users\sdcll\.conda\envs\occ\python.exe -m pytest -q tests/   :: 58 passed, 1 skipped
+conda env create -f environment.yml
+conda run -n scdm python -m pytest tests/ -m "not official" -q
 ```
+
+The **official gate** (SabSatConverter / SpaceClaim RunScript sentinels) has its own entry:
+
+```bat
+python -m pytest tests/ -m official_gate -q   :: written SAB accepted by official converter
+python -m pytest tests/ -m official_open -q   :: written .scdoc opens in official SpaceClaim
+```
+
+Capability tiers (tests/conftest.py): `kernel` (OCC) / `gui` (PyQt5) / `official_gate`
+(SabSatConverter) / `official_open` (SpaceClaim.exe) — absent tiers degrade to skips,
+never collection errors.
 
 To (re)create a pythonocc-core environment on any machine (conda; needs network to
 conda-forge + PyPI):

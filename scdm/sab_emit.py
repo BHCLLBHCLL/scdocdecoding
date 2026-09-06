@@ -84,7 +84,13 @@ OFFICIAL_CID_MAP = {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 7: 7, 8: 8,
                     19: 22, 20: 21, 21: 23, 22: 14, 23: 20}
 
 
-def _cid(cid: int) -> int:
+def _cid(cid: int, cid_map: Dict[int, int] | None = None) -> int:
+    """Class-id override; explicit ``cid_map`` (from the owning Makers)
+    wins over the legacy module global.  P1-3: records serialized
+    through ``Worklist.run`` always carry their maker's map, so cached
+    or interleaved Makers can no longer silently cross-contaminate."""
+    if cid_map is not None:
+        return cid_map.get(cid, cid)
     return CID_MAP.get(cid, cid)
 
 
@@ -100,27 +106,28 @@ class _Rec:
             self.tokens += t
         return self
 
-    def bytes(self, seen=None):
+    def bytes(self, seen=None, cid_map=None):
         seen = seen if seen is not None else {}
         out = bytearray()
         for cname, cid in self.chain:
             if cid is not None and seen.get(cname) == cid:
-                out += bytes([T_CHAIN, 5, T_ID]) + _ri(_cid(cid))
+                out += bytes([T_CHAIN, 5, T_ID]) + _ri(_cid(cid, cid_map))
                 continue
             hdrlen = len(cname) + (5 if cid is not None else 0)
             out += bytes([T_CHAIN, hdrlen]) + cname.encode("latin-1")
             if cid is not None:
-                out += bytes([T_ID]) + _ri(_cid(cid))
+                out += bytes([T_ID]) + _ri(_cid(cid, cid_map))
                 seen[cname] = cid
         if self.class_id is not None and seen.get(self.name) == self.class_id:
-            out += bytes([T_RECORD, 5, T_ID]) + _ri(_cid(self.class_id))
+            out += bytes([T_RECORD, 5, T_ID]) + _ri(
+                _cid(self.class_id, cid_map))
             out += self.tokens
             out += bytes([T_TERM])
             return bytes(out)
         hdrlen = len(self.name) + (5 if self.class_id is not None else 0)
         out += bytes([T_RECORD, hdrlen]) + self.name.encode("latin-1")
         if self.class_id is not None:
-            out += bytes([T_ID]) + _ri(_cid(self.class_id))
+            out += bytes([T_ID]) + _ri(_cid(self.class_id, cid_map))
             seen[self.name] = self.class_id
         out += self.tokens
         out += bytes([T_TERM])
@@ -134,7 +141,9 @@ class _ClusterRec:
     def __init__(self, fn):
         self.fn = fn
 
-    def bytes(self, seen):
+    def bytes(self, seen, cid_map=None):
+        # cluster payload is already encoded by its layout fn; the map is
+        # accepted for signature parity with _Rec.bytes (P1-3 threading)
         return self.fn(seen)
 
 
@@ -173,7 +182,8 @@ class Worklist:
             while self._qpos < len(self._q):
                 key = self._q[self._qpos]
                 self._qpos += 1
-                out += makers.make(key, self).bytes(seen)
+                out += makers.make(key, self).bytes(
+                    seen, getattr(makers, "cid_map", None))
             if seed_q:
                 self.ref(seed_q.pop(0))
                 continue
@@ -251,10 +261,11 @@ class Makers:
         self.doc_ids = doc_ids
         self.seq = seq if seq is not None else _SeqCounter()
         self.xacis = xacis            # emit the official XACIS wstring identity chain
+        self.cid_map: Dict[int, int] = OFFICIAL_CID_MAP if xacis else {}
         self._xid = {}
         self._xid_n = 0
         global CID_MAP
-        CID_MAP = OFFICIAL_CID_MAP if xacis else {}
+        CID_MAP = self.cid_map
         self.col = {
             bi: (colors[bi] if colors and bi < len(colors)
                  else (0.745, 0.902, 0.961))

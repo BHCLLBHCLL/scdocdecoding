@@ -279,3 +279,33 @@ def test_tolerant_topology_records():
     assert tve.tolerance is not None
     ted = next(e for e in model.of_kind("tedge"))
     assert ted.tolerance is not None and ted.v1 is not None
+
+
+# ------------------------------------------------------------ P1-3: CID_MAP
+
+def test_cid_map_follows_owning_maker_not_global():
+    """P1-3: a record serialized after a *different* Makers changed the
+    legacy global must still use its OWN maker's map (instance state is
+    authoritative through Worklist.run)."""
+    import scdm.sab_emit as SE
+
+    box = K.make_box(0.01, 0.01, 0.01)
+    items = [("planar",) + W._extract_solid(s)
+             for s in (K.explore(box, "solid") or [box])]
+    mk_official = SE.Makers(items, xacis=True)
+    mk_legacy = SE.Makers(items, xacis=False)
+    # constructing the legacy maker reset the module global; serializing
+    # the OFFICIAL maker afterwards must still emit official class ids
+    out_official = SE.Worklist().run([("body", 0)], mk_official)
+    out_legacy = SE.Worklist().run([("body", 0)], mk_legacy)
+    assert out_official != out_legacy
+    assert len(out_official) > 0 and len(out_legacy) > 0
+
+
+def test_cid_explicit_param_overrides_global():
+    """P1-3: _cid(cid, map) is deterministic; the global is only a
+    fallback for legacy external callers."""
+    import scdm.sab_emit as SE
+    assert SE._cid(20, SE.OFFICIAL_CID_MAP) == 21
+    assert SE._cid(20, {}) == 20
+    assert SE._cid(7, {}) == 7

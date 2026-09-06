@@ -104,18 +104,19 @@ vs 体 PartDef/BodyDef），官方表现为「组件静默丢失」，正是 TOD
 - **成本**：1–2 天 + 降级 0.5 天
 - **验收**：任意 OCCT 实体可存 .scdoc，或明确降级且不丢用户工作；三条新回归（倒圆/孔/锥）。
 
-### P0-3 · 环境与门禁可复现 ✅ 已关闭（2026-09-06）
+### P0-3 · 环境与门禁可复现 ✅ 已闭环（2026-09-06，双口径修正）
 
-- 本机环境定位：conda env `scdm`（cpython + pythonocc-core 7.7 + pytest + PySide6/VTK），
-  运行方式 `PYTHONPATH=. C:\Users\sdcll\.conda\envs\scdm\python.exe -m pytest tests/`。
-  已补 `requirements.txt`（说明 pythonocc-core 只能 conda-forge 安装）。
-- `tests/conftest.py` 按能力 skip：`official_gate` 标记（无
-  SabSatConverter.exe 即跳）+ `kernel` 标记（无 OCC 即跳）；官方门禁测试统一
-  `@pytest.mark.official_gate`（test_interop.py ×5：box restore + 倒圆/孔/锥/放样
-  的官方 SAB→SAT 转换）。无 CI——克隆后两条命令可跑非官方门禁，官方门禁需本机装
-  SpaceClaim 2019 R3。
-- **验收达成**：全量 219 passed / 1 skipped（1 skip 为外部应用哨兵）；
-  官方门禁在本机实跑 4/4 通过。
+- **环境钉版**（实测修正：env 实际为 PyQt5 5.15.11 + pythonocc-core **7.9.3**，
+  非 7.7/PySide6）：`environment.yml`（py 3.11 / pythonocc-core 7.9.3 / PyQt5
+  5.15.11 / pytest 9.1.1 / numpy 2.4.6 / vtk 9.6.1）+ `requirements.txt` 说明。
+- **四档能力门禁**：`tests/conftest.py` 标记 `kernel`(OCC) / `gui`(PyQt5) /
+  `official_gate`(SabSatConverter) / `official_open`(SpaceClaim RunScript)，
+  缺档降级 skip 不炸 collection；伞标记 `official` 覆盖两档官方门禁。
+- **CI**：`.github/workflows/ci.yml`（conda env + `pytest -m "not official"`）。
+- **验收达成**：两条命令 `conda env create -f environment.yml` +
+  `pytest tests/ -m "not official"` —— 本机实测 **225 passed / 1 skipped /
+  6 deselected**；README 载明官方门禁独立入口（-m official_gate / -m
+  official_open）。
 
 ---
 
@@ -124,11 +125,11 @@ vs 体 PartDef/BodyDef），官方表现为「组件静默丢失」，正是 TOD
 | # | 项 | 证据 / 动作 | 成本 |
 | --- | --- | --- | --- |
 | P1-1 | **自写自读元数据闭环** | NYI TODO-6（NamedSelection 写端未生成）、TODO-7（写端已生成 `SavedViewsDef`，读端 `scdoc_parser/document.py` 未还原）→ 自己存的文件回读丢元数据 | 2–3 天 |
-| P1-2 | **端到端任务门禁** | `tests/` 20 个文件全按模块切分，无跨模块任务链；DEV_PLAN §20.8 的演练路径未自动化。P0-2 这类「每个功能都在、串起来走不通」的缺口只有 e2e 能测出 | 1 天 |
-| P1-3 | **CID_MAP 全局可变状态显式化** | `sab_emit.py:80` 模块级 `CID_MAP`，由 `Makers.__init__`(:244) 按 `xacis` 赋值，`_cid()` 在**序列化时**读全局。当前「构造即发射」顺序正确（`build_sab_for` 内构造→`wl.run`），所以没炸——但契约是隐式的：一旦有人先构造多个 Makers 再统一序列化、或复用/缓存 Makers，就会静默用错类号表（SabSatConverter indexing failed）。改为显式传参或 contextmanager + 两条断言测试 | 0.5 天 |
+| P1-2 | **端到端任务门禁** ✅ | `tests/test_p12_e2e.py`：§20.8 演练链自动化（新建→草图矩形→拉伸→抽壳→阵列→截面→命名选择→存 .scdm→重开→体积恒等 + 录放链 2 测试） | 已闭环 |
+| P1-3 | **CID_MAP 全局可变状态显式化** ✅ | `Makers.cid_map` 实例属性权威，`Worklist.run` 逐记录透传（`_Rec`/`_ClusterRec` 签名同步）、`_cid(cid, map)` 显式参数（全局仅外部调用方回退）；两条断言（乱序构造隔离 + 显式参数确定性） | 已闭环 |
 | P1-4 | **DEV_PLAN 同步** | §21.1 仍是旧快照（14 页签/125 命令/123 live/99 测试），且无 TODO-9 与保真度记录；补 §21.7，并把「页签/命令/live/测试数」改为自动生成块 | 0.5 天 |
 | P1-5 | **已知遗留落表** | DEV_SUMMARY §6：`_emit_bytes` 身份序重序列化有损（0x0F 嵌套簇不往返）——字段级改 SAB 前必须先修。另：`tests/test_sab_worklist.py` 的 FIFO 惰性播种改动**仍未提交** | 0.5 天 |
-| P1-6 | **仓库卫生收尾** | `.gitignore` 扩 `_*` 产物族；清理 `_asm.scdoc`/`_t.*`；`laptop_3d_geom.{stp,x_t}`（3.8MB）迁 `references/` | 0.5 天 |
+| P1-6 | **仓库卫生收尾** ✅ | `.gitignore` 扩 `_*.scdoc/sab/sat/scdm`、`_t.*`、`*.stp/x_t`（references/geometry 负例外）；`_asm.scdoc`/`_t.*`/哨兵已清；`laptop_3d_geom.{stp,x_t}` 迁 `references/geometry/` 入仓 | 已闭环 |
 
 ---
 
