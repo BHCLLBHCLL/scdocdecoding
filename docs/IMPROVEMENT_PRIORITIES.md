@@ -128,7 +128,7 @@ vs 体 PartDef/BodyDef），官方表现为「组件静默丢失」，正是 TOD
 | P1-2 | **端到端任务门禁** ✅ | `tests/test_p12_e2e.py`：§20.8 演练链自动化（新建→草图矩形→拉伸→抽壳→阵列→截面→命名选择→存 .scdm→重开→体积恒等 + 录放链 2 测试） | 已闭环 |
 | P1-3 | **CID_MAP 全局可变状态显式化** ✅ | `Makers.cid_map` 实例属性权威，`Worklist.run` 逐记录透传（`_Rec`/`_ClusterRec` 签名同步）、`_cid(cid, map)` 显式参数（全局仅外部调用方回退）；两条断言（乱序构造隔离 + 显式参数确定性） | 已闭环 |
 | P1-4 | **DEV_PLAN 同步** | §21.1 仍是旧快照（14 页签/125 命令/123 live/99 测试），且无 TODO-9 与保真度记录；补 §21.7，并把「页签/命令/live/测试数」改为自动生成块 | 0.5 天 |
-| P1-5 | **已知遗留落表** | DEV_SUMMARY §6：`_emit_bytes` 身份序重序列化有损（0x0F 嵌套簇不往返）——字段级改 SAB 前必须先修。另：`tests/test_sab_worklist.py` 的 FIFO 惰性播种改动**仍未提交** | 0.5 天 |
+| P1-5 | **已知遗留落表** ✅ | 两条遗留均已消除：①有损的身份序重序列化（`_reserialize_reorder`/`_emit_bytes`/`_reorder_to_template`，0x0F 嵌套簇不往返）在 FIFO worklist 取代模板重排后已无调用方，整块删除（~390 行死代码），`test_cluster_records_survive_tokenization` 固化"簇作用域标记 + 全 token 存活 + 实体索引<记录数"不变量；②FIFO 惰性播种测试改动随 6641d80 提交 | 已闭环 |
 | P1-6 | **仓库卫生收尾** ✅ | `.gitignore` 扩 `_*.scdoc/sab/sat/scdm`、`_t.*`、`*.stp/x_t`（references/geometry 负例外）；`_asm.scdoc`/`_t.*`/哨兵已清；`laptop_3d_geom.{stp,x_t}` 迁 `references/geometry/` 入仓 | 已闭环 |
 
 ---

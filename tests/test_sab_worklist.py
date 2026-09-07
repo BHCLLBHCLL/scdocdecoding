@@ -18,6 +18,8 @@ from scdm import kernel as K
 from scdm import sab_emit
 from scdm import scdoc_write as W
 from scdm.document import load_scdoc
+from scdoc_parser import sab as _sab_mod
+from scdoc_parser import topology as topology_mod
 from scdm.import_sab import import_scdoc_bundle
 
 pytestmark = pytest.mark.skipif(not K.available(), reason="pythonocc-core required")
@@ -309,3 +311,24 @@ def test_cid_explicit_param_overrides_global():
     assert SE._cid(20, SE.OFFICIAL_CID_MAP) == 21
     assert SE._cid(20, {}) == 20
     assert SE._cid(7, {}) == 7
+
+
+def test_cluster_records_survive_tokenization():
+    """P1-5 guard: nested-subtype clusters (0x0F scopes) must tokenize with
+    every scope marker and token payload intact -- the old identity-order
+    re-serializer dropped them, and it is now deleted; this keeps the
+    property visible for any future SAB field editor."""
+    from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeCone
+    cone = BRepPrimAPI_MakeCone(0.008, 0.003, 0.03).Shape()
+    sab_bytes, _fc, _ec = W._build_sab(
+        [("planar",) + W._extract_solid(cone)], [(0.5, 0.5, 0.5)])
+    sf = _sab_mod.tokenize(sab_bytes)
+    kinds = [(r.chain[0][0] if r.chain else r.name) for r in sf.records]
+    assert "spline" in kinds and "both" in kinds and "ellipse" in kinds
+    # scope markers survive as tokens of the owning records
+    marks = [t.kind for r in sf.records for t in r.tokens
+             if t.kind in ("mark0f", "mark10")]
+    assert "mark0f" in marks and "mark10" in marks
+    # clusters are inner records: entity count < record count
+    model = topology_mod.SabModel(sf)
+    assert len(model._pos_of_entity) < len(sf.records)
