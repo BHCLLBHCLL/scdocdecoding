@@ -1313,7 +1313,8 @@ def spline_surface_cluster_bytes(u_deg, v_deg, u_knots, u_mults,
     out += _rec_header("exactsur", CID_EXACTSUR, seen)
     out += _ti(0) + bytes([T_INT15]) + _ri(0)
     out += _rec_header("nurbs", CID_NURBS, seen)
-    out += _ti(2) + _ti(1)
+    out += _ti(u_deg) + _ti(v_deg)   # real degrees (metadata; the 'both'
+    # payload carries the authoritative knots/poles)
     out += _rec_header("both", CID_BOTH, seen)
     out += _nurbs_surface_body(u_deg, v_deg, u_knots, u_mults,
                                v_knots, v_mults, poles)

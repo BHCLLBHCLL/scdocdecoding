@@ -389,8 +389,11 @@ def test_mixed_box_and_cylinder_scdoc():
         os.remove(path)
 
 
-def test_cylinder_scdoc_self_read_via_facets():
-    """Written cylinder scdoc falls back to a facet-mesh body on self-read."""
+def test_cylinder_scdoc_self_read_exact():
+    """Written cylinder scdoc rebuilds as exact B-rep on self-read (the
+    curved-face reader: cone-surface wall + planar caps with ellipse
+    edges) — the old facet-mesh fallback only fired before curved-face
+    rebuild existed."""
     import os
     import tempfile
 
@@ -406,8 +409,7 @@ def test_cylinder_scdoc_self_read_via_facets():
         write_scdoc(path, doc, name="cyl")
         k2 = import_scdoc_bundle(load_scdoc(path))
         assert len(k2.bodies) == 1
-        assert "网格" in k2.bodies[0].name
         v = K.volume(k2.bodies[0].shape)
-        assert abs(v - 3.14159 * 0.005 ** 2 * 0.01) < 0.05e-6  # mesh approximation
+        assert abs(v - 3.141592653589793 * 0.005 ** 2 * 0.01) < 1e-10
     finally:
         os.remove(path)

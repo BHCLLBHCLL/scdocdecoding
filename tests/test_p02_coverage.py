@@ -247,3 +247,96 @@ def test_lofted_solid_bcur_edges():
             assert tgt is not None and tgt.kind in ("edge", "tedge")
     finally:
         os.unlink(path)
+
+
+# --------------------------------------------------------------------------
+# curved-face SELF-READ (reader-side rebuild: spline clusters, cylinders,
+# planar faces with ellipse edges) — writes must reopen with full geometry
+# --------------------------------------------------------------------------
+
+def _self_read(path):
+    from scdm.document import load_scdoc
+    from scdm.import_sab import import_scdoc_bundle
+    return import_scdoc_bundle(load_scdoc(path))
+
+
+def test_self_read_cone_exact():
+    """Cone writes and reopens with exact volume (spline wall + planar
+    caps with ellipse edges)."""
+    from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeCone
+    cone = BRepPrimAPI_MakeCone(0.008, 0.003, 0.03).Shape()
+    path = _write_temp(cone)
+    try:
+        doc2 = _self_read(path)
+        assert len(doc2.bodies) == 1
+        faces = K.explore(doc2.bodies[0].shape, "face")
+        assert len(faces) == 3
+        nominal = (3.141592653589793 / 3 * 0.03
+                   * (0.008 ** 2 + 0.008 * 0.003 + 0.003 ** 2))
+        v = K.volume(doc2.bodies[0].shape)
+        assert abs(v - nominal) < 1e-9, (v, nominal)
+    finally:
+        os.unlink(path)
+
+
+def test_self_read_fillet_all_faces():
+    """Rounded box reopens with all 10 faces (4 spline walls rebuilt from
+    the both-cluster payloads)."""
+    from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeBox
+    from OCC.Core.BRepFilletAPI import BRepFilletAPI_MakeFillet
+    from OCC.Core.TopExp import TopExp_Explorer
+    from OCC.Core.TopAbs import TopAbs_EDGE
+    box = BRepPrimAPI_MakeBox(0.02, 0.02, 0.02).Shape()
+    ex = TopExp_Explorer(box, TopAbs_EDGE)
+    f = BRepFilletAPI_MakeFillet(box)
+    for _ in range(4):
+        f.Add(0.003, ex.Current())
+        ex.Next()
+    path = _write_temp(f.Shape())
+    try:
+        doc2 = _self_read(path)
+        assert len(doc2.bodies) == 1
+        faces = K.explore(doc2.bodies[0].shape, "face")
+        assert len(faces) == 10
+    finally:
+        os.unlink(path)
+
+
+def test_self_read_holed_box_volume():
+    """Through-hole box reopens with 7 faces and the hole material actually
+    removed (volume within 5% of nominal despite sewing slivers)."""
+    from OCC.Core.BRepPrimAPI import (BRepPrimAPI_MakeBox,
+                                      BRepPrimAPI_MakeCylinder)
+    from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Cut
+    from OCC.Core.gp import gp_Ax2, gp_Pnt, gp_Dir
+    cut = BRepAlgoAPI_Cut(
+        BRepPrimAPI_MakeBox(0.02, 0.02, 0.01).Shape(),
+        BRepPrimAPI_MakeCylinder(
+            gp_Ax2(gp_Pnt(0.01, 0.01, -0.005), gp_Dir(0, 0, 1)),
+            0.004, 0.02).Shape())
+    path = _write_temp(cut.Shape())
+    try:
+        doc2 = _self_read(path)
+        assert len(doc2.bodies) == 1
+        faces = K.explore(doc2.bodies[0].shape, "face")
+        assert len(faces) == 7
+        nominal = (0.02 * 0.02 * 0.01
+                   - 3.141592653589793 * 0.004 ** 2 * 0.01)
+        v = K.volume(doc2.bodies[0].shape)
+        assert abs(v - nominal) < 0.05 * nominal, (v, nominal)
+    finally:
+        os.unlink(path)
+
+
+def test_self_read_cylinder_exact():
+    """Dedicated cyl bodies (cone-surface records) reopen exactly."""
+    path = _write_temp(K.make_cylinder(0.005, 0.01))
+    try:
+        doc2 = _self_read(path)
+        assert len(doc2.bodies) == 1
+        faces = K.explore(doc2.bodies[0].shape, "face")
+        assert len(faces) == 3
+        v = K.volume(doc2.bodies[0].shape)
+        assert abs(v - 3.141592653589793 * 0.005 ** 2 * 0.01) < 1e-10
+    finally:
+        os.unlink(path)

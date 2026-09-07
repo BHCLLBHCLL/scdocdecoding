@@ -97,6 +97,17 @@ class Ent:
     bs_mults: Optional[list] = None
     bs_poles: Optional[list] = None
     bs_poles_2d: Optional[list] = None
+    ratio: Optional[float] = None
+    semangle: Optional[float] = None
+    radius: Optional[float] = None
+    bsurf_uperiodic: bool = False
+    bsurf_vperiodic: bool = False
+    bsurf_u_knots: Optional[list] = None
+    bsurf_u_mults: Optional[list] = None
+    bsurf_v_knots: Optional[list] = None
+    bsurf_v_mults: Optional[list] = None
+    bsurf_poles: Optional[list] = None   # flat (x,y,z,w), v-slowest
+    cluster_owner: int = -1              # entity index of the scope head
     t_range: Optional[tuple] = None
     attrib_type: Optional[str] = None
     attrib_value: Optional[str] = None
@@ -122,6 +133,7 @@ class SabModel:
         self.inner: List[Ent] = []
         self.strings = self._collect_strings()
         self._decode_all()
+        self._link_clusters()
         self.attribs_by_owner: Dict[int, List[Ent]] = {}
         for e in self.entities:
             if e is not None and e.kind in ('string_attrib', 'rgb_color'):
@@ -201,13 +213,52 @@ class SabModel:
         return self._opt(rec, pos, 'double', lambda t: t.value)
 
     def _decode_all(self):
+        depth = 0
+        owner = -1
         for pos, rec in enumerate(self.sab.records):
             ent = self._entity_of_pos.get(pos, -1)
             e = self._decode(ent, rec)
+            if depth > 0:
+                e.cluster_owner = owner   # inner payload of a cluster head
             if ent >= 0:
                 self.entities[ent] = e
+                owner = ent
             else:
                 self.inner.append(e)
+            for t in rec.tokens:
+                if t.kind == 'mark0f':
+                    depth += 1
+                elif t.kind == 'mark10':
+                    depth = max(0, depth - 1)
+
+    def _link_clusters(self):
+        """Slice 'both' payloads' pole grids using the owning cluster's
+        nurbs-record degrees (npoles = sum(mults) - deg + 1)."""
+        nurbs_by_owner = {}
+        for e in self.inner:
+            if e.kind == 'nurbs':
+                nurbs_by_owner.setdefault(e.cluster_owner, e)
+        for e in self.inner:
+            if (e.kind != 'both' or e.bsurf_poles is not None
+                    or e.bsurf_u_knots is None):
+                continue
+            n = nurbs_by_owner.get(e.cluster_owner)
+            if n is None or not n.bs_deg or not n.bs_deg_v:
+                continue
+            npu = sum(e.bsurf_u_mults) - n.bs_deg + 1
+            npv = sum(e.bsurf_v_mults) - n.bs_deg_v + 1
+            need = npu * npv
+            if need <= 0:
+                continue
+            tk = e.record.tokens
+            i = 6 + 2 * (len(e.bsurf_u_knots) + len(e.bsurf_v_knots))
+            if i + need * 4 > len(tk):
+                continue
+            vals = [t.value for t in tk[i:i + need * 4]]
+            if any(not isinstance(v, float) for v in vals):
+                continue
+            e.bsurf_poles = [tuple(vals[k:k + 4])
+                             for k in range(0, need * 4, 4)]
 
     def _decode(self, idx: int, rec: EntityRecord) -> Ent:
         e = Ent(idx=idx, kind=rec.kind, record=rec)
@@ -293,6 +344,44 @@ class SabModel:
             e.origin = self._opt_v3(rec, 4)
             e.normal = self._opt_v3b(rec, 5)
             e.xdir = self._opt_v3b(rec, 6)
+            if k == 'ellipse':
+                e.ratio = self._opt_dbl(rec, 7)
+            if k == 'cone':
+                # [.., ratio double, flags, semi-angle double, costheta
+                #  double, base-radius double, flags]
+                e.semangle = self._opt_dbl(rec, 10)
+                e.radius = self._opt_dbl(rec, 12)
+        elif k == 'both':
+            # B-spline SURFACE payload (inside a spline-surface 0x0F scope):
+            # [u_periodic int15][v_periodic int15][u_form int15][v_form int15]
+            # [#u_knots int][#v_knots int][(knot double, mult int)...]
+            # [poles (x,y,z,w) 4xdouble, v-slowest][fit double + trailer...].
+            # ACIS mult convention: npoles = sum(mults) - deg + 1 (the
+            # degrees live in the cluster's nurbs record); the record tail
+            # beyond the poles belongs to the outer cluster record.
+            tk = rec.tokens
+            try:
+                e.bsurf_uperiodic = tk[0].kind == 'int15' and tk[0].value == 1
+                e.bsurf_vperiodic = tk[1].kind == 'int15' and tk[1].value == 1
+                nku = tk[4].value if tk[4].kind == 'int' else None
+                nkv = tk[5].value if tk[5].kind == 'int' else None
+                if nku is None or nkv is None:
+                    raise ValueError('knot counts missing')
+                i = 6
+                kt, mt = [], []
+                for _ in range(nku + nkv):
+                    if (i + 1 < len(tk) and tk[i].kind == 'double'
+                            and tk[i + 1].kind == 'int'):
+                        kt.append(tk[i].value)
+                        mt.append(tk[i + 1].value)
+                        i += 2
+                    else:
+                        raise ValueError('bad knot pair')
+                e.bsurf_u_knots, e.bsurf_u_mults = kt[:nku], mt[:nku]
+                e.bsurf_v_knots, e.bsurf_v_mults = kt[nku:], mt[nku:]
+                e.bsurf_poles = None  # filled by the model after degrees known
+            except (ValueError, IndexError, AttributeError):
+                e.bsurf_poles = None
         elif k == 'straight':
             e.origin = self._opt_v3(rec, 4)
             e.direction = self._opt_v3b(rec, 5)
