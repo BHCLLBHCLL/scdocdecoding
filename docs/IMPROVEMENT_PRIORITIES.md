@@ -1,6 +1,6 @@
 # 改进点优先级盘点
 
-> **最新刷新：2026-09-06（P0-2+P0-3 全闭环；官方 ACIS 内核门禁 4/4 通过）**
+> **最新刷新：2026-09-06（P0/P1/P2 全闭环；剩余 P3 拆分随触碰顺带）**
 > 依据：工作区代码实测 + `DEV_PLAN.md` §19/§20/§21 + `function_gap_analysis.md`
 > + `docs/NYI_INVENTORY.md` + `DEV_SUMMARY.md`。
 >
@@ -137,9 +137,9 @@ vs 体 PartDef/BodyDef），官方表现为「组件静默丢失」，正是 TOD
 
 | # | 项 | 现状 → 目标 | 成本 |
 | --- | --- | --- | --- |
-| P2-1 | 钣金多弯连续展开 + 折弯槽口（TODO-2/3） | `unfold` 单弯精确；多弯链与 bend relief 未做。85% → 95% | 2–5 天 |
-| P2-2 | 曲面圆角面 / 曲线网络（TODO-4） | `blend_loft` 已覆盖双线框过渡；缺多约束 `BRepFill_Filling` 与 face-face blend | 3–5 天 |
-| P2-3 | 工程图图幅版式（TODO-5） | HLR 三视图 + BOM/尺寸已有；缺 A0–E 图框（官方 `Library/DrawingFormats` 有样本） | 3–5 天 |
+| P2-1 | 钣金多弯连续展开 + 折弯槽口（TODO-2/3） ✅ | 多弯链展开（中面签名匹配 + 链序 + 每板恰一次不变量）+ bend_relief（方形/圆形槽口跨立折弯线端） | 已闭环 |
+| P2-2 | 曲面圆角面 / 曲线网络（TODO-4） ✅/⏸ | `patch_fill` 多约束（内部点 + 引导线 + 边界 G0/G1）已闭环；face-face blend 证据缺口（pythonocc 无两-face Add 重载）另立项 | 主体闭环 |
+| P2-3 | 工程图图幅版式（TODO-5） ✅ | SHEET_FORMATS（官方库 A0-A4/B/C 实测）+ sheet_template（官方 DrawingSheetDef 结构）+ 三视图适配布局 | 已闭环 |
 
 ## 5. P3 · 持续复利
 
