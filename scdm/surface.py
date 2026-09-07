@@ -149,24 +149,43 @@ def thicken(face, thickness: float, reverse: bool = False):
     return BRepPrimAPI_MakePrism(face, v).Shape()
 
 
-def patch_fill(boundary_edges: Sequence, continuity: int = 0):
-    """N-sided patch: fill a closed boundary (wire/edges) with a surface
-    that meets each edge with the given continuity (0=G0, 1=G1)."""
+def patch_fill(boundary_edges: Sequence, continuity: int = 0,
+               points: Sequence = (), guides: Sequence = (),
+               continuity_guide: int = 1):
+    """TODO-4: N-sided patch with multi-constraint BRepFill_Filling.
+
+    ``boundary_edges`` close the hole (G0/G1); ``points`` are interior
+    point constraints the surface must pass through; ``guides`` are
+    interior constraint wires (G1) that shape the patch.  Only the
+    boundary is mandatory (>= 3 edges)."""
     o = _occ()
     from OCC.Core.BRepFill import BRepFill_Filling
     from OCC.Core.GeomAbs import GeomAbs_C0, GeomAbs_G1
+    from OCC.Core.gp import gp_Pnt
     fill = BRepFill_Filling()
     cont = {0: GeomAbs_C0, 1: GeomAbs_G1}.get(continuity, GeomAbs_C0)
+    gcont = {0: GeomAbs_C0, 1: GeomAbs_G1}.get(continuity_guide,
+                                               GeomAbs_G1)
     n = 0
     for e in boundary_edges:
         fill.Add(e, cont)
         n += 1
     if n < 3:
         raise K.KernelError("补面：至少需要三条边界")
+    for p in points:
+        fill.Add(gp_Pnt(float(p[0]), float(p[1]), float(p[2])))
+    for g in guides:
+        fill.Add(g, gcont)
     fill.Build()
     if not fill.IsDone():
         raise K.KernelError("补面失败")
     return fill.Face()
+
+
+# face_blend（无共享边的面-面过渡）留档见 NYI TODO-4：pythonocc
+# BRepFilletAPI_MakeFillet 仅暴露 edge 系 Add 重载
+# （Add(Edge)/Add(Real,Edge)/Add(Real,Real,Edge)），无官方两-face
+# 重载——需 ChFi3d 裸 API 或 BRepFeat 路线，另立项。
 
 
 def wire_of(face):

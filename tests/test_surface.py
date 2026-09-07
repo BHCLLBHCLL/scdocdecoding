@@ -80,3 +80,39 @@ def test_blend_loft_between_circles():
     bl = S.blend_loft(w1, w2)
     assert len(K.explore(bl, "face")) >= 1
     assert K.area(bl) > 0
+
+
+# ------------------------------------------------------ TODO-4: constraints
+
+def _square_wire(z=0.0):
+    """Unit square boundary wire in the z plane (4 edges)."""
+    import scdm.kernel as K2
+    from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakePolygon
+    from OCC.Core.gp import gp_Pnt
+    poly = BRepBuilderAPI_MakePolygon(
+        gp_Pnt(0, 0, z), gp_Pnt(1, 0, z), gp_Pnt(1, 1, z),
+        gp_Pnt(0, 1, z), True)
+    return poly.Wire()
+
+
+def test_patch_fill_with_point_constraint():
+    """The patch must pass through the interior point (multi-constraint
+    Filling)."""
+    from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
+    from OCC.Core.gp import gp_Pnt
+    wire = _square_wire(0.0)
+    from OCC.Core.TopExp import TopExp_Explorer
+    from OCC.Core.TopAbs import TopAbs_EDGE
+    edges = []
+    exp = TopExp_Explorer(wire, TopAbs_EDGE)
+    while exp.More():
+        edges.append(exp.Current())
+        exp.Next()
+    face = S.patch_fill(edges, points=[(0.5, 0.5, 0.25)])
+    # sample the surface at the centre: nearest face point should be
+    # close to the constraint
+    from scdm import kernel as K2
+    n, c = K2.face_normal_center(face)
+    # centre of the patch: on the boundary midplane (0.5, 0.5); the
+    # constrained surface must rise toward z=0.25 — check the centre z
+    assert c[2] > 0.05, f"patch did not rise to the point constraint: {c}"
