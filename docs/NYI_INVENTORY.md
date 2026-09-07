@@ -28,7 +28,7 @@
 | TODO-2 | 多折弯连续展开 | **已闭环（P2-1）**：`unfold` 升级多弯链——detect_bends 记录相邻面句柄、`_flat_sig`/`_same_flat` 中面签名匹配（腹板两侧不同 TShape）、`_chain_order` 共享平板邻接排序、展开长度=各平板恰一次+Σ 折弯余量；双弯 Z 型件测试锁定 | — | ✅ |
 | TODO-3 | 折弯槽口（bend relief cuts） | **已闭环（P2-1）**：`bend_relief(solid, width, depth, end, round_)` —— 槽口跨立折弯线轴端（方形/圆形），复用 corner_relief 钳位布尔；双端+圆槽测试锁定（去除量=宽×半深×厚） | — | ✅ |
 | TODO-4 | 曲面圆角面 / 曲线网络 | **主体闭环（P2-2）**：`patch_fill` 升多约束 BRepFill_Filling（points 内部点约束 + guides 引导线 + 边界 G0/G1）；face-face blend **证据缺口**——pythonocc BRepFilletAPI_MakeFillet 仅 edge 系 Add 重载（实机 overload dump），需 ChFi3d 裸 API/BRepFeat 另立项 | face-face blend 另立项 | ✅/⏸ |
-| TODO-5 | 工程图图幅版式 | HLR 三视图 + BOM/尺寸已有；无标准图幅 | 解析 Library/DrawingFormats A0–E 官方图框 → 模板 | 3–5 天 |
+| TODO-5 | 工程图图幅版式 | **已闭环（P2-3）**：`SHEET_FORMATS`（官方 DrawingFormats 库 A0/A1/A2/A3/A4/B/C 尺寸实测锁定）+ `sheet_template`（官方 DrawingSheetDef 结构：宽高/SheetScaleDef/边框 LineSegment）+ `layout_three_views`（三视图等比适配留边布局）；3 测试锁定 | — | ✅ |
 | TODO-6 | 命名选择组（NamedSelection）写回 | **已闭环（P1-1）**：官方格式（BeamProfiles/Circular.scdoc 10 样本）——读端 parse_document 还原 name/selections/sectionPlane；写端 `_inject_named_selections` 注入 StoredSelectionTableDef（buckets+name+plane+PullToolProxyDef 官方结构）；`<selections/>` 空成员（moniker GUID 链路未建，读回名字对称已锁测试） | 成员绑定=moniker GUID 子项延后 | ✅ |
 | TODO-7 | 保存视图读回 | **边界定档（P1-1 复核）**：SavedViewsDef 在写端代码与全机官方库（scdm 安装树）均为零命中——「写端已生成」系过时记录；无官方样本则不可凭想象写格式（纪律闸门）。解锁路径=SpaceClaim RunScript（建视图→存→diff document.xml，make_official_ref 基建在位） | 解锁后 1 天 | ⏸ 边界 |
 | TODO-8 | 草图约束完整求解器 | **已关闭**：sketch_solver.py LM 求解器（DOF/冲突/表达式） | — | ✅ |

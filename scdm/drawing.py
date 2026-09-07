@@ -55,3 +55,73 @@ def extents(polys: List[Poly2]):
     if not xs or not ys:
         return None
     return (min(xs), min(ys), max(xs), max(ys))
+
+
+# ----------------------------------------------------- TODO-5: sheet formats
+
+SHEET_FORMATS = {
+    # official DrawingFormats library (width/height in metres, extracted
+    # 2026-09-06 from the installed SpaceClaim 2019 R3 files)
+    "A0": (1.189, 0.841),
+    "A1": (0.841, 0.594),
+    "A2": (0.594, 0.420),
+    "A3": (0.420, 0.297),
+    "A4": (0.210, 0.297),
+    "B": (0.4318, 0.2794),
+    "C": (0.5588, 0.4318),
+}
+
+
+def sheet_template(fmt: str) -> str:
+    """DrawingSheetDef XML fragment matching the official format
+    structure (A4.scdoc): sheet size + SheetScaleDef + the border frame
+    as LineSegment SketchCurveDefs (10 mm margin)."""
+    w, h = SHEET_FORMATS[fmt]
+    m = 0.01
+    border = (
+        f'<SketchCurveDef Id="1:92" xmlns="urn:sketch">'
+        f'<color>Black</color>'
+        f'<curve sctype="SpaceClaim.Geometry.LineSegment, Geometry">'
+        f'<start>{m} {m} 0</start><dir>1 0 0</dir><length>{w - 2 * m}</length>'
+        f'</curve></SketchCurveDef>'
+    )
+    return (
+        f'<DrawingSheetDef Id="0:27"><updateState>6:29</updateState>'
+        f'<viewSpecificVisibilityEnabled>False</viewSpecificVisibilityEnabled>'
+        f'<renderingMode>Shaded</renderingMode>'
+        f'<width>{w:g}</width><height>{h:g}</height>'
+        f'<createdInVersion>0</createdInVersion>'
+        f'<SheetScaleDef Id="0:29"><updateState>3:1</updateState>'
+        f'<scale>1</scale>'
+        f'<scaleFormat sctype="SpaceClaim.Annotations.FractionalScaleFormat, '
+        f'Presentation"><denominator>1</denominator></scaleFormat>'
+        f'<scaleNeverSet>False</scaleNeverSet></SheetScaleDef>'
+        f'{border}</DrawingSheetDef>'
+    )
+
+
+def layout_three_views(shape, fmt: str):
+    """Fit the three HLR views into the sheet with margins.
+
+    Returns [(view_name, polylines, (x0, y0, x1, y1) placement rect)].
+    Views are scaled uniformly so the widest view fits two columns."""
+    w, h = SHEET_FORMATS[fmt]
+    margin = 0.015
+    views = three_views(shape)
+    rects = []
+    exts = [extents(p) for _, p in views]
+    max_w = max((e[2] - e[0]) for e in exts if e)
+    max_h = max((e[3] - e[1]) for e in exts if e)
+    if max_w <= 0 or max_h <= 0:
+        return []
+    avail_w = (w - 3 * margin) / 2
+    avail_h = (h - 3 * margin) / 2
+    scale = min(avail_w / max_w, avail_h / max_h, 1.0)
+    # 主视 top-left, 俯视 bottom-left, 右视 top-right
+    slots = [(margin, h - margin - max_h * scale),
+             (margin, margin),
+             (2 * margin + avail_w, h - margin - max_h * scale)]
+    for (name, polys), (sx, sy) in zip(views, slots):
+        rects.append((name, polys, (sx, sy, sx + max_w * scale,
+                                    sy + max_h * scale)))
+    return rects
