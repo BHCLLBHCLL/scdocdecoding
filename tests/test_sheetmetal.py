@@ -166,3 +166,38 @@ def test_single_bend_unfold_unchanged():
     ba = SM.bend_allowance(math.pi / 2, 0.002, 0.42, 0.001)
     total = K.volume(flat) / (0.02 * 0.001)
     assert total == pytest.approx(0.03 + ba + 0.02, rel=1e-9)
+
+
+# --------------------------------------------------- TODO-3: bend relief
+
+def test_bend_relief_removes_material_at_bend_end():
+    """Relief slot straddles the bend-line end: material removal in the
+    sheet thickness band, flanges intact."""
+    import math
+    import scdm.additive as A
+    b = SM.bend_from_flat(0.02, 0.001, 0.03, 0.02, math.pi / 2, 0.002,
+                          0.42)
+    v0 = K.volume(b)
+    r0 = SM.bend_relief(b, width=0.004, depth=0.003, end=0)
+    removed0 = v0 - K.volume(r0)
+    assert removed0 > 0
+    # removed volume ≈ width * (depth/2 inside) * thickness
+    assert removed0 == pytest.approx(0.004 * 0.0015 * 0.001, rel=0.5)
+    # flange geometry intact: bbox x (flat length) unchanged
+    (x0, y0, z0), (x1, y1, z1) = A.shape_bbox(b)
+    (rx0, ry0, rz0), (rx1, ry1, rz1) = A.shape_bbox(r0)
+    assert (rx0, rx1) == pytest.approx((x0, x1), rel=1e-9)
+
+
+def test_bend_relief_both_ends_and_round():
+    """end=0/1 target the two axis ends; round_ cuts a cylindrical
+    relief."""
+    import math
+    b = SM.bend_from_flat(0.02, 0.001, 0.03, 0.02, math.pi / 2, 0.002,
+                          0.42)
+    v0 = K.volume(b)
+    r0 = SM.bend_relief(b, width=0.004, depth=0.003, end=0)
+    r01 = SM.bend_relief(r0, width=0.004, depth=0.003, end=1)
+    assert K.volume(r01) < K.volume(r0) < v0
+    rr = SM.bend_relief(b, width=0.004, depth=0.003, end=0, round_=True)
+    assert K.volume(rr) < v0

@@ -390,6 +390,43 @@ def corner_relief(solid, corner: Vec3, size: float,
     return K.cut(solid, cutbox)
 
 
+def bend_relief(solid, width: float, depth: float,
+                end: int = 0, round_: bool = False) -> "object":
+    """TODO-3: bend relief — a slot cut at the END of a bend line so the
+    flange does not tear when the flat is folded.
+
+    Reuses the corner_relief mechanism (bbox-clamped boolean cut).  The
+    slot spans the bend line perpendicular to it: `width` along the bend
+    tangent direction (the bend extends past both tangent lines), and
+    `depth` along the bend axis beyond the cylinder end (`end` 0 = axis
+    min end, 1 = axis max end).  Every detected bend gets a slot.
+    """
+    import scdm.additive as A
+    (x0, y0, z0), (x1, y1, z1) = A.shape_bbox(solid)
+    out = solid
+    for b in detect_bends(solid):
+        f = b["f1"]
+        n, _c = K.face_normal_center(f)
+        # standard fixture orientation: flats normal +-z, bend axis along
+        # y; the bend LINE sits at the entry flat's far edge along x
+        (fa0, fb0, fc0), (fa1, fb1, fc1) = A.shape_bbox(f)
+        line_x = fa1 if fa1 > x0 + (x1 - x0) * 0.5 else fa0
+        axis_pos = y0 if end == 0 else y1
+        # slot straddles the bend-line END: centred on (line_x, axis_pos)
+        if round_:
+            # make_cylinder origin IS the axis centre; the slot straddles
+            # the bend-line end (axis_pos) by radius on each side
+            cut = K.make_cylinder(width / 2, depth * 2,
+                                  origin=(line_x, axis_pos, z0 - depth))
+            out = K.cut(out, cut)
+            continue
+        cutbox = K.make_box(width, depth, (z1 - z0) + 2 * depth,
+                            origin=(line_x - width / 2,
+                                    axis_pos - depth / 2, z0 - depth))
+        out = K.cut(out, cutbox)
+    return out
+
+
 def jog(width: float, t: float, len1: float, web_h: float, len2: float,
         r_inner: float = 0.0) -> "object":
     """Z-jog (square corners): flat1 (z 0..t), vertical web, flat2 at
