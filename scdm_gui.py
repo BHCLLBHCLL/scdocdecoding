@@ -155,10 +155,10 @@ else:
             qat = QToolBar()
             qat.setObjectName("QuickAccess")
             qat.setMovable(False)
-            qat.setIconSize(QSize(18, 18))
+            qat.setIconSize(QSize(22, 22))
             qat.setToolButtonStyle(Qt.ToolButtonIconOnly)
             for cmd in QAT:
-                act = QAction(make_icon(cmd.icon, 18), cmd.name, self)
+                act = QAction(make_icon(cmd.icon, 22), cmd.name, self)
                 act.setToolTip(f"{cmd.name} ({cmd.en})  {cmd.wave}")
                 act.triggered.connect(lambda _=False, i=cmd.id: self.on_command(i))
                 qat.addAction(act)
@@ -203,7 +203,8 @@ else:
             if self._enable_3d:
                 self.vtk_widget = QVTKRenderWindowInteractor(right)
                 self.vp = ViewportHost(self.vtk_widget)
-                self.vp.mini.command.connect(self.on_command)
+                self.vp.mini.command.connect(self._on_smart_command)
+                self.vp.guide.action.connect(self._on_guide_action)
                 self.scene = Scene(self.vtk_widget)
                 self.scene.style.click_cb = self._on_vtk_click
                 self.scene.style.right_cb = self._on_vtk_right
@@ -448,6 +449,8 @@ else:
                     "insert.cyl", "insert.sphere",
                 ) else "none")
                 self._set_drag_hooks(cmd_id)
+                if self.vp:
+                    self._update_tool_chrome()
                 if cmd_id == "tool.select":
                     self._set_status(hud)
                 if live and cmd_id in ("mode.3d", "tool.select", "measure.dist"):
@@ -458,6 +461,9 @@ else:
                         self._set_status(hud)
                     elif cmd_id == "mode.3d":
                         self._set_sketch_grid(False)
+                        if self.scene:
+                            self.scene.preserve_camera = False
+                            self.scene.fit()
                     return
                 if cmd_id in ("tool.pull", "tool.move", "tool.fill", "tool.replace",
                               "tool.combine", "tool.split_body", "tool.split_faces",
@@ -2550,6 +2556,7 @@ else:
             ses.dirty = True
             ses.history.push(ses.kdoc.snapshot())
             self._rebuild(msg)
+            self._update_tool_chrome()
 
         def _selected_kbody(self):
             if not self._need_kernel():
@@ -2652,6 +2659,8 @@ else:
                 axes = S.sketch_axes(plane)
                 view = ("plane_view", {"xy": "z", "zx": "y", "yz": "x"}[plane])
             self._sketch_state = {"plane": sk.plane, "axes": axes}
+            if self.scene:
+                self.scene.preserve_camera = True
             self._sketch_tool = None
             self._sketch_start = None
             self._sketch_second = None
@@ -2683,8 +2692,14 @@ else:
             if not self._need_kernel():
                 return
             ses = self.session()
-            if not ses.kdoc.sketches:
+            if self.tools.mode != "mode.sketch" or not self._sketch_state:
+                # arming a sketch tool enters sketch mode in one step (the
+                # viewport draw path is gated on mode == mode.sketch, so a
+                # tool armed from 3D mode would silently never draw)
                 self._begin_sketch()
+                self.tools.set_mode("mode.sketch", "M3", True)
+                self.ribbon.set_checked("mode.sketch", True)
+                self.left.show_options("mode.sketch")
             if not self._sketch_state:
                 self._sketch_state = {"plane": ses.kdoc.sketches[-1].plane}
             self._sketch_tool = tool
@@ -2951,6 +2966,117 @@ else:
             except Exception as exc:
                 self._set_status(f"分割失败: {exc}")
 
+        def _on_smart_command(self, act: str):
+            if act.startswith("opt.") or act == "done":
+                self._on_guide_action(act)
+            else:
+                self.on_command(act)
+
+        def _on_guide_action(self, act: str):
+            if act == "done":
+                self.on_command("tool.select")
+                return
+            if act.startswith("tool."):
+                self.on_command(act)
+                return
+            tool = self.tools.active
+            if act == "opt.cut" and tool == "tool.combine":
+                page = self.left._opt_pages.get("tool.combine")
+                if page and len(page[1]) > 1:
+                    page[1][1].setChecked(True)
+                return
+            mapping = {
+                ("tool.pull", "opt.symmetric"): 0,
+                ("tool.pull", "opt.copy"): 2,
+                ("tool.pull", "opt.to_face"): 3,
+                ("tool.move", "opt.copy"): 0,
+            }
+            idx = mapping.get((tool, act))
+            if idx is None:
+                return
+            on = not self.left.is_checked(tool, idx)
+            self.left.set_checked(tool, idx, on)
+            if self.vp:
+                self.vp.guide.set_option_checked(act, on)
+
+        def _guide_caption(self, tool: str) -> str:
+            n_face = sum(1 for k, _ in self.sel.items if k == "face")
+            n_body = sum(1 for k, _ in self.sel.items if k == "body")
+            if tool == "tool.pull":
+                return f"拉动 {n_face} 个面" if n_face else "拉动：选择一个面"
+            if tool == "tool.move":
+                n = n_body or n_face
+                return f"移动 {n} 个对象" if n else "移动：选择实体"
+            if tool == "tool.fill":
+                return f"填充 {n_face} 个面" if n_face else "填充：选择要移除的面"
+            if tool == "tool.combine":
+                return f"合并 {n_body} 个体" if n_body else "合并：选择实体"
+            if tool == "tool.split_body":
+                return "分割实体"
+            if tool == "tool.replace":
+                return "替换面"
+            return ""
+
+        def _selection_anchor(self):
+            if not self.scene:
+                return None
+            for kind, sid in reversed(list(self.sel.items)):
+                if kind == "face":
+                    act = self.scene._face_actors.get(sid)
+                    if act is not None and getattr(act, "_center", None):
+                        return tuple(act._center)
+                if kind == "body":
+                    for key, act in self.scene._face_actors.items():
+                        if str(key).split(":")[0] == sid and getattr(act, "_center", None):
+                            return tuple(act._center)
+            return None
+
+        def _update_tool_chrome(self):
+            if not self.vp:
+                return
+            tool = self.tools.active
+            self.vp.set_guide(tool, self._guide_caption(tool))
+            if tool == "tool.pull":
+                self.vp.guide.set_option_checked(
+                    "opt.symmetric", self.left.is_checked("tool.pull", 0))
+                self.vp.guide.set_option_checked(
+                    "opt.to_face", self.left.is_checked("tool.pull", 3))
+            elif tool == "tool.move":
+                self.vp.guide.set_option_checked(
+                    "opt.copy", self.left.is_checked("tool.move", 0))
+            show_smart = tool in (
+                "tool.pull", "tool.move", "tool.fill", "tool.combine",
+                "tool.split_body", "tool.replace",
+            ) and bool(self.sel.items)
+            self.vp.show_mini(show_smart)
+            self.vp.mini.set_value("")
+            if not self.scene:
+                return
+            self.scene.clear_handles()
+            if tool == "tool.pull":
+                for kind, sid in reversed(list(self.sel.items)):
+                    if kind != "face":
+                        continue
+                    act = self.scene._face_actors.get(sid)
+                    if act is None:
+                        continue
+                    n = getattr(act, "_normal", None)
+                    c = getattr(act, "_center", None)
+                    if n is not None and c is not None:
+                        self.scene.show_pull_handles(tuple(c), tuple(n))
+                    break
+            elif tool == "tool.move":
+                pt = self._selection_anchor()
+                if pt:
+                    self.scene.show_move_handles(pt)
+            if show_smart:
+                pt = self._selection_anchor()
+                if pt:
+                    try:
+                        self.vp.place_smart(*self.scene.world_to_display(pt))
+                    except Exception:
+                        pass
+
         def _set_drag_hooks(self, tool_id: str):
             """Enable drag preview only for Pull/Move; other tools keep plain clicks."""
             if self.scene is None:
@@ -2985,29 +3111,65 @@ else:
             faces = K.explore(body.shape, "face")
             if face_i >= len(faces):
                 return
-            n, _c = K.face_normal_center(faces[face_i])
+            n, c = K.face_normal_center(faces[face_i])
             self._drag = {"tool": tool, "body": body, "face_i": face_i,
-                          "orig": body.shape, "normal": n, "dist": 0.0}
+                          "orig": body.shape, "normal": n, "center": c,
+                          "dist": 0.0, "body_id": body_id}
 
         def _world_per_px(self):
             if not self.scene:
                 return 1e-4
             cam = self.scene.renderer.GetActiveCamera()
-            height = max(1, self.vtk_widget.height())
-            return 2.0 * cam.GetParallelScale() / height
+            _, vh = self.scene.renderer.GetRenderWindow().GetSize()
+            return 2.0 * cam.GetParallelScale() / max(int(vh) or 0, 1)
+
+        def _delta_along_normal(self, dx, dy, normal):
+            """Mouse delta (VTK y-up) projected onto a face normal in world units.
+
+            The face follows the cursor: dragging toward the on-screen normal
+            extrudes outward instead of punching into the solid.
+            """
+            if not self.scene:
+                return 0.0
+            cam = self.scene.renderer.GetActiveCamera()
+            k = self._world_per_px()
+            d = cam.GetDirectionOfProjection()
+            up = cam.GetViewUp()
+            right = (d[1] * up[2] - d[2] * up[1],
+                     d[2] * up[0] - d[0] * up[2],
+                     d[0] * up[1] - d[1] * up[0])
+            def _n(v):
+                L = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) ** 0.5
+                return (0.0, 0.0, 0.0) if L < 1e-12 else (v[0] / L, v[1] / L, v[2] / L)
+            right, up = _n(right), _n(up)
+            world = (right[0] * dx * k + up[0] * dy * k,
+                     right[1] * dx * k + up[1] * dy * k,
+                     right[2] * dx * k + up[2] * dy * k)
+            return world[0] * normal[0] + world[1] * normal[1] + world[2] * normal[2]
 
         def _on_drag_move(self, dx, dy):
             d = self._drag
             if d is None or not self.scene:
                 return
-            d["dist"] = -dy * self._world_per_px()
+            d["dist"] = d.get("dist", 0.0) + self._delta_along_normal(dx, dy, d["normal"])
             faces = K.explore(d["orig"], "face")
             if d["tool"] == "tool.pull":
                 preview = K.pull_face(d["orig"], faces[d["face_i"]], d["dist"])
             else:
                 vec = tuple(d["normal"][k] * d["dist"] for k in range(3))
                 preview = K.translate(d["orig"], vec)
-            self.scene.show_preview(preview)
+            self.scene.show_preview(preview, hide_body_id=d.get("body_id"))
+            origin = d.get("center")
+            if origin is None:
+                origin = (0.0, 0.0, 0.0)
+            shifted = tuple(origin[k] + d["normal"][k] * d["dist"] for k in range(3))
+            mm = abs(d["dist"]) * self.session().scale
+            if d["tool"] == "tool.pull":
+                self.scene.show_pull_handles(shifted, d["normal"], distance_mm=mm)
+            else:
+                self.scene.show_move_handles(shifted)
+            if self.vp:
+                self.vp.mini.set_value(f"{mm:.2f} mm")
 
         def _on_drag_end(self, dx, dy):
             d = self._drag
@@ -3528,6 +3690,7 @@ else:
                     self.scene.highlight_actors([])
                     self.vp.show_mini(False)
                     self.left.set_selection_list([])
+                    self._update_tool_chrome()
                 return
             if self._click_n >= 3 and self.sel.allows("body"):
                 self._select_body_from_face(node, add)
@@ -3689,6 +3852,7 @@ else:
             self.scene.highlight_nodes(
                 [n for n in nodes if n in self.scene._face_actors
                  or str(n).startswith(("edge:", "vertex:"))])
+            self._update_tool_chrome()
 
         def _select_node(self, kind, node, add):
             if add:
@@ -3731,8 +3895,6 @@ else:
                 self.sel.set_one("face", key)
             face_keys = [i for k, i in self.sel.items if k == "face"]
             self._refresh_selection_highlights()
-            if self.vp:
-                self.vp.show_mini(True)
             self.left.set_selection_list([f"面 {i}" for i in face_keys])
             actor = self.scene._face_actors.get(node) if self.scene else None
             rows = [("名称", f"面 {key}")]
@@ -3777,8 +3939,7 @@ else:
                     nodes.extend(self._body_face_nodes(sid))
             if self.scene:
                 self.scene.highlight_nodes(nodes)
-            if self.vp:
-                self.vp.show_mini(True)
+            self._update_tool_chrome()
             ses = self.session()
             name = body_id
             rows = [("Id", body_id)]

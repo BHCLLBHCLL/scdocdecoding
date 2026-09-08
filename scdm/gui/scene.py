@@ -1,6 +1,8 @@
 """VTK scene: tessellated bodies, gizmo, picking, display styles."""
 from __future__ import annotations
 
+import math
+
 import numpy as np
 
 import vtk
@@ -8,10 +10,13 @@ from vtk.util import numpy_support
 
 from scdm.document import Session
 
-BG = (0.96, 0.96, 0.96)
-SELECT = (1.0, 0.35, 0.1)
+BG = (0.97, 0.97, 0.975)
+BG2 = (0.91, 0.92, 0.935)
+SELECT = (1.0, 0.45, 0.08)
 PRE = (1.0, 0.78, 0.16)
 BASE = (0.62, 0.66, 0.70)
+GOLD = (1.0, 0.80, 0.12)
+GOLD_DIM = (1.0, 0.86, 0.42)
 
 
 class CadStyle(vtk.vtkInteractorStyleUser):
@@ -39,6 +44,10 @@ class Scene:
     # (see CadStyle docstring: these replace the style's virtual overrides)
     ROTATE_DEG_PER_PX = 0.5
     ZOOM_STEP = 1.1
+    # World-origin triad length as a fraction of camera ParallelScale
+    # (half the viewport height in world units) so on-screen size tracks
+    # the window, not the imported model bounds.
+    ORIGIN_VIEW_FRAC = 0.22
 
     def _on_iren_left_down(self, o, e):
         if self.style.drag_start_cb:
@@ -91,10 +100,16 @@ class Scene:
         self.render()
 
     def _camera_move(self, dx, dy):
-        """Trackball-style rotate (MMB) / pan (Shift+MMB) in pixels."""
+        """Grab-the-model trackball (MMB) / pan (Shift+MMB) in pixels.
+
+        VTK Azimuth(+): camera walks right, the model appears to spin right.
+        CAD convention is the opposite — the model follows the cursor — so
+        azimuth uses -dx. Pan Y is likewise inverted so dragging up moves
+        the model up.
+        """
         cam = self.renderer.GetActiveCamera()
         if self._cam_mode == "rotate":
-            cam.Azimuth(dx * self.ROTATE_DEG_PER_PX)
+            cam.Azimuth(-dx * self.ROTATE_DEG_PER_PX)
             cam.Elevation(-dy * self.ROTATE_DEG_PER_PX)
             cam.OrthogonalizeViewUp()
         else:
@@ -107,9 +122,9 @@ class Scene:
                      d[0] * up[1] - d[1] * up[0])
             fp = cam.GetFocalPoint()
             p = cam.GetPosition()
-            shift = (right[0] * -dx * k + up[0] * dy * k,
-                     right[1] * -dx * k + up[1] * dy * k,
-                     right[2] * -dx * k + up[2] * dy * k)
+            shift = (right[0] * -dx * k + up[0] * -dy * k,
+                     right[1] * -dx * k + up[1] * -dy * k,
+                     right[2] * -dx * k + up[2] * -dy * k)
             cam.SetFocalPoint(fp[0] + shift[0], fp[1] + shift[1],
                               fp[2] + shift[2])
             cam.SetPosition(p[0] + shift[0], p[1] + shift[1],
@@ -117,12 +132,20 @@ class Scene:
         self.render()
 
     def __init__(self, vtk_widget):
+        self.preserve_camera = False   # sketch mode: keep the plane view
         self.vtk_widget = vtk_widget
         self.renderer = vtk.vtkRenderer()
         self.renderer.SetBackground(*BG)
-        self.renderer.GradientBackgroundOff()
+        self.renderer.SetBackground2(*BG2)
+        self.renderer.GradientBackgroundOn()
         self.renderer.GetActiveCamera().ParallelProjectionOn()
-        vtk_widget.GetRenderWindow().AddRenderer(self.renderer)
+        rw = vtk_widget.GetRenderWindow()
+        rw.AddRenderer(self.renderer)
+        try:
+            rw.LineSmoothingOn()
+            rw.PointSmoothingOn()
+        except Exception:
+            pass
         self.style = CadStyle()
         vtk_widget.GetRenderWindow().GetInteractor().SetInteractorStyle(self.style)
         _iren = vtk_widget.GetRenderWindow().GetInteractor()
@@ -161,6 +184,7 @@ class Scene:
         self._sketch_actor = None
         self._sketch_pts_actor = None
         self._preview_actor = None
+        self._preview_hidden = []
         self._highlight = []
         self._origin_actor = None
         self._plane_actors = {}
@@ -179,6 +203,8 @@ class Scene:
         self._measure_actors = []
         self._section_widget = None
         self._gizmo = None
+        self._handle_actors = []
+        self._handle_label = None
         self._install_gizmo()
         self._install_origin()
         self._install_planes()
@@ -191,37 +217,84 @@ class Scene:
     def _install_gizmo(self):
         axes = vtk.vtkAxesActor()
         axes.SetTotalLength(1.0, 1.0, 1.0)
-        _style_axes(axes, world=False)
+        _style_axes(axes, world=False, hairline=False)
+        hub = _sphere_actor(0.08, (0.94, 0.94, 0.95), opacity=1.0, spec=0.55)
+        asm = vtk.vtkPropAssembly()
+        asm.AddPart(axes)
+        asm.AddPart(hub)
         gizmo = vtk.vtkOrientationMarkerWidget()
-        gizmo.SetOrientationMarker(axes)
+        gizmo.SetOrientationMarker(asm)
         gizmo.SetInteractor(self.vtk_widget.GetRenderWindow().GetInteractor())
-        gizmo.SetViewport(0.0, 0.0, 0.11, 0.11)
+        # ~16% of the viewport, inset from the corner.
+        gizmo.SetViewport(0.012, 0.012, 0.172, 0.172)
         try:
-            gizmo.SetOutlineColor(0.72, 0.72, 0.72)
+            gizmo.SetOutlineColor(*BG)
         except Exception:
             pass
+        for getter in ("GetOutlineProperty", "GetBorderProperty"):
+            try:
+                getattr(gizmo, getter)().SetOpacity(0.0)
+            except Exception:
+                pass
         gizmo.SetEnabled(1)
         gizmo.InteractiveOff()
         self._gizmo = gizmo
 
-    def _install_origin(self):
-        axes = vtk.vtkAxesActor()
-        axes.SetTotalLength(0.012, 0.012, 0.012)
-        _style_axes(axes, world=True)
-        self.renderer.AddActor(axes)
-        self._origin_actor = axes
-        self._origin_labels = []
-        length = 0.012
-        for text, pos, color in (
-            ("X", (length * 1.15, 0.0, 0.0), (0.78, 0.22, 0.18)),
-            ("Y", (0.0, length * 1.15, 0.0), (0.20, 0.55, 0.22)),
-            ("Z", (0.0, 0.0, length * 1.15), (0.18, 0.36, 0.75)),
+    def _origin_length(self):
+        """World length of the origin triad for the current camera."""
+        cam = self.renderer.GetActiveCamera()
+        if cam.GetParallelProjection():
+            half_h = cam.GetParallelScale()
+        else:
+            dist = abs(cam.GetDistance())
+            half_h = dist * math.tan(math.radians(cam.GetViewAngle()) * 0.5)
+        return max(1e-9, half_h * self.ORIGIN_VIEW_FRAC)
+
+    def _sync_origin_scale(self):
+        """Keep the world origin a constant fraction of the viewport."""
+        asm = getattr(self, "_origin_actor", None)
+        if asm is None:
+            return
+        length = self._origin_length()
+        base = getattr(self, "_origin_base_length", 1.0) or 1.0
+        scale = length / base
+        prev = getattr(self, "_origin_scale", None)
+        if prev is not None and abs(prev - scale) < 1e-9:
+            return
+        self._origin_scale = scale
+        try:
+            asm.SetScale(scale, scale, scale)
+        except Exception:
+            pass
+        tip = length * 1.20
+        for lab, pos in zip(
+            getattr(self, "_origin_labels", []),
+            ((tip, 0.0, 0.0), (0.0, tip, 0.0), (0.0, 0.0, tip)),
         ):
-            lab = _axis_label(text, pos, color)
+            try:
+                lab.SetPosition(*pos)
+            except Exception:
+                pass
+
+    def _install_origin(self):
+        # Unit-length triad; world scale is applied in _sync_origin_scale.
+        self._origin_base_length = 1.0
+        asm = _make_triad(1.0, cone_frac=0.22, hub_frac=0.07, tube=True)
+        _exclude_from_bounds(asm)
+        self.renderer.AddActor(asm)
+        self._origin_actor = asm
+        self._origin_labels = []
+        for text, pos, color in (
+            ("X", (1.20, 0.0, 0.0), (0.82, 0.18, 0.14)),
+            ("Y", (0.0, 1.20, 0.0), (0.16, 0.58, 0.24)),
+            ("Z", (0.0, 0.0, 1.20), (0.14, 0.34, 0.80)),
+        ):
+            lab = _axis_label(text, pos, color, size=13, shadow=True)
             if lab is None:
                 continue
             self.renderer.AddActor(lab)
             self._origin_labels.append(lab)
+        self._sync_origin_scale()
 
     def _install_planes(self):
         specs = {
@@ -253,10 +326,12 @@ class Scene:
             self._plane_actors[key] = a
 
     def render(self):
+        self._sync_origin_scale()
         self.renderer.GetRenderWindow().Render()
 
     def clear_bodies(self):
         self.disable_section_widget()
+        self.clear_handles()
         for act in list(self._highlight):
             self._restore(act)
         self._highlight.clear()
@@ -353,7 +428,11 @@ class Scene:
                 self.renderer.AddActor(self._vert_actor)
         self.apply_visibility(session)
         self.apply_style(session.style)
-        self.fit()
+        if self.preserve_camera:
+            self.renderer.ResetCameraClippingRange()
+            self.render()
+        else:
+            self.fit()
 
     def _build_kdoc(self, session: Session):
         from scdm.kernel import tessellate_faces
@@ -407,7 +486,11 @@ class Scene:
         self.apply_visibility(session)
         self.apply_style(session.style)
         self.set_section(getattr(session, "section_axis", None))
-        self.fit()
+        if self.preserve_camera:
+            self.renderer.ResetCameraClippingRange()
+            self.render()
+        else:
+            self.fit()
 
     def model_bounds(self):
         acts = list(self._face_actors.values())
@@ -718,10 +801,12 @@ class Scene:
             self._sketch_pts_actor = _points_actor(pts, (0.10, 0.30, 0.65), 8)
             self.renderer.AddActor(self._sketch_pts_actor)
 
-    def show_preview(self, shape, color=PRE, opacity=0.45):
+    def show_preview(self, shape, color=PRE, opacity=0.55, hide_body_id=None):
         """Show a translucent orange preview of a candidate shape (not committed)."""
         from scdm.kernel import tessellate_faces
-        self.clear_preview()
+        if self._preview_actor is not None:
+            self.renderer.RemoveActor(self._preview_actor)
+            self._preview_actor = None
         try:
             faces = tessellate_faces(shape, deflection=0.001)
         except Exception:
@@ -746,13 +831,81 @@ class Scene:
         act.GetProperty().SetAmbient(0.2)
         self._preview_actor = act
         self.renderer.AddActor(act)
+        if hide_body_id and not self._preview_hidden:
+            hidden = []
+            for a in self._face_actors.values():
+                if getattr(a, "_body_id", None) == hide_body_id:
+                    hidden.append((a, a.GetVisibility()))
+                    a.SetVisibility(0)
+            self._preview_hidden = hidden
         self.render()
 
     def clear_preview(self):
         if self._preview_actor is not None:
             self.renderer.RemoveActor(self._preview_actor)
             self._preview_actor = None
-            self.render()
+        for a, vis in getattr(self, "_preview_hidden", []):
+            try:
+                a.SetVisibility(vis)
+            except Exception:
+                pass
+        self._preview_hidden = []
+        self.render()
+
+    def handle_length(self):
+        cam = self.renderer.GetActiveCamera()
+        return max(0.005, cam.GetParallelScale() * 0.22)
+
+    def world_to_display(self, xyz):
+        """VTK display coords (origin at bottom-left of the render window)."""
+        self.renderer.SetWorldPoint(xyz[0], xyz[1], xyz[2], 1.0)
+        self.renderer.WorldToDisplay()
+        d = self.renderer.GetDisplayPoint()
+        return d[0], d[1]
+
+    def clear_handles(self):
+        for a in list(getattr(self, "_handle_actors", [])):
+            self.renderer.RemoveActor(a)
+        self._handle_actors = []
+        if getattr(self, "_handle_label", None) is not None:
+            self.renderer.RemoveActor(self._handle_label)
+            self._handle_label = None
+
+    def show_pull_handles(self, origin, normal, length=None, distance_mm=None):
+        """Gold bidirectional arrows along a face normal (Pull manipulator)."""
+        self.clear_handles()
+        n = _norm3(normal)
+        if n is None:
+            return
+        L = length if length is not None else self.handle_length()
+        pos = _make_arrow(origin, n, L, GOLD, 0.92)
+        neg = _make_arrow(origin, (-n[0], -n[1], -n[2]), L * 0.72, GOLD_DIM, 0.42)
+        for a in (pos, neg):
+            if a is None:
+                continue
+            _exclude_from_bounds(a)
+            self.renderer.AddActor(a)
+            self._handle_actors.append(a)
+        if distance_mm is not None:
+            tip = (origin[0] + n[0] * L * 1.08,
+                   origin[1] + n[1] * L * 1.08,
+                   origin[2] + n[2] * L * 1.08)
+            lab = _axis_label(f"{distance_mm:.2f} mm", tip, (0.42, 0.28, 0.04),
+                              size=13, shadow=True)
+            if lab is not None:
+                self.renderer.AddActor(lab)
+                self._handle_label = lab
+        self.render()
+
+    def show_move_handles(self, origin, length=None):
+        """RGB triad manipulator at a body origin (Move)."""
+        self.clear_handles()
+        L = length if length is not None else self.handle_length() * 0.9
+        asm = _make_triad(L, cone_frac=0.22, hub_frac=0.07, tube=True)
+        _exclude_from_bounds(asm)
+        self.renderer.AddActor(asm)
+        self._handle_actors.append(asm)
+        self.render()
 
     def apply_visibility(self, session: Session):
         face_on = session.show_faces and session.style != "wire"
@@ -929,6 +1082,7 @@ class Scene:
         cam.SetViewUp(0.0, 0.0, 1.0)
         cam.SetParallelScale(0.042)
         self.renderer.ResetCameraClippingRange()
+        self._sync_origin_scale()
 
     def fit_to_bodies(self, body_ids):
         """Reset the camera to the combined bounds of the given bodies."""
@@ -1057,18 +1211,21 @@ class Scene:
         return QImage(arr.copy(), dims[0], dims[1], dims[0] * arr.shape[2], fmt)
 
 
-def _axis_label(text, pos, color):
-    """Screen-sized axis letter that does not blow up with camera fit."""
+def _axis_label(text, pos, color, size=12, shadow=False):
+    """Screen-sized label that does not blow up with camera fit."""
     try:
         lab = vtk.vtkBillboardTextActor3D()
         lab.SetInput(text)
         lab.SetPosition(*pos)
         tp = lab.GetTextProperty()
         tp.SetFontFamilyToArial()
-        tp.SetFontSize(13)
+        tp.SetFontSize(int(size))
         tp.BoldOff()
         tp.ItalicOff()
-        tp.ShadowOff()
+        if shadow:
+            tp.ShadowOn()
+        else:
+            tp.ShadowOff()
         tp.SetColor(*color)
         tp.SetJustificationToCentered()
         tp.SetVerticalJustificationToCentered()
@@ -1085,27 +1242,187 @@ def _exclude_from_bounds(prop):
         pass
 
 
-def _style_axes(axes, world=False):
+def _norm3(v):
+    L = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) ** 0.5
+    if L < 1e-12:
+        return None
+    return (v[0] / L, v[1] / L, v[2] / L)
+
+
+def _tube_actor(p0, p1, radius, color, opacity=1.0):
+    src = vtk.vtkLineSource()
+    src.SetPoint1(*p0)
+    src.SetPoint2(*p1)
+    tube = vtk.vtkTubeFilter()
+    tube.SetInputConnection(src.GetOutputPort())
+    tube.SetRadius(max(radius, 1e-12))
+    tube.SetNumberOfSides(20)
+    tube.CappingOn()
+    m = vtk.vtkPolyDataMapper()
+    m.SetInputConnection(tube.GetOutputPort())
+    a = vtk.vtkActor()
+    a.SetMapper(m)
+    prop = a.GetProperty()
+    prop.SetColor(*color)
+    prop.SetOpacity(opacity)
+    prop.SetAmbient(0.35)
+    prop.SetDiffuse(0.65)
+    prop.SetSpecular(0.35)
+    prop.SetSpecularPower(22)
+    return a
+
+
+def _line_actor(p0, p1, color, width):
+    src = vtk.vtkLineSource()
+    src.SetPoint1(*p0)
+    src.SetPoint2(*p1)
+    m = vtk.vtkPolyDataMapper()
+    m.SetInputConnection(src.GetOutputPort())
+    a = vtk.vtkActor()
+    a.SetMapper(m)
+    prop = a.GetProperty()
+    prop.SetColor(*color)
+    prop.SetLineWidth(width)
+    prop.LightingOff()
+    prop.SetAmbient(1.0)
+    try:
+        prop.SetRenderLinesAsTubes(False)
+    except Exception:
+        pass
+    return a
+
+
+def _cone_actor(direction, tip, height, radius, color, opacity=1.0):
+    n = _norm3(direction)
+    if n is None:
+        return None
+    src = vtk.vtkConeSource()
+    src.SetResolution(28)
+    src.SetHeight(height)
+    src.SetRadius(radius)
+    src.SetDirection(*n)
+    src.SetCenter(tip[0] - n[0] * height * 0.5,
+                  tip[1] - n[1] * height * 0.5,
+                  tip[2] - n[2] * height * 0.5)
+    m = vtk.vtkPolyDataMapper()
+    m.SetInputConnection(src.GetOutputPort())
+    a = vtk.vtkActor()
+    a.SetMapper(m)
+    prop = a.GetProperty()
+    prop.SetColor(*color)
+    prop.SetOpacity(opacity)
+    prop.SetAmbient(0.35)
+    prop.SetDiffuse(0.65)
+    prop.SetSpecular(0.4)
+    prop.SetSpecularPower(24)
+    return a
+
+
+def _sphere_actor(radius, color, opacity=1.0, spec=0.45):
+    src = vtk.vtkSphereSource()
+    src.SetRadius(radius)
+    src.SetThetaResolution(28)
+    src.SetPhiResolution(20)
+    m = vtk.vtkPolyDataMapper()
+    m.SetInputConnection(src.GetOutputPort())
+    a = vtk.vtkActor()
+    a.SetMapper(m)
+    prop = a.GetProperty()
+    prop.SetColor(*color)
+    prop.SetOpacity(opacity)
+    prop.SetAmbient(0.4)
+    prop.SetDiffuse(0.55)
+    prop.SetSpecular(spec)
+    prop.SetSpecularPower(28)
+    return a
+
+
+def _make_triad(length, line_width=1.8, cone_frac=0.22, hub_frac=0.07,
+                tube=True):
+    """RGB triad with conical arrowheads and a pale hub."""
+    asm = vtk.vtkAssembly()
+    colors = ((0.90, 0.20, 0.16), (0.18, 0.64, 0.28), (0.16, 0.38, 0.86))
+    dirs = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
+    cone_h = length * cone_frac
+    cone_r = length * (0.075 if tube else 0.028)
+    hub_r = length * hub_frac
+    shaft_r = length * 0.028
+    for d, col in zip(dirs, colors):
+        tip = (d[0] * length, d[1] * length, d[2] * length)
+        shaft = (d[0] * (length - cone_h), d[1] * (length - cone_h),
+                 d[2] * (length - cone_h))
+        if tube:
+            shaft_act = _tube_actor((0.0, 0.0, 0.0), shaft, shaft_r, col)
+        else:
+            shaft_act = _line_actor((0.0, 0.0, 0.0), shaft, col, line_width)
+        cone = _cone_actor(d, tip, cone_h, cone_r, col)
+        asm.AddPart(shaft_act)
+        if cone is not None:
+            asm.AddPart(cone)
+    hub = _sphere_actor(hub_r, (0.94, 0.94, 0.95), opacity=1.0, spec=0.55)
+    asm.AddPart(hub)
+    return asm
+
+
+def _make_arrow(origin, direction, length, color, opacity=0.9):
+    n = _norm3(direction)
+    if n is None or length <= 0:
+        return None
+    asm = vtk.vtkAssembly()
+    cone_h = length * 0.28
+    tip = (origin[0] + n[0] * length,
+           origin[1] + n[1] * length,
+           origin[2] + n[2] * length)
+    shaft = (origin[0] + n[0] * (length - cone_h),
+             origin[1] + n[1] * (length - cone_h),
+             origin[2] + n[2] * (length - cone_h))
+    line = _line_actor(origin, shaft, color, 2.4)
+    line.GetProperty().SetOpacity(opacity)
+    cone = _cone_actor(n, tip, cone_h, length * 0.07, color, opacity)
+    asm.AddPart(line)
+    if cone is not None:
+        asm.AddPart(cone)
+    return asm
+
+
+def _style_axes(axes, world=False, hairline=False):
     try:
         axes.SetShaftTypeToCylinder()
-        axes.SetNormalizedShaftLength(0.82, 0.82, 0.82)
-        axes.SetNormalizedTipLength(0.18, 0.18, 0.18)
-        if world:
-            axes.SetCylinderRadius(0.018)
-            axes.SetConeRadius(0.05)
+        try:
+            axes.SetCylinderResolution(18)
+            axes.SetConeResolution(24)
+        except Exception:
+            pass
+        if hairline:
+            axes.SetNormalizedShaftLength(0.80, 0.80, 0.80)
+            axes.SetNormalizedTipLength(0.20, 0.20, 0.20)
+            axes.SetCylinderRadius(0.04)
+            axes.SetConeRadius(0.38)
+        elif world:
+            axes.SetNormalizedShaftLength(0.78, 0.78, 0.78)
+            axes.SetNormalizedTipLength(0.22, 0.22, 0.22)
+            axes.SetCylinderRadius(0.04)
+            axes.SetConeRadius(0.40)
         else:
-            axes.SetCylinderRadius(0.02)
-            axes.SetConeRadius(0.06)
+            # Corner orientation marker: VTK ConeRadius is relative to the
+            # unit cone (default 0.4), then scaled by NormalizedTipLength.
+            axes.SetNormalizedShaftLength(0.74, 0.74, 0.74)
+            axes.SetNormalizedTipLength(0.26, 0.26, 0.26)
+            axes.SetCylinderRadius(0.048)
+            axes.SetConeRadius(0.45)
         for getter, rgb in (
-            (axes.GetXAxisShaftProperty, (0.82, 0.22, 0.20)),
-            (axes.GetYAxisShaftProperty, (0.22, 0.62, 0.28)),
-            (axes.GetZAxisShaftProperty, (0.20, 0.38, 0.78)),
-            (axes.GetXAxisTipProperty, (0.82, 0.22, 0.20)),
-            (axes.GetYAxisTipProperty, (0.22, 0.62, 0.28)),
-            (axes.GetZAxisTipProperty, (0.20, 0.38, 0.78)),
+            (axes.GetXAxisShaftProperty, (0.90, 0.20, 0.16)),
+            (axes.GetYAxisShaftProperty, (0.18, 0.64, 0.28)),
+            (axes.GetZAxisShaftProperty, (0.16, 0.38, 0.86)),
+            (axes.GetXAxisTipProperty, (0.90, 0.20, 0.16)),
+            (axes.GetYAxisTipProperty, (0.18, 0.64, 0.28)),
+            (axes.GetZAxisTipProperty, (0.16, 0.38, 0.86)),
         ):
             try:
-                getter().SetColor(*rgb)
+                p = getter()
+                p.SetColor(*rgb)
+                p.SetAmbient(0.35)
+                p.SetDiffuse(0.65)
             except Exception:
                 pass
     except Exception:
@@ -1120,7 +1437,7 @@ def _style_axes(axes, world=False):
                 pass
         _exclude_from_bounds(axes)
         return
-    colors = ((0.78, 0.18, 0.18), (0.18, 0.55, 0.22), (0.16, 0.34, 0.72))
+    colors = ((0.82, 0.16, 0.14), (0.14, 0.56, 0.24), (0.14, 0.34, 0.80))
     getters = (
         axes.GetXAxisCaptionActor2D,
         axes.GetYAxisCaptionActor2D,
@@ -1132,8 +1449,8 @@ def _style_axes(axes, world=False):
         except Exception:
             continue
         try:
-            cap.SetWidth(0.08)
-            cap.SetHeight(0.04)
+            cap.SetWidth(0.14)
+            cap.SetHeight(0.055)
         except Exception:
             pass
         try:
@@ -1143,11 +1460,11 @@ def _style_axes(axes, world=False):
             pass
         try:
             tp = cap.GetCaptionTextProperty()
-            tp.ShadowOff()
+            tp.ShadowOn()
             tp.BoldOff()
             tp.ItalicOff()
             tp.SetFontFamilyToArial()
-            tp.SetFontSize(11)
+            tp.SetFontSize(16)
             tp.SetColor(*color)
             try:
                 tp.SetBackgroundOpacity(0.0)
