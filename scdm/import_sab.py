@@ -1072,8 +1072,31 @@ def _rebuild_face(model, face_ent, box=None):
             # is degenerate.  The remaining two splits are NOT produced by this
             # branch - the next step is to instrument _rebuild_face to report
             # which path returned the pieces.
+            # R14/P81: 2+ analytic arcs means the projected bbox cuts the circle
+            # into disjoint pieces (a narrow face on a small cylinder: hull half
+            # height 0.0245 < radius 0.03 -> left and right arcs).  Emitting one
+            # face per arc produced exactly the two surplus faces of model 2
+            # faces 8/194, so resolve the ambiguity with the recorded bbox and
+            # keep ONE arc (2 builds, sampled gap - cheap because rare).
+            use_arcs = arcs if arcs else [(0.0, 2.0 * 3.141592653589793)]
+            if len(use_arcs) > 1 and fbox is not None:
+                best_arc = None
+                for (a0, alen) in use_arcs:
+                    try:
+                        mk = BRepBuilderAPI_MakeFace(surf, a0, a0 + alen, v0, v1,
+                                                     1e-6)
+                        if not mk.IsDone():
+                            continue
+                        gap = _bbox_gap(mk.Face(), fbox, accurate=True)
+                    except Exception:
+                        continue
+                    if gap is not None and (best_arc is None
+                                            or gap < best_arc[0]):
+                        best_arc = (gap, (a0, alen))
+                if best_arc is not None:
+                    use_arcs = [best_arc[1]]
             out = []
-            for (u0, ulen) in (arcs if arcs else [(0.0, 2.0 * 3.141592653589793)]):
+            for (u0, ulen) in use_arcs:
                 if ulen < 1e-9:
                     continue
                 mk = BRepBuilderAPI_MakeFace(surf, u0, u0 + ulen, v0, v1, 1e-6)
