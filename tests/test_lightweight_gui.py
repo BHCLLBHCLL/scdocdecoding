@@ -279,6 +279,46 @@ class LightweightModeTests(unittest.TestCase):
         assert abs(K.volume(holed) - before) < 1e-18
         v.scene.clear_thread_annotation()
 
+    def test_p217_tapped_command_mounts_and_retires_annotation(self):
+        """R38/P217: the command mounts the symbolic profile, plain holes clear it."""
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm.kdoc import KernelDoc
+
+        class FakeScene:
+            def __init__(self):
+                self.calls = []
+
+            def show_thread_annotation(self, *a):
+                self.calls.append(("show", a))
+
+            def clear_thread_annotation(self):
+                self.calls.append(("clear", None))
+
+        v = self.gui.ScdmViewer(path=None)
+        scene = FakeScene()
+        v.scene = scene
+        kdoc = KernelDoc()
+        box = K.make_box(0.02, 0.02, 0.02)
+        body = kdoc.add_body(box, name="B")
+        v.session().kdoc = kdoc
+        face = [f for f in K.explore(box, "face")
+                if K.face_normal_center(f)[0][2] > 0.99][0]
+        v._selected_face = lambda: (body, face)
+        v._commit = lambda *a, **k: None
+
+        v._ask_numbers = lambda *a, **k: [6.0, 1.0, 0.0]
+        v._do_create_hole_tapped()
+        assert scene.calls and scene.calls[0][0] == "show"
+        (nominal, pitch) = scene.calls[0][1][2], scene.calls[0][1][3]
+        assert abs(nominal - 0.006) < 1e-12 and abs(pitch - 0.001) < 1e-12
+        assert scene.calls[0][1][4] > 0, "through hole must get a measured depth"
+
+        v._ask_numbers = lambda *a, **k: [5.0, 0.0]
+        v._do_create_hole()
+        assert scene.calls[-1][0] == "clear"
+
     def test_tool_manager_reason_plumbing(self):
         from scdm.tools.base import ToolManager
         msgs = []

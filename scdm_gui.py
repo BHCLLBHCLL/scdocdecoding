@@ -1233,6 +1233,10 @@ else:
                 depth = None if vals[1] <= 0 else vals[1] / ses.scale
                 body.shape = K.hole_simple(body.shape, face,
                                            vals[0] / ses.scale, depth=depth)
+                # R38/P217: a plain hole has no thread, so retire the profile
+                if self.scene is not None and hasattr(
+                        self.scene, "clear_thread_annotation"):
+                    self.scene.clear_thread_annotation()
                 ses.kdoc.record_feature(body.id, "hole", selector=sel,
                                         diameter=vals[0], depth=vals[1])
                 self._record("create.hole", diameter=vals[0], depth=vals[1])
@@ -1264,6 +1268,23 @@ else:
                                         depth=vals[2])
                 self._record("create.hole_tapped", nominal=vals[0],
                              pitch=vals[1], depth=vals[2])
+                # R38/P217: mount the symbolic profile (annotation only).  A
+                # through hole has no length of its own, so measure the body
+                # along the axis.
+                if self.scene is not None:
+                    from scdm import additive as A
+                    n2, c2 = K.face_normal_center(face)
+                    axis2 = (-n2[0], -n2[1], -n2[2])
+                    if vals[2] > 0:
+                        ann_depth = vals[2] / ses.scale
+                    else:
+                        lo, hi = A.shape_bbox(body.shape)
+                        ann_depth = abs(sum((hi[i] - lo[i]) * axis2[i]
+                                            for i in range(3)))
+                    if hasattr(self.scene, "show_thread_annotation"):
+                        self.scene.show_thread_annotation(
+                            tuple(c2), axis2, vals[0] / ses.scale,
+                            vals[1] / ses.scale, ann_depth)
                 self._commit("已创建攻丝孔 M%g×%g" % (vals[0], vals[1]))
             except Exception as exc:
                 self._set_status(f"攻丝孔参数非法：{exc}")
