@@ -409,6 +409,42 @@ def op_knockout(kdoc, opts, scale):
     return body, ("敲落 Ø%g×%d筋" % (d, count))
 
 
+def op_gusset(kdoc, opts, scale):
+    """P295: 角撑（钣金成形）——面上的直角三角形加料。"""
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("角撑：实体不存在")
+    faces = K.explore(body.shape, "face")
+    fi = opts.get("face_i", 0)
+    if not (0 <= fi < len(faces)):
+        raise ValueError("角撑：面序号越界")
+    body.shape = K.gusset(body.shape, faces[fi],
+                          opts.get("length", 5.0) / scale,
+                          opts.get("height", 3.0) / scale,
+                          opts.get("thickness", 1.0) / scale)
+    return body, ("角撑 %g×%g×%g" % (opts.get("length", 5.0),
+                                     opts.get("height", 3.0),
+                                     opts.get("thickness", 1.0)))
+
+
+def op_tab(kdoc, opts, scale):
+    """P295: 舌片（钣金成形）——面上的矩形局部凸出。"""
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("舌片：实体不存在")
+    faces = K.explore(body.shape, "face")
+    fi = opts.get("face_i", 0)
+    if not (0 <= fi < len(faces)):
+        raise ValueError("舌片：面序号越界")
+    body.shape = K.tab(body.shape, faces[fi],
+                       opts.get("length", 5.0) / scale,
+                       opts.get("width", 3.0) / scale,
+                       opts.get("height", 1.0) / scale)
+    return body, ("舌片 %g×%g×%g" % (opts.get("length", 5.0),
+                                     opts.get("width", 3.0),
+                                     opts.get("height", 1.0)))
+
+
 def op_dimple(kdoc, opts, scale):
     """P223: 圆形凹坑（成形族）——与孔族同 op 面但走成形校验。"""
     body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
@@ -648,6 +684,8 @@ OPS = {
     "create.knockout": op_knockout,
     "create.beam": op_beam,
     "create.beam_polyline": op_beam_polyline,
+    "create.gusset": op_gusset,
+    "create.tab": op_tab,
 }
 
 

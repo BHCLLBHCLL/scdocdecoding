@@ -49,6 +49,8 @@ _FEATURE_LABELS = {
     "knockout": "敲落 Ø{diameter:g}×{web_count:g}筋",
     "beam": "梁 {spec}",
     "beam_polyline": "折线梁 {spec} 段{index}/{count}",
+    "gusset": "角撑 {length:g}×{height:g}×{thickness:g}",
+    "tab": "舌片 {length:g}×{width:g}×{height:g}",
     "hole_cbore": "沉头孔 Ø{diameter:g}",
     "hole_csink": "锥沉孔 Ø{diameter:g}",
     "boss": "凸台 Ø{diameter:g}×{height:g}",
@@ -160,6 +162,24 @@ def _apply_one(shape, feature: Feature, scale: float):
                           float(p.get("diameter", 10.0)) / scale,
                           float(p.get("web", 1.0)) / scale,
                           int(p.get("web_count", 4)))
+    if op == "gusset":
+        # P295: forming feature - triangular added material on the face
+        face = resolve_face(shape, p.get("selector", {}))
+        if face is None:
+            return shape
+        return K.gusset(shape, face,
+                        float(p.get("length", 5.0)) / scale,
+                        float(p.get("height", 3.0)) / scale,
+                        float(p.get("thickness", 1.0)) / scale)
+    if op == "tab":
+        # P295: forming feature - rectangular local protrusion on the face
+        face = resolve_face(shape, p.get("selector", {}))
+        if face is None:
+            return shape
+        return K.tab(shape, face,
+                     float(p.get("length", 5.0)) / scale,
+                     float(p.get("width", 3.0)) / scale,
+                     float(p.get("height", 1.0)) / scale)
     if op == "dimple":
         # R40/P223: forming feature - same face flow, dimple validation
         face = resolve_face(shape, p.get("selector", {}))

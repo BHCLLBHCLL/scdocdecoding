@@ -1500,6 +1500,70 @@ else:
             except Exception as exc:
                 self._set_status(f"折线梁参数非法：{exc}")
 
+        def _do_create_gusset(self):
+            """P295: 角撑 - triangular added material standing on the face."""
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("角撑：请先选择一个平面")
+                return
+            vals = self._ask_numbers("角撑", [("长度 mm", 5.0), ("高度 mm", 3.0),
+                                            ("厚度 mm", 1.0)])
+            if not vals:
+                return
+            try:
+                from scdm import features as FEAT
+                sel = FEAT.selector_for(body.shape, face)
+                body.shape = K.gusset(body.shape, face, vals[0] / ses.scale,
+                                      vals[1] / ses.scale, vals[2] / ses.scale)
+                ses.kdoc.record_feature(body.id, "gusset", selector=sel,
+                                        length=vals[0], height=vals[1],
+                                        thickness=vals[2])
+                self._record("create.gusset", length=vals[0], height=vals[1],
+                             thickness=vals[2])
+                if self.scene is not None and hasattr(
+                        self.scene, "show_form_marker"):
+                    n3, c3 = K.face_normal_center(face)
+                    self.scene.show_form_marker(tuple(c3),
+                                                (-n3[0], -n3[1], -n3[2]),
+                                                max(vals[0], vals[1]) / ses.scale,
+                                                0.0)
+                self._commit("已创建角撑 %g×%g×%g" % (vals[0], vals[1], vals[2]))
+            except Exception as exc:
+                self._set_status(f"角撑参数非法：{exc}")
+
+        def _do_create_tab(self):
+            """P295: 舌片 - rectangular local protrusion on the face."""
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("舌片：请先选择一个平面")
+                return
+            vals = self._ask_numbers("舌片", [("长度 mm", 5.0), ("宽度 mm", 3.0),
+                                            ("凸出高度 mm", 1.0)])
+            if not vals:
+                return
+            try:
+                from scdm import features as FEAT
+                sel = FEAT.selector_for(body.shape, face)
+                body.shape = K.tab(body.shape, face, vals[0] / ses.scale,
+                                   vals[1] / ses.scale, vals[2] / ses.scale)
+                ses.kdoc.record_feature(body.id, "tab", selector=sel,
+                                        length=vals[0], width=vals[1],
+                                        height=vals[2])
+                self._record("create.tab", length=vals[0], width=vals[1],
+                             height=vals[2])
+                if self.scene is not None and hasattr(
+                        self.scene, "show_form_marker"):
+                    n3, c3 = K.face_normal_center(face)
+                    self.scene.show_form_marker(tuple(c3),
+                                                (-n3[0], -n3[1], -n3[2]),
+                                                max(vals[0], vals[1]) / ses.scale,
+                                                0.0)
+                self._commit("已创建舌片 %g×%g×%g" % (vals[0], vals[1], vals[2]))
+            except Exception as exc:
+                self._set_status(f"舌片参数非法：{exc}")
+
         def _do_create_hole_cbore(self):
             ses = self.session()
             body, face = self._selected_face()

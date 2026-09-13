@@ -1176,6 +1176,81 @@ def knockout(solid, face, diameter: float, web: float, web_count: int = 4,
     return out
 
 
+def _face_uv(face, origin=None):
+    """(n, base, u, v): the face frame - the recipe louver/knockout inline."""
+    n, base = _face_frame(face, origin)
+    ref = [1.0, 0.0, 0.0] if abs(n[0]) < 0.9 else [0.0, 1.0, 0.0]
+    u = [ref[i] - sum(ref[j] * n[j] for j in range(3)) * n[i] for i in range(3)]
+    ul = sum(x * x for x in u) ** 0.5 or 1.0
+    u = tuple(x / ul for x in u)
+    v = (n[1] * u[2] - n[2] * u[1], n[2] * u[0] - n[0] * u[2],
+         n[0] * u[1] - n[1] * u[0])
+    return n, base, u, v
+
+
+def _face_span(face, u, v):
+    """(min_u, max_u, min_v, max_v) of a planar face in its own (u, v) frame."""
+    pts = [vertex_point(w) for w in explore(face, "vertex")]
+    if not pts:
+        return (0.0, 0.0, 0.0, 0.0)
+    us = [sum(p[i] * u[i] for i in range(3)) for p in pts]
+    vs = [sum(p[i] * v[i] for i in range(3)) for p in pts]
+    return (min(us), max(us), min(vs), max(vs))
+
+
+def gusset(solid, face, length: float, height: float, thickness: float,
+           origin: Optional[Vec3] = None):
+    """P295: 角撑（钣金成形）——立在面上的直角三角形板（加料）。
+
+    The triangle lives in the (u, n) plane with legs ``length`` along the face
+    and ``height`` normal to it, extruded ``thickness`` along v.  Its base edge
+    lies IN the face plane, so the fuse has a real face contact - no
+    point-joint like the knockout webs.
+
+    Closed form: volume = length * height / 2 * thickness (exact prism).
+    """
+    if length <= 0 or height <= 0 or thickness <= 0:
+        raise KernelError("角撑尺寸必须为正")
+    n, base, u, v = _face_uv(face, origin)
+    lo_u, hi_u, lo_v, hi_v = _face_span(face, u, v)
+    if length > (hi_u - lo_u) + 1e-12:
+        raise KernelError("角撑长度超出所选面")
+    if thickness > (hi_v - lo_v) + 1e-12:
+        raise KernelError("角撑厚度超出所选面")
+    hl, ht = length / 2.0, thickness / 2.0
+    tri = []
+    for (du, dn) in ((-hl, 0.0), (hl, 0.0), (-hl, height)):
+        tri.append(tuple(base[i] + u[i] * du + n[i] * dn - v[i] * ht
+                         for i in range(3)))
+    plate = prism(face_from_polygon(tri),
+                  tuple(v[i] * thickness for i in range(3)))
+    return fuse(solid, plate)
+
+
+def tab(solid, face, length: float, width: float, height: float,
+        origin: Optional[Vec3] = None):
+    """P295: 舌片（钣金成形）——面上的矩形局部凸出（加料）。
+
+    A box of footprint ``length`` x ``width`` standing ``height`` proud of the
+    face, centred on the face centre.  Closed form: volume = length * width *
+    height; the footprint must fit the face (otherwise it is not a tab on this
+    face but a modelling error).
+    """
+    if length <= 0 or width <= 0 or height <= 0:
+        raise KernelError("舌片尺寸必须为正")
+    n, base, u, v = _face_uv(face, origin)
+    lo_u, hi_u, lo_v, hi_v = _face_span(face, u, v)
+    if length > (hi_u - lo_u) + 1e-12:
+        raise KernelError("舌片长度超出所选面")
+    if width > (hi_v - lo_v) + 1e-12:
+        raise KernelError("舌片宽度超出所选面")
+    hl, hw = length / 2.0, width / 2.0
+    pts = [tuple(base[i] + u[i] * su * hl + v[i] * sv * hw for i in range(3))
+           for (su, sv) in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+    return fuse(solid, prism(face_from_polygon(pts),
+                             tuple(n[i] * height for i in range(3))))
+
+
 def dimple_round(solid, face, diameter: float, depth: float,
                 origin: Optional[Vec3] = None):
     """P218: 圆形凹坑（成形族）。

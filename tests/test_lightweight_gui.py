@@ -291,6 +291,61 @@ class LightweightModeTests(unittest.TestCase):
         feats = kdoc.feature_stack(kdoc.bodies[-1].id).as_dict()
         assert feats and feats[-1]["op"] == "beam_polyline"
 
+    def test_p295_gusset_and_tab_commands_mark_and_clear(self):
+        """R54/P295: both forming commands add material, record the feature and
+        mount the rim marker; a plain hole clears it again."""
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm.kdoc import KernelDoc
+
+        class FakeScene:
+            def __init__(self):
+                self.calls = []
+
+            def show_form_marker(self, *a):
+                self.calls.append(("mark", a))
+
+            def clear_form_marker(self):
+                self.calls.append(("clear", None))
+
+        v = self.gui.ScdmViewer(path=None)
+        scene = FakeScene()
+        v.scene = scene
+        kdoc = KernelDoc()
+        box = K.make_box(0.02, 0.02, 0.002)
+        body = kdoc.add_body(box, name="B")
+        v.session().kdoc = kdoc
+        top = [f for f in K.explore(box, "face")
+               if K.face_normal_center(f)[0][2] > 0.99][0]
+        bottom = [f for f in K.explore(box, "face")
+                  if K.face_normal_center(f)[0][2] < -0.99][0]
+        v._selected_face = lambda: (body, top)
+        v._commit = lambda *a, **k: None
+
+        v0 = K.volume(body.shape)
+        v._ask_numbers = lambda *a, **k: [5.0, 3.0, 1.0]
+        v._do_create_gusset()
+        assert scene.calls and scene.calls[0][0] == "mark"
+        got = K.volume(body.shape) - v0
+        assert abs(got - 0.005 * 0.003 / 2.0 * 0.001) / got < 1e-9
+        feats = kdoc.feature_stack(body.id).as_dict()
+        assert feats[-1]["op"] == "gusset"
+
+        # the tab goes on the opposite face: two added-material features on the
+        # SAME face would overlap, and their union is not the sum of volumes
+        v._selected_face = lambda: (body, bottom)
+        v0 = K.volume(body.shape)
+        v._do_create_tab()
+        got = K.volume(body.shape) - v0
+        assert abs(got - 0.005 * 0.003 * 0.001) / got < 1e-9
+        feats = kdoc.feature_stack(body.id).as_dict()
+        assert feats[-1]["op"] == "tab"
+
+        v._ask_numbers = lambda *a, **k: [5.0, 0.0]
+        v._do_create_hole()
+        assert scene.calls[-1][0] == "clear"
+
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""
         from scdm import kernel as K
