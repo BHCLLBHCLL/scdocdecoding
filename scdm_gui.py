@@ -1356,6 +1356,39 @@ else:
             except Exception as exc:
                 self._set_status(f"百叶参数非法：{exc}")
 
+        def _do_create_knockout(self):
+            """P278: 敲落 - ring cut kept attached by web_count radial webs."""
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("敲落：请先选择一个平面")
+                return
+            vals = self._ask_numbers("敲落", [("直径 mm", 10.0), ("筋宽 mm", 1.0),
+                                            ("筋数", 4.0)])
+            if not vals:
+                return
+            n_web = int(vals[2])
+            try:
+                from scdm import features as FEAT
+                sel = FEAT.selector_for(body.shape, face)
+                body.shape = K.knockout(body.shape, face, vals[0] / ses.scale,
+                                        vals[1] / ses.scale, n_web)
+                ses.kdoc.record_feature(body.id, "knockout", selector=sel,
+                                        diameter=vals[0], web=vals[1],
+                                        web_count=n_web)
+                self._record("create.knockout", diameter=vals[0], web=vals[1],
+                             web_count=n_web)
+                if self.scene is not None and hasattr(
+                        self.scene, "show_form_marker"):
+                    n3, c3 = K.face_normal_center(face)
+                    self.scene.show_form_marker(tuple(c3),
+                                                (-n3[0], -n3[1], -n3[2]),
+                                                vals[0] / ses.scale,
+                                                vals[1] / ses.scale)
+                self._commit("已创建敲落 Ø%g（%d 筋）" % (vals[0], n_web))
+            except Exception as exc:
+                self._set_status(f"敲落参数非法：{exc}")
+
         def _do_create_hole_cbore(self):
             ses = self.session()
             body, face = self._selected_face()

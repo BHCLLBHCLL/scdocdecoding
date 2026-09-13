@@ -874,8 +874,8 @@ T_RECORD "surface" [id]
 <!-- SNAPSHOT:BEGIN -->
 | 层 | 实测状态 |
 | --- | --- |
-| UI 命令面 | 17 ribbon 页签（+1 backstage）/ 145 命令 / **159 live（内核不可用）** / **159 live（内核可用）**；占位 prep.small、safety.tab |
-| 测试 | 391 条（def test_ 扫描）；命令级测试提及 105/159（其余逐条在 tests/test_coverage_ledger.py 声明理由） |
+| UI 命令面 | 17 ribbon 页签（+1 backstage）/ 149 命令 / **163 live（内核不可用）** / **163 live（内核可用）**；占位 prep.small、safety.tab |
+| 测试 | 442 条（def test_ 扫描）；命令级测试提及 109/163（其余逐条在 tests/test_coverage_ledger.py 声明理由） |
 <!-- SNAPSHOT:END -->
 
 | 层 | 实测状态（手写补充） |

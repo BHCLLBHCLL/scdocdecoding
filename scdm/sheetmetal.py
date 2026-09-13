@@ -251,19 +251,33 @@ def detect_bends(solid, min_angle_deg: float = 5.0) -> List[dict]:
         edge_faces = {}
         for pf, pn, pc in planes:
             for e in K.explore(pf, "edge"):
-                edge_faces.setdefault(e.TShape(), []).append((pf, pn))
+                edge_faces.setdefault(e.TShape(), []).append((pf, pn, pc))
         adj = []
         for g in grp:
             for e in K.explore(cyls[g][0], "edge"):
-                for pf, pn in edge_faces.get(e.TShape(), []):
-                    adj.append((pf, pn))
+                for pf, pn, pc in edge_faces.get(e.TShape(), []):
+                    adj.append((pf, pn, pc))
         # keep planar faces whose normal is perpendicular to the axis
         # (side walls have normal || axis)
-        adj = [(pf, pn) for pf, pn in adj if abs(_dot(pn, ax)) < 0.5]
+        adj = [(pf, pn, pc) for pf, pn, pc in adj if abs(_dot(pn, ax)) < 0.5]
+        # R50/P277: a bend's flats are TANGENT to the cylinder, so at least one
+        # of their planes sits ~one radius away from the bend axis.  A knockout
+        # contributes two coaxial cylinders (hole wall + slug wall) whose only
+        # perpendicular neighbours are the RADIAL web planes, i.e. planes that
+        # contain the axis (offset ~0).  Without this test the slug wall faked a
+        # second "bend" and flat_pattern silently returned a wrong developed
+        # length (rule 60: downstream must not merely "not raise").  The test is
+        # group-level - it only drops a candidate when EVERY adjacent plane is
+        # radial, so a rolled strip whose free end is a radial cut stays a bend.
+        org = cyls[i][2]
+        rad = min(cyls[g][1] for g in grp)
+        offs = [abs(_dot(pn, _sub(org, pc))) for _pf, pn, pc in adj]
+        if not offs or max(offs) <= 0.5 * rad:
+            continue
         # unique by normal, prefer the LARGEST face per normal direction
         import scdm.additive as A
         uniq = []
-        for pf, pn in adj:
+        for pf, pn, _pc in adj:
             hit = next((u for u in uniq if abs(_dot(pn, u[1])) > 0.999), None)
             if hit is None:
                 uniq.append([pf, pn, K.area(pf)])

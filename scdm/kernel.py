@@ -1084,6 +1084,98 @@ def louver(solid, face, length: float, width: float, height: float = 0.0,
     return out
 
 
+def knockout(solid, face, diameter: float, web: float, web_count: int = 4,
+             origin: Optional[Vec3] = None):
+    """P277: 敲落（钣金成形）——带筋环切：敲落片靠 web_count 条筋挂在板料上。
+
+    Parameters (kernel units; the GUI/op layer divides mm by 1000):
+      diameter   outer diameter of the knockout (the circle you would punch)
+      web        one feature size drives both the annular gap and the radial
+                 webs: the gap is web wide, so the retained slug measures
+                 diameter - 2*web across, and every web is a radial sector
+                 whose area is exactly web**2
+      web_count  number of webs keeping the slug attached (>= 1)
+
+    Geometry: cut the ring-shaped cutter (outer cylinder D minus inner cylinder
+    D-2*web - exact circular booleans, so the closed form is exact) out of the
+    sheet, then fuse the web_count sectors back into the gap.  Without a web
+    the slug is loose and the body splits in two, which is exactly what rule 66
+    counts: shells/solids are asserted, not eyeballed.
+
+    Closed form (thickness measured along the face normal, as in louver):
+        ring area    = pi*(R**2 - r**2),  R = diameter/2,  r = R - web
+        removed area = ring area - web_count*web**2
+        removed vol  = removed area * thickness
+    The sector angle is dtheta = 2*pi*web**2 / ring_area (area-exact sector, so
+    there is no rectangle-vs-circle corner correction to hand-wave).
+
+    Like louver the cutter is built in the face frame, so the normal may be any
+    direction (the same prism/frame path as the louver cutter).
+    """
+    d = float(diameter)
+    w = float(web)
+    n_web = int(web_count)
+    if d <= 0:
+        raise KernelError("敲落直径必须为正")
+    if w <= 0:
+        raise KernelError("敲落筋宽必须为正")
+    if w >= d:
+        raise KernelError("敲落筋宽不能大于等于直径")
+    if w >= d / 2.0:
+        raise KernelError("敲落筋宽必须小于半径：环缝会吃掉整个敲落片")
+    if n_web < 1:
+        raise KernelError("敲落筋数必须 ≥ 1：没有筋的敲落会掉片")
+    R = d / 2.0
+    r = R - w
+    ring_area = math.pi * (R * R - r * r)
+    if n_web * w * w >= ring_area:
+        # the webs would overlap and fill the gap: nothing is removed and the
+        # closed form would go negative, so refuse instead of returning it
+        raise KernelError("敲落：筋数×筋宽² 已覆盖整个环缝（没有材料被切除）")
+
+    n, base = _face_frame(face, origin)
+    lo, hi = _vertex_bbox(solid)
+    corners = [(x, y, z) for x in (lo[0], hi[0]) for y in (lo[1], hi[1])
+               for z in (lo[2], hi[2])]
+    d_pos = max(sum((c[i] - base[i]) * n[i] for i in range(3)) for c in corners)
+    d_neg = max(sum((base[i] - c[i]) * n[i] for i in range(3)) for c in corners)
+    margin = 1e-6
+    thick = d_neg + d_pos
+    # face frame (u, v) in the plane of the face - same recipe as louver
+    ref = [1.0, 0.0, 0.0] if abs(n[0]) < 0.9 else [0.0, 1.0, 0.0]
+    u = [ref[i] - sum(ref[j] * n[j] for j in range(3)) * n[i] for i in range(3)]
+    ul = sum(x * x for x in u) ** 0.5 or 1.0
+    u = [x / ul for x in u]
+    v = [n[1] * u[2] - n[2] * u[1], n[2] * u[0] - n[0] * u[2],
+         n[0] * u[1] - n[1] * u[0]]
+    # 1) ring cutter with margins (a through cut must clear both sheet faces)
+    ring_start = tuple(base[i] - n[i] * (d_neg + margin) for i in range(3))
+    ring_span = thick + 2.0 * margin
+    ring = cut(make_cylinder(R, ring_span, origin=ring_start, axis=n),
+               make_cylinder(r, ring_span, origin=ring_start, axis=n))
+    out = cut(solid, ring)
+    # 2) fuse the webs back: each is the ring sector (pie prism x ring, exact
+    #    area web**2) intersected with the original material
+    dtheta = 2.0 * math.pi * w * w / ring_area
+    p0 = tuple(base[i] - n[i] * d_neg for i in range(3))
+    arc_r = R + w                      # pie arc sits outside the ring: clipped
+    steps = 8
+    for k in range(n_web):
+        ang = 2.0 * math.pi * k / n_web
+        pts = [p0]
+        for s in range(steps + 1):
+            t = ang - dtheta / 2.0 + dtheta * s / steps
+            pts.append(tuple(p0[i] + u[i] * arc_r * math.cos(t)
+                             + v[i] * arc_r * math.sin(t) for i in range(3)))
+        pie = prism(face_from_polygon(pts),
+                    tuple(n[i] * thick for i in range(3)))
+        # the web is the piece of ORIGINAL material inside the ring sector, so
+        # it can only ever fill the local wall - using the ring sector alone
+        # would grow a fin wherever the body extends further along the normal
+        out = fuse(out, common(common(pie, ring), solid))
+    return out
+
+
 def dimple_round(solid, face, diameter: float, depth: float,
                 origin: Optional[Vec3] = None):
     """P218: 圆形凹坑（成形族）。

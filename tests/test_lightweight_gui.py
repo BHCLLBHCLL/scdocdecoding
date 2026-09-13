@@ -357,6 +357,49 @@ class LightweightModeTests(unittest.TestCase):
         v._do_create_hole()
         assert scene.calls[-1][0] == "clear"
 
+    def test_p278_knockout_command_records_marks_and_clears(self):
+        """R50/P278: the knockout command forms the ring cut, records the
+        feature, mounts the rim marker and a plain hole clears it."""
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm.kdoc import KernelDoc
+
+        class FakeScene:
+            def __init__(self):
+                self.calls = []
+
+            def show_form_marker(self, *a):
+                self.calls.append(("mark", a))
+
+            def clear_form_marker(self):
+                self.calls.append(("clear", None))
+
+        v = self.gui.ScdmViewer(path=None)
+        scene = FakeScene()
+        v.scene = scene
+        kdoc = KernelDoc()
+        box = K.make_box(0.02, 0.02, 0.002)
+        body = kdoc.add_body(box, name="B")
+        v.session().kdoc = kdoc
+        face = [f for f in K.explore(box, "face")
+                if K.face_normal_center(f)[0][2] > 0.99][0]
+        v._selected_face = lambda: (body, face)
+        v._commit = lambda *a, **k: None
+
+        v._ask_numbers = lambda *a, **k: [10.0, 1.0, 4.0]
+        v._do_create_knockout()
+        assert scene.calls and scene.calls[0][0] == "mark"
+        assert abs(scene.calls[0][1][2] - 0.010) < 1e-12
+        assert len(K.explore(body.shape, "shell")) == 1   # rule 66
+        feats = kdoc.feature_stack(body.id).as_dict()
+        assert feats and feats[-1]["op"] == "knockout"
+        assert feats[-1]["params"]["web_count"] == 4
+
+        v._ask_numbers = lambda *a, **k: [5.0, 0.0]
+        v._do_create_hole()
+        assert scene.calls[-1][0] == "clear"
+
     def test_tool_manager_reason_plumbing(self):
         from scdm.tools.base import ToolManager
         msgs = []

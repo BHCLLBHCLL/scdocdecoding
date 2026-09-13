@@ -392,6 +392,23 @@ def op_louver(kdoc, opts, scale):
                                    opts.get("width", 3.0)))
 
 
+def op_knockout(kdoc, opts, scale):
+    """P278: 敲落（钣金成形）——带筋环切（diameter/web/web_count）。"""
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("敲落：实体不存在")
+    faces = K.explore(body.shape, "face")
+    fi = opts.get("face_i", 0)
+    if not (0 <= fi < len(faces)):
+        raise ValueError("敲落：面序号越界")
+    d = opts.get("diameter", 10.0)
+    web = opts.get("web", 1.0)
+    count = int(opts.get("web_count", 4))
+    body.shape = K.knockout(body.shape, faces[fi], d / scale, web / scale,
+                            count)
+    return body, ("敲落 Ø%g×%d筋" % (d, count))
+
+
 def op_dimple(kdoc, opts, scale):
     """P223: 圆形凹坑（成形族）——与孔族同 op 面但走成形校验。"""
     body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
@@ -573,6 +590,7 @@ OPS = {
     "create.boss": op_boss,
     "create.dimple": op_dimple,
     "create.louver": op_louver,
+    "create.knockout": op_knockout,
 }
 
 

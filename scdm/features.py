@@ -46,6 +46,7 @@ _FEATURE_LABELS = {
     "hole_tapped": "攻丝孔 M{nominal:g}×{pitch:g}",
     "dimple": "凹坑 Ø{diameter:g}×{depth:g}",
     "louver": "百叶 {length:g}×{width:g}",
+    "knockout": "敲落 Ø{diameter:g}×{web_count:g}筋",
     "hole_cbore": "沉头孔 Ø{diameter:g}",
     "hole_csink": "锥沉孔 Ø{diameter:g}",
     "boss": "凸台 Ø{diameter:g}×{height:g}",
@@ -148,6 +149,15 @@ def _apply_one(shape, feature: Feature, scale: float):
                         float(p.get("length", 10.0)) / scale,
                         float(p.get("width", 3.0)) / scale,
                         height=float(p.get("height", 0.0)) / scale)
+    if op == "knockout":
+        # P278: forming feature - ring cut held on by web_count radial webs
+        face = resolve_face(shape, p.get("selector", {}))
+        if face is None:
+            return shape
+        return K.knockout(shape, face,
+                          float(p.get("diameter", 10.0)) / scale,
+                          float(p.get("web", 1.0)) / scale,
+                          int(p.get("web_count", 4)))
     if op == "dimple":
         # R40/P223: forming feature - same face flow, dimple validation
         face = resolve_face(shape, p.get("selector", {}))
