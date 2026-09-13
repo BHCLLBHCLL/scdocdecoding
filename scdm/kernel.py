@@ -1010,6 +1010,21 @@ def hole_simple(solid, face, diameter: float, depth: Optional[float] = None,
     return cut(solid, make_cylinder(r, h, origin=start, axis=n))
 
 
+def hole_tapped(solid, face, nominal: float, pitch: float,
+                depth: Optional[float] = None, origin: Optional[Vec3] = None):
+    """P175: 攻丝孔 - cut at the TAP-DRILL diameter, not the nominal one.
+
+    Metric rule: d_tap = nominal - pitch.  The thread is symbolic (a rendering
+    and metadata concern), so the removed volume is exactly
+    pi*(d_tap/2)^2*depth - using the nominal diameter here would silently make
+    every tapped hole oversized.
+    """
+    if pitch <= 0 or nominal <= pitch:
+        raise KernelError("螺纹参数非法：螺距必须为正且小于公称直径")
+    d_tap = float(nominal) - float(pitch)
+    return hole_simple(solid, face, d_tap, depth=depth, origin=origin)
+
+
 def hole_counterbore(solid, face, diameter: float, depth: float,
                      cbore_diameter: float, cbore_depth: float,
                      origin: Optional[Vec3] = None):
