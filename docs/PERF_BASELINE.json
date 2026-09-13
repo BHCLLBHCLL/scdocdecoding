@@ -1,0 +1,137 @@
+{
+  "machine": {
+    "platform": "Windows-11-10.0.22621-SP0",
+    "processor": "Intel64 Family 6 Model 158 Stepping 12, GenuineIntel",
+    "python": "3.12.14"
+  },
+  "note": "P354/R71 baseline: interactive path, records only",
+  "records": [
+    {
+      "label": "build.sheet+25holes",
+      "peak_mb": 149.51171875,
+      "per_call": 0.9664644666663662,
+      "python_peak_mb": 0.1162729263305664,
+      "repeat": 3,
+      "result": "TopoDS_Compound",
+      "seconds": 2.8993933999990986
+    },
+    {
+      "label": "tessellate.sheet",
+      "peak_mb": 156.9375,
+      "per_call": 0.015390699999746479,
+      "python_peak_mb": 0.0015344619750976562,
+      "repeat": 3,
+      "result": "TopoDS_Compound",
+      "seconds": 0.046172099999239435
+    },
+    {
+      "label": "mesh.surface",
+      "peak_mb": 163.5625,
+      "per_call": 0.33834589999969467,
+      "python_peak_mb": 2.281557083129883,
+      "repeat": 2,
+      "result": {
+        "triangles": 2712,
+        "vertices": 1308
+      },
+      "seconds": 0.6766917999993893
+    },
+    {
+      "label": "bbox+props.sheet",
+      "peak_mb": 163.5625,
+      "per_call": 0.008947780000016791,
+      "python_peak_mb": 0.12384891510009766,
+      "repeat": 5,
+      "result": [
+        [
+          [
+            -3.7455629509760698e-06,
+            -3.7455629509760698e-06,
+            -3.7455629509760698e-06
+          ],
+          [
+            0.020003745562950977,
+            0.020003745562950977,
+            0.002003745562950976
+          ]
+        ],
+        7.607300918301275e-07,
+        0.0010778097245096162
+      ],
+      "seconds": 0.04473890000008396
+    },
+    {
+      "label": "load_scdoc.samplemodel3",
+      "peak_mb": 194.625,
+      "per_call": 1.5465324999968288,
+      "python_peak_mb": 16.45625114440918,
+      "repeat": 1,
+      "result": {
+        "doc": "DesignDocument",
+        "doc_path": "SpaceClaim/document.xml",
+        "fac": "FacetsFile",
+        "fac_path": "SpaceClaim/Graphics/facets.bin",
+        "geom_path": "SpaceClaim/Geometry/allpartbodies.sab",
+        "model": "SabModel",
+        "models": [
+          "SabModel"
+        ],
+        "path": "C:\\Program Files\\ANSYS Inc\\v195\\scdm\\Library\\SrModels\\samplemodel3.scdoc",
+        "pkg": "Package",
+        "render": [
+          {
+            "box": "-0.029999999329447746,-0.029999999329447746,-0.002099999925121665,0.029999999329447746,0.029999999329447746,0.026450000703334808",
+            "id": "ad382a04-7a7a-4e6c-bebf-9282cd5f9865:0",
+            "items": [
+              {
+                "bodies": [
+                  {
+                    "fill_style": "4",
+                    "finish_style": "3",
+                    "id": "0:193",
+                    "rendering_style": "1",
+                    "rgb": [
+                      128,
+                      128,
+                      255
+                    ],
+                    "visible": "1"
+                  }
+                ],
+                "id": "0:2",
+                "transform": "1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1"
+              }
+            ]
+          },
+          {
+            "box": "-0.029999999329447746,-0.029999999329447746,-0.002099999925121665,0.029999999329447746,0.029999999329447746,0.026450000703334808",
+            "id": "00000000-0000-0000-0000-000000000000:0",
+            "items": [
+              {
+                "bodies": [
+                  {
+                    "fill_style": "1",
+                    "finish_style": "3",
+                    "id": "0:193",
+                    "rendering_style": "1",
+                    "rgb": [
+                      128,
+                      128,
+                      255
+                    ],
+                    "visible": "1"
+                  }
+                ],
+                "id": "0:2",
+                "transform": "1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1"
+              }
+            ]
+          }
+        ],
+        "render_path": "SpaceClaim/Graphics/renderlist.xml",
+        "scale": 1000.0
+      },
+      "seconds": 1.5465324999968288
+    }
+  ]
+}

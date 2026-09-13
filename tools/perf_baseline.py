@@ -1,0 +1,76 @@
+# -*- coding: utf-8 -*-
+"""P354/R71: 生成性能基线 docs/PERF_BASELINE.json（内存峰值 + 交互路径耗时）。
+
+Usage::
+
+    python tools/perf_baseline.py            # 测量并打印表格
+    python tools/perf_baseline.py --write    # 另外写入 docs/PERF_BASELINE.json
+
+The workload is deliberately the interactive path: build a sheet with a hole
+pattern, tessellate it (what the viewport rebuilds), mesh it, and - when the
+official library is present - import one sample.  Numbers are records, not
+thresholds: the tests only guard against gross regressions.
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from scdm import kernel as K          # noqa: E402
+from scdm import mesh as ME           # noqa: E402
+from scdm import perf as P            # noqa: E402
+
+LIB = r"C:\Program Files\ANSYS Inc\v195\scdm\Library\SrModels"
+
+
+def workload_sheet():
+    """A 20x20x2 sheet with a 5x5 hole pattern (30 holes, ~230 faces)."""
+    solid = K.make_box(0.02, 0.02, 0.002)
+    faces = K.explore(solid, "face")
+    top = max(faces, key=lambda f: K.face_normal_center(f)[1][2])
+    for i in range(5):
+        for j in range(5):
+            solid = K.hole_simple(solid, top, 0.001,
+                                  depth=None,
+                                  origin=(0.004 + i * 0.003, 0.004 + j * 0.003,
+                                          0.002))
+    return solid
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--write", action="store_true",
+                    help="write docs/PERF_BASELINE.json")
+    args = ap.parse_args(argv)
+
+    records = []
+    sheet = workload_sheet()
+    records.append(P.measure("build.sheet+25holes", workload_sheet, repeat=3))
+    records.append(P.measure("tessellate.sheet", lambda: K.tessellate_mesh(sheet, 0.001), repeat=3))
+    records.append(P.measure(
+        "mesh.surface", lambda: ME.mesh_shape(sheet, deflection=5e-4), repeat=2,
+        summary=lambda m: {"triangles": len(m["triangles"]),
+                           "vertices": len(m["vertices"])}))
+    records.append(P.measure("bbox+props.sheet", lambda: (K.bounding_box(sheet), K.volume(sheet), K.area(sheet)), repeat=5))
+    if os.path.isdir(LIB):
+        from scdm.document import load_scdoc
+        sample = os.path.join(LIB, "samplemodel3.scdoc")
+        if os.path.exists(sample):
+            records.append(P.measure("load_scdoc.samplemodel3",
+                                     lambda: load_scdoc(sample), repeat=1))
+    print(P.table(records))
+    if args.write:
+        path = ROOT / "docs" / "PERF_BASELINE.json"
+        P.write_baseline(str(path), records,
+                         note="P354/R71 baseline: interactive path, records only")
+        print("written", path)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
