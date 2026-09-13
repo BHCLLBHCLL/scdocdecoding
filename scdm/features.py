@@ -52,6 +52,7 @@ _FEATURE_LABELS = {
     "gusset": "角撑 {length:g}×{height:g}×{thickness:g}",
     "tab": "舌片 {length:g}×{width:g}×{height:g}",
     "junction": "接缝 {mode} {size:g}",
+    "cross_break": "压筋 {kind} {length:g}×{width:g}×{depth:g}",
     "hole_cbore": "沉头孔 Ø{diameter:g}",
     "hole_csink": "锥沉孔 Ø{diameter:g}",
     "boss": "凸台 Ø{diameter:g}×{height:g}",
@@ -190,6 +191,16 @@ def _apply_one(shape, feature: Feature, scale: float):
         return K.junction(shape, face, float(p.get("size", 4.0)) / scale,
                           mode=p.get("mode", "release"),
                           width=(None if w is None else float(w) / scale))
+    if op == "cross_break":
+        # P353: sheet-metal cross-break on a face
+        face = resolve_face(shape, p.get("selector", {}))
+        if face is None:
+            return shape
+        return K.cross_break(shape, face,
+                             float(p.get("length", 10.0)) / scale,
+                             float(p.get("width", 2.0)) / scale,
+                             float(p.get("depth", 0.3)) / scale,
+                             kind=p.get("kind", "v"))
     if op == "dimple":
         # R40/P223: forming feature - same face flow, dimple validation
         face = resolve_face(shape, p.get("selector", {}))

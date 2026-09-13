@@ -549,6 +549,26 @@ def op_insert_box(kdoc, opts, scale):
     return body, f"已创建盒体 {name}"
 
 
+def op_sheet_cross_break(kdoc, opts, scale):
+    """P353: 十字压筋——面上沿 u 的浅 V 形/圆弧压槽。"""
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("压筋：实体不存在")
+    faces = K.explore(body.shape, "face")
+    fi = opts.get("face_i", 0)
+    if not (0 <= fi < len(faces)):
+        raise ValueError("压筋：面序号越界")
+    kind = str(opts.get("kind", "v"))
+    body.shape = K.cross_break(body.shape, faces[fi],
+                               opts.get("length", 10.0) / scale,
+                               opts.get("width", 2.0) / scale,
+                               opts.get("depth", 0.3) / scale,
+                               kind=kind)
+    return body, ("压筋 %s %g×%g×%g" % (kind, opts.get("length", 10.0),
+                                        opts.get("width", 2.0),
+                                        opts.get("depth", 0.3)))
+
+
 def op_sheet_junction(kdoc, opts, scale):
     """P303: 钣金接缝——释放（三角缺口）/ 接缝（矩形缺口）/ 连接（矩形搭接）。"""
     body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
@@ -801,6 +821,7 @@ OPS = {
     "create.gusset": op_gusset,
     "create.tab": op_tab,
     "sheet.junction": op_sheet_junction,
+    "sheet.cross_break": op_sheet_cross_break,
     "sheet.conical": op_sheet_conical,
     "sheet.axial": op_sheet_axial,
     "sim.report": op_sim_report,

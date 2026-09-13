@@ -670,6 +670,48 @@ class LightweightModeTests(unittest.TestCase):
         dlg.prompt_chain()
         assert '尺寸链不成立' in dlg.hint.text()
 
+    def test_p353_cross_break_command_forms_and_marks(self):
+        """R70/P353: the cross-break command cuts the shallow groove, records the
+        feature and mounts the rim marker."""
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm.kdoc import KernelDoc
+
+        class FakeScene:
+            def __init__(self):
+                self.calls = []
+
+            def show_form_marker(self, *a):
+                self.calls.append(("mark", a))
+
+            def clear_form_marker(self):
+                self.calls.append(("clear", None))
+
+        v = self.gui.ScdmViewer(path=None)
+        scene = FakeScene()
+        v.scene = scene
+        kdoc = KernelDoc()
+        box = K.make_box(0.02, 0.02, 0.002)
+        body = kdoc.add_body(box, name="B")
+        v.session().kdoc = kdoc
+        face = [f for f in K.explore(box, "face")
+                if K.face_normal_center(f)[0][2] > 0.99][0]
+        v._selected_face = lambda: (body, face)
+        v._commit = lambda *a, **k: None
+        v._ask_choice = lambda *a, **k: "V 形"
+        v._ask_numbers = lambda *a, **k: [10.0, 2.0, 0.3]
+
+        v0 = K.volume(body.shape)
+        v._do_sheet_cross_break()
+        assert scene.calls and scene.calls[0][0] == "mark"
+        got = v0 - K.volume(body.shape)
+        want = 0.5 * 0.002 * 0.0003 * 0.010
+        assert abs(got - want) / want < 1e-9
+        feats = kdoc.feature_stack(body.id).as_dict()
+        assert feats[-1]["op"] == "cross_break"
+        assert feats[-1]["params"]["kind"] == "v"
+
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""
         from scdm import kernel as K

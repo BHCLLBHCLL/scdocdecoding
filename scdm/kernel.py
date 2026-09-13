@@ -1342,6 +1342,73 @@ def junction(solid, face, size: float, mode: str = "release",
     return cut(solid, tool)
 
 
+def arc_segment_area(width: float, depth: float) -> float:
+    """P353: 圆弧压筋的截面积——矢高 depth、弦长 width 的圆缺（闭式）。
+
+    R = (w**2/4 + d**2) / (2d);  A = R**2*acos((R-d)/R) - (R-d)*sqrt(2Rd - d**2)
+    """
+    w = float(width)
+    d = float(depth)
+    if w <= 0 or d <= 0:
+        raise KernelError("圆弧压筋：宽度与深度必须为正")
+    R = (w * w / 4.0 + d * d) / (2.0 * d)
+    if d > R + 1e-18:
+        raise KernelError("圆弧压筋：深度超过半径")
+    return (R * R * math.acos(max(-1.0, min(1.0, (R - d) / R)))
+            - (R - d) * math.sqrt(max(0.0, 2.0 * R * d - d * d)))
+
+
+def cross_break(solid, face, length: float, width: float, depth: float,
+                kind: str = "v", origin: Optional[Vec3] = None):
+    """P353: 十字压筋（cross-break）——面上沿 u 的浅 V 形/圆弧压槽（切除）。
+
+    The groove runs ``length`` along the face frame u direction and its
+    cross-section lives in the (v, n) plane:
+        kind="v"   -> ½*width*depth*length            (triangular prism)
+        kind="arc" -> arc_segment_area(width, depth)*length  (cylinder cut)
+    The depth must stay below the plate thickness (a break that reaches through
+    is a slit, not a break), and the tool overhangs the face plane by 1 µm so no
+    tool face is coplanar with the sheet (rule 73).
+    """
+    key = str(kind).lower()
+    if key not in ("v", "arc"):
+        raise KernelError("压筋类型未知：%s（可选 v/arc）" % kind)
+    L = float(length)
+    w = float(width)
+    d = float(depth)
+    if L <= 0 or w <= 0 or d <= 0:
+        raise KernelError("压筋尺寸必须为正")
+    n, base, u, v = _face_uv(face, origin)
+    lo_u, hi_u, lo_v, hi_v = _face_span(face, u, v)
+    lo, hi = _vertex_bbox(solid)
+    corners = [(x, y, z) for x in (lo[0], hi[0]) for y in (lo[1], hi[1])
+               for z in (lo[2], hi[2])]
+    d_pos = max(sum((c[i] - base[i]) * n[i] for i in range(3)) for c in corners)
+    d_neg = max(sum((base[i] - c[i]) * n[i] for i in range(3)) for c in corners)
+    thick = d_neg + d_pos
+    if d >= thick:
+        raise KernelError("压筋深度必须小于板厚：深度 %g ≥ 板厚 %g" % (d, thick))
+    if L > (hi_u - lo_u) + 1e-12 or w > (hi_v - lo_v) + 1e-12:
+        raise KernelError("压筋超出所选面")
+    if key == "v":
+        # overhang above the face by sliding the two FLANKS up (not the corners):
+        # lifting the corners narrows the V inside the material (measured -0.33%),
+        # while extending the flanks keeps the removed section exactly w x d / 2
+        m = 1e-6
+        grow = (d + m) / d
+        profile = [(-w / 2.0 * grow, m), (w / 2.0 * grow, m), (0.0, -d)]
+        # the profile is built in the (v, n) plane at the groove start
+        start = tuple(base[i] - u[i] * (L / 2.0) for i in range(3))
+        pts = [tuple(start[i] + v[i] * pv + n[i] * pn for i in range(3))
+               for (pv, pn) in profile]
+        tool = prism(face_from_polygon(pts), tuple(u[i] * L for i in range(3)))
+        return cut(solid, tool)
+    R = (w * w / 4.0 + d * d) / (2.0 * d)
+    axis_pt = tuple(base[i] + n[i] * (R - d) - u[i] * (L / 2.0) for i in range(3))
+    tool = make_cylinder(R, L, origin=axis_pt, axis=u)
+    return cut(solid, tool)
+
+
 def dimple_round(solid, face, diameter: float, depth: float,
                 origin: Optional[Vec3] = None):
     """P218: 圆形凹坑（成形族）。
