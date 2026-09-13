@@ -450,6 +450,43 @@ class LightweightModeTests(unittest.TestCase):
         assert feats[-1]["op"] == "junction"
         assert feats[-1]["params"]["mode"] == "release"
 
+    def test_p307_styled_leader_and_datum_ride_the_snapshot(self):
+        """R57/P307: styles reach the canvas (and the snapshot), datum symbols
+        anchor on a real target, and undo covers both annotation types."""
+        os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+        from scdm import drawing as D
+        from scdm.annotation import Datum, Leader
+        from scdm.gui.sheet import SheetDialog
+
+        views = [('前视', [[(0.0, 0.0), (0.02, 0.0), (0.02, 0.02), (0.0, 0.02),
+                            (0.0, 0.0)]])]
+        dims = D.dimensions_for(views)
+        dlg = SheetDialog(views, dims)
+        dlg.canvas.resize(600, 400)
+        targets = dlg.canvas.snap.targets
+        note = dlg.add_leader('注', arrow='open', text_height=0.004)
+        assert isinstance(note, Leader) and note.arrow == 'open'
+        assert note.text_height == 0.004
+        anchor0 = note.anchor
+        assert any(abs(anchor0[0] - x) < 1e-15 and abs(anchor0[1] - y) < 1e-15
+                   for (x, y, _k) in targets)
+        datum = dlg.add_datum('b', anchor=(0.02, 0.0), target=True)
+        assert isinstance(datum, Datum) and datum.label == 'B' and datum.target
+        assert len(dlg.canvas.notes) == 2
+        # the datum is draggable with the 2D snap and the undo snapshot covers
+        # BOTH annotations (rule 72)
+        aim = dlg.canvas.to_px(0.02 - 0.0003, 0.02 - 0.0003)
+        dlg.canvas.begin_annotation_drag(1, *[dlg.canvas.to_px(*datum.anchor).x(),
+                                              dlg.canvas.to_px(*datum.anchor).y()])
+        dlg.canvas.drag_annotation(1, aim.x(), aim.y())
+        dlg.canvas.end_drag()
+        moved = dlg.canvas.notes[1].anchor
+        assert moved != (0.02, 0.0) and moved == (0.02, 0.02) or moved[1] > 0.0
+        assert dlg.canvas.undo_last() is True
+        assert len(dlg.canvas.notes) == 2
+        assert dlg.canvas.notes[0].anchor == anchor0        # leader untouched
+        assert dlg.canvas.notes[0].arrow == 'open'          # style survives undo
+
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""
         from scdm import kernel as K

@@ -427,13 +427,15 @@ def write_dxf(views, path: str, fmt: str = "A4", dimensions=True,
         for a in annotations or ():
             if getattr(a, "view", "") != name:
                 continue
-            from scdm.annotation import annotation_geometry, annotation_layer
-            segs, text, at = annotation_geometry(a)
-            layer = annotation_layer(a)
+            from scdm.annotation import annotation_geometry
+            segs, text, at, style = annotation_geometry(a)
+            layer = style.get("layer", "NOTE")
             for q1, q2 in segs:
                 body.append(_dxf_line(_place(q1, pl), _place(q2, pl), layer=layer))
             if text:
-                body.append(_dxf_text(_place(at, pl), 3.0, text, layer=layer))
+                body.append(_dxf_text(_place(at, pl),
+                                      max(1.0, style.get("text_height", 0.003) * 1000.0),
+                                      text, layer=layer))
         for item in extra_lines or ():
             uv1, uv2, layer, text = item
             p1, p2 = _place(uv1, pl), _place(uv2, pl)
@@ -532,24 +534,29 @@ def svg_sheet(views, path: str, fmt: str = "A4", title: str = "",
                            f'font-size="3" fill="{colour}">'
                            f'{value}</text>')
         if annotations:
-            from scdm.annotation import annotation_geometry, annotation_layer
+            from scdm.annotation import annotation_geometry
             pl = {"ox": ox, "oy": oy, "scale": scale, "sx": sx, "sy": sy,
                   "avail_w": avail_w, "avail_h": avail_h, "mm": mm}
             for a in annotations:
                 if getattr(a, "view", "") != name:
                     continue
-                segs, text, at = annotation_geometry(a)
-                layer = annotation_layer(a)
-                colour = "#06c" if layer == "NOTE" else "#080"
+                segs, text, at, style = annotation_geometry(a)
+                layer = style.get("layer", "NOTE")
+                colour = {"NOTE": "#06c", "GDT": "#080",
+                          "DATUM": "#a60"}.get(layer, "#06c")
+                font = max(1.2, style.get("text_height", 0.003) * 1000.0)
                 for q1, q2 in segs:
                     p1, p2 = _place(q1, pl), _place(q2, pl)
-                    out.append(f'<line class="note" x1="{p1[0]:.3f}" '
+                    out.append(f'<line class="note" data-layer="{layer}" '
+                               f'data-arrow="{style.get("arrow", "none")}" '
+                               f'x1="{p1[0]:.3f}" '
                                f'y1="{p1[1]:.3f}" x2="{p2[0]:.3f}" '
                                f'y2="{p2[1]:.3f}" stroke="{colour}" '
                                f'stroke-width="0.2"/>')
                 st = _place(at, pl)
-                out.append(f'<text class="note" x="{st[0]:.3f}" y="{st[1]:.3f}" '
-                           f'font-size="3" fill="{colour}">{text}</text>')
+                out.append(f'<text class="note" data-layer="{layer}" '
+                           f'x="{st[0]:.3f}" y="{st[1]:.3f}" '
+                           f'font-size="{font:.2f}" fill="{colour}">{text}</text>')
     out.append('</svg>')
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")

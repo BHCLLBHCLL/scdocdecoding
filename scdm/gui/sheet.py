@@ -39,6 +39,7 @@ HANDLE_SEL = QColor(0, 132, 96)
 BAND = QColor(0, 110, 180, 60)
 SNAP_MARK = QColor(0, 110, 180)
 NOTE_GDT = QColor(0, 130, 70)
+NOTE_DATUM = QColor(170, 102, 0)
 
 
 class SheetCanvas(QWidget):
@@ -422,15 +423,18 @@ class SheetCanvas(QWidget):
             p.setPen(QPen(QColor(120, 84, 0), 1.0))
             p.drawEllipse(hp, 5.0, 5.0)
         for i, a in enumerate(self.notes):
-            from scdm.annotation import annotation_geometry, annotation_layer
-            segs, text, at = annotation_geometry(a)
-            colour = SNAP_MARK if annotation_layer(a) == "NOTE" else NOTE_GDT
+            from scdm.annotation import annotation_geometry
+            segs, text, at, style = annotation_geometry(a)
+            layer = style.get("layer", "NOTE")
+            colour = {"NOTE": SNAP_MARK, "GDT": NOTE_GDT,
+                      "DATUM": NOTE_DATUM}.get(layer, SNAP_MARK)
             if i == self.hot_note:
                 colour = HANDLE_HOT
             p.setPen(QPen(colour, 1.3))
             for q1, q2 in segs:
                 p.drawLine(self.to_px(*q1), self.to_px(*q2))
-            p.setFont(QFont('', 8))
+            px_h = max(6.0, min(16.0, style.get("text_height", 0.003) * self.scale))
+            p.setFont(QFont('', int(px_h)))
             p.drawText(self.to_px(*at), text)
         if self._band is not None:
             (x0, y0, x1, y1) = self._band
@@ -461,7 +465,9 @@ class SheetDialog(QDialog):
         lay.addWidget(self.canvas, 1)
         row = QHBoxLayout()
         self.btn_note = QPushButton('加引线')
+        self.btn_datum = QPushButton('加基准')
         row.addWidget(self.btn_note)
+        row.addWidget(self.btn_datum)
         self.btn_undo = QPushButton('撤销')
         self.btn_redo = QPushButton('重做')
         self.btn_svg = QPushButton('导出 SVG')
@@ -472,6 +478,7 @@ class SheetDialog(QDialog):
             row.addWidget(b)
         lay.addLayout(row)
         self.btn_note.clicked.connect(self.prompt_leader)
+        self.btn_datum.clicked.connect(self.prompt_datum)
         self.btn_undo.clicked.connect(self.canvas.undo_last)
         self.btn_redo.clicked.connect(self.canvas.redo_last)
         self.btn_svg.clicked.connect(self.export_svg)
@@ -479,21 +486,40 @@ class SheetDialog(QDialog):
         self.btn_close.clicked.connect(self.reject)
         self.last_path: Optional[str] = None
 
-    def add_leader(self, text: str, anchor=None, view=None):
-        """P299: mount a leader annotation; the anchor snaps to a real target."""
+    def add_leader(self, text: str, anchor=None, view=None, arrow: str = "solid",
+                   text_height: float = 0.0025):
+        """P299/P307: mount a leader annotation; the anchor snaps to a target."""
         from scdm.annotation import Leader
         if not str(text or '').strip():
             raise ValueError("引线标注必须有文字")
-        view = view or (self.canvas.views[0][0] if self.canvas.views else "")
-        if anchor is None:
-            anchor = (self.canvas.snap.targets[0][0], self.canvas.snap.targets[0][1]) \
-                if self.canvas.snap.targets else (0.0, 0.0)
-        note = Leader(view=view, anchor=tuple(anchor), text=str(text))
+        note = Leader(view=self._note_view(view), anchor=self._note_anchor(anchor),
+                      text=str(text), arrow=arrow, text_height=text_height)
+        self._mount_note(note)
+        return note
+
+    def add_datum(self, label: str = "A", anchor=None, view=None,
+                  target: bool = False):
+        """P307: mount a datum symbol (A/B/C, optionally a datum target)."""
+        from scdm.annotation import Datum
+        note = Datum(view=self._note_view(view), anchor=self._note_anchor(anchor),
+                     label=label, target=target)
+        self._mount_note(note)
+        return note
+
+    def _note_view(self, view) -> str:
+        return view or (self.canvas.views[0][0] if self.canvas.views else "")
+
+    def _note_anchor(self, anchor):
+        if anchor is not None:
+            return tuple(anchor)
+        t = self.canvas.snap.targets
+        return (t[0][0], t[0][1]) if t else (0.0, 0.0)
+
+    def _mount_note(self, note):
         self.canvas.undo.push(self.canvas.state())
         self.canvas.notes.append(note)
         self.canvas.update()
         self.canvas.changed.emit()
-        return note
 
     def prompt_leader(self):
         """Button path: ask for the text, then add_leader()."""
@@ -503,6 +529,17 @@ class SheetDialog(QDialog):
             return None
         try:
             return self.add_leader(text)
+        except ValueError:
+            return None
+
+    def prompt_datum(self):
+        """Button path: ask for the datum letter, then add_datum()."""
+        from PyQt5.QtWidgets import QInputDialog
+        text, ok = QInputDialog.getText(self, '基准符号', '基准代号', text='A')
+        if not ok:
+            return None
+        try:
+            return self.add_datum(text)
         except ValueError:
             return None
 

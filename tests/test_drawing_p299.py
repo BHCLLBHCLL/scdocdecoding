@@ -41,8 +41,11 @@ def test_p299_gdt_frame_label_geometry_and_illegal_input():
     assert c[0] == (0.01, 0.01)
     assert c[2] == pytest.approx((0.01 + gdt.width, 0.01 + gdt.height), abs=1e-15)
     # segments close the box
-    segs, text, _at = annotation_geometry(gdt)
-    assert len(segs) == 4 and text == gdt.label()
+    segs, text, _at, _style = annotation_geometry(gdt)
+    # the box comes first (4 closed segments); P307 adds the cell dividers
+    assert len(segs) >= 4 and text == gdt.label()
+    assert segs[0] == ((0.01, 0.01), (0.038, 0.01))
+    assert segs[3] == ((0.01, 0.019), (0.01, 0.01))
     with pytest.raises(ValueError):
         GdtFrame(view="前视", anchor=(0, 0), symbol="laser", value=0.05).validate()
     with pytest.raises(ValueError):
