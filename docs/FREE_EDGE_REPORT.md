@@ -5,8 +5,8 @@
 | 样例 | 自由边 | 其中缝边 | 真缺口 | 曲线类型 | 相邻曲面类型 | 端点延续 | 零长 | 中位长 | 最长 |
 |---|---|---|---|---|---|---|---|---|---|
 | `SampleModel1.scdoc` | 0 | 0 | 0 |  |  |  | 0 | 0 | 0 |
-| `SampleModel4.scdoc` | 393 | 18 | 375 | bspline=91, circle=87, ellipse=30, line=185 | bspline=55, cone=5, cylinder=44, plane=200, torus=89 | chain=365, half=24, isolated=4 | 0 | 0.0068 | 0.317 |
-| `samplemodel2.scdoc` | 1306 | 34 | 1272 | bspline=100, circle=323, ellipse=540, hyperbola=100, line=243 | bspline=4, cone=176, cylinder=602, plane=317, sphere=96, torus=111 | chain=1104, half=151, isolated=51 | 0 | 0.0687 | 3.29 |
+| `SampleModel4.scdoc` | 363 | 16 | 347 | bspline=90, circle=89, ellipse=23, line=161 | bspline=53, cone=5, cylinder=48, plane=169, torus=88 | chain=297, half=51, isolated=15 | 0 | 0.00681 | 0.317 |
+| `samplemodel2.scdoc` | 1275 | 33 | 1242 | bspline=100, circle=318, ellipse=536, hyperbola=100, line=221 | bspline=4, cone=176, cylinder=589, plane=300, sphere=96, torus=110 | chain=1027, half=179, isolated=69 | 0 | 0.0687 | 3.29 |
 | `samplemodel3.scdoc` | 0 | 0 | 0 |  |  |  | 0 | 0 | 0 |
 | `samplemodel5.scdoc` | 0 | 0 | 0 |  |  |  | 0 | 0 | 0 |
 | `samplemodel6.scdoc` | 3 | 0 | 3 | ellipse=3 | cylinder=2, plane=1 | chain=3 | 0 | 0.157 | 0.313 |
