@@ -1236,6 +1236,21 @@ def apply_group_visibility(kdoc, group, visible) -> int:
     return n
 
 
+def isolate_group(kdoc, group) -> int:
+    """R24/P139: show ONLY this group's bodies; returns how many are shown.
+
+    Same contract as apply_group_visibility: only the visible flag changes, the
+    geometry objects stay identical (rule 43).
+    """
+    ids = {bid for _kind, bid in group.get("items", [])}
+    n = 0
+    for b in kdoc.bodies:
+        on = b.id in ids
+        b.visible = on
+        n += 1 if on else 0
+    return n
+
+
 def _model_label(model, index: int) -> str:
     """Human label for a SAB model: its first body's document id, else index."""
     try:

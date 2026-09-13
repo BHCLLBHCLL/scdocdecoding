@@ -476,6 +476,31 @@ def test_p133_hierarchy_groups_toggle_visibility_only():
 
 @requires_lib
 @requires_occ
+def test_p139_isolate_group_shows_only_that_part():
+    """R24/P139: isolation shows one part and leaves geometry identical."""
+    from scdm.document import load_scdoc
+    from scdm.import_sab import (import_hierarchy_groups,
+                                 import_scdoc_bundle, isolate_group)
+
+    kdoc = import_scdoc_bundle(
+        load_scdoc(os.path.join(LIB, "samplemodel2.scdoc")))
+    groups = import_hierarchy_groups(kdoc)
+    g = groups[0]
+    ids = {bid for _k, bid in g["items"]}
+    shapes = {b.id: b.shape for b in kdoc.bodies}
+    shown = isolate_group(kdoc, g)
+    assert shown == len(ids)
+    assert {b.id for b in kdoc.bodies if b.visible} == ids
+    assert {b.id: b.shape for b in kdoc.bodies} == shapes, "geometry must not change"
+    # isolating another part flips exactly that one
+    g2 = groups[1]
+    ids2 = {bid for _k, bid in g2["items"]}
+    isolate_group(kdoc, g2)
+    assert {b.id for b in kdoc.bodies if b.visible} == ids2
+
+
+@requires_lib
+@requires_occ
 def test_import_warnings_report_unbuilt_faces():
     """P45: decoder loss is surfaced in doc.import_warnings, not swallowed."""
     from scdm.document import load_scdoc
