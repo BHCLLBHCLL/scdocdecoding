@@ -50,10 +50,13 @@ spec.loader.exec_module(diff)
 #   samplemodel3 0/0, samplemodel5 0/0, samplemodel6 2/2 (unchanged)
 # R75 changed the metric: free_edges() now counts GAPS only (a periodic
 # face's seam is not a gap) - measured seams 0 / 18 / 73.
+# R76 tightened these after the cylinder trim policy (gaps/loops):
+#   SampleModel1 56/24 -> 36/4, SampleModel4 405/113 -> 405/96,
+#   samplemodel2 2252/438 -> 2227/396, samplemodel6 2/2 (policy off).
 FREE_CEILING = {
-    "SampleModel1.scdoc": (60, 30),
-    "SampleModel4.scdoc": (410, 116),
-    "samplemodel2.scdoc": (2300, 450),
+    "SampleModel1.scdoc": (40, 6),
+    "SampleModel4.scdoc": (410, 100),
+    "samplemodel2.scdoc": (2300, 400),
     "samplemodel3.scdoc": (0, 0),
     "samplemodel5.scdoc": (0, 0),
     "samplemodel6.scdoc": (2, 2),

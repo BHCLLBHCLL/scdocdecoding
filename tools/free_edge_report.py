@@ -84,6 +84,66 @@ def _edge_info(edge, face_count):
 
 
 
+def pair_gaps(body, gap_keys, samples=7, reach=0.05):
+    """Pair every open edge with the nearest OTHER edge (R76/P375).
+
+    For each gap: the distance to the closest edge of the same body, that
+    edge's curve/surface and whether it is shared by two faces.  A gap whose
+    partner is within a tolerance was a sewing/precision miss; a gap with no
+    partner at all is a real hole.  Sampling keeps it O(gaps x edges).
+    """
+    from scdm import kernel as K
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
+    from OCC.Core.TopoDS import topods
+
+    def _samples(edge, interior=True):
+        ad = BRepAdaptor_Curve(topods.Edge(edge))
+        u0, u1 = ad.FirstParameter(), ad.LastParameter()
+        if interior:
+            # R76: two edges that merely SHARE A VERTEX are 0 apart, which made
+            # the first pairing report 46/56 "twins" that were really the gap's
+            # own neighbouring edges.  Interior points only.
+            fr = [0.2, 0.35, 0.5, 0.65, 0.8]
+        else:
+            fr = [i / float(samples) for i in range(samples + 1)]
+        return [ad.Value(u0 + (u1 - u0) * f) for f in fr]
+
+    edges = []
+    for (edge, n, face) in K.edge_face_counts(body):
+        try:
+            surf = SURFS.get(int(BRepAdaptor_Surface(face).GetType()), "?") if face is not None else "-"
+            curve = None
+            from OCC.Core.BRepAdaptor import BRepAdaptor_Curve as _C
+            curve = CURVES.get(int(_C(topods.Edge(edge)).GetType()), "?")
+        except Exception:
+            surf, curve = "?", "?"
+        edges.append({"edge": edge, "n": n, "surf": surf, "curve": curve,
+                      "pts": _samples(edge)})
+    out = []
+    for g in edges:
+        if g["n"] >= 2:
+            continue
+        best = None
+        for e in edges:
+            if e is g:
+                continue
+            # distance from EACH interior point of the gap to the other edge,
+            # then the worst of them: an overlap partner must be close along
+            # the whole edge, not just somewhere
+            worst = 0.0
+            for a in g["pts"]:
+                dmin = min(((a.X() - b.X()) ** 2 + (a.Y() - b.Y()) ** 2
+                            + (a.Z() - b.Z()) ** 2) ** 0.5 for b in e["pts"])
+                worst = max(worst, dmin)
+            if best is None or worst < best[0]:
+                best = (worst, e)
+        d, e = best
+        out.append({"curve": g["curve"], "surf": g["surf"],
+                    "partner_curve": e["curve"], "partner_surf": e["surf"],
+                    "partner_shared": e["n"] >= 2, "dist": d,
+                    "twin": d <= 1e-6, "near": d <= 1e-3})
+    return out
+
 def measure(path):
     """One record per free edge.
 
@@ -99,9 +159,11 @@ def measure(path):
     kdoc = import_sab.import_scdoc_bundle(data)
     rows = []
     ends = Counter()
+    bodies = []
     for b in kdoc.bodies:
         if (b.name or "").startswith("网格导入"):
             continue
+        bodies.append(b.shape)
         for (edge, n, face) in K.edge_face_counts(b.shape):
             if n >= 2 or face is None:
                 continue
@@ -123,7 +185,8 @@ def measure(path):
                 free_ends += 1
         info["ends"] = ("chain" if free_ends == 2 else
                         "half" if free_ends == 1 else "isolated")
-    return {"sample": os.path.basename(path), "edges": len(rows), "rows": rows}
+    return {"sample": os.path.basename(path), "edges": len(rows), "rows": rows,
+            "bodies": bodies}
 
 
 def summarise(rec):
@@ -147,6 +210,8 @@ def main(argv=None) -> int:
     ap.add_argument("--sample", action="append", default=None)
     ap.add_argument("--edges", action="store_true",
                     help="dump the free edges of the given sample")
+    ap.add_argument("--pair", action="store_true",
+                    help="pair every gap with the nearest other edge")
     ap.add_argument("--json", default=None)
     ap.add_argument("--md", default=None)
     args = ap.parse_args(argv)
@@ -164,6 +229,23 @@ def main(argv=None) -> int:
             for r in sorted(rec["rows"], key=lambda x: -x["length"])[:40]:
                 print("%-7s %-8s %-9.4g %-9.4g %s"
                       % (r["curve"], r["surf"] or "-", r["length"], r["chord"], r["ends"]))
+        if args.pair:
+            pairs = []
+            for shape in rec["bodies"]:
+                pairs.extend(pair_gaps(shape, None))
+            twins = sum(1 for p in pairs if p["twin"])
+            near = sum(1 for p in pairs if p["near"])
+            shared = sum(1 for p in pairs if p["partner_shared"])
+            mix = Counter("%s|%s" % (p["surf"], p["partner_surf"]) for p in pairs)
+            print("== %s: %d gaps | twin(<=1e-6) %d, near(<=1e-3) %d, partner shared %d"
+                  % (rec["sample"], len(pairs), twins, near, shared))
+            print("   surface pairs: %s"
+                  % ", ".join("%s=%d" % kv for kv in mix.most_common(8)))
+            ds = sorted(p["dist"] for p in pairs)
+            if ds:
+                print("   distance median %.3g, max %.3g"
+                      % (ds[len(ds) // 2], ds[-1]))
+            rec["pairs"] = pairs
         out.append(summarise(rec))
     head = ("| 样例 | 自由边 | 其中缝边 | 真缺口 | 曲线类型 | 相邻曲面类型 | 端点延续 | 零长 | 中位长 | 最长 |",
             "|---|---|---|---|---|---|---|---|---|---|")

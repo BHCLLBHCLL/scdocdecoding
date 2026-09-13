@@ -1219,6 +1219,150 @@ def _planar_face_from_wires(model, face_ent, plane_ent):
         return None
 
 
+def _trimmed_face(model, face_ent, surf, box=None):
+    """The surface trimmed by the face's OWN loop curves, or None (R76/P375).
+
+    R73/R74 made the boundary curves exact (arcs and straight edges now end on
+    the face's vertices), which is what this needs; R72's attempt failed only
+    because the wires did not chain (33/42) and pcurves were missing.  The
+    pcurves are built here explicitly (`GeomProjLib.Curve2d` +
+    `BRep_Builder.UpdateEdge(E, C2d, S, Loc, Tol)`) - without them MakeFace
+    yields an invalid face whose bbox is the infinite surface's.
+
+    Gates (all measured, R76: 28/38 SampleModel1 cylinder faces pass):
+    every wire chains, MakeFace is done, BRepCheck is valid, the area is
+    positive, the face is inside the model box and within its own recorded
+    bbox + 5% of the face diagonal.
+    """
+    from OCC.Core.BRep import BRep_Builder
+    from OCC.Core.BRepBuilderAPI import (BRepBuilderAPI_MakeEdge,
+                                         BRepBuilderAPI_MakeFace,
+                                         BRepBuilderAPI_MakeWire)
+    from OCC.Core.BRepCheck import BRepCheck_Analyzer
+    from OCC.Core.ShapeFix import ShapeFix_Face
+    from OCC.Core.TopLoc import TopLoc_Location
+    import OCC.Core.GeomProjLib as _GPL
+
+    tol = 1e-6
+    wires = []
+    for lp in model.loops_of_face(face_ent):
+        mk = BRepBuilderAPI_MakeWire()
+        n = 0
+        for ce in model.coedges_of_loop(lp):
+            ee = model.e(ce.edge) if ce.edge >= 0 else None
+            curve = _edge_curve(model, ee, face_ent) if ee is not None else None
+            if curve is None:
+                return None
+            try:
+                edge = BRepBuilderAPI_MakeEdge(curve).Edge()
+                c2d = _GPL.geomprojlib.Curve2d(curve, curve.FirstParameter(),
+                                               curve.LastParameter(), surf)
+                if c2d is not None:
+                    BRep_Builder().UpdateEdge(edge, c2d, surf,
+                                              TopLoc_Location(), tol)
+                mk.Add(edge)
+            except Exception:
+                return None
+            n += 1
+        if not n or not mk.IsDone():
+            return None
+        wires.append(mk.Wire())
+    if not wires:
+        return None
+    try:
+        mf = BRepBuilderAPI_MakeFace(surf, wires[0])
+        for w in wires[1:]:
+            mf.Add(w)
+        if not mf.IsDone():
+            return None
+        fix = ShapeFix_Face(mf.Face())
+        fix.SetPrecision(tol)
+        fix.FixOrientation()
+        fix.Perform()
+        face = fix.Face()
+    except Exception:
+        return None
+    if not BRepCheck_Analyzer(face).IsValid():
+        return None
+    try:
+        if K.area(face) <= 0.0:
+            return None
+    except Exception:
+        return None
+    if box is not None and not _shape_within(face, box, 0.5):
+        return None
+    fbox = _face_bbox(face_ent)
+    if fbox is not None:
+        gap = _bbox_gap(face, fbox, accurate=False)
+        diag = sum((fbox[1][i] - fbox[0][i]) ** 2 for i in range(3)) ** 0.5
+        if gap is None or gap > 0.05 * diag + 1e-9:
+            return None
+    return face
+
+def _cylinder_surface(surf_ent):
+    """Geom_CylindricalSurface for a cone record with a zero semi-angle (R76).
+
+    ONE construction shared by the window path, the trim path and the trim
+    policy probe (rule 84): axis normalisation, the cos<0 axis flip and the
+    R73 radius rule (|ref_direction| when it is not a unit vector).
+    """
+    from OCC.Core.Geom import Geom_CylindricalSurface
+    from OCC.Core.gp import gp_Ax2, gp_Ax3, gp_Dir, gp_Pnt
+
+    if surf_ent.origin is None or surf_ent.normal is None or surf_ent.xdir is None:
+        return None
+    axis = surf_ent.normal
+    alen = (axis[0] ** 2 + axis[1] ** 2 + axis[2] ** 2) ** 0.5
+    if alen < 1e-12:
+        return None
+    axis = (axis[0] / alen, axis[1] / alen, axis[2] / alen)
+    if surf_ent.cos_angle is not None and surf_ent.cos_angle < 0.0:
+        axis = (-axis[0], -axis[1], -axis[2])
+    xlen = (surf_ent.xdir[0] ** 2 + surf_ent.xdir[1] ** 2
+            + surf_ent.xdir[2] ** 2) ** 0.5
+    radius = surf_ent.radius
+    if xlen > 0.0 and abs(xlen - 1.0) > 1e-9:
+        radius = xlen
+    if not radius:
+        return None
+    ax = gp_Ax3(gp_Ax2(gp_Pnt(*surf_ent.origin), gp_Dir(*axis),
+                       gp_Dir(*surf_ent.xdir)))
+    return Geom_CylindricalSurface(ax, radius)
+
+
+_TRIM_PATCH = False          # per-import policy (R76), set by the wrapper
+_TRIM_RATIO_MIN = 0.5        # measured ratios: 0.87 / 0.58 / 0.57 / 0.18 / 0.00
+_TRIM_PROBE_LIMIT = 12       # bound the probe cost on 600-cylinder models
+
+
+def trim_patch_policy(models) -> bool:
+    """Trim cylinder patches by their own boundary for THIS import? (R76/P375)
+
+    The trim wins where the wires chain: measured trimmable ratios per sample
+    are SampleModel1 0.87, samplemodel2 0.58, SampleModel4 0.57, samplemodel5
+    0.18, samplemodel6 0.00, and it costs ~20%% import time where it mostly
+    fails.  The probe is bounded to _TRIM_PROBE_LIMIT faces, so a 600-face
+    model pays 12 attempts, not 600.
+    """
+    limit = _TRIM_PROBE_LIMIT
+    total = ok = 0
+    for m in models:
+        box = _model_bbox(m)
+        for f in m.of_kind("face"):
+            kind, s = _surface_kind(m, f)
+            if (kind != "cone" or s is None
+                    or abs(s.semangle or 0.0) > 1e-9):
+                continue
+            surf = _cylinder_surface(s)
+            if surf is None:
+                continue
+            total += 1
+            if _trimmed_face(m, f, surf, box) is not None:
+                ok += 1
+            if total >= limit:
+                return ok / float(total) >= _TRIM_RATIO_MIN
+    return total > 0 and ok / float(total) >= _TRIM_RATIO_MIN
+
 def _rebuild_face(model, face_ent, box=None):
     """Curved-face rebuild (P45: returns a LIST of faces).
 
@@ -1363,12 +1507,15 @@ def _rebuild_face(model, face_ent, box=None):
                     return []
                 return _clip_to_bbox(mk.Face(), fbox)
             surf = Geom_CylindricalSurface(ax, radius)
-            # R73 tried trimming the patch by the face's OWN boundary curves
-            # instead of the analytic window (see docs/ROUND_R73): the wires
-            # do not chain for 33/42 SampleModel4 faces, and without the
-            # pcurves OCCT then rejects 3 of 4 built faces (invalid / non
-            # positive area).  Measured and reverted; P362-R74 continues it
-            # with GeomProjLib.Curve2d + BRep_Builder.UpdateEdge.
+            # R76/P375: now that the boundary curves are exact (R73/R74) the
+            # patch can be the surface trimmed by the face's OWN loops, which
+            # is what closes the cylinder<->plane gaps.  R72's attempt failed
+            # because the wires did not chain and pcurves were missing; both
+            # are fixed.  Falls back to the analytic window below.
+            if _TRIM_PATCH:
+                trimmed = _trimmed_face(model, face_ent, surf, box)
+                if trimmed is not None:
+                    return [trimmed]
             # R11 tried the recorded window here first (it does fix the arc
             # faces) but the sampled validation on EVERY cylinder cost 7.3 ->
             # 23.3 s per import, so it must come back behind a cheap pre-filter.
@@ -1671,6 +1818,23 @@ def _facets_nodes_of_model(model, fac):
 
 
 def import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
+    """Decode a bundle and rebuild it (R76: the trim policy is per import).
+
+    R76/P375: cylinder patches are trimmed by their own boundary only when a
+    bounded probe says the model's wires chain (see `trim_patch_policy`);
+    the flag is restored afterwards so one import cannot affect the next.
+    """
+    global _TRIM_PATCH
+    prev = _TRIM_PATCH
+    models = (data.get("models") if data else None) or []
+    try:
+        _TRIM_PATCH = trim_patch_policy(models) if K.available() else False
+        return _import_scdoc_bundle(data, mesh_fallback=mesh_fallback)
+    finally:
+        _TRIM_PATCH = prev
+
+
+def _import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
     """Rebuild a document from a parsed .scdoc bundle.
 
     mesh_fallback:

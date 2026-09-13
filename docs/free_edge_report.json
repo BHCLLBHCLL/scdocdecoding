@@ -1,50 +1,49 @@
 [
  {
   "curve": {
-   "circle": 10,
-   "ellipse": 42,
+   "ellipse": 32,
    "line": 4
   },
-  "edges": 56,
+  "edges": 36,
   "ends": {
-   "chain": 24,
+   "chain": 4,
    "half": 24,
    "isolated": 8
   },
-  "gaps": 56,
-  "len_max": 0.03754427160965542,
-  "len_median": 0.004857124615965552,
+  "gaps": 36,
+  "len_max": 0.005591479790136051,
+  "len_median": 0.0034754250828501645,
   "sample": "SampleModel1.scdoc",
   "seams": 0,
   "surf": {
-   "cylinder": 34,
-   "plane": 22
+   "cylinder": 24,
+   "plane": 12
   },
   "tiny": 0
  },
  {
   "curve": {
    "bspline": 87,
-   "circle": 109,
-   "ellipse": 35,
-   "line": 192
+   "circle": 98,
+   "ellipse": 32,
+   "line": 188
   },
-  "edges": 423,
+  "edges": 405,
   "ends": {
-   "chain": 402,
+   "chain": 384,
    "half": 15,
    "isolated": 6
   },
-  "gaps": 405,
+  "gaps": 387,
   "len_max": 0.3165344176003813,
-  "len_median": 0.005618738470846983,
+  "len_median": 0.004398636330405752,
   "sample": "SampleModel4.scdoc",
   "seams": 18,
   "surf": {
    "bspline": 56,
    "cone": 5,
-   "cylinder": 68,
-   "plane": 207,
+   "cylinder": 58,
+   "plane": 199,
    "torus": 87
   },
   "tiny": 0
@@ -52,29 +51,29 @@
  {
   "curve": {
    "bspline": 10,
-   "circle": 729,
-   "ellipse": 712,
+   "circle": 557,
+   "ellipse": 805,
    "hyperbola": 100,
-   "line": 774
+   "line": 755
   },
-  "edges": 2325,
+  "edges": 2227,
   "ends": {
-   "chain": 1827,
-   "half": 393,
-   "isolated": 105
+   "chain": 1728,
+   "half": 395,
+   "isolated": 104
   },
-  "gaps": 2252,
-  "len_max": 6.156491150048053,
-  "len_median": 0.06874941906742636,
+  "gaps": 2145,
+  "len_max": 3.285123765844859,
+  "len_median": 0.06037118761417039,
   "sample": "samplemodel2.scdoc",
-  "seams": 73,
+  "seams": 82,
   "surf": {
    "bspline": 4,
    "cone": 176,
-   "cylinder": 1258,
-   "plane": 685,
+   "cylinder": 1208,
+   "plane": 632,
    "sphere": 96,
-   "torus": 106
+   "torus": 111
   },
   "tiny": 0
  },

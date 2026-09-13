@@ -35,11 +35,11 @@ requires_occ = pytest.mark.skipif(
 requires_lib = pytest.mark.skipif(not os.path.isdir(LIB),
                                   reason="SpaceClaim library absent")
 
-# R75 measured (free, seams, gaps)
+# free / seams / gaps - re-measured after R76's cylinder trim policy
 MEASURED = {
-    "SampleModel1.scdoc": (56, 0, 56),
-    "SampleModel4.scdoc": (423, 18, 405),
-    "samplemodel2.scdoc": (2325, 73, 2252),
+    "SampleModel1.scdoc": (36, 0, 36),
+    "SampleModel4.scdoc": (405, 18, 387),
+    "samplemodel2.scdoc": (2227, 82, 2145),
     "samplemodel6.scdoc": (2, 0, 2),
 }
 
@@ -108,4 +108,5 @@ def test_edge_face_counts_survive_the_call():
     body = [b for b in kdoc.bodies
             if not (b.name or "").startswith("网格导入")][0]
     hist = Counter(n for (_e, n, _f) in K.edge_face_counts(body.shape))
-    assert hist == {1: 56, 2: 284}, hist
+    # R76 trimmed 20 of the 56 free edges away; a dangling view would give {}
+    assert hist == {1: 36, 2: 294}, hist
