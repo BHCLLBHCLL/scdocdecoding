@@ -1307,11 +1307,17 @@ def import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
     # P45: the decoder's own loss counters, surfaced to the user
     _faces_from_model.skipped = 0
     _faces_from_model.unbuilt = 0
+    hierarchy = []
     for i, mdl in enumerate(models, 1):
         part_doc = import_model(mdl, color=color)
         if part_doc.bodies:
+            # R22/P127: keep the read-only part -> body mapping so the GUI can
+            # offer an official-hierarchy display model (group per part).
+            ids = []
             for b in part_doc.bodies:
-                doc.add_body(b.shape, name=b.name, color=b.color)
+                nb = doc.add_body(b.shape, name=b.name, color=b.color)
+                ids.append(nb.id)
+            hierarchy.append({"name": _model_label(mdl, i), "bodies": ids})
         else:
             failed_parts.append((i, _model_label(mdl, i)))
     failed = len(failed_parts)
@@ -1374,6 +1380,7 @@ def import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
             "dropped_faces": dropped,
             "ref_faces": ref_faces,
             "mesh_bodies": list(mesh_bodies),
+            "hierarchy": hierarchy,  # R22/P127: part -> body ids (read-only)
         }
         return doc
     doc = import_model(model, color=color)

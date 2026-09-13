@@ -434,6 +434,23 @@ def test_mesh_fallback_meshes_only_the_failed_part(monkeypatch):
 
 @requires_lib
 @requires_occ
+def test_import_reports_a_part_to_body_hierarchy():
+    """R22/P127: the read-only official hierarchy is available to the GUI."""
+    from scdm.document import load_scdoc
+    from scdm.import_sab import import_scdoc_bundle
+
+    kdoc = import_scdoc_bundle(
+        load_scdoc(os.path.join(LIB, "samplemodel2.scdoc")))
+    hier = kdoc.import_report.get("hierarchy") or []
+    assert len(hier) > 10, len(hier)
+    assert all(h["name"] and h["bodies"] for h in hier)
+    # every imported body belongs to exactly one part
+    ids = [b for h in hier for b in h["bodies"]]
+    assert len(ids) == len(set(ids)) == len(kdoc.bodies)
+
+
+@requires_lib
+@requires_occ
 def test_import_warnings_report_unbuilt_faces():
     """P45: decoder loss is surfaced in doc.import_warnings, not swallowed."""
     from scdm.document import load_scdoc
