@@ -349,7 +349,8 @@ def tet_fill(shape, cell: float, tol: float = 1e-9, boundary: str = "voxel",
            "counts": (nx, ny, nz), "boundary": mode,
            "boundary_cells": 0, "boundary_volume": 0.0,
            "boundary_tets": 0, "boundary_tet_volume": 0.0,
-           "boundary_tet_degenerate": 0,
+           "boundary_tet_degenerate": 0, "boundary_edge_sum": 0.0,
+           "boundary_edge_count": 0, "boundary_edge_max": 0.0,
            "deflection": dfx}
     if mode in ("clip", "tets"):
         # the boundary band: outside cells touching a solid cell (26-neighbours),
@@ -385,6 +386,10 @@ def tet_fill(shape, cell: float, tol: float = 1e-9, boundary: str = "voxel",
                 out["boundary_tets"] += len(fan["tets"])
                 out["boundary_tet_volume"] += fan["volume"]
                 out["boundary_tet_degenerate"] += fan["degenerate"]
+                out["boundary_edge_sum"] += fan["mean_edge"] * len(fan["tets"])
+                out["boundary_edge_count"] += len(fan["tets"])
+                out["boundary_edge_max"] = max(out["boundary_edge_max"],
+                                               fan["max_edge"])
                 base_v = len(verts)
                 verts.extend(fan["vertices"])
                 tets.extend([(a + base_v, b + base_v, d + base_v, e + base_v)
@@ -413,11 +418,17 @@ def tetrahedralize_piece(piece, deflection: float = 0.001,
     faces = K.tessellate_faces(piece, deflection)
     if not faces:
         raise K.KernelError("裁剪片四面体化：没有可三角化的面")
+    edges: List[float] = []
     for fd in faces:
         fv = fd["vertices"]
         for (i, j, k) in fd["triangles"]:
             base = len(verts)
             verts.extend([fv[i], fv[j], fv[k]])
+            # R66: the element size h is the scale a chord error is second order
+            # in - record it so the convergence can be stated against h and not
+            # against the deflection (rule 82)
+            edges.append(max(math.dist(fv[i], fv[j]), math.dist(fv[j], fv[k]),
+                             math.dist(fv[k], fv[i])))
             v = tet_volume(centre, fv[i], fv[j], fv[k])
             if v <= tol_volume:
                 degenerate += 1
@@ -426,6 +437,8 @@ def tetrahedralize_piece(piece, deflection: float = 0.001,
     if not tets:
         raise K.KernelError("裁剪片四面体化：全部退化")
     return {"vertices": verts, "tets": tets, "degenerate": degenerate,
+            "mean_edge": (sum(edges) / len(edges)) if edges else 0.0,
+            "max_edge": max(edges) if edges else 0.0,
             "volume": sum(tet_volume(verts[a], verts[b], verts[d], verts[e])
                           for (a, b, d, e) in tets)}
 
@@ -459,6 +472,10 @@ def tet_stats(fill: Dict, shape=None, tol_volume: float = 1e-18) -> Dict:
            "boundary_tets": int(fill.get("boundary_tets", 0)),
            "boundary_tet_volume": float(fill.get("boundary_tet_volume", 0.0)),
            "boundary_tet_degenerate": int(fill.get("boundary_tet_degenerate", 0)),
+           "mean_edge": (float(fill.get("boundary_edge_sum", 0.0))
+                         / int(fill["boundary_edge_count"])
+                         if int(fill.get("boundary_edge_count", 0)) else 0.0),
+           "max_edge": float(fill.get("boundary_edge_max", 0.0)),
            # P335/P339: "clip" adds the exact clipped piece volumes to the tet
            # sum; "tets" already counted the pieces as tetrahedra, so adding
            # them again would double count
