@@ -1667,6 +1667,50 @@ else:
             vals = self._ask_numbers(title, fields)
             return vals
 
+        def _do_weld_symbol(self):
+            """P347: 焊接符号 - 挂到焊件组元的成员（元数据，不建几何）。"""
+            from scdm import beams as BEAMS
+            ses = self.session()
+            welds = list(getattr(ses.kdoc, "weldments", []))
+            if not welds:
+                self._set_status("焊接符号：还没有焊件组元（先用「折线梁」创建）")
+                return
+            if len(welds) == 1:
+                weld = welds[0]
+            else:
+                labels = ["%s %s（%d 成员）" % (w.profile, w.spec(), len(w.members))
+                          for w in welds]
+                picked = self._ask_choice("焊接符号", labels, 0)
+                if picked is None:
+                    return
+                weld = welds[labels.index(picked)]
+            members = [m["name"] for m in weld.members]
+            if not members:
+                self._set_status("焊接符号：该焊件组元没有成员")
+                return
+            member = self._ask_choice("焊接符号（成员）", members, 0)
+            if member is None:
+                return
+            kind = self._ask_choice("焊接符号（类型）",
+                                    list(BEAMS.WELD_SYMBOL_KINDS), 0)
+            if kind is None:
+                return
+            vals = self._ask_numbers("焊接符号", [("焊脚/喉厚 mm", 5.0),
+                                                ("长度 mm（0=连续）", 0.0),
+                                                ("间距 mm（断续焊）", 0.0)])
+            if not vals:
+                return
+            try:
+                sym = weld.add_symbol(kind=kind, size=vals[0], length=vals[1],
+                                      pitch=vals[2], member=member)
+                self._record("weld.symbol", member=member, kind=sym.kind,
+                             size=sym.size, length=sym.length, pitch=sym.pitch)
+                self.left.populate_tree(ses)
+                self._commit("已添加焊接符号 %s（成员 %s，%g mm，该组元共 %d 个）"
+                             % (sym.kind, member, sym.size, len(weld.symbols)))
+            except Exception as exc:
+                self._set_status(f"焊接符号失败: {exc}")
+
         def _do_sheet_junction(self):
             """P303: 钣金接缝 - 释放/接缝/连接（面角处，贯穿板厚）。"""
             ses = self.session()

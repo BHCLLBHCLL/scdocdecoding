@@ -603,6 +603,42 @@ class LightweightModeTests(unittest.TestCase):
         totals = MAT.bom_totals(kdoc.bom("铝版", 1000.0))
         assert abs(totals["mass_g"] - 64.8) < 1e-9
 
+    def test_p347_weld_symbol_command_attaches_to_a_member(self):
+        """R67/P347: the weld.symbol command attaches a symbol to a weldment
+        member (metadata only, no geometry) and reports the count."""
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm import beams as BEAMS
+        from scdm.kdoc import KernelDoc
+
+        v = self.gui.ScdmViewer(path=None)
+        kdoc = KernelDoc()
+        v.session().kdoc = kdoc
+        v._commit = lambda *a, **k: None
+        v._rebuild = lambda *a, **k: None
+
+        # no weldment yet: it explains itself instead of raising
+        v._do_weld_symbol()
+        assert "没有焊件组元" in self._status(v)
+
+        weld = BEAMS.Weldment(profile="pipe", dims={"d": 60.0, "t": 3.0})
+        weld.add_member((0.0, 0.0, 0.0), (0.2, 0.0, 0.0), name="M1")
+        kdoc.weldments.append(weld)
+
+        def choice(title, items, current=0):
+            if "成员" in title:
+                return "M1"
+            return "fillet"
+        v._ask_choice = choice
+        v._ask_numbers = lambda *a, **k: [6.0, 30.0, 100.0]
+        v._do_weld_symbol()
+        assert len(weld.symbols) == 1
+        sym = weld.symbols[0]
+        assert sym.member == "M1" and sym.kind == "fillet"
+        assert sym.size == 6.0 and sym.length == 30.0 and sym.pitch == 100.0
+        assert "焊接符号" in self._status(v)
+
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""
         from scdm import kernel as K

@@ -21,9 +21,11 @@ def test_p283_beam_is_registered_labelled_and_live():
     ids = {c.id for c in all_commands()}
     assert "create.beam" in ids
     assert "create.beam" in M4_LIVE
-    # the weldment half of the domain is an explicit, non-live placeholder
+    # the weldment half of the domain: R51 shipped weld.symbol as an explicit
+    # placeholder, R67/P347 promoted it to a live command - so the regression now
+    # guards the promotion instead of the placeholder
     assert "weld.symbol" in ids
-    assert "weld.symbol" not in live_commands()
+    assert "weld.symbol" in live_commands()
 
 
 def test_p283_beam_op_creates_the_closed_form_solid():

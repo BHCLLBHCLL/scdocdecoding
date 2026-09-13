@@ -288,7 +288,7 @@ Tab("detail", "详细", "Detailing", (
         )),
         Group("焊件", "Weldment", (
             C("weld.symbol", "焊接符号", "Weld Symbol", "M5", "note",
-              note="占位：焊接符号是元数据，尚未建模"),
+              note="挂到焊件成员的符号元数据（类型/尺寸/长度/间距）"),
         )),
     )),
     Tab("safety", "安全", "Safety", (
@@ -373,7 +373,7 @@ M4_LIVE = {
     "create.pattern", "create.mirror", "create.shell", "create.blend",
     "create.chamfer", "create.draft", "insert.helix",
     "create.hole", "create.hole_tapped", "create.dimple", "create.louver",
-    "create.knockout", "create.beam", "create.beam_polyline",
+    "create.knockout", "create.beam", "create.beam_polyline", "weld.symbol",
     "create.gusset", "create.tab",
     "create.hole_cbore",
     "create.hole_csink", "create.boss",
