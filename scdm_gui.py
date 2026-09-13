@@ -1430,6 +1430,76 @@ else:
             except Exception as exc:
                 self._set_status(f"梁参数非法：{exc}")
 
+        def _selected_edge_segments(self):
+            """P291: polyline points of the selected edges (view of a body)."""
+            ses = self.session()
+            segs = []
+            for kind, sid in self.sel.items:
+                if kind != "edge":
+                    continue
+                parts = str(sid).split(":")
+                bid = parts[1] if len(parts) > 2 else None
+                ei = parts[2] if len(parts) > 2 else None
+                body = ses.kdoc.body_by_id(bid) if bid else None
+                if body is None or ei is None:
+                    continue
+                edges = K.explore(body.shape, "edge")
+                if not (0 <= int(ei) < len(edges)):
+                    continue
+                pts = K.edge_polyline(edges[int(ei)], 1e-4)
+                for p, q in zip(pts, pts[1:]):
+                    if math.dist(p, q) > 1e-9:
+                        segs.append((tuple(p), tuple(q)))
+            return segs
+
+        def _do_create_beam_polyline(self):
+            """P291: 折线梁 - 沿所选边生成焊件组元（每段一个成员实体）。"""
+            from scdm import beams as BEAMS
+            ses = self.session()
+            segs = self._selected_edge_segments()
+            if not segs:
+                self._set_status("折线梁：请先选择一条或多条边")
+                return
+            keys = list(BEAMS.PROFILES)
+            labels = [BEAMS.LABELS[k] for k in keys]
+            picked = self._ask_choice("折线梁（焊件组元）", labels, 3)
+            if picked is None:
+                return
+            key = keys[labels.index(picked)]
+            names = list(BEAMS.PARAMS[key])
+            vals = self._ask_numbers(BEAMS.LABELS[key],
+                                     [("%s mm" % n, BEAMS.DEFAULTS[key][n])
+                                      for n in names])
+            if not vals:
+                return
+            dims = {n: vals[i] for i, n in enumerate(names)}
+            pts = [segs[0][0]] + [b for (_a, b) in segs]
+            try:
+                weld = BEAMS.Weldment(profile=key, dims=dict(dims))
+                spec = weld.spec()
+                bodies = []
+                for i, (p0, p1) in enumerate(zip(pts, pts[1:])):
+                    name = weld.add_member(p0, p1, name="M%d" % (i + 1))
+                    solid = weld.shape(name)
+                    body = ses.kdoc.add_body(solid, name="%s %s" % (spec, name))
+                    ses.kdoc.record_feature(
+                        body.id, "beam_polyline", profile=key,
+                        p0=[v * ses.scale for v in p0],
+                        p1=[v * ses.scale for v in p1], spec=spec,
+                        index=i + 1, count=len(segs), **dims)
+                    bodies.append(body)
+                ses.kdoc.weldments.append(weld)
+                self._record("create.beam_polyline", profile=key,
+                             points=[[v * ses.scale for v in p] for p in pts],
+                             **dims)
+                if self.scene is not None and hasattr(self.scene,
+                                                      "show_beam_axes"):
+                    self.scene.show_beam_axes([[list(p0), list(p1)]
+                                               for p0, p1 in zip(pts, pts[1:])])
+                self._commit("已创建折线梁 %s（%d 段，焊件组元）" % (spec, len(bodies)))
+            except Exception as exc:
+                self._set_status(f"折线梁参数非法：{exc}")
+
         def _do_create_hole_cbore(self):
             ses = self.session()
             body, face = self._selected_face()

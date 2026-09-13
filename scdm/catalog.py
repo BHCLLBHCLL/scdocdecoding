@@ -267,6 +267,8 @@ Tab("detail", "详细", "Detailing", (
         Group("截面轮廓", "Profiles", (
             C("create.beam", "梁", "Beam", "M4", "cyl", large=True,
               note="6 种截面：扁钢/圆钢/圆管/工字钢/T 型钢/角钢"),
+            C("create.beam_polyline", "折线梁", "Beam Polyline", "M4", "polyline",
+              note="沿折线生成焊件组元（每段一个成员实体）"),
         )),
         Group("焊件", "Weldment", (
             C("weld.symbol", "焊接符号", "Weld Symbol", "M5", "note",
@@ -355,7 +357,7 @@ M4_LIVE = {
     "create.pattern", "create.mirror", "create.shell", "create.blend",
     "create.chamfer", "create.draft", "insert.helix",
     "create.hole", "create.hole_tapped", "create.dimple", "create.louver",
-    "create.knockout", "create.beam",
+    "create.knockout", "create.beam", "create.beam_polyline",
     "create.hole_cbore",
     "create.hole_csink", "create.boss",
     "repair.stitch", "repair.solidify", "repair.gaps", "repair.missing",

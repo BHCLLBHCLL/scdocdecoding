@@ -962,18 +962,30 @@ class Scene:
             self.render()
 
     def show_beam_axis(self, origin, axis, length, color=(0.20, 0.55, 0.85)):
-        """P283: beam axis line - annotation only.
-
-        Double guard, same as the thread/form markers: the actor is unpickable
-        and excluded from the camera fit, so a beam never wins a selection nor
-        inflates the bounds because of its axis marker.
-        """
+        """P283: beam axis line - annotation only (see show_beam_axes)."""
         n = _norm3(axis)
         if n is None or float(length) <= 0:
             return None
-        self.clear_beam_axis()
         end = [float(origin[i]) + n[i] * float(length) for i in range(3)]
-        act = _lines_actor([[list(origin), end]], color, 1.4)
+        return self.show_beam_axes([[list(origin), end]], color=color)
+
+    def show_beam_axes(self, segments, color=(0.20, 0.55, 0.85)):
+        """P291: every weldment member axis in ONE actor - annotation only.
+
+        Double guard, same as the thread/form markers: the actor is unpickable
+        and excluded from the camera fit, so an axis annotation never wins a
+        selection nor inflates the bounds.
+        """
+        segs = []
+        for a, b in segments or ():
+            pa = [float(v) for v in a]
+            pb = [float(v) for v in b]
+            if math.dist(pa, pb) > 1e-12:
+                segs.append([pa, pb])
+        if not segs:
+            return None
+        self.clear_beam_axis()
+        act = _lines_actor(segs, color, 1.4)
         if act is None:
             return None
         try:

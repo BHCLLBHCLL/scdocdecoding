@@ -248,6 +248,49 @@ class LightweightModeTests(unittest.TestCase):
         assert abs(dims[0].offset - raw) < 1e-15
         assert abs(dims[0].offset - 0.005) > 1e-6
 
+    def test_p291_polyline_beam_command_builds_members_from_edges(self):
+        """R53/P291: selected edges -> one body per member + weldment + axes."""
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm import beams as BEAMS
+        from scdm.kdoc import KernelDoc
+
+        class FakeScene:
+            def __init__(self):
+                self.calls = []
+
+            def show_beam_axes(self, *a):
+                self.calls.append(("axes", a))
+
+            def clear_beam_axis(self):
+                self.calls.append(("clear", None))
+
+        v = self.gui.ScdmViewer(path=None)
+        scene = FakeScene()
+        v.scene = scene
+        kdoc = KernelDoc()
+        box = K.make_box(0.02, 0.02, 0.02)
+        body = kdoc.add_body(box, name="B")
+        v.session().kdoc = kdoc
+        v._commit = lambda *a, **k: None
+        v.sel.items = [("edge", "edge:%s:0" % body.id)]
+        v._ask_choice = lambda *a, **k: BEAMS.LABELS["i"]
+        v._ask_numbers = lambda *a, **k: [100.0, 50.0, 5.0, 7.0]
+        v._do_create_beam_polyline()
+
+        assert scene.calls and scene.calls[0][0] == "axes"
+        assert len(scene.calls[0][1][0]) == 1          # one member axis
+        assert len(kdoc.weldments) == 1
+        weld = kdoc.weldments[0]
+        assert len(weld.members) == 1
+        assert abs(weld.member_lengths()[0] - 0.02) < 1e-12   # a cube edge
+        area = BEAMS.closed_form("i", h=0.1, b=0.05, tw=0.005, tf=0.007)["area"]
+        want = area * 0.02
+        assert abs(K.volume(kdoc.bodies[-1].shape) - want) / want < 1e-9
+        feats = kdoc.feature_stack(kdoc.bodies[-1].id).as_dict()
+        assert feats and feats[-1]["op"] == "beam_polyline"
+
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""
         from scdm import kernel as K

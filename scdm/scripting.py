@@ -467,6 +467,41 @@ def op_beam(kdoc, opts, scale):
     return body, ("已创建%s" % spec)
 
 
+def op_beam_polyline(kdoc, opts, scale):
+    """P291: 折线梁——每个线段一个实体，并登记为一个焊件组元。"""
+    from scdm import beams as BEAMS
+    key = str(opts.get("profile", "i")).lower()
+    names = list(BEAMS.PARAMS.get(key, ()))
+    dims_mm = {}
+    for name in names:
+        if opts.get(name) is None:
+            raise ValueError("折线梁：截面 %s 缺少参数 %s" % (key, name))
+        dims_mm[name] = opts[name]
+    pts_mm = opts.get("points") or []
+    if len(pts_mm) < 2:
+        raise ValueError("折线梁：至少需要两个点")
+    pts = [tuple(float(v) / scale for v in p) for p in pts_mm]
+    lengths = BEAMS.segment_lengths(pts)
+    solids = BEAMS.beam_polyline(key, pts, **{k: v / scale for k, v in dims_mm.items()})
+    spec = BEAMS.spec_label(key, **dims_mm)
+    weld = BEAMS.Weldment(profile=key, dims=dict(dims_mm),
+                          material=str(opts.get("material", "steel")))
+    bodies = []
+    for i, (solid, length) in enumerate(zip(solids, lengths)):
+        name = weld.add_member(pts[i], pts[i + 1],
+                               name="M%d" % (i + 1))
+        body = kdoc.add_body(solid, name="%s %s" % (spec, name))
+        # feature params are mm (the stack convention): keep the source points
+        # in mm, not the kernel-unit copy that was just built
+        kdoc.record_feature(body.id, "beam_polyline", profile=key,
+                            p0=[float(v) for v in pts_mm[i]],
+                            p1=[float(v) for v in pts_mm[i + 1]], spec=spec,
+                            index=i + 1, count=len(solids), **dims_mm)
+        bodies.append(body)
+    kdoc.weldments.append(weld)
+    return bodies[0], ("已创建折线梁 %s（%d 段，焊件组元）" % (spec, len(bodies)))
+
+
 def op_insert_box(kdoc, opts, scale):
     from scdm.kdoc import KBody
     w = opts.get("w", 10.0) / scale
@@ -612,6 +647,7 @@ OPS = {
     "create.louver": op_louver,
     "create.knockout": op_knockout,
     "create.beam": op_beam,
+    "create.beam_polyline": op_beam_polyline,
 }
 
 

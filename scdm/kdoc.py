@@ -79,6 +79,7 @@ class KernelDoc:
         # ({"parts", "failed_parts": [(index, name)], "unbuilt_faces",
         #   "dropped_faces", "mesh_bodies": [names], "fatal": str|None})
         self.import_report: dict = {}
+        self.weldments: List[Any] = []    # P291: beam/weldment groups
         self.param_table = None           # scdm.params.ParamTable (optional)
         self.sim = None                   # scdm.simprep.SimModel (H8)
         self.named: List[dict] = []  # named selections: {"name": str, "items": [(kind,id)]}

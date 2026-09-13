@@ -3,6 +3,8 @@
 P22: the manifest now also carries the modelling history (per-body feature
 stacks + document-level features), assembly instances and components, so a
 saved project reopens with its parametric intent, not just its geometry.
+P291 (version 3): beam/weldment groups - shared section, members and weld
+symbol metadata - ride along in the same manifest.
 """
 from __future__ import annotations
 
@@ -18,7 +20,7 @@ from scdm.kdoc import Component, KernelDoc
 def save_scdm(path: str, kdoc: KernelDoc) -> None:
     manifest = {
         "format": "scdm-session",
-        "version": 2,
+        "version": 3,
         "bodies": [{"id": b.id, "name": b.name, "color": list(b.color), "visible": b.visible,
                     "layer": getattr(b, "layer", "默认") or "默认",
                     "file": f"bodies/{b.id}.brep"} for b in kdoc.bodies],
@@ -53,6 +55,8 @@ def save_scdm(path: str, kdoc: KernelDoc) -> None:
                             "transforms": {k: list(v) for k, v in c.transforms.items()}}
                            for c in getattr(kdoc, "configurations", [])],
         "active_configuration": getattr(kdoc, "active_configuration", None),
+        # P291: beam/weldment groups (shared section + members + weld symbols)
+        "weldments": [w.to_dict() for w in getattr(kdoc, "weldments", [])],
     }
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
@@ -103,6 +107,9 @@ def load_scdm(path: str) -> KernelDoc:
         doc.components.append(comp)
     doc._c = len(doc.components) + 1
     doc.mates = [dict(m) for m in man.get("mates", [])]
+    from scdm import beams as BEAMS
+    doc.weldments = [BEAMS.Weldment.from_dict(w)
+                     for w in (man.get("weldments") or [])]
     from scdm.kdoc import Configuration
     doc.configurations = [
         Configuration(c.get("id") or "CFG1", c.get("name") or "配置",

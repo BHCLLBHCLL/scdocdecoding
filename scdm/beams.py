@@ -32,7 +32,8 @@ Closed form (centroidal; `ix` = second moment about the section x axis,
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Sequence, Tuple
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from scdm import kernel as K
 
@@ -281,3 +282,203 @@ def spec_label(profile, **dims) -> str:
     if key == "t":
         return "T 型钢 %g×%g×%g×%g" % (d["h"], d["b"], d["tw"], d["tf"])
     return "角钢 %g×%g×%g" % (d["a"], d["b"], d["t"])
+
+# ----------------------------------------------------------------------
+# P291: 折线梁 + 焊件组元 + 焊接符号元数据
+# ----------------------------------------------------------------------
+def segment_lengths(points) -> List[float]:
+    """Lengths of a polyline's segments (raises on too few points / duplicates)."""
+    pts = [(float(p[0]), float(p[1]), float(p[2])) for p in points]
+    if len(pts) < 2:
+        raise K.KernelError("折线梁至少需要两个点")
+    out: List[float] = []
+    for i in range(len(pts) - 1):
+        d = math.dist(pts[i], pts[i + 1])
+        if d <= 0:
+            raise K.KernelError("折线梁的相邻点不能重合")
+        out.append(d)
+    return out
+
+
+def beam_polyline(profile, points, center: bool = True, **dims) -> List:
+    """P291: one solid per segment of the polyline.
+
+    A weldment keeps its members as SEPARATE bodies on purpose: two prisms that
+    meet at a joint share only that point, so fusing them would build a
+    non-manifold edge (and mitring the joint is a different feature).  The
+    volume closed form is therefore the plain sum: sum(area * length_i).
+    """
+    key, d = _validate(profile, dims)
+    pts = list(points)
+    lengths = segment_lengths(pts)
+    return [beam_along(key, pts[i], pts[i + 1], center=center, **d)
+            for i in range(len(lengths))]
+
+
+WELD_SYMBOL_KINDS = ("fillet", "groove", "plug", "spot", "seam")
+
+
+@dataclass
+class WeldSymbol:
+    """P291: 焊接符号 —— 元数据，不建模几何（与螺纹示意同一策略）。"""
+
+    kind: str = "fillet"
+    size: float = 5.0            # 焊脚/喉厚，单位随调用层（op 层是 mm）
+    length: float = 0.0
+    pitch: float = 0.0
+    member: str = ""
+    position: Vec3 = (0.0, 0.0, 0.0)
+
+    def validate(self) -> "WeldSymbol":
+        kind = str(self.kind).lower()
+        if kind not in WELD_SYMBOL_KINDS:
+            raise K.KernelError("焊接符号类型未知：%s（可选 %s）"
+                                % (self.kind, "/".join(WELD_SYMBOL_KINDS)))
+        self.kind = kind
+        self.size = float(self.size)
+        self.length = float(self.length)
+        self.pitch = float(self.pitch)
+        if self.size <= 0:
+            raise K.KernelError("焊接符号尺寸必须为正")
+        if self.length < 0 or self.pitch < 0:
+            raise K.KernelError("焊接符号长度/间距不能为负")
+        if self.pitch > 0 and self.length <= 0:
+            raise K.KernelError("断续焊需要长度：只给间距没有意义")
+        self.position = tuple(float(v) for v in self.position)
+        return self
+
+    def to_dict(self) -> Dict:
+        self.validate()
+        return {"kind": self.kind, "size": self.size, "length": self.length,
+                "pitch": self.pitch, "member": str(self.member),
+                "position": list(self.position)}
+
+    @classmethod
+    def from_dict(cls, data) -> "WeldSymbol":
+        return cls(kind=data.get("kind", "fillet"), size=data.get("size", 5.0),
+                   length=data.get("length", 0.0), pitch=data.get("pitch", 0.0),
+                   member=data.get("member", ""),
+                   position=tuple(data.get("position") or (0.0, 0.0, 0.0))
+                   ).validate()
+
+
+@dataclass
+class Weldment:
+    """P291: 焊件组元 —— 成员共享截面与材料，各自是独立实体。
+
+    `dims` 用 op 层单位（mm），几何构建时才除以 `scale`：这样 .scdm 清单里的
+    数字是人可读的，闭式复算也与 spec_label 用同一套数。
+    """
+
+    profile: str = "i"
+    dims: Dict[str, float] = field(default_factory=dict)
+    material: str = "steel"
+    members: List[Dict] = field(default_factory=list)
+    symbols: List[WeldSymbol] = field(default_factory=list)
+    scale: float = 1000.0
+
+    def __post_init__(self):
+        key = str(self.profile).lower()
+        if key not in PROFILES:
+            raise K.KernelError("未知梁截面：%s（可选 %s）"
+                                % (self.profile, "/".join(PROFILES)))
+        self.profile = key
+        if not self.dims:
+            self.dims = dict(DEFAULTS.get(key, {}))
+        self.dims = {k: float(v) for k, v in self.dims.items()}
+        # validate the shared section now: a group with a degenerate section
+        # would otherwise fail only when the first member is built
+        closed_form(self.profile, **self.dims_m())
+
+    # -- shared section ----------------------------------------------------
+    def dims_m(self) -> Dict[str, float]:
+        return {k: v / float(self.scale) for k, v in self.dims.items()}
+
+    def area(self) -> float:
+        """Shared section area (m²) - the same closed form as the single beam."""
+        return closed_form(self.profile, **self.dims_m())["area"]
+
+    def set_section(self, profile=None, **dims) -> None:
+        """Change the shared section; every member follows (nothing is cached)."""
+        if profile is not None:
+            key = str(profile).lower()
+            if key not in PROFILES:
+                raise K.KernelError("未知梁截面：%s（可选 %s）"
+                                    % (profile, "/".join(PROFILES)))
+            self.profile = key
+            self.dims = dict(DEFAULTS.get(key, {}))
+        self.dims.update({k: float(v) for k, v in dims.items() if v is not None})
+        closed_form(self.profile, **self.dims_m())    # validate now, not later
+
+    def spec(self) -> str:
+        return spec_label(self.profile, **self.dims)
+
+    # -- members -----------------------------------------------------------
+    def add_member(self, p0, p1, name: Optional[str] = None) -> str:
+        p0 = tuple(float(v) for v in p0)
+        p1 = tuple(float(v) for v in p1)
+        if math.dist(p0, p1) <= 0:
+            raise K.KernelError("焊件成员不能是零长度")
+        name = name or ("M%d" % (len(self.members) + 1))
+        if self.member(name) is not None:
+            raise K.KernelError("焊件成员名重复：%s" % name)
+        self.members.append({"name": name, "p0": list(p0), "p1": list(p1)})
+        return name
+
+    def remove_member(self, name: str) -> bool:
+        for i, m in enumerate(self.members):
+            if m["name"] == name:
+                del self.members[i]
+                self.symbols = [s for s in self.symbols if s.member != name]
+                return True
+        return False
+
+    def member(self, name: str) -> Optional[Dict]:
+        return next((m for m in self.members if m["name"] == name), None)
+
+    def member_lengths(self) -> List[float]:
+        return [math.dist(m["p0"], m["p1"]) for m in self.members]
+
+    def total_length(self) -> float:
+        return sum(self.member_lengths())
+
+    def total_volume(self) -> float:
+        """Closed form: shared area * total length (members never overlap)."""
+        return self.area() * self.total_length()
+
+    def shape(self, name: str):
+        m = self.member(name)
+        if m is None:
+            raise K.KernelError("焊件组元：成员 %s 不存在" % name)
+        return beam_along(self.profile, tuple(m["p0"]), tuple(m["p1"]),
+                          **self.dims_m())
+
+    def shapes(self) -> List[Tuple[str, object]]:
+        return [(m["name"], self.shape(m["name"])) for m in self.members]
+
+    # -- weld symbols ------------------------------------------------------
+    def add_symbol(self, symbol: Optional[WeldSymbol] = None,
+                   **kw) -> WeldSymbol:
+        sym = symbol if symbol is not None else WeldSymbol(**kw)
+        sym.validate()
+        if sym.member and self.member(sym.member) is None:
+            raise K.KernelError("焊接符号指向不存在的成员：%s" % sym.member)
+        self.symbols.append(sym)
+        return sym
+
+    # -- persistence -------------------------------------------------------
+    def to_dict(self) -> Dict:
+        return {"profile": self.profile, "dims": dict(self.dims),
+                "material": self.material,
+                "members": [dict(m) for m in self.members],
+                "symbols": [s.to_dict() for s in self.symbols]}
+
+    @classmethod
+    def from_dict(cls, data) -> "Weldment":
+        return cls(profile=data.get("profile", "i"),
+                   dims=dict(data.get("dims") or {}),
+                   material=data.get("material", "steel"),
+                   members=[dict(m) for m in (data.get("members") or [])],
+                   symbols=[WeldSymbol.from_dict(s)
+                            for s in (data.get("symbols") or [])])
+

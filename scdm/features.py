@@ -48,6 +48,7 @@ _FEATURE_LABELS = {
     "louver": "百叶 {length:g}×{width:g}",
     "knockout": "敲落 Ø{diameter:g}×{web_count:g}筋",
     "beam": "梁 {spec}",
+    "beam_polyline": "折线梁 {spec} 段{index}/{count}",
     "hole_cbore": "沉头孔 Ø{diameter:g}",
     "hole_csink": "锥沉孔 Ø{diameter:g}",
     "boss": "凸台 Ø{diameter:g}×{height:g}",
@@ -174,12 +175,18 @@ def _apply_one(shape, feature: Feature, scale: float):
         return K.boss_round(shape, face,
                             float(p.get("diameter", 6.0)) / scale,
                             float(p.get("height", 4.0)) / scale)
-    if op == "beam":
-        # P283: body-creating feature - the section is rebuilt from the params
-        # (mm), so a stack rebuilds the same beam against any base shape
+    if op in ("beam", "beam_polyline"):
+        # P283/P291: body-creating features - the section is rebuilt from the
+        # params (mm), so a stack rebuilds the same member against any base
         from scdm import beams as BEAMS
         dims = {k: float(v) / scale for k, v in p.items()
                 if k in ("h", "b", "tw", "tf", "a", "t", "d")}
+        if op == "beam_polyline":
+            return BEAMS.beam_along(
+                p.get("profile", "i"),
+                tuple(float(v) / scale for v in p.get("p0", (0.0, 0.0, 0.0))),
+                tuple(float(v) / scale for v in p.get("p1", (0.0, 0.0, 1.0))),
+                **dims)
         return BEAMS.beam(p.get("profile", "i"),
                           float(p.get("length", 200.0)) / scale, **dims)
     if op == "pull":
