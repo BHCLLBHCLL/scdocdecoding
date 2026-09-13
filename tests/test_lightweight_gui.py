@@ -487,6 +487,33 @@ class LightweightModeTests(unittest.TestCase):
         assert dlg.canvas.notes[0].anchor == anchor0        # leader untouched
         assert dlg.canvas.notes[0].arrow == 'open'          # style survives undo
 
+    def test_p311_conical_and_axial_commands_create_bodies(self):
+        """R58/P311: both sheet-metal commands add a body with the closed-form
+        volume (no marker: a construction op, like sheet.bend)."""
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm.kdoc import KernelDoc
+
+        v = self.gui.ScdmViewer(path=None)
+        kdoc = KernelDoc()
+        v.session().kdoc = kdoc
+        v._commit = lambda *a, **k: None
+        v._ask_numbers = lambda *a, **k: [90.0, 1.0, 30.0, 20.0, 30.0, 0.42]
+        v._do_sheet_conical()
+        assert len(kdoc.bodies) == 1
+        want = (3.141592653589793 / 2) * ((0.02 + 0.03) / 2 + 0.0005) * 0.001 * 0.03
+        got = K.volume(kdoc.bodies[0].shape)
+        assert abs(got - want) / want < 1e-9
+
+        v._ask_numbers = lambda *a, **k: [80.0, 30.0, 1.0, 10.0, 90.0, 2.0, 0.42]
+        v._do_sheet_axial()
+        assert len(kdoc.bodies) == 2
+        base = 0.08 * 0.03 * 0.001
+        flange = (3.141592653589793 / 2) * (0.002 + 0.0005) * 0.001 * 0.08
+        got2 = K.volume(kdoc.bodies[1].shape)
+        assert abs(got2 - (base + 2 * flange)) / (base + 2 * flange) < 1e-9
+
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""
         from scdm import kernel as K

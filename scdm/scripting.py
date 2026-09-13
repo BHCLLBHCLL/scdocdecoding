@@ -566,6 +566,33 @@ def op_sheet_junction(kdoc, opts, scale):
     return body, ("接缝 %s %g" % (mode, opts.get("size", 4.0)))
 
 
+def op_sheet_conical(kdoc, opts, scale):
+    """P311: 圆锥折弯——内外表面都是锥面的弯板段（新建实体）。"""
+    from scdm import sheetmetal as SM
+    import math
+    solid = SM.conical_bend(math.radians(opts.get("angle", 90.0)),
+                            opts.get("thickness", 1.0) / scale,
+                            opts.get("height", 30.0) / scale,
+                            opts.get("r1", 20.0) / scale,
+                            opts.get("r2", 30.0) / scale,
+                            k=opts.get("k", 0.42))
+    return kdoc.add_body(solid, name="圆锥折弯件"), "已创建圆锥折弯"
+
+
+def op_sheet_axial(kdoc, opts, scale):
+    """P311: 轴向折弯——折弯轴平行于走向的 U 型槽（新建实体）。"""
+    from scdm import sheetmetal as SM
+    import math
+    solid = SM.axial_bend(opts.get("length", 80.0) / scale,
+                          opts.get("width", 30.0) / scale,
+                          opts.get("thickness", 1.0) / scale,
+                          opts.get("flange", 10.0) / scale,
+                          math.radians(opts.get("angle", 90.0)),
+                          opts.get("r_inner", 2.0) / scale,
+                          opts.get("k", 0.42))
+    return kdoc.add_body(solid, name="轴向折弯件"), "已创建轴向折弯"
+
+
 def op_sheet_bend(kdoc, opts, scale):
     from scdm import sheetmetal as SM
     import math
@@ -704,6 +731,8 @@ OPS = {
     "create.gusset": op_gusset,
     "create.tab": op_tab,
     "sheet.junction": op_sheet_junction,
+    "sheet.conical": op_sheet_conical,
+    "sheet.axial": op_sheet_axial,
 }
 
 

@@ -571,6 +571,146 @@ def bend_relief(solid, width: float, depth: float,
     return out
 
 
+def conical_bend(angle_rad: float, t: float, height: float, r1: float, r2: float,
+                 origin: Vec3 = (0.0, 0.0, 0.0), k: float = 0.42):
+    """P311: 圆锥折弯——内外表面都是锥面的弯板段（母线为斜线的旋转面）。
+
+    Builds the solid by revolving a TRAPEZOID about the cone axis: the section
+    spans radius r1..r1+t at z=0 and r2..r2+t at z=height, so the inner and
+    outer surfaces are cones.  Revolving a rectangle instead would give the
+    ordinary cylindrical bend, which is why a cone must never be reported as a
+    cylindrical bend (detect_bends filters cylinders only, on purpose).
+
+    Closed forms (Pappus centroid theorem - the axis never meets the section):
+        volume   = angle_rad * ((r1 + r2)/2 + t/2) * t * height
+        BA       = angle_rad * ((r1 + r2)/2 + k * t)      (developed length)
+    """
+    ang = float(angle_rad)
+    t = float(t)
+    h = float(height)
+    r1 = float(r1)
+    r2 = float(r2)
+    if t <= 0 or h <= 0:
+        raise K.KernelError("圆锥折弯：板厚与高度必须为正")
+    if r1 <= 0 or r2 <= 0:
+        raise K.KernelError("圆锥折弯：半径必须为正（转轴不能穿过截面）")
+    if abs(r2 - r1) < 1e-12:
+        raise K.KernelError("圆锥折弯：两端半径相同即圆柱折弯，请用 bend_from_flat")
+    if not (0.0 < ang <= 2.0 * math.pi + 1e-12):
+        raise K.KernelError("圆锥折弯：角度必须在 (0, 2π] 内")
+    ox, oy, oz = (float(v) for v in origin)
+    pts = [(ox + r1, oy, oz), (ox + r1 + t, oy, oz),
+           (ox + r2 + t, oy, oz + h), (ox + r2, oy, oz + h)]
+    face = K.face_from_polygon(pts)
+    return K.revolve(face, (ox, oy, oz), (0.0, 0.0, 1.0), ang)
+
+
+def conical_bend_allowance(angle_rad: float, r1: float, r2: float, k: float,
+                           t: float) -> float:
+    """P311: 圆锥折弯的中性层展开长（在中间母线上用 K 因子）。"""
+    return abs(float(angle_rad)) * ((float(r1) + float(r2)) / 2.0
+                                    + float(k) * float(t))
+
+
+def axial_bend(length: float, width: float, t: float, flange: float,
+               angle_rad: float, r_inner: float = 0.0, k: float = 0.42):
+    """P311: 轴向折弯——折弯轴平行于板料走向的 U 型槽（底板 + 两条立边）。
+
+    The bend axes run along x (the strip direction), so this is the bend of a
+    sheet edge rather than across the sheet: base plate plus two flanges.
+
+    Closed forms:  base = length*width*t,
+                   each flange = angle_rad * (r + t/2) * t * length (Pappus),
+                   developed length = width + 2 * (flange + BA),
+                   BA = angle_rad * (r + k * t).
+    """
+    L = float(length)
+    w = float(width)
+    t = float(t)
+    fl = float(flange)
+    ang = float(angle_rad)
+    r = float(r_inner)
+    if min(L, w, t, fl) <= 0:
+        raise K.KernelError("轴向折弯：长度/宽度/板厚/立边必须为正")
+    if r < 0:
+        raise K.KernelError("轴向折弯：内半径不能为负")
+    if not (0.0 < ang <= math.pi + 1e-12):
+        raise K.KernelError("轴向折弯：折弯角度必须在 (0, π] 内")
+    if not (0.0 <= float(k) <= 1.0):
+        raise K.KernelError("轴向折弯：K 因子必须在 [0, 1] 内")
+    base = K.make_box(L, w, t)
+    out = base
+    big = 10.0 * (r + t + L + w)
+    # a U-channel's flanges rise OUTSIDE the base footprint: the y=0 edge bends
+    # toward -y, the y=w edge toward +y (the first draft used the inside
+    # quadrants, so the flanges landed in the base and the fuse swallowed half)
+    for (y_edge, outward) in ((0.0, -1.0), (w, 1.0)):
+        # the flange is the ring around the bend axis clipped to the outward
+        # quadrant.  Sweeping the edge face with MakeRevol looks simpler but the
+        # swept FACE does not fuse cleanly (measured: half a flange lost), so
+        # the flange is built from exact cylinders and a clipping box instead.
+        ay, az = y_edge, t + r
+        ring = K.cut(K.make_cylinder(r + t, L, origin=(0.0, ay, az),
+                                     axis=(1.0, 0.0, 0.0)),
+                     K.make_cylinder(r, L, origin=(0.0, ay, az),
+                                     axis=(1.0, 0.0, 0.0)))
+        oy = ay if outward > 0 else ay - big
+        quad = K.make_box(big, big, big,
+                          origin=(-big / 2.0, oy, az - big))
+        out = K.fuse(out, K.common(ring, quad))
+    return out
+
+
+def axial_bend_allowance(angle_rad: float, r_inner: float, k: float,
+                         t: float) -> float:
+    """P311: 轴向折弯的单边折弯余量 BA = θ·(r + Kt)（与圆柱折弯同式）。"""
+    return bend_allowance(angle_rad, r_inner, k, t)
+
+
+def detect_conical(solid) -> List[dict]:
+    """P311: 圆锥面识别——返回 [{r_at_start, r_at_end, semi_angle_rad, height}]。
+
+    Cones are kept SEPARATE from detect_bends (cylinders only): reporting a
+    conical bend as a cylindrical one would let unfold/flat_pattern silently
+    use the wrong developed length (the rule 60/67 failure mode).
+    """
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+    from OCC.Core.GeomAbs import GeomAbs_Cone
+    out: List[dict] = []
+    for f in K.explore(solid, "face"):
+        ad = BRepAdaptor_Surface(f)
+        if ad.GetType() != GeomAbs_Cone:
+            continue
+        cone = ad.Cone()
+        ax = cone.Axis()
+        loc = ax.Location()
+        d = ax.Direction()
+        semi = float(cone.SemiAngle())
+        v0, v1 = ad.FirstVParameter(), ad.LastVParameter()
+        u0 = 0.5 * (ad.FirstUParameter() + ad.LastUParameter())
+
+        def _radius(v):
+            """Distance from the sample point to the cone axis (parametrisation
+            independent - the raw v parameter is not an axial distance)."""
+            p = ad.Value(u0, v)
+            w = (p.X() - loc.X(), p.Y() - loc.Y(), p.Z() - loc.Z())
+            cr = (d.Y() * w[2] - d.Z() * w[1], d.Z() * w[0] - d.X() * w[2],
+                  d.X() * w[1] - d.Y() * w[0])
+            return math.sqrt(sum(c * c for c in cr))
+
+        p0, p1 = ad.Value(u0, v0), ad.Value(u0, v1)
+        axial = abs((p1.X() - p0.X()) * d.X() + (p1.Y() - p0.Y()) * d.Y()
+                    + (p1.Z() - p0.Z()) * d.Z())
+        out.append({"r_at_start": _radius(v0),
+                    "r_at_end": _radius(v1),
+                    "semi_angle_rad": semi,
+                    "height": axial,
+                    "axis": (d.X(), d.Y(), d.Z()),
+                    "location": (loc.X(), loc.Y(), loc.Z()),
+                    "face": f})
+    return out
+
+
 def jog(width: float, t: float, len1: float, web_h: float, len2: float,
         r_inner: float = 0.0) -> "object":
     """Z-jog (square corners): flat1 (z 0..t), vertical web, flat2 at

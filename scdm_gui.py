@@ -1710,6 +1710,47 @@ else:
             except Exception as exc:
                 self._set_status(f"接缝参数非法：{exc}")
 
+        def _do_sheet_conical(self):
+            """P311: 圆锥折弯 - 内外锥面的弯板段（体）。"""
+            ses = self.session()
+            vals = self._ask_numbers("圆锥折弯", [("角度 deg", 90.0), ("板厚 mm", 1.0),
+                                               ("高度 mm", 30.0), ("内半径 1 mm", 20.0),
+                                               ("内半径 2 mm", 30.0), ("K 因子", 0.42)])
+            if not vals:
+                return
+            import math
+            from scdm import sheetmetal as SM
+            try:
+                solid = SM.conical_bend(math.radians(vals[0]), vals[1] / ses.scale,
+                                        vals[2] / ses.scale, vals[3] / ses.scale,
+                                        vals[4] / ses.scale, k=vals[5])
+                ses.kdoc.add_body(solid, name="圆锥折弯件")
+                self._commit("圆锥折弯件（%g°，r %g→%g mm）"
+                             % (vals[0], vals[3], vals[4]))
+            except Exception as exc:
+                self._set_status(f"圆锥折弯失败: {exc}")
+
+        def _do_sheet_axial(self):
+            """P311: 轴向折弯 - 底板 + 两立边（体）。"""
+            ses = self.session()
+            vals = self._ask_numbers("轴向折弯", [("长度 mm", 80.0), ("宽度 mm", 30.0),
+                                               ("板厚 mm", 1.0), ("立边 mm", 10.0),
+                                               ("角度 deg", 90.0), ("内 R mm", 2.0),
+                                               ("K 因子", 0.42)])
+            if not vals:
+                return
+            import math
+            from scdm import sheetmetal as SM
+            try:
+                solid = SM.axial_bend(vals[0] / ses.scale, vals[1] / ses.scale,
+                                      vals[2] / ses.scale, vals[3] / ses.scale,
+                                      math.radians(vals[4]), vals[5] / ses.scale,
+                                      vals[6])
+                ses.kdoc.add_body(solid, name="轴向折弯件")
+                self._commit("轴向折弯件（%g°，立边 %g mm）" % (vals[4], vals[3]))
+            except Exception as exc:
+                self._set_status(f"轴向折弯失败: {exc}")
+
         def _do_sheet_bend(self):
             ses = self.session()
             vals = self._sheet_params("折弯（K 因子）", [
