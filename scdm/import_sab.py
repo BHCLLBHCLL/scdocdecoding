@@ -1323,9 +1323,16 @@ def import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
     # into a generic "unbuilt" count.
     ref_faces = 0
     for mdl in models:
+        # collect the ref owners in ONE pass over inner records: doing it per
+        # face is O(faces x inner) and blew the import budget on samplemodel5
+        # (1288 faces, ~2k inner records -> minutes).
+        owners = {getattr(e, "cluster_owner", None) for e in mdl.inner
+                  if e.kind == "ref"}
+        owners.discard(None)
+        if not owners:
+            continue
         for f in mdl.of_kind("face"):
-            s = mdl.e(f.surface) if f.surface is not None and f.surface >= 0 else None
-            if s is not None and _inner_of_kind(mdl, s, "ref") is not None:
+            if f.surface is not None and f.surface >= 0 and f.surface in owners:
                 ref_faces += 1
     if ref_faces:
         # wording matters: these faces REFERENCE a ref-间接 surface; some of them
