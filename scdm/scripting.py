@@ -566,6 +566,36 @@ def op_sheet_junction(kdoc, opts, scale):
     return body, ("接缝 %s %g" % (mode, opts.get("size", 4.0)))
 
 
+def op_mesh_surface(kdoc, opts, scale):
+    """P323: 面网格——派生件（不入 .scdm），返回可数指标。"""
+    from scdm import mesh as ME
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("网格：实体不存在")
+    mesh = ME.mesh_shape(body.shape, deflection=opts.get("deflection", 1.0) / scale)
+    stats = ME.mesh_stats(mesh, shape=body.shape)
+    kdoc.meshes[body.id] = {"stats": stats}
+    return body, ("网格：%d 三角形 / %d 顶点，退化 %d，面积误差 %.3g"
+                  % (stats["triangles"], stats["vertices"], stats["degenerate"],
+                     stats["area_rel_error"]))
+
+
+def op_mesh_report(kdoc, opts, scale):
+    """P324: 网格质量报告导出（JSON/CSV）。"""
+    from scdm import mesh as ME
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("网格报告：实体不存在")
+    path = opts.get("path")
+    if not path:
+        raise ValueError("网格报告：需要 path")
+    rep = ME.quality_report(body.shape,
+                            deflection=opts.get("deflection", 1.0) / scale,
+                            name=body.name)
+    ME.write_report(path, rep, fmt=opts.get("fmt", "json"))
+    return body, ("已导出网格报告 %s（%d 三角形）" % (path, rep["triangles"]))
+
+
 def op_sheet_conical(kdoc, opts, scale):
     """P311: 圆锥折弯——内外表面都是锥面的弯板段（新建实体）。"""
     from scdm import sheetmetal as SM
@@ -733,6 +763,8 @@ OPS = {
     "sheet.junction": op_sheet_junction,
     "sheet.conical": op_sheet_conical,
     "sheet.axial": op_sheet_axial,
+    "mesh.surface": op_mesh_surface,
+    "mesh.report": op_mesh_report,
 }
 
 

@@ -81,6 +81,9 @@ class KernelDoc:
         self.import_report: dict = {}
         self.weldments: List[Any] = []    # P291: beam/weldment groups
         self.properties: Dict[str, Any] = {}   # P319: body id -> PartProperties
+        # P323: session-only mesh artifacts (derived, rule 77: never persisted;
+        # recompute on demand, only the REPORT leaves the session)
+        self.meshes: Dict[str, Any] = {}
         self.param_table = None           # scdm.params.ParamTable (optional)
         self.sim = None                   # scdm.simprep.SimModel (H8)
         self.named: List[dict] = []  # named selections: {"name": str, "items": [(kind,id)]}

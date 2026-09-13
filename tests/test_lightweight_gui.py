@@ -545,6 +545,30 @@ class LightweightModeTests(unittest.TestCase):
         assert rows[0]["material_name"] == "铝合金"
         assert abs(rows[0]["mass_g"] - 21.6) < 1e-9
 
+    def test_p323_mesh_command_reports_countable_stats(self):
+        """R61/P323: mesh.surface meshes the body, stores session-only stats and
+        reports the countable numbers (12 triangles / 8 welded vertices /
+        0 degenerate / exact area on a box)."""
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm.kdoc import KernelDoc
+
+        v = self.gui.ScdmViewer(path=None)
+        kdoc = KernelDoc()
+        body = kdoc.add_body(K.make_box(0.02, 0.02, 0.02), name="B")
+        v.session().kdoc = kdoc
+        v._commit = lambda *a, **k: None
+        v._ask_numbers = lambda *a, **k: [1.0]
+        v._do_mesh_surface()
+        stats = kdoc.meshes[body.id]["stats"]
+        assert stats["triangles"] == 12 and stats["vertices"] == 8
+        assert stats["degenerate"] == 0
+        assert abs(stats["area_rel_error"]) < 1e-15
+        msg = self._status(v)
+        assert "12" in msg and "退化 0" in msg
+        assert hasattr(v, "_do_mesh_report")
+
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""
         from scdm import kernel as K

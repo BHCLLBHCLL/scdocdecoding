@@ -2710,6 +2710,57 @@ else:
             dlg.resize(520, 320)
             dlg.exec_()
 
+        def _do_mesh_surface(self):
+            """P323: 面网格 - 派生件（指标进状态栏，不入 .scdm）。"""
+            ses = self.session()
+            body = self._selected_kbody()
+            if body is None and len(ses.kdoc.bodies) == 1:
+                body = ses.kdoc.bodies[0]
+            if body is None:
+                self._set_status("网格：请先选择一个实体")
+                return
+            vals = self._ask_numbers("面网格", [("弦差 mm", 1.0)])
+            if not vals:
+                return
+            from scdm import mesh as ME
+            try:
+                mesh = ME.mesh_shape(body.shape, deflection=vals[0] / ses.scale)
+                stats = ME.mesh_stats(mesh, shape=body.shape)
+                ses.kdoc.meshes[body.id] = {"stats": stats}
+                self._set_status(
+                    "网格：%d 三角形 / %d 顶点，退化 %d，面积误差 %.3g"
+                    % (stats["triangles"], stats["vertices"],
+                       stats["degenerate"], stats["area_rel_error"]))
+                self._commit("已生成面网格")
+            except Exception as exc:
+                self._set_status(f"网格失败: {exc}")
+
+        def _do_mesh_report(self):
+            """P324: 网格质量报告导出（JSON/CSV）。"""
+            ses = self.session()
+            body = self._selected_kbody()
+            if body is None and len(ses.kdoc.bodies) == 1:
+                body = ses.kdoc.bodies[0]
+            if body is None:
+                self._set_status("网格报告：请先选择一个实体")
+                return
+            fn, _ = QFileDialog.getSaveFileName(
+                self, "导出网格报告", (body.name or "mesh") + "_mesh.json",
+                "JSON (*.json);;CSV (*.csv)")
+            if not fn:
+                return
+            fmt = "csv" if fn.lower().endswith(".csv") else "json"
+            from scdm import mesh as ME
+            try:
+                rep = ME.quality_report(body.shape, deflection=1.0 / ses.scale,
+                                        name=body.name)
+                ses.kdoc.meshes[body.id] = {"stats": rep}
+                ME.write_report(fn, rep, fmt=fmt)
+                self._set_status("已导出网格报告 %s（%d 三角形）"
+                                 % (fn, rep["triangles"]))
+            except Exception as exc:
+                self._set_status(f"网格报告失败: {exc}")
+
         def _do_det_mat(self):
             """P319: 选材料 - 质量 = 体积 x 密度（属性随 .scdm 往返）。"""
             from scdm import materials as MAT

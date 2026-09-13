@@ -223,6 +223,10 @@ TABS: Tuple[Tab, ...] = (
             C("sim.support", "支撑", "Support", "M5", "support"),
             C("sim.contact", "接触", "Contact", "M5", "contact"),
             C("sim.report", "报告", "Report", "M5", "report"),
+            C("mesh.surface", "面网格", "Surface Mesh", "M5", "list",
+              note="三角化 + 可数质量指标（面积对拍/退化计数）"),
+            C("mesh.report", "网格报告", "Mesh Report", "M5", "save",
+              note="长宽比/最小角/雅可比分布导出 JSON/CSV"),
         )),
     )),
     Tab("markup", "标记", "3D Markup", (
@@ -387,6 +391,7 @@ M5_LIVE = {
     "surface.thicken", "surface.offset", "surface.untrim", "surface.extend",
     "surface.patch", "surface.blend",
     "sim.load", "sim.support", "sim.contact", "sim.report",
+    "mesh.surface", "mesh.report",
     "markup.note", "markup.list", "det.params",
     "prep.enclose", "prep.share", "prep.mid", "file.print",
     "facet.reverse", "facet.smooth", "facet.reduce", "facet.fill", "facet.convert",
