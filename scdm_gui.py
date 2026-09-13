@@ -479,7 +479,12 @@ else:
             report = dict(getattr(self.session().kdoc, "import_report", None) or {})
             refs = report.get("ref_faces") or 0
             unbuilt = report.get("unbuilt_faces") or 0
+            # R72/P358: the ref family is reported on both sides - how many
+            # still rebuild from their boundary curves and how many cannot.
             return {"ref_faces": refs, "unbuilt_faces": unbuilt,
+                    "ref_built": report.get("ref_built") or 0,
+                    "ref_unbuilt": report.get("ref_unbuilt") or 0,
+                    "ref_no_boundary": report.get("ref_no_boundary") or 0,
                     "parts": len(self._import_groups())}
         def _session_from_cad(self, path: str) -> Session:
             if not K.available():

@@ -471,17 +471,122 @@ def _shape_within(shape, box, margin_ratio: float = 0.05) -> bool:
     return True
 
 
+# -- R72: per-face outcome trace (OFF by default) -------------------------
+#
+# The ref-family diff needs to know WHICH branch built each SAB face, which
+# is a fact only the importer has (rule 84: one source of truth).  The tracer
+# is therefore a bounded, off-by-default hook INSIDE the import path rather
+# than a re-implementation in the tool: with `_TRACE is None` every record
+# costs one global lookup, and rule 85's "measurement must not perturb" holds
+# because entering the context manager also restores the previous state.
+_TRACE: Optional[list] = None
+
+
+def ref_surface_owners(model) -> set:
+    """Entity indices whose cluster owns an ACIS `ref` payload (cached on the
+    model).  ONE source of truth for the ref family (rule 84): the importer's
+    counting loop, the per-face unbuilt counter and the R72 trace all use it.
+    """
+    cached = getattr(model, "_ref_owners", None)
+    if cached is None:
+        cached = {getattr(e, "cluster_owner", None) for e in model.inner
+                  if e.kind == "ref"}
+        cached.discard(None)
+        try:
+            model._ref_owners = cached
+        except Exception:
+            pass
+    return cached
+
+
+def _face_has_boundary(model, face_ent) -> bool:
+    """True when at least one loop carries an edge (a usable boundary)."""
+    try:
+        for lp in model.loops_of_face(face_ent):
+            for ce in model.coedges_of_loop(lp):
+                if ce.edge is not None and ce.edge >= 0:
+                    return True
+    except Exception:
+        return False
+    return False
+
+
+class trace_faces:
+    """Context manager recording one dict per SAB face (R72 instrument).
+
+    Usage::
+
+        with trace_faces() as rec:
+            kdoc = import_scdoc_bundle(data)
+        rec[0]  # {'model': id, 'face': idx, 'kind': .., 'path': .., ...}
+    """
+
+    def __enter__(self):
+        global _TRACE
+        self._prev = _TRACE
+        _TRACE = rec = []
+        return rec
+
+    def __exit__(self, *exc):
+        global _TRACE
+        _TRACE = self._prev
+        return False
+
+
+def _trace_face(model, face, kind, path, faces=0, dropped=0, tried=""):
+    if _TRACE is None:
+        return
+    loops = edges = with_curve = points = 0
+    try:
+        for lp in model.loops_of_face(face):
+            loops += 1
+            for ce in model.coedges_of_loop(lp):
+                edges += 1
+                ee = model.e(ce.edge) if ce.edge >= 0 else None
+                if ee is not None and ee.curve is not None and ee.curve >= 0:
+                    with_curve += 1
+    except Exception:
+        pass
+    try:
+        points = len(model.face_loops_polygons(face) or [])
+    except Exception:
+        pass
+    sampled = 0
+    try:
+        sampled = sum(1 for lp in model.loops_of_face(face)
+                      if _loop_polygon_sampled(model, lp))
+    except Exception:
+        sampled = 0
+    surf = getattr(face, "surface", None)
+    ref = bool(surf is not None and surf >= 0 and surf in ref_surface_owners(model))
+    inner = ""
+    try:
+        head = model.e(surf) if surf is not None and surf >= 0 else None
+        if head is not None:
+            inner = ",".join(sorted({e.kind for e in model.inner
+                                      if e.cluster_owner == head.idx}))
+    except Exception:
+        inner = "?"
+    _TRACE.append({"model": id(model), "face": face.idx, "kind": kind,
+                   "path": path, "faces": faces, "dropped": dropped,
+                   "loops": loops, "edges": edges, "curve_edges": with_curve,
+                   "polys": points, "sampled": sampled, "tried": tried,
+                   "surf": surf, "ref": ref, "inner": inner})
+
 def _faces_from_model(model, body, box=None) -> List[Any]:
     face_ents = model.body_faces(body) if body is not None else model.of_kind("face")
     occ_faces = []
     skipped = 0
     for face in face_ents:
+        kind, surf_ent = _surface_kind(model, face)
         built_list = []
+        path = "rebuild"
         try:
             built_list = _rebuild_face(model, face, box)
         except Exception:
             built_list = []
         if not built_list:
+            path = "polygons"
             try:
                 polys = [p for p in (model.face_loops_polygons(face) or [])
                          if len(p) >= 3]
@@ -490,6 +595,7 @@ def _faces_from_model(model, body, box=None) -> List[Any]:
             if not polys:
                 # P46: a two-edge sliver loop walks down to 2 points; recover
                 # the boundary by sampling the loop's curves instead.
+                path = "sampled"
                 try:
                     polys = [p for p in
                              (_loop_polygon_sampled(model, lp)
@@ -498,7 +604,7 @@ def _faces_from_model(model, body, box=None) -> List[Any]:
                     polys = []
             if polys:
                 try:
-                    f = _face_from_polygons(polys, _surface_kind(model, face)[1])
+                    f = _face_from_polygons(polys, surf_ent)
                 except Exception:
                     f = None
                 if f is not None:
@@ -506,7 +612,16 @@ def _faces_from_model(model, body, box=None) -> List[Any]:
         if not built_list:
             _faces_from_model.unbuilt = getattr(
                 _faces_from_model, "unbuilt", 0) + 1
+            # R72: count the ref family's share of the loss here, where the
+            # per-face outcome is known, instead of guessing it later.
+            if (kind is not None and face.surface is not None
+                    and face.surface >= 0
+                    and face.surface in ref_surface_owners(model)):
+                _faces_from_model.unbuilt_ref = getattr(
+                    _faces_from_model, "unbuilt_ref", 0) + 1
+            _trace_face(model, face, kind, "none", tried=path)
             continue
+        kept = 0
         for built in built_list:
             # P45: wild surface parameters used to place lobes tens of metres
             # away, so a face that misses the model bbox by more than half its
@@ -517,6 +632,9 @@ def _faces_from_model(model, body, box=None) -> List[Any]:
                 skipped += 1
                 continue
             occ_faces.append(built)
+            kept += 1
+        _trace_face(model, face, kind, path, faces=kept,
+                    dropped=len(built_list) - kept)
     if skipped:
         _faces_from_model.skipped = getattr(_faces_from_model, "skipped", 0) + skipped
     return occ_faces
@@ -1174,6 +1292,27 @@ def _rebuild_face(model, face_ent, box=None):
     return []
 
 
+def ref_family_hint(report) -> str:
+    """Qt-free tree hint for the ref family (R72/P358).
+
+    One source of truth for the wording: the part tree, the status line and
+    the tests all read this string instead of re-deriving the counts.
+    """
+    report = report or {}
+    ref = report.get("ref_faces") or 0
+    if not ref:
+        return ""
+    text = " · ref %d" % ref
+    unbuilt = report.get("ref_unbuilt") or 0
+    if unbuilt:
+        text += "（未重建 %d" % unbuilt
+        no_boundary = report.get("ref_no_boundary") or 0
+        if no_boundary:
+            text += "，无边界 %d" % no_boundary
+        text += "）"
+    return text
+
+
 def import_summary(report, warnings=None, error=None) -> str:
     """One-line human summary of an import (P47).
 
@@ -1374,26 +1513,33 @@ def import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
     # (22 entity kinds, none a reference table; the SAT prints { ref N } with no
     # inline geometry either).  Report the family honestly instead of folding it
     # into a generic "unbuilt" count.
-    ref_faces = 0
+    ref_faces = ref_no_boundary = 0
     for mdl in models:
-        # collect the ref owners in ONE pass over inner records: doing it per
-        # face is O(faces x inner) and blew the import budget on samplemodel5
-        # (1288 faces, ~2k inner records -> minutes).
-        owners = {getattr(e, "cluster_owner", None) for e in mdl.inner
-                  if e.kind == "ref"}
-        owners.discard(None)
+        # collect the ref owners in ONE pass over inner records (cached on the
+        # model): doing it per face is O(faces x inner) and blew the import
+        # budget on samplemodel5 (1288 faces, ~2k inner records -> minutes).
+        owners = ref_surface_owners(mdl)
         if not owners:
             continue
         for f in mdl.of_kind("face"):
-            if f.surface is not None and f.surface >= 0 and f.surface in owners:
-                ref_faces += 1
+            if f.surface is None or f.surface < 0 or f.surface not in owners:
+                continue
+            ref_faces += 1
+            if not _face_has_boundary(mdl, f):
+                ref_no_boundary += 1
+    # R72/P358: the family is now counted on BOTH sides - how many of the
+    # referencing faces still build from their boundary curves, and how many
+    # carry no boundary at all (nothing left to build them from).
+    ref_unbuilt = getattr(_faces_from_model, "unbuilt_ref", 0)
+    ref_built = ref_faces - ref_unbuilt
     if ref_faces:
         # wording matters: these faces REFERENCE a ref-间接 surface; some of them
         # still get built from their boundary curves, so do not claim they are
-        # all missing - the unbuilt count above is the authoritative number.
+        # all missing - the unbuilt count below is the authoritative number.
         doc.import_warnings.append(
-            "%d 个面引用 ACIS ref 间接曲面（该类曲面的数据不在本 part；其中未重建者已计入上面的未重建数）"
-            % ref_faces)
+            "%d 个面引用 ACIS ref 间接曲面（该类曲面的数据不在本 part）："
+            "其中 %d 个仍由边界曲线重建，%d 个未能重建（含 %d 个无任何边界边）"
+            % (ref_faces, ref_built, ref_unbuilt, ref_no_boundary))
     if dropped or unbuilt:
         doc.import_warnings.append(
             "SAB 重建：%d 个面未能重建，%d 个面因超出包围盒被丢弃"
@@ -1426,6 +1572,9 @@ def import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
             "unbuilt_faces": unbuilt,
             "dropped_faces": dropped,
             "ref_faces": ref_faces,
+            "ref_built": ref_built,
+            "ref_unbuilt": ref_unbuilt,
+            "ref_no_boundary": ref_no_boundary,
             "mesh_bodies": list(mesh_bodies),
             "hierarchy": hierarchy,  # R22/P127: part -> body ids (read-only)
         }
@@ -1460,6 +1609,11 @@ def import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
         "failed_parts": [label for (_i, label) in failed_parts],
         "unbuilt_faces": unbuilt,
         "dropped_faces": dropped,
+        # R72: same countable keys in both report branches (rule 84)
+        "ref_faces": ref_faces,
+        "ref_built": ref_built,
+        "ref_unbuilt": ref_unbuilt,
+        "ref_no_boundary": ref_no_boundary,
         "mesh_bodies": [b.name for b in doc.bodies
                         if (b.name or "").startswith("网格导入")],
     }

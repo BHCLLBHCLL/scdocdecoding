@@ -443,8 +443,11 @@ class LeftPanel(QWidget):
         self._block_group = True
         report = dict(getattr(session.kdoc, "import_report", None) or {})
         hint = ""
-        if report.get("ref_faces"):
-            hint += " · ref %d" % report["ref_faces"]
+        # R72/P358: countable ref split (referencing / unbuilt / no-boundary)
+        # comes from import_sab so the tree, the status line and the tests
+        # cannot drift apart.
+        from scdm.import_sab import ref_family_hint
+        hint += ref_family_hint(report)
         if report.get("unbuilt_faces"):
             hint += " · 未重建 %d" % report["unbuilt_faces"]
         for g in getattr(session.kdoc, "groups", []) if session.kdoc else []:
