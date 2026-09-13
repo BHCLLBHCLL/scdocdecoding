@@ -48,10 +48,12 @@ spec.loader.exec_module(diff)
 #   SampleModel4: 441/112 -> 418/111 -> 423/113
 #   samplemodel2: 3542/547 -> 2546/464 -> 2325/438
 #   samplemodel3 0/0, samplemodel5 0/0, samplemodel6 2/2 (unchanged)
+# R75 changed the metric: free_edges() now counts GAPS only (a periodic
+# face's seam is not a gap) - measured seams 0 / 18 / 73.
 FREE_CEILING = {
-    "SampleModel1.scdoc": (70, 30),
-    "SampleModel4.scdoc": (430, 116),
-    "samplemodel2.scdoc": (2400, 450),
+    "SampleModel1.scdoc": (60, 30),
+    "SampleModel4.scdoc": (410, 116),
+    "samplemodel2.scdoc": (2300, 450),
     "samplemodel3.scdoc": (0, 0),
     "samplemodel5.scdoc": (0, 0),
     "samplemodel6.scdoc": (2, 2),

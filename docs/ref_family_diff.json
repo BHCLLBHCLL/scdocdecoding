@@ -50,6 +50,7 @@
   },
   "sab_faces": 109,
   "sample": "SampleModel1.scdoc",
+  "seam_edges": 0,
   "unbuilt": 0,
   "warnings": []
  },
@@ -948,7 +949,7 @@
     "tried": "sampled"
    }
   ],
-  "free_edges": 423,
+  "free_edges": 405,
   "free_loops": 113,
   "other_unbuilt": {
    "plane": 2
@@ -1004,6 +1005,7 @@
   },
   "sab_faces": 177,
   "sample": "SampleModel4.scdoc",
+  "seam_edges": 18,
   "unbuilt": 35,
   "warnings": [
    "52 个面引用 ACIS ref 间接曲面（该类曲面的数据不在本 part）：其中 19 个仍由边界曲线重建，33 个未能重建（含 6 个无任何边界边）",
@@ -1361,7 +1363,7 @@
     "tried": ""
    }
   ],
-  "free_edges": 2325,
+  "free_edges": 2252,
   "free_loops": 438,
   "other_unbuilt": {},
   "paths": {
@@ -1410,6 +1412,7 @@
   },
   "sab_faces": 1813,
   "sample": "samplemodel2.scdoc",
+  "seam_edges": 73,
   "unbuilt": 1,
   "warnings": [
    "20 个面引用 ACIS ref 间接曲面（该类曲面的数据不在本 part）：其中 19 个仍由边界曲线重建，1 个未能重建（含 0 个无任何边界边）",
@@ -1467,6 +1470,7 @@
   },
   "sab_faces": 111,
   "sample": "samplemodel3.scdoc",
+  "seam_edges": 0,
   "unbuilt": 0,
   "warnings": []
  },
@@ -1521,6 +1525,7 @@
   },
   "sab_faces": 1288,
   "sample": "samplemodel5.scdoc",
+  "seam_edges": 0,
   "unbuilt": 0,
   "warnings": []
  },
@@ -1575,6 +1580,7 @@
   },
   "sab_faces": 28,
   "sample": "samplemodel6.scdoc",
+  "seam_edges": 0,
   "unbuilt": 0,
   "warnings": []
  }

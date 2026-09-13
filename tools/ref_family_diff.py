@@ -48,18 +48,24 @@ def _sab_counts(data):
 
 
 def free_edges(shape):
-    """Edges used by fewer than two faces (the watertightness measure)."""
-    import OCC.Core.TopExp as _TE
-    from OCC.Core.TopTools import TopTools_IndexedDataMapOfShapeListOfShape
-    from OCC.Core.TopAbs import TopAbs_EDGE, TopAbs_FACE
+    """Edges used by fewer than two faces, SEAMS EXCLUDED (R75).
 
-    m = TopTools_IndexedDataMapOfShapeListOfShape()
-    _TE.topexp.MapShapesAndAncestors(shape, TopAbs_EDGE, TopAbs_FACE, m)
-    n = 0
-    for i in range(1, m.Size() + 1):
-        if m.FindFromIndex(i).Size() < 2:
-            n += 1
-    return n
+    A cylinder patch stores its seam as one edge used twice by the same
+    face, so the ancestor map reports a single face and the seam looked like
+    a gap: measured 0 / 18 / 73 such edges on SampleModel1 / SampleModel4 /
+    samplemodel2.  The count that matters for watertightness is the gap
+    count; the seams are reported separately by @@@@.
+    """
+    from scdm import kernel as K
+
+    return len(K.open_edges(shape))
+
+
+def seam_edges(shape):
+    """Free-looking edges that are really a periodic face's seam (R75)."""
+    from scdm import kernel as K
+
+    return len(K.free_edges(shape)) - len(K.open_edges(shape))
 
 
 def ref_curve_coverage(data):
@@ -94,7 +100,7 @@ def measure(path):
     import_sab._faces_from_model.skipped = 0
     with import_sab.trace_faces() as rec:
         kdoc = import_sab.import_scdoc_bundle(data)
-    bodies = faces = f_edges = f_loops = 0
+    bodies = faces = f_edges = f_loops = f_seams = 0
     for b in kdoc.bodies:
         if (b.name or "").startswith("网格导入"):
             continue
@@ -102,6 +108,7 @@ def measure(path):
         try:
             faces += len(K.explore(b.shape, "face"))
             f_edges += free_edges(b.shape)
+            f_seams += seam_edges(b.shape)
             f_loops += len(K._free_boundary_wires(b.shape))
         except Exception:
             pass
@@ -136,6 +143,7 @@ def measure(path):
         "ref_unbuilt_small": dict(ref_unbuilt_edges),
         "other_unbuilt": dict(other_unbuilt),
         "free_edges": f_edges,
+        "seam_edges": f_seams,
         "free_loops": f_loops,
         "curves": ref_curve_coverage(data),
         "report": {k: v for k, v in (kdoc.import_report or {}).items()
@@ -148,16 +156,17 @@ def measure(path):
 
 def render_md(rows):
     out = []
-    out.append("| 样例 | SAB 体/面 | 导入 体/面 | 重建分支 rebuild/polygons/sampled/none | 自由边/自由环 | ref 面 | ref 分支 | ref 重建/未重建 | 无边界边 | ref 曲线（有载荷/仅 ref） | 非 ref 未重建 | 包围盒丢弃 |")
+    out.append("| 样例 | SAB 体/面 | 导入 体/面 | 重建分支 rebuild/polygons/sampled/none | 真缺口(缝边)/自由环 | ref 面 | ref 分支 | ref 重建/未重建 | 无边界边 | ref 曲线（有载荷/仅 ref） | 非 ref 未重建 | 包围盒丢弃 |")
     out.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
     for r in rows:
         p = r["paths"]
         rp = r["ref"]["paths"]
         rep = r["report"]
-        out.append("| `%s` | %d/%d | %d/%d | %d/%d/%d/%d | %d/%d | %d | %d/%d/%d/%d | **%d/%d** | %d | %d/%d | %s | %d |"
+        out.append("| `%s` | %d/%d | %d/%d | %d/%d/%d/%d | %s/%d | %d | %d/%d/%d/%d | **%d/%d** | %d | %d/%d | %s | %d |"
                    % (r["sample"], r["sab"].get("body", 0), r["sab"].get("face", 0),
                       r["bodies"], r["faces"], p["rebuild"], p["polygons"],
-                      p["sampled"], p["none"], r["free_edges"], r["free_loops"],
+                      p["sampled"], p["none"],
+                      "%d(%d)" % (r["free_edges"], r["seam_edges"]), r["free_loops"],
                       r["ref"]["faces"],
                       rp["rebuild"], rp["polygons"], rp["sampled"], rp["none"],
                       rep.get("ref_built", 0), rep.get("ref_unbuilt", rp["none"]),

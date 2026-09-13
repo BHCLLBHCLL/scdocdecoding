@@ -303,6 +303,82 @@ def align_axes(moving, moving_face, target_face):
     return moved
 
 
+def edge_face_counts(shape):
+    """[(edge, how many faces use it, one owner face or None)] - one pass (R75).
+
+    R75 lesson: `FindFromIndex` returns a VIEW into the C++ map, and the map
+    is a local of this function - returning those lists gave dangling handles
+    that read as size 0 in the caller (the seam classifier then said "no
+    seams" everywhere).  Everything is therefore materialised HERE, while the
+    map is still alive.
+    """
+    import OCC.Core.TopExp as _TE
+    from OCC.Core.TopTools import TopTools_IndexedDataMapOfShapeListOfShape
+    from OCC.Core.TopAbs import TopAbs_EDGE, TopAbs_FACE
+
+    m = TopTools_IndexedDataMapOfShapeListOfShape()
+    _TE.topexp.MapShapesAndAncestors(shape, TopAbs_EDGE, TopAbs_FACE, m)
+    out = []
+    for i in range(1, m.Size() + 1):
+        faces = m.FindFromIndex(i)
+        n = faces.Size()
+        out.append((m.FindKey(i), n, faces.First() if n else None))
+    return out
+
+
+def free_edges(shape) -> List[Any]:
+    """Edges used by fewer than two faces (R75 acceptance metric).
+
+    NOTE: this includes the SEAM edge of a periodic face (a cylinder patch
+    stores its seam as one edge used twice by the SAME face, so the ancestor
+    map reports a single face).  Use `open_edges()` when the question is
+    "is this shell watertight"."""
+    return [e for (e, n, _f) in edge_face_counts(shape) if n < 2]
+
+
+def is_seam_edge(edge, face) -> bool:
+    """Does this edge lie on the seam of a periodic face? (R75)
+
+    Classified by projecting the edge's midpoint onto the face's surface and
+    testing the periodic parameter - the same test the R75 report tool uses.
+    """
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
+    from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
+    from OCC.Core.TopoDS import topods
+    try:
+        surf = BRepAdaptor_Surface(face)
+        if not (surf.IsUPeriodic() or surf.IsVPeriodic()):
+            return False
+        ad = BRepAdaptor_Curve(topods.Edge(edge))
+        mid = ad.Value(0.5 * (ad.FirstParameter() + ad.LastParameter()))
+        pr = GeomAPI_ProjectPointOnSurf(mid, surf.Surface().Surface())
+        if not pr.NbPoints():
+            return False
+        u, v = pr.LowerDistanceParameters()
+        if surf.IsUPeriodic():
+            per = surf.UPeriod()
+            if min(abs(u), abs(abs(u) - per)) < 1e-6:
+                return True
+        if surf.IsVPeriodic():
+            per = surf.VPeriod()
+            if min(abs(v), abs(abs(v) - per)) < 1e-6:
+                return True
+    except Exception:
+        return False
+    return False
+
+
+def open_edges(shape) -> List[Any]:
+    """The edges that really leave the shell open (free minus seams)."""
+    out = []
+    for (edge, n, face) in edge_face_counts(shape):
+        if n >= 2 or face is None:
+            continue
+        if is_seam_edge(edge, face):
+            continue
+        out.append(edge)
+    return out
+
 def _free_boundary_wires(shell) -> List[Any]:
     """Closed boundary wires of a shell (holes / missing faces)."""
     from OCC.Core.ShapeAnalysis import ShapeAnalysis_FreeBounds

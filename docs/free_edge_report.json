@@ -1,0 +1,125 @@
+[
+ {
+  "curve": {
+   "circle": 10,
+   "ellipse": 42,
+   "line": 4
+  },
+  "edges": 56,
+  "ends": {
+   "chain": 24,
+   "half": 24,
+   "isolated": 8
+  },
+  "gaps": 56,
+  "len_max": 0.03754427160965542,
+  "len_median": 0.004857124615965552,
+  "sample": "SampleModel1.scdoc",
+  "seams": 0,
+  "surf": {
+   "cylinder": 34,
+   "plane": 22
+  },
+  "tiny": 0
+ },
+ {
+  "curve": {
+   "bspline": 87,
+   "circle": 109,
+   "ellipse": 35,
+   "line": 192
+  },
+  "edges": 423,
+  "ends": {
+   "chain": 402,
+   "half": 15,
+   "isolated": 6
+  },
+  "gaps": 405,
+  "len_max": 0.3165344176003813,
+  "len_median": 0.005618738470846983,
+  "sample": "SampleModel4.scdoc",
+  "seams": 18,
+  "surf": {
+   "bspline": 56,
+   "cone": 5,
+   "cylinder": 68,
+   "plane": 207,
+   "torus": 87
+  },
+  "tiny": 0
+ },
+ {
+  "curve": {
+   "bspline": 10,
+   "circle": 729,
+   "ellipse": 712,
+   "hyperbola": 100,
+   "line": 774
+  },
+  "edges": 2325,
+  "ends": {
+   "chain": 1827,
+   "half": 393,
+   "isolated": 105
+  },
+  "gaps": 2252,
+  "len_max": 6.156491150048053,
+  "len_median": 0.06874941906742636,
+  "sample": "samplemodel2.scdoc",
+  "seams": 73,
+  "surf": {
+   "bspline": 4,
+   "cone": 176,
+   "cylinder": 1258,
+   "plane": 685,
+   "sphere": 96,
+   "torus": 106
+  },
+  "tiny": 0
+ },
+ {
+  "curve": {},
+  "edges": 0,
+  "ends": {},
+  "gaps": 0,
+  "len_max": 0.0,
+  "len_median": 0.0,
+  "sample": "samplemodel3.scdoc",
+  "seams": 0,
+  "surf": {},
+  "tiny": 0
+ },
+ {
+  "curve": {},
+  "edges": 0,
+  "ends": {},
+  "gaps": 0,
+  "len_max": 0.0,
+  "len_median": 0.0,
+  "sample": "samplemodel5.scdoc",
+  "seams": 0,
+  "surf": {},
+  "tiny": 0
+ },
+ {
+  "curve": {
+   "circle": 1,
+   "ellipse": 1
+  },
+  "edges": 2,
+  "ends": {
+   "chain": 2
+  },
+  "gaps": 2,
+  "len_max": 0.3128689300804618,
+  "len_median": 0.3128689300804618,
+  "sample": "samplemodel6.scdoc",
+  "seams": 0,
+  "surf": {
+   "cylinder": 1,
+   "plane": 1
+  },
+  "tiny": 0
+ }
+]
