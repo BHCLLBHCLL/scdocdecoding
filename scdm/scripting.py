@@ -591,9 +591,14 @@ def op_mesh_volume(kdoc, opts, scale):
     body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
     if body is None:
         raise ValueError("体网格：实体不存在")
-    fill = ME.tet_fill(body.shape, opts.get("cell", 2.0) / scale)
+    fill = ME.tet_fill(body.shape, opts.get("cell", 2.0) / scale,
+                       boundary=str(opts.get("boundary", "voxel")))
     stats = ME.tet_stats(fill, shape=body.shape)
     kdoc.meshes.setdefault(body.id, {})["volume"] = stats
+    if stats["boundary"] == "clip":
+        return body, ("体网格（贴体）：%d 实体格 / %d 边界格，体积误差 %.3g（体素版 %.3g）"
+                      % (stats["cells"], stats["boundary_cells"],
+                         stats["volume_clip_rel_error"], stats["volume_rel_error"]))
     return body, ("体网格：%d 单元 / %d 四面体，体积误差 %.3g"
                   % (stats["cells"], stats["tets"], stats["volume_rel_error"]))
 

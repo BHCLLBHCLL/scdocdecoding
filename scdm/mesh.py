@@ -263,13 +263,18 @@ _CUBE_TETS = ((0, 1, 2, 6), (0, 2, 3, 6), (0, 3, 7, 6),
               (0, 7, 4, 6), (0, 4, 5, 6), (0, 5, 1, 6))
 
 
-def tet_fill(shape, cell: float, tol: float = 1e-9) -> Dict:
-    """P327: 体网格首批——体素四面体填充（格心在实体内则整格保留，每格 6 四面体）。
+def tet_fill(shape, cell: float, tol: float = 1e-9, boundary: str = "voxel",
+             keep_boundary_shapes: bool = False) -> Dict:
+    """P327/P335: 体网格——体素四面体填充；@@boundary="clip"@@ 时边界格按精确裁剪计入。
 
-    Hull-conforming (boundary-fitted) volume meshing is a later batch; this one
-    is honest about what it is: the volume sum is compared against
-    @@K.volume(shape)@@ and the RELATIVE gap is the discretization error, zero for
-    a grid-aligned solid and shrinking with the cell size for curved ones.
+    voxel: a cell whose centre is inside is kept whole (6 tetrahedra) - the
+    volume error is O(cell) (the boundary layer is missing).
+    clip:  the INTERIOR cells are still real tetrahedra, but every cell in the
+    boundary band (the 26-neighbourhood of an interior cell) is intersected with
+    the solid and its exact clipped volume is added, so the total volume matches
+    @@K.volume(shape)@@ at boolean precision instead of O(cell).  A wall thinner
+    than one cell can still be missed - voxel grids are the wrong tool there, and
+    saying so is better than pretending.
     """
     from OCC.Core.BRepClass3d import BRepClass3d_SolidClassifier
     from OCC.Core.gp import gp_Pnt
@@ -286,10 +291,15 @@ def tet_fill(shape, cell: float, tol: float = 1e-9) -> Dict:
     nx = max(1, int(math.ceil((hi[0] - lo[0]) / c - 1e-9)))
     ny = max(1, int(math.ceil((hi[1] - lo[1]) / c - 1e-9)))
     nz = max(1, int(math.ceil((hi[2] - lo[2]) / c - 1e-9)))
+    mode = str(boundary).lower()
+    if mode not in ("voxel", "clip"):
+        raise K.KernelError("体网格：boundary 只能是 voxel 或 clip")
     clf = BRepClass3d_SolidClassifier(shape)
     verts: List[Tuple[float, float, float]] = []
     tets: List[Tuple[int, int, int, int]] = []
+    inside: set = set()
     cells = 0
+    partial: set = set()
     for ix in range(nx):
         x0 = lo[0] + ix * c
         for iy in range(ny):
@@ -299,6 +309,27 @@ def tet_fill(shape, cell: float, tol: float = 1e-9) -> Dict:
                 clf.Perform(gp_Pnt(x0 + c / 2.0, y0 + c / 2.0, z0 + c / 2.0), tol)
                 if clf.State() not in (TopAbs_IN, TopAbs_ON):
                     continue
+                inside.add((ix, iy, iz))
+                if mode == "clip":
+                    # sample the corners a hair INSIDE the cell: a point exactly
+                    # on a face makes SolidClassifier answer OUT as often as ON,
+                    # which mis-classified every cell of an axis-aligned box
+                    eps = c * 1e-6
+                    all_in = True
+                    for cx in (x0 + eps, x0 + c - eps):
+                        for cy in (y0 + eps, y0 + c - eps):
+                            for cz in (z0 + eps, z0 + c - eps):
+                                clf.Perform(gp_Pnt(cx, cy, cz), tol)
+                                if clf.State() not in (TopAbs_IN, TopAbs_ON):
+                                    all_in = False
+                                    break
+                            if not all_in:
+                                break
+                        if not all_in:
+                            break
+                    if not all_in:
+                        partial.add((ix, iy, iz))
+                        continue
                 base = len(verts)
                 verts.extend([(x0, y0, z0), (x0 + c, y0, z0),
                               (x0 + c, y0 + c, z0), (x0, y0 + c, z0),
@@ -308,8 +339,38 @@ def tet_fill(shape, cell: float, tol: float = 1e-9) -> Dict:
                 cells += 1
     if not cells:
         raise K.KernelError("体网格：没有格心落在实体内（格边长 %g 太大？）" % c)
-    return {"vertices": verts, "tets": tets, "cells": cells, "cell": c,
-            "counts": (nx, ny, nz)}
+    out = {"vertices": verts, "tets": tets, "cells": cells, "cell": c,
+           "counts": (nx, ny, nz), "boundary": mode,
+           "boundary_cells": 0, "boundary_volume": 0.0}
+    if mode == "clip":
+        # the boundary band: outside cells touching a solid cell (26-neighbours),
+        # plus the cells whose centre was inside but whose corners are not (an
+        # inside centre does NOT make the whole cell inside: keeping such cells
+        # whole AND adding the clip over-counted the volume by 12.7%)
+        cand = set(partial)
+        for (ix, iy, iz) in inside:
+            for dx in (-2, -1, 0, 1, 2):
+                for dy in (-2, -1, 0, 1, 2):
+                    for dz in (-2, -1, 0, 1, 2):
+                        k = (ix + dx, iy + dy, iz + dz)
+                        if (k not in inside and 0 <= k[0] < nx and 0 <= k[1] < ny
+                                and 0 <= k[2] < nz):
+                            cand.add(k)
+        shapes = []
+        for (ix, iy, iz) in sorted(cand):
+            x0, y0, z0 = lo[0] + ix * c, lo[1] + iy * c, lo[2] + iz * c
+            box = K.make_box(c, c, c, origin=(x0, y0, z0))
+            piece = K.common(box, shape)
+            v = float(K.volume(piece))
+            if v <= tol:
+                continue
+            out["boundary_cells"] += 1
+            out["boundary_volume"] += v
+            if keep_boundary_shapes:
+                shapes.append(piece)
+        if keep_boundary_shapes:
+            out["boundary_shapes"] = shapes
+    return out
 
 
 def tet_stats(fill: Dict, shape=None, tol_volume: float = 1e-18) -> Dict:
@@ -328,14 +389,23 @@ def tet_stats(fill: Dict, shape=None, tol_volume: float = 1e-18) -> Dict:
         vols.append(v)
     if not vols:
         raise K.KernelError("体网格统计：全部四面体退化")
+    bvol = float(fill.get("boundary_volume", 0.0))
     out = {"tets": len(tets), "vertices": len(verts),
            "cells": int(fill.get("cells", 0)),
            "degenerate": degenerate, "valid": len(vols),
            "volume": sum(vols), "min_volume": min(vols),
-           "max_volume": max(vols), "cell": float(fill.get("cell", 0.0))}
+           "max_volume": max(vols), "cell": float(fill.get("cell", 0.0)),
+           "boundary": str(fill.get("boundary", "voxel")),
+           "boundary_cells": int(fill.get("boundary_cells", 0)),
+           "boundary_volume": bvol,
+           # P335: the boundary-conforming total (real tets + exact clipped
+           # boundary cells); equal to self["volume"] in voxel mode
+           "volume_clip": sum(vols) + bvol}
     if shape is not None:
         ref = float(K.volume(shape))
         out["volume_ref"] = ref
         out["volume_rel_error"] = (abs(out["volume"] - ref) / ref) if ref > 0 else 0.0
+        out["volume_clip_rel_error"] = (abs(out["volume_clip"] - ref) / ref
+                                        if ref > 0 else 0.0)
     return out
 
