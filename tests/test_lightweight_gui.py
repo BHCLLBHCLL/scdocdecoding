@@ -132,6 +132,122 @@ class LightweightModeTests(unittest.TestCase):
         moved = canvas.handle_px(i)
         assert abs(moved.y() - (hp.y() - 25)) < 1.5
 
+    def test_p287_sheet_multi_select_group_drag_snaps_exactly(self):
+        """R52/P287: Ctrl append + rubber band, group drag, exact snap."""
+        os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+        from scdm import drawing as D
+        from scdm import kernel as K
+        from scdm.gui.sheet import SheetCanvas
+
+        # two parallel horizontal dimensions over two horizontal edges; the
+        # offsets are scalars along the normal, so the assertions are exact
+        views = [('前视', [[(0.0, 0.0), (0.02, 0.0)],
+                           [(0.0, 0.005), (0.02, 0.005)]])]
+        dims = [D.Dimension('前视', 'h', 20.0, (0.0, 0.0), (0.02, 0.0), 0.01),
+                D.Dimension('前视', 'h', 20.0, (0.0, 0.0), (0.02, 0.0), 0.02)]
+        canvas = SheetCanvas(views, dims)
+        canvas.resize(600, 400)
+        values = [d.value_mm for d in dims]
+        tol_m = canvas.snap_tol_px / canvas.scale
+
+        canvas.select(0)
+        assert canvas.selected == [0]
+        canvas.select(1, append=True)          # Ctrl 追加
+        assert canvas.selected == [0, 1]
+        canvas.select(1, append=True)          # Ctrl 再点 = 取消
+        assert canvas.selected == [0]
+        assert sorted(canvas.box_select(0, 0, 600, 400)) == [0, 1]
+
+        # aim 40% of the snap radius past the y=5 mm edge: the line must land
+        # EXACTLY on that edge (offset 5 mm), not near it
+        aim = canvas.to_px(0.01, 0.005 + 0.4 * tol_m)
+        hp = canvas.handle_px(0)
+        canvas.begin_drag(0, hp.x(), hp.y())
+        canvas.drag_handle(0, aim.x(), aim.y())
+        canvas.end_drag()
+        assert canvas.last_snap == 'end'
+        assert dims[0].offset == 0.005            # exact: the edge's own offset
+        # the whole selection kept its spacing (same vector -> same delta here)
+        assert dims[1].offset == 0.02 + (0.005 - 0.01)
+        # the dimension line passes through a real target exactly
+        (ax, ay) = dims[0].a
+        (nx, ny) = dims[0].normal()
+        assert any(abs((x - ax) * nx + (y - ay) * ny - dims[0].offset) < 1e-15
+                   for (x, y, _k) in canvas.snap.targets)
+        # dragging is still an offset edit: the measured values never change
+        assert [d.value_mm for d in dims] == values
+
+    def test_p287_sheet_undo_redo_round_trips(self):
+        """R52/P287: three drags -> three undos -> three redos, offsets exact."""
+        os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+        from scdm import drawing as D
+        from scdm import kernel as K
+        from scdm.gui.sheet import SheetCanvas
+
+        box = K.make_box(0.02, 0.02, 0.02)
+        view = D.projected_view(box, (0.0, 0.0, -1.0), label='前视')
+        dims = D.dimensions_for([view])
+        canvas = SheetCanvas([view], dims)
+        canvas.resize(600, 400)
+        canvas.snap_enabled = False            # this test is about undo, not snap
+
+        start = canvas.offsets()
+        states = []
+        for dy in (20.0, 30.0, 40.0):
+            hp = canvas.handle_px(0)
+            canvas.begin_drag(0, hp.x(), hp.y())
+            canvas.drag_handle(0, hp.x() + 5.0, hp.y() - dy)
+            canvas.end_drag()
+            states.append(canvas.offsets())
+        assert states[0] != start and states[1] != states[0]
+
+        assert canvas.undo_last() is True
+        assert canvas.offsets() == states[1]
+        assert canvas.undo_last() is True
+        assert canvas.offsets() == states[0]
+        assert canvas.undo_last() is True
+        assert canvas.offsets() == start
+        assert canvas.undo_last() is False     # nothing left to undo
+        for _ in range(3):
+            assert canvas.redo_last() is True
+        assert canvas.offsets() == states[2]
+        assert canvas.redo_last() is False
+
+    def test_p287_sheet_snap_to_a_deleted_edge_is_refused(self):
+        """R52/P287: after the edge is deleted its endpoint stops snapping."""
+        os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+        from scdm import drawing as D
+        from scdm.gui.sheet import SheetCanvas
+
+        base_edge = [(0.0, 0.0), (0.02, 0.0)]
+        extra = [(0.005, 0.005), (0.015, 0.005)]
+        views = [('前视', [base_edge, extra])]
+        dims = [D.Dimension('前视', 'h', 20.0, (0.0, 0.0), (0.02, 0.0), 0.01)]
+        canvas = SheetCanvas(views, dims)
+        canvas.resize(600, 400)
+        tol_m = canvas.snap_tol_px / canvas.scale
+
+        tol_m = canvas.snap_tol_px / canvas.scale
+        aim = canvas.to_px(0.01, 0.005 + 0.4 * tol_m)
+        hp = canvas.handle_px(0)
+        canvas.begin_drag(0, hp.x(), hp.y())
+        canvas.drag_handle(0, aim.x(), aim.y())
+        canvas.end_drag()
+        assert canvas.last_snap == 'end' and dims[0].offset == 0.005
+
+        # the edge is deleted -> the same aim point must no longer snap, so the
+        # line lands on the raw dragged offset instead of the old edge
+        canvas.views = [('前视', [base_edge])]
+        canvas.rebuild_targets()
+        raw = dims[0].offset_for_point(canvas.to_view(aim.x(), aim.y()))
+        hp = canvas.handle_px(0)
+        canvas.begin_drag(0, hp.x(), hp.y())
+        canvas.drag_handle(0, aim.x(), aim.y())
+        canvas.end_drag()
+        assert canvas.last_snap == ''
+        assert abs(dims[0].offset - raw) < 1e-15
+        assert abs(dims[0].offset - 0.005) > 1e-6
+
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""
         from scdm import kernel as K
