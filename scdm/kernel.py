@@ -1025,6 +1025,24 @@ def hole_tapped(solid, face, nominal: float, pitch: float,
     return hole_simple(solid, face, d_tap, depth=depth, origin=origin)
 
 
+def dimple_round(solid, face, diameter: float, depth: float,
+                origin: Optional[Vec3] = None):
+    """P218: 圆形凹坑（成形族）。
+
+    Geometrically this is a shallow blind hole, so it reuses hole_simple -
+    what makes it a form feature is the metadata and the tighter parameter
+    validation (a dimple deeper than two diameters is a modelling error, not a
+    forming operation).
+    """
+    if diameter <= 0:
+        raise KernelError("凹坑直径必须为正")
+    if depth <= 0:
+        raise KernelError("凹坑深度必须为正")
+    if depth > 4.0 * (diameter / 2.0):
+        raise KernelError("凹坑深度不合理：不应超过 2 倍直径")
+    return hole_simple(solid, face, diameter, depth=depth, origin=origin)
+
+
 def hole_counterbore(solid, face, diameter: float, depth: float,
                      cbore_diameter: float, cbore_depth: float,
                      origin: Optional[Vec3] = None):
