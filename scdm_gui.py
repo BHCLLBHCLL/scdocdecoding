@@ -2142,12 +2142,23 @@ else:
                 self._set_status("仿真准备：无对象")
                 return
             sim = ses.kdoc.sim
+            from scdm import simreport as SR
+            rep = SR.build_report(ses.kdoc, ses.scale)
             lines = ([ld.describe() for ld in sim.loads]
                      + [sp.describe() for sp in sim.supports]
-                     + [ct.describe() for ct in sim.contacts])
-            QMessageBox.information(self, "仿真准备报告",
-                                    "\n".join(lines) or "（空）")
-            self._set_status(sim.summary())
+                     + [ct.describe() for ct in sim.contacts]
+                     + ["— 网格 —"]
+                     + ["%s：%d 三角形 / 退化 %d / 门槛 %s"
+                        % (m["name"], m["triangles"], m["degenerate"],
+                           "通过" if m["gates_ok"] else "超限 %d" % m["gate_violations"])
+                        for m in rep["meshes"].values()]
+                     + ["— 材料 —"]
+                     + ["%s：%s %.3f g" % (m["name"], m["material_name"],
+                                          m["mass_g"]) for m in rep["materials"]]
+                     + (["— 缺 —"] + list(rep["blocker_text"])
+                        if rep["blockers"] else []))
+            QMessageBox.information(self, "仿真报告", "\n".join(lines) or "（空）")
+            self._set_status(SR.report_text(rep))
 
         def _face_index_of(self, body):
             faces = [sid for k, sid in self.sel.items if k == "face"]

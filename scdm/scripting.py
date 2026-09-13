@@ -608,6 +608,18 @@ def op_mesh_volume(kdoc, opts, scale):
                   % (stats["cells"], stats["tets"], stats["volume_rel_error"]))
 
 
+def op_sim_report(kdoc, opts, scale):
+    """P348: 仿真报告导出（载荷/支撑/接触 + 网格与材料统计）。"""
+    from scdm import simreport as SR
+    path = opts.get("path")
+    if not path:
+        raise ValueError("仿真报告：需要 path")
+    rep = SR.build_report(kdoc, scale)
+    SR.write_report(path, rep)
+    return (kdoc.body_by_id(opts["body_id"]) if opts.get("body_id") else None), \
+        ("已导出仿真报告 %s（%s）" % (path, SR.report_text(rep)))
+
+
 def op_mesh_report(kdoc, opts, scale):
     """P324: 网格质量报告导出（JSON/CSV）。"""
     from scdm import mesh as ME
@@ -791,6 +803,7 @@ OPS = {
     "sheet.junction": op_sheet_junction,
     "sheet.conical": op_sheet_conical,
     "sheet.axial": op_sheet_axial,
+    "sim.report": op_sim_report,
     "mesh.surface": op_mesh_surface,
     "mesh.volume": op_mesh_volume,
     "mesh.report": op_mesh_report,
