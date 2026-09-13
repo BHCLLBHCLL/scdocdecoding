@@ -759,6 +759,49 @@ class SabModel:
             return None  # ring does not close
         return poly
 
+    def _walk_gap(self, endpoints, rel_tol: float = 0.02):
+        """R17/P99: rebuild a closed ring by GEOMETRY when the chain does not.
+
+        Measured on the official library: the stashed next-chain plus endpoints
+        can miss closure by a real gap (0.008 on model 8 face 3455, ~1% of the
+        loop), which is far beyond the 1e-6 vertex tolerance, so both ordered
+        walks give up and the face ends up with no polygon at all.  This walk
+        ignores the chain order and just connects coincident endpoints, with a
+        tolerance scaled to the loop size - it is a LAST-resort fallback, only
+        reached after the ordered walks fail.
+        """
+        segs = [tuple(e) for e in endpoints]
+        if len(segs) < 3:
+            return None
+        xs = [p[i] for e in segs for p in e for i in (0,)]
+        ys = [p[1] for e in segs for p in e]
+        zs = [p[2] for e in segs for p in e]
+        diag = max(max(xs) - min(xs), max(ys) - min(ys), max(zs) - min(zs))
+        tol = max(1e-9, diag * rel_tol)
+        used = [False] * len(segs)
+        a, b = segs[0]
+        used[0] = True
+        poly = [a]
+        cur = b
+        while True:
+            if vlen(vsub(cur, poly[0])) <= tol and len(poly) >= 3:
+                return poly
+            nxt = None
+            for i, (p, q) in enumerate(segs):
+                if used[i]:
+                    continue
+                if vlen(vsub(cur, p)) <= tol:
+                    nxt = (i, p, q)
+                    break
+                if vlen(vsub(cur, q)) <= tol:
+                    nxt = (i, q, p)
+                    break
+            if nxt is None:
+                return None
+            used[nxt[0]] = True
+            poly.append(nxt[1])
+            cur = nxt[2]
+
     def _walk_sensed(self, coedges, endpoints):
         """Canonical walk: follow the `next` chain, directing each coedge
         by its sense token (flag_b=FORWARD v1->v2, flag_a=REVERSED v2->v1).
@@ -808,7 +851,9 @@ class SabModel:
             poly = self._walk_ring(endpoints, flip)
             if poly is not None:
                 return poly
-        return None
+        # R17/P99: the ordered walks can fail on a REAL gap (see _walk_gap);
+        # chain by geometry instead of giving the face no polygon at all.
+        return self._walk_gap(endpoints)
 
     def face_loops_polygons(self, face: Ent) -> List[List[Tuple[float, float, float]]]:
         polys = []
