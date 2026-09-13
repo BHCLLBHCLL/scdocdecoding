@@ -888,6 +888,40 @@ class Scene:
             self.renderer.RemoveActor(self._handle_label)
             self._handle_label = None
 
+    def show_thread_annotation(self, origin, axis, nominal, pitch, depth,
+                               color=(0.85, 0.60, 0.10)):
+        """R37: symbolic thread profile - annotation only.
+
+        The actor is explicitly unpickable and excluded from the camera fit:
+        the thread is metadata (the solid is cut at the tap drill), so it must
+        never take part in selection, snapping or bounds.
+        """
+        from scdm import threads as TH
+
+        segs = TH.thread_lines(origin, axis, nominal, pitch, depth)
+        if not segs:
+            return None
+        act = _lines_actor([[list(a), list(b)] for a, b in segs], color, 1.0)
+        if act is None:
+            return None
+        try:
+            act.SetPickable(0)
+        except Exception:
+            pass
+        _exclude_from_bounds(act)
+        self.renderer.AddActor(act)
+        self._thread_actor = act
+        self.render()
+        return act
+
+    def clear_thread_annotation(self):
+        """R37: drop the symbolic thread actor (annotation carries no geometry)."""
+        act = getattr(self, "_thread_actor", None)
+        if act is not None:
+            self.renderer.RemoveActor(act)
+            self._thread_actor = None
+            self.render()
+
     def show_pull_handles(self, origin, normal, length=None, distance_mm=None):
         """Gold bidirectional arrows along a face normal (Pull manipulator)."""
         self.clear_handles()

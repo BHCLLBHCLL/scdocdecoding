@@ -255,6 +255,30 @@ class LightweightModeTests(unittest.TestCase):
         assert abs(K.volume(body.shape) - keep) < 1e-15
         assert "非法" in self._status(v) or "螺距" in self._status(v)
 
+    def test_p211_thread_annotation_is_unpickable(self):
+        """R37: the thread profile is annotation - unpickable, out of bounds."""
+        import math
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm.kdoc import KernelDoc
+
+        v = self.gui.ScdmViewer(path=None)
+        if v.scene is None:
+            self.skipTest("scene not built headless")
+        box = K.make_box(0.02, 0.02, 0.02)
+        face = [f for f in K.explore(box, "face")
+                if K.face_normal_center(f)[0][2] > 0.99][0]
+        holed = K.hole_tapped(box, face, 0.006, 0.001)
+        before = K.volume(holed)
+        act = v.scene.show_thread_annotation((0.01, 0.01, 0.0), (0.0, 0.0, 1.0),
+                                             0.006, 0.001, 0.02)
+        assert act is not None
+        assert act.GetPickable() == 0, "annotation must not be pickable"
+        # the annotation is symbolic: the body volume is untouched
+        assert abs(K.volume(holed) - before) < 1e-18
+        v.scene.clear_thread_annotation()
+
     def test_tool_manager_reason_plumbing(self):
         from scdm.tools.base import ToolManager
         msgs = []
