@@ -2296,7 +2296,7 @@ else:
             self._commit(f"参数已更新（{len(new_table.names())} 个）并重建")
 
         def _do_repair_check(self):
-            """H4 检查几何：全项检出 + 一键修复向导。"""
+            """H4 检查几何：全项检出 + 一键修复向导（R83 起含未封闭度）。"""
             body = self._selected_kbody()
             if body is None:
                 return
@@ -2311,8 +2311,11 @@ else:
             counts = {k: (len(v) if isinstance(v, list) else v)
                       for k, v in fnd.items()}
             total = sum(v for v in counts.values() if isinstance(v, int))
+            # R83/P402: gaps vs seams vs free loops, from the same kernel call
+            wt = K.watertight_report(body.shape)
             if total == 0:
-                self._set_status("检查几何：未发现问题 ✓")
+                self._set_status("检查几何：未发现问题 ✓；" + K.watertight_text(wt))
+                self._mark_open_edges(body, wt)
                 return
             names = {"small_faces": "小面", "short_edges": "短边",
                      "sliver_faces": "尖刺/薄片", "self_intersecting": "自交",
@@ -2323,10 +2326,35 @@ else:
                 fixed, rep = K.repair_geometry(body.shape, fnd)
                 body.shape = fixed
                 fixedn = sum(v for v in rep.values() if isinstance(v, int))
+                wt = K.watertight_report(body.shape)
                 self._record("repair.check", counts=counts, fixed=rep)
-                self._commit(f"检查几何：{detail} — 已修复 {fixedn} 项")
+                self._commit("检查几何：%s — 已修复 %d 项；%s"
+                             % (detail, fixedn, K.watertight_text(wt)))
+                self._mark_open_edges(body, wt)
             except Exception as exc:
                 self._set_status(f"检查到 {detail}；自动修复失败: {exc}")
+
+        def _mark_open_edges(self, body, wt, limit=16):
+            """R83/P402: drop 3D markers on the open edges of a checked body.
+
+            The markers are ordinary markup notes, so they inherit the scene's
+            double guard (unpickable + excluded from the camera fit) and stay
+            out of every geometry measurement.
+            """
+            gaps = int((wt or {}).get("open_edges") or 0)
+            if not gaps or not self.scene:
+                return 0
+            try:
+                pts = K.open_edge_points(body.shape, limit)
+            except Exception:
+                return 0
+            if not pts:
+                return 0
+            sim = self._sim_model()
+            for i, p in enumerate(pts):
+                sim.add_markup("缺口 %d/%d" % (i + 1, gaps), p)
+            self._commit("几何体检：%d 处未封闭，已标记 %d 处" % (gaps, len(pts)))
+            return len(pts)
 
         def _selected_component(self):
             ses = self.session()

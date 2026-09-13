@@ -368,6 +368,59 @@ def is_seam_edge(edge, face) -> bool:
     return False
 
 
+def watertight_report(shape) -> dict:
+    """Countable watertightness of ONE shape (R83/P402).
+
+    The same four numbers the R75-R82 instruments report, so the check command,
+    the GUI and `tools/free_edge_report.py` cannot drift (rule 84):
+    `free_edges` (all single-face edges), `open_edges` (the real gaps),
+    `seam_edges` (a periodic face's seam - not a gap) and `free_loops`.
+    """
+    free = free_edges(shape)
+    opened = open_edges(shape)
+    return {"free_edges": len(free), "open_edges": len(opened),
+            "seam_edges": len(free) - len(opened),
+            "free_loops": len(_free_boundary_wires(shape))}
+
+
+def open_edge_points(shape, limit: int = 32) -> List[Any]:
+    """Midpoints of up to `limit` open edges (for 3D markers, R83).
+
+    Returns a list of (x, y, z) in model units - the same space the markup
+    notes live in, so the caller can drop a marker straight onto the gap.
+    """
+    from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
+    from OCC.Core.TopoDS import topods
+
+    out = []
+    for edge in open_edges(shape)[:max(0, int(limit))]:
+        try:
+            ad = BRepAdaptor_Curve(topods.Edge(edge))
+            p = ad.Value(0.5 * (ad.FirstParameter() + ad.LastParameter()))
+        except Exception:
+            continue
+        out.append((p.X(), p.Y(), p.Z()))
+    return out
+
+
+def watertight_text(rep) -> str:
+    """Chinese one-liner for the check command / status bar (R83)."""
+    rep = rep or {}
+    gaps = int(rep.get("open_edges") or 0)
+    if not gaps:
+        return "封闭 ✓"
+    text = "未封闭 %d 处" % gaps
+    loops = int(rep.get("free_loops") or 0)
+    seams = int(rep.get("seam_edges") or 0)
+    if loops:
+        text += "（自由环 %d" % loops
+        if seams:
+            text += "，缝边 %d" % seams
+        text += "）"
+    elif seams:
+        text += "（缝边 %d）" % seams
+    return text
+
 def open_edges(shape) -> List[Any]:
     """The edges that really leave the shell open (free minus seams)."""
     out = []

@@ -323,12 +323,18 @@ def op_repair_check(kdoc, opts, scale):
     fnd = K.check_geometry(body.shape, min_area=min_area, min_edge=min_edge)
     counts = {k: (len(v) if isinstance(v, list) else v) for k, v in fnd.items()}
     total = sum(v for v in counts.values() if isinstance(v, int))
+    # R83/P402: the watertightness numbers ride along with the H4 findings -
+    # same kernel helpers the report and the tools use (rule 84).
+    wt = K.watertight_report(body.shape)
+    tail = "；" + K.watertight_text(wt)
     if total == 0:
-        return body, "检查几何：未发现问题"
+        return body, "检查几何：未发现问题" + tail
     fixed, rep = K.repair_geometry(body.shape, fnd)
     body.shape = fixed
     fixedn = sum(v for v in rep.values() if isinstance(v, int))
-    return body, f"检查几何：{total} 项问题，已修复 {fixedn}"
+    wt = K.watertight_report(body.shape)
+    return body, (f"检查几何：{total} 项问题，已修复 {fixedn}"
+                  + "；" + K.watertight_text(wt))
 
 
 def _op_hole(kdoc, opts, scale, kind):
