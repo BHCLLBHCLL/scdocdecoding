@@ -346,6 +346,14 @@ def _op_hole(kdoc, opts, scale, kind):
         body.shape = K.hole_simple(
             body.shape, face, d, depth=None if depth <= 0 else depth / scale)
         return body, f"孔 d={opts.get('diameter', 5.0)}mm"
+    if kind == "tapped":
+        # R32/P187: same op surface as the other holes, plus nominal/pitch
+        body.shape = K.hole_tapped(
+            body.shape, face, opts.get("nominal", 6.0) / scale,
+            opts.get("pitch", 1.0) / scale,
+            depth=None if depth <= 0 else depth / scale)
+        return body, ("攻丝孔 M%g×%g" % (opts.get("nominal", 6.0),
+                                         opts.get("pitch", 1.0)))
     if kind == "cbore":
         body.shape = K.hole_counterbore(
             body.shape, face, d, depth / scale,
@@ -361,6 +369,10 @@ def _op_hole(kdoc, opts, scale, kind):
 
 def op_hole(kdoc, opts, scale):
     return _op_hole(kdoc, opts, scale, "simple")
+
+
+def op_hole_tapped(kdoc, opts, scale):
+    return _op_hole(kdoc, opts, scale, "tapped")
 
 
 def op_hole_cbore(kdoc, opts, scale):
@@ -522,6 +534,7 @@ OPS = {
     "surface.offset": op_surface_offset,
     "surface.untrim": op_surface_untrim,
     "create.hole": op_hole,
+    "create.hole_tapped": op_hole_tapped,
     "create.hole_cbore": op_hole_cbore,
     "create.hole_csink": op_hole_csink,
     "create.boss": op_boss,

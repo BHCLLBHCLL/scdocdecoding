@@ -43,6 +43,7 @@ def resolve_face(shape, selector) -> Optional[Any]:
 
 _FEATURE_LABELS = {
     "hole": "孔 Ø{diameter:g}mm",
+    "hole_tapped": "攻丝孔 M{nominal:g}×{pitch:g}",
     "hole_cbore": "沉头孔 Ø{diameter:g}",
     "hole_csink": "锥沉孔 Ø{diameter:g}",
     "boss": "凸台 Ø{diameter:g}×{height:g}",
@@ -110,7 +111,7 @@ class FeatureStack:
 def _apply_one(shape, feature: Feature, scale: float):
     op = feature.op
     p = feature.params
-    if op in ("hole", "hole_cbore", "hole_csink"):
+    if op in ("hole", "hole_tapped", "hole_cbore", "hole_csink"):
         face = resolve_face(shape, p.get("selector", {}))
         if face is None:
             return shape
@@ -119,6 +120,14 @@ def _apply_one(shape, feature: Feature, scale: float):
             depth = p.get("depth", 0.0)
             return K.hole_simple(shape, face, d,
                                  depth=None if depth <= 0 else depth / scale)
+        if op == "hole_tapped":
+            # R32/P187: the thread spec rides along with the feature so a
+            # replay reconstructs the same tap-drill cut
+            return K.hole_tapped(
+                shape, face, float(p.get("nominal", 6.0)) / scale,
+                float(p.get("pitch", 1.0)) / scale,
+                depth=None if p.get("depth", 0.0) <= 0
+                else float(p["depth"]) / scale)
         if op == "hole_cbore":
             return K.hole_counterbore(shape, face, d,
                                       float(p.get("depth", 10.0)) / scale,
