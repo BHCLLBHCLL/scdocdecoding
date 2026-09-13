@@ -23,6 +23,30 @@ def _top_face_index(shape):
 
 
 
+def test_p187_replay_reproduces_the_tap_drill_volume():
+    """R34/P199: replaying the hole step cuts the same volume every time.
+
+    Only the hole step is replayed here: the insert.box opts contract is a
+    separate concern, and coupling the two would hide which one broke.
+    """
+    from scdm.scripting import replay
+
+    expected = math.pi * 0.0025 ** 2 * 0.02
+    vols = []
+    for _ in range(2):
+        doc = KernelDoc()
+        body = doc.add_body(K.make_box(0.02, 0.02, 0.02), name="B")
+        v0 = K.volume(body.shape)
+        steps = [{"cmd": "create.hole_tapped",
+                  "opts": {"target": "last",
+                           "face_i": _top_face_index(body.shape),
+                           "nominal": 6.0, "pitch": 1.0, "depth": 0.0}}]
+        replay(steps, doc, 1000.0)
+        vols.append(v0 - K.volume(body.shape))
+    assert vols[0] == pytest.approx(expected, rel=1e-3)
+    assert vols[1] == pytest.approx(vols[0], rel=1e-6)
+
+
 def test_p187_feature_label_carries_the_thread_spec():
     f = Feature(op="hole_tapped",
                 params={"nominal": 6.0, "pitch": 1.0})
