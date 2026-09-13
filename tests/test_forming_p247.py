@@ -49,6 +49,39 @@ def test_p253_prism_volume_matches_the_swept_area():
     assert K.volume(solid) == pytest.approx(0.01 * 0.01 * 0.004, rel=1e-6)
 
 
+def test_p259_slanted_face_louver_end_to_end():
+    """R46/P259: a 45-degree face works end to end (closes the R45 gap).
+
+    The sheet is a parallelepiped built by obliquely extruding a rectangle, so
+    its two end faces are planar with normal (1,0,1)/sqrt(2) and the slab has a
+    UNIFORM thickness along that normal - which is what makes the closed form
+    testable: removed = length * width * (extrude . n).
+    """
+    import math
+
+    s = 1.0 / math.sqrt(2.0)
+    n = (s, 0.0, s)
+    u = (0.0, 1.0, 0.0)
+    v = (n[2], 0.0, -n[0])
+    half = 0.02
+    pts = [tuple(u[i] * su * half + v[i] * sv * half for i in range(3))
+           for (su, sv) in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+    prof = K.face_from_polygon(pts)
+    vec = (0.01, 0.01, 0.0)
+    sheet = K.prism(prof, vec)
+    thick = abs(sum(vec[i] * n[i] for i in range(3)))
+    face = None
+    for f in K.explore(sheet, "face"):
+        fn, _c = K.face_normal_center(f)
+        if abs(fn[0] - s) < 1e-6 and abs(fn[2] - s) < 1e-6:
+            face = f
+            break
+    assert face is not None, "slanted face not found"
+    out = K.louver(sheet, face, 0.01, 0.005)
+    removed = K.volume(sheet) - K.volume(out)
+    assert removed == pytest.approx(0.01 * 0.005 * thick, rel=2e-3)
+
+
 def test_p247_louver_rejects_illegal_parameters():
     box = K.make_box(0.02, 0.02, 0.002)
     face = _top_face(box)
