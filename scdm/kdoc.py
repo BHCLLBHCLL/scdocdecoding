@@ -59,6 +59,10 @@ class Configuration:
     hidden_components: List[str] = field(default_factory=list)
     suppressed_bodies: List[str] = field(default_factory=list)
     transforms: Dict[str, tuple] = field(default_factory=dict)
+    # P331: the configuration also owns a PROPERTY snapshot (material + custom
+    # fields per body) and BOM quantities
+    properties: Dict[str, dict] = field(default_factory=dict)
+    quantities: Dict[str, int] = field(default_factory=dict)
 
 
 class KernelDoc:
@@ -147,17 +151,26 @@ class KernelDoc:
     # ---- P23: assembly configurations -----------------------------------
     def add_configuration(self, name: Optional[str] = None,
                           hidden_components=None, suppressed_bodies=None,
-                          transforms=None) -> Configuration:
+                          transforms=None, properties=None,
+                          quantities=None) -> Configuration:
         cid = "CFG%d" % (len(self.configurations) + 1)
         cfg = Configuration(cid, name or ("配置%d" % (len(self.configurations) + 1)),
                             list(hidden_components or []),
                             list(suppressed_bodies or []),
-                            dict(transforms or {}))
+                            dict(transforms or {}),
+                            {k: dict(v) for k, v in (properties or {}).items()},
+                            {k: int(v) for k, v in (quantities or {}).items()})
         self.configurations.append(cfg)
         return cfg
 
     def capture_configuration(self, name: Optional[str] = None) -> Configuration:
-        """Snapshot the CURRENT visibility/suppression state as a configuration."""
+        """Snapshot the CURRENT visibility/suppression/attribute state.
+
+        P331: the snapshot includes every body's part properties (material +
+        custom fields) and a BOM quantity of 1, so a configuration is a full
+        state, not just a visibility set.
+        """
+        from scdm.materials import PartProperties
         cfg = self.add_configuration(name)
         for c in self.components:
             if not c.visible:
@@ -165,7 +178,95 @@ class KernelDoc:
         for b in self.bodies:
             if not b.visible:
                 cfg.suppressed_bodies.append(b.id)
+            # a configuration is a FULL state: every body gets a property
+            # snapshot (default material when unset) and a quantity
+            p = self.properties.get(b.id) or PartProperties()
+            cfg.properties[b.id] = p.to_dict()
+            cfg.quantities[b.id] = 1
         return cfg
+
+    # ---- P331: configuration-driven attributes and BOM -------------------
+    def set_config_property(self, ref: str, body_id: str, material=None,
+                            custom=None) -> Configuration:
+        """Override a body's part properties INSIDE a configuration."""
+        from scdm.materials import PartProperties
+        cfg = self.configuration_by(ref)
+        if cfg is None:
+            raise ValueError("未知配置：%s" % ref)
+        if self.body_by_id(body_id) is None:
+            raise ValueError("未知实体：%s" % body_id)
+        base = cfg.properties.get(body_id)
+        # read the live properties WITHOUT creating them (part_properties would
+        # materialise a default entry as a side effect of an override)
+        cur = (PartProperties.from_dict(base) if base
+               else (self.properties.get(body_id) or PartProperties()))
+        fresh = PartProperties(material=material or cur.material,
+                               custom=dict(cur.custom if custom is None
+                                           else custom))
+        cfg.properties[body_id] = fresh.to_dict()
+        return cfg
+
+    def set_config_quantity(self, ref: str, body_id: str, qty: int) -> Configuration:
+        """BOM quantity of a body inside a configuration (0 = not counted)."""
+        cfg = self.configuration_by(ref)
+        if cfg is None:
+            raise ValueError("未知配置：%s" % ref)
+        if self.body_by_id(body_id) is None:
+            raise ValueError("未知实体：%s" % body_id)
+        q = int(qty)
+        if q < 0:
+            raise ValueError("数量不能为负：%s" % qty)
+        cfg.quantities[body_id] = q
+        return cfg
+
+    def properties_for(self, ref: Optional[str] = None) -> Dict[str, Any]:
+        """body_id -> PartProperties with the configuration's overrides applied."""
+        from scdm.materials import PartProperties
+        out = {b.id: (self.properties.get(b.id) or PartProperties())
+               for b in self.bodies}
+        if ref is None:
+            return out
+        cfg = self.configuration_by(ref)
+        if cfg is None:
+            raise ValueError("未知配置：%s" % ref)
+        for bid, data in cfg.properties.items():
+            if bid in out:
+                out[bid] = PartProperties.from_dict(data)
+        return out
+
+    def bom(self, ref: Optional[str] = None, scale: float = 1000.0) -> List[dict]:
+        """P331: BOM rows for a configuration (None = the live state)."""
+        from scdm import materials as MAT
+        cfg = self.configuration_by(ref) if ref is not None else None
+        if ref is not None and cfg is None:
+            raise ValueError("未知配置：%s" % ref)
+        return MAT.bom_rows(self.bodies, self.properties_for(ref), scale,
+                            quantities=(dict(cfg.quantities) if cfg else None))
+
+    def config_issues(self, ref: str) -> List[dict]:
+        """Dangling references inside a configuration (deleted bodies)."""
+        cfg = self.configuration_by(ref)
+        if cfg is None:
+            raise ValueError("未知配置：%s" % ref)
+        live = {b.id for b in self.bodies}
+        out = [{"body_id": bid, "kind": "property"}
+               for bid in cfg.properties if bid not in live]
+        out += [{"body_id": bid, "kind": "quantity"}
+                for bid in cfg.quantities if bid not in live]
+        return sorted(out, key=lambda d: (d["body_id"], d["kind"]))
+
+    def prune_config(self, ref: str) -> int:
+        """Drop dangling references; returns how many were removed."""
+        cfg = self.configuration_by(ref)
+        if cfg is None:
+            raise ValueError("未知配置：%s" % ref)
+        live = {b.id for b in self.bodies}
+        removed = 0
+        for store in (cfg.properties, cfg.quantities):
+            for bid in [k for k in store if k not in live]:
+                del store[bid]
+                removed += 1
+        return removed
 
     def configuration_by(self, ref: str) -> Optional[Configuration]:
         for c in self.configurations:
@@ -185,6 +286,15 @@ class KernelDoc:
             if c.visible != vis:
                 changed += 1
             c.visible = vis
+        # P331: the property snapshot travels with the configuration
+        from scdm.materials import PartProperties
+        for bid, data in cfg.properties.items():
+            if self.body_by_id(bid) is None:
+                continue                      # dangling reference: skip, do not crash
+            fresh = PartProperties.from_dict(data)
+            if self.properties.get(bid) != fresh:
+                changed += 1
+            self.properties[bid] = fresh
         suppressed = set(cfg.suppressed_bodies)
         for b in self.bodies:
             vis = b.id not in suppressed

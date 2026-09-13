@@ -576,6 +576,33 @@ class LightweightModeTests(unittest.TestCase):
         assert abs(vol["volume_rel_error"]) < 1e-15
         assert "体网格" in self._status(v)
 
+    def test_p331_config_apply_reports_the_bom(self):
+        """R63/P331: applying a configuration moves the part attributes (material
+        snapshot) and the status line reports the configuration BOM."""
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm.kdoc import KernelDoc
+
+        v = self.gui.ScdmViewer(path=None)
+        kdoc = KernelDoc()
+        a = kdoc.add_body(K.make_box(0.02, 0.02, 0.02), name="板")
+        v.session().kdoc = kdoc
+        v._rebuild = lambda *args, **k: None
+        cfg = kdoc.capture_configuration("铝版")
+        kdoc.set_config_property(cfg.name, a.id, material="aluminum")
+        kdoc.set_config_quantity(cfg.name, a.id, 3)
+        v._ask_choice = lambda *args, **k: "铝版"
+        v._do_asm_config_apply()
+        assert kdoc.properties[a.id].material == "aluminum"
+        msg = self._status(v)
+        assert "BOM 1 行" in msg and "合计" in msg
+        assert "64.800" in msg          # 3 x 21.6 g of aluminium
+        # the same numbers come straight out of the document API
+        from scdm import materials as MAT
+        totals = MAT.bom_totals(kdoc.bom("铝版", 1000.0))
+        assert abs(totals["mass_g"] - 64.8) < 1e-9
+
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""
         from scdm import kernel as K

@@ -20,7 +20,7 @@ from scdm.kdoc import Component, KernelDoc
 def save_scdm(path: str, kdoc: KernelDoc) -> None:
     manifest = {
         "format": "scdm-session",
-        "version": 4,
+        "version": 5,
         "bodies": [{"id": b.id, "name": b.name, "color": list(b.color), "visible": b.visible,
                     "layer": getattr(b, "layer", "默认") or "默认",
                     "file": f"bodies/{b.id}.brep"} for b in kdoc.bodies],
@@ -52,7 +52,11 @@ def save_scdm(path: str, kdoc: KernelDoc) -> None:
         "configurations": [{"id": c.id, "name": c.name,
                             "hidden_components": list(c.hidden_components),
                             "suppressed_bodies": list(c.suppressed_bodies),
-                            "transforms": {k: list(v) for k, v in c.transforms.items()}}
+                            "transforms": {k: list(v) for k, v in c.transforms.items()},
+                            "properties": {k: dict(v) for k, v in
+                                           getattr(c, "properties", {}).items()},
+                            "quantities": {k: int(v) for k, v in
+                                           getattr(c, "quantities", {}).items()}}
                            for c in getattr(kdoc, "configurations", [])],
         "active_configuration": getattr(kdoc, "active_configuration", None),
         # P291: beam/weldment groups (shared section + members + weld symbols)
@@ -121,7 +125,9 @@ def load_scdm(path: str) -> KernelDoc:
         Configuration(c.get("id") or "CFG1", c.get("name") or "配置",
                       list(c.get("hidden_components") or []),
                       list(c.get("suppressed_bodies") or []),
-                      {k: tuple(v) for k, v in (c.get("transforms") or {}).items()})
+                      {k: tuple(v) for k, v in (c.get("transforms") or {}).items()},
+                      {k: dict(v) for k, v in (c.get("properties") or {}).items()},
+                      {k: int(v) for k, v in (c.get("quantities") or {}).items()})
         for c in man.get("configurations", [])]
     doc.active_configuration = man.get("active_configuration")
     return doc

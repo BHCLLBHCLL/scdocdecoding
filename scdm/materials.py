@@ -115,23 +115,35 @@ class PartProperties:
 
 
 def bom_rows(bodies, properties: Optional[Dict[str, Any]] = None,
-             scale: float = 1000.0) -> List[Dict[str, Any]]:
-    """P319: BOM rows (mm/g units) with material and mass - the material change
-    follows through because mass is recomputed from the live volume each time."""
+             scale: float = 1000.0, quantities: Optional[Dict[str, int]] = None
+             ) -> List[Dict[str, Any]]:
+    """P319/P331: BOM rows (mm/g units) with material, mass and quantity.
+
+    Everything derived (volume, mass, area) is recomputed from the live shape and
+    the current material, so a material change or a per-configuration quantity
+    needs no refresh plumbing.  `quantities` is body id -> count (P331, default
+    1); a count of 0 keeps the row but leaves it out of the totals.
+    """
     from scdm import kernel as K
     props = properties or {}
+    qty = quantities or {}
     out: List[Dict[str, Any]] = []
     for b in bodies or ():
-        p = props.get(getattr(b, "id", None))
+        bid = getattr(b, "id", "")
+        p = props.get(bid)
         if p is None:
             p = PartProperties()
         vol = K.volume(b.shape)
+        n = int(qty.get(bid, 1))
+        if n < 0:
+            raise ValueError("BOM 数量不能为负：%s" % n)
         out.append({
-            "id": getattr(b, "id", ""),
+            "id": bid,
             "name": getattr(b, "name", ""),
             "material": p.material,
             "material_name": p.name(),
             "density": p.density(),
+            "qty": n,
             "volume_mm3": vol * scale ** 3,
             "mass_g": mass_from_volume(vol, p.material) * 1000.0,
             "area_mm2": K.area(b.shape) * scale ** 2,
@@ -141,7 +153,10 @@ def bom_rows(bodies, properties: Optional[Dict[str, Any]] = None,
 
 
 def bom_totals(rows) -> Dict[str, float]:
-    """Totals for a BOM (mass in g, volume in mm³) - the sum of the rows."""
-    return {"mass_g": sum(float(r["mass_g"]) for r in rows or ()),
-            "volume_mm3": sum(float(r["volume_mm3"]) for r in rows or ()),
-            "count": float(len(list(rows or ())))}
+    """Totals for a BOM: rows with count > 0 contribute count times the values."""
+    live = [r for r in (rows or ()) if int(r.get("qty", 1)) > 0]
+    return {"mass_g": sum(float(r["mass_g"]) * int(r.get("qty", 1)) for r in live),
+            "volume_mm3": sum(float(r["volume_mm3"]) * int(r.get("qty", 1))
+                              for r in live),
+            "count": float(len(live)),
+            "pieces": float(sum(int(r.get("qty", 1)) for r in live))}

@@ -2359,9 +2359,9 @@ else:
                 return
             cfg = ses.kdoc.capture_configuration(name.strip() or None)
             self._record("asm.config", name=cfg.name)
-            self._commit("已保存配置 %s（隐藏组件 %d，抑制体 %d）"
+            self._commit("已保存配置 %s（隐藏组件 %d，抑制体 %d，属性快照 %d）"
                          % (cfg.name, len(cfg.hidden_components),
-                            len(cfg.suppressed_bodies)))
+                            len(cfg.suppressed_bodies), len(cfg.properties)))
 
         def _do_asm_config_apply(self):
             """P23: apply a saved configuration by name."""
@@ -2370,17 +2370,19 @@ else:
             if not cfgs:
                 self._set_status("应用配置：还没有保存的配置")
                 return
-            from PyQt5.QtWidgets import QInputDialog
             names = [c.name for c in cfgs]
-            name, ok = QInputDialog.getItem(self, "应用配置", "配置", names, 0,
-                                            False)
-            if not ok:
+            name = self._ask_choice("应用配置", names, 0)
+            if name is None:
                 return
             n = ses.kdoc.apply_configuration(name)
             self.left.populate_tree(ses)
             self._rebuild("已应用配置 %s" % name)
             self._record("asm.config_apply", name=name)
-            self._set_status("已应用配置 %s（%d 项变化）" % (name, n))
+            from scdm import materials as MAT
+            rows = ses.kdoc.bom(name, ses.scale)
+            totals = MAT.bom_totals(rows)
+            self._set_status("已应用配置 %s（%d 项变化，BOM %d 行 / 合计 %.3f g）"
+                             % (name, n, len(rows), totals["mass_g"]))
 
         def _do_asm_sync(self):
             """P8 同步实例: re-derive every instance from its part definition."""
