@@ -82,6 +82,30 @@ def test_p259_slanted_face_louver_end_to_end():
     assert removed == pytest.approx(0.01 * 0.005 * thick, rel=2e-3)
 
 
+def test_p265_louver_lip_adds_material_back():
+    """R48/P265: with a lip the slot keeps length*width*(t - height)."""
+    box = K.make_box(0.02, 0.02, 0.002)
+    face = _top_face(box)
+    plain = K.louver(box, face, 0.01, 0.003)
+    lipped = K.louver(box, face, 0.01, 0.003, height=0.0005)
+    r_plain = K.volume(box) - K.volume(plain)
+    r_lip = K.volume(box) - K.volume(lipped)
+    assert r_plain == pytest.approx(0.01 * 0.003 * 0.002, rel=1e-3)
+    assert r_lip == pytest.approx(0.01 * 0.003 * (0.002 - 0.0005), rel=2e-3)
+    # the two differ by exactly the lip volume
+    assert (r_plain - r_lip) == pytest.approx(0.01 * 0.003 * 0.0005, rel=2e-3)
+
+
+def test_p265_louver_lip_cannot_exceed_the_sheet():
+    box = K.make_box(0.02, 0.02, 0.002)
+    face = _top_face(box)
+    with pytest.raises(K.KernelError):
+        K.louver(box, face, 0.01, 0.003, height=0.003)
+    # extreme: lip equal to the thickness is legal (slot fully closed)
+    out = K.louver(box, face, 0.01, 0.003, height=0.002)
+    assert K.volume(out) == pytest.approx(K.volume(box), rel=1e-3)
+
+
 def test_p247_louver_rejects_illegal_parameters():
     box = K.make_box(0.02, 0.02, 0.002)
     face = _top_face(box)

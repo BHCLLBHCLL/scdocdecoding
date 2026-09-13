@@ -1063,8 +1063,25 @@ def louver(solid, face, length: float, width: float, height: float = 0.0,
     pts = [tuple(start[i] + u[i] * su * hl + v[i] * sv * hw for i in range(3))
            for (su, sv) in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
     profile = face_from_polygon(pts)
-    span = d_neg + d_pos + 2.0 * margin
-    return cut(solid, prism(profile, tuple(n[i] * span for i in range(3))))
+    thick = d_neg + d_pos
+    if height > thick + 1e-12:
+        raise KernelError("百叶唇高不能超过板厚")
+    span = thick + 2.0 * margin
+    out = cut(solid, prism(profile, tuple(n[i] * span for i in range(3))))
+    if height > 0:
+        # P265/R48: the lip is the material pushed up along one side of the
+        # opening - a plate of the same footprint sitting ON the face, so it
+        # never overlaps the slot and the closed form simply adds it back.
+        lip_pts = [tuple(base[i] + u[i] * su * hl + v[i] * sv * hw
+                         for i in range(3))
+                   for (su, sv) in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+        lip = prism(face_from_polygon(lip_pts),
+                    tuple(n[i] * float(height) for i in range(3)))
+        try:
+            out = fuse(out, lip)
+        except KernelError:
+            pass
+    return out
 
 
 def dimple_round(solid, face, diameter: float, depth: float,
