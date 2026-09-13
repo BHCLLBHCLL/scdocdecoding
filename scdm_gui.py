@@ -1237,6 +1237,9 @@ else:
                 if self.scene is not None and hasattr(
                         self.scene, "clear_thread_annotation"):
                     self.scene.clear_thread_annotation()
+                if self.scene is not None and hasattr(
+                        self.scene, "clear_form_marker"):
+                    self.scene.clear_form_marker()
                 ses.kdoc.record_feature(body.id, "hole", selector=sel,
                                         diameter=vals[0], depth=vals[1])
                 self._record("create.hole", diameter=vals[0], depth=vals[1])
@@ -1308,6 +1311,14 @@ else:
                 ses.kdoc.record_feature(body.id, "dimple", selector=sel,
                                         diameter=vals[0], depth=vals[1])
                 self._record("create.dimple", diameter=vals[0], depth=vals[1])
+                # R42/P235: ring marker for the forming feature (annotation)
+                if self.scene is not None and hasattr(
+                        self.scene, "show_form_marker"):
+                    n3, c3 = K.face_normal_center(face)
+                    self.scene.show_form_marker(tuple(c3),
+                                                (-n3[0], -n3[1], -n3[2]),
+                                                vals[0] / ses.scale,
+                                                vals[1] / ses.scale)
                 self._commit("已创建圆形凹坑 Ø%g×%g" % (vals[0], vals[1]))
             except Exception as exc:
                 self._set_status(f"凹坑参数非法：{exc}")

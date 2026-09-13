@@ -914,6 +914,53 @@ class Scene:
         self.render()
         return act
 
+    def show_form_marker(self, origin, axis, diameter, depth,
+                         color=(0.20, 0.55, 0.85)):
+        """R42/P235: rim ring for a forming feature - annotation only."""
+        import math as _m
+
+        a = [float(v) for v in axis]
+        n = _m.sqrt(sum(v * v for v in a)) or 1.0
+        a = [v / n for v in a]
+        ref = [1.0, 0.0, 0.0] if abs(a[0]) < 0.9 else [0.0, 1.0, 0.0]
+        u = [ref[i] - sum(ref[j] * a[j] for j in range(3)) * a[i]
+             for i in range(3)]
+        ul = _m.sqrt(sum(v * v for v in u)) or 1.0
+        u = [v / ul for v in u]
+        v = [a[1] * u[2] - a[2] * u[1], a[2] * u[0] - a[0] * u[2],
+             a[0] * u[1] - a[1] * u[0]]
+        r = float(diameter) / 2.0
+        segs = []
+        steps = 48
+        for i in range(steps):
+            t0 = 2.0 * _m.pi * i / steps
+            t1 = 2.0 * _m.pi * (i + 1) / steps
+            p0 = [origin[k] + u[k] * r * _m.cos(t0) + v[k] * r * _m.sin(t0)
+                  for k in range(3)]
+            p1 = [origin[k] + u[k] * r * _m.cos(t1) + v[k] * r * _m.sin(t1)
+                  for k in range(3)]
+            segs.append([p0, p1])
+        act = _lines_actor(segs, color, 1.4)
+        if act is None:
+            return None
+        try:
+            act.SetPickable(0)
+        except Exception:
+            pass
+        _exclude_from_bounds(act)
+        self.renderer.AddActor(act)
+        self._form_actor = act
+        self.render()
+        return act
+
+    def clear_form_marker(self):
+        """R42/P235: drop the forming marker, then display the form marker."""
+        act = getattr(self, "_form_actor", None)
+        if act is not None:
+            self.renderer.RemoveActor(act)
+            self._form_actor = None
+            self.render()
+
     def clear_thread_annotation(self):
         """R37: drop the symbolic thread actor (annotation carries no geometry)."""
         act = getattr(self, "_thread_actor", None)
