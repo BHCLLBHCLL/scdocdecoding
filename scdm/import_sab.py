@@ -970,6 +970,34 @@ def _arc_span(model, edge_ent, curve, ell, face_ent=None):
     # edge itself.
     return (a1 + min(0.0, delta), a1 + max(0.0, delta))
 
+def _curve_span_from_vertices(model, edge_ent, curve, lo, hi, tol=None):
+    """(t0, t1) on an arbitrary curve, taken from the edge's VERTICES (R79).
+
+    The generic form of the R73 (straight) and R74 (ellipse) rules: project
+    each vertex onto the curve and keep the projection only when it lands ON
+    the curve (within `VERTEX_ON_CURVE_TOL`); otherwise the recorded range
+    stays authoritative and the caller falls back to it.
+    """
+    p1, p2 = _vertices_of(model, edge_ent)
+    if p1 is None or p2 is None:
+        return None
+    from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnCurve
+    from OCC.Core.gp import gp_Pnt
+
+    tol = VERTEX_ON_CURVE_TOL if tol is None else tol
+    span = []
+    for p in (p1, p2):
+        try:
+            pr = GeomAPI_ProjectPointOnCurve(gp_Pnt(*p), curve, lo, hi)
+        except Exception:
+            return None
+        if not pr.NbPoints() or pr.LowerDistance() > tol:
+            return None
+        span.append(pr.LowerDistanceParameter())
+    if abs(span[1] - span[0]) < 1e-12:
+        return None
+    return (span[0], span[1])
+
 def _edge_curve(model, edge_ent, face_ent=None):
     """Geom_Curve + (t0, t1) for an edge from its curve reference, or None.
 
@@ -1047,12 +1075,16 @@ def _edge_curve(model, edge_ent, face_ent=None):
                 ku.SetValue(i + 1, k)
                 mu.SetValue(i + 1, m)
             bs = Geom_BSplineCurve(pts, ku, mu, deg)
-            # the recorded pstart/pend are in the same units as the knots
             lo, hi = bs.FirstParameter(), bs.LastParameter()
-            a0, a1 = sorted((max(lo, min(t0, t1)), min(hi, max(t0, t1))))
-            if a1 - a0 < 1e-12:
-                a0, a1 = lo, hi
-            return Geom_TrimmedCurve(bs, a0, a1)
+            # R79: same precedence as the straight (R73) and ellipse (R74)
+            # edges - the vertices are independent of the recorded range.
+            span = _curve_span_from_vertices(model, edge_ent, bs, lo, hi)
+            if span is None:
+                a0, a1 = sorted((max(lo, min(t0, t1)), min(hi, max(t0, t1))))
+                if a1 - a0 < 1e-12:
+                    a0, a1 = lo, hi
+                span = (a0, a1)
+            return Geom_TrimmedCurve(bs, span[0], span[1])
     except Exception:
         return None
     return None
@@ -1348,7 +1380,11 @@ def _cylinder_surface(surf_ent):
 
 _TRIM_PATCH = False          # per-import policy (R76), set by the wrapper
 _TRIM_RATIO_MIN = 0.5        # measured ratios: 0.87 / 0.58 / 0.57 / 0.18 / 0.00
-_TRIM_PROBE_LIMIT = 12       # bound the probe cost on 600-cylinder models
+# R79: the probe used to look at 12 faces, which put SampleModel4 exactly ON
+# the 0.5 threshold - its decision flipped between runs of the same build
+# (147 vs 149 faces).  40 faces covers every small model exactly and still
+# bounds the cost on the 600-cylinder one.
+_TRIM_PROBE_LIMIT = 40
 
 
 def trim_patch_policy(models) -> bool:

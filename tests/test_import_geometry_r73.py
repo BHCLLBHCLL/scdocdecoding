@@ -55,8 +55,8 @@ spec.loader.exec_module(diff)
 #   samplemodel2 2252/438 -> 2227/396, samplemodel6 2/2 (policy off).
 FREE_CEILING = {
     "SampleModel1.scdoc": (40, 6),
-    "SampleModel4.scdoc": (410, 100),
-    "samplemodel2.scdoc": (2000, 400),
+    "SampleModel4.scdoc": (400, 100),
+    "samplemodel2.scdoc": (1500, 390),
     "samplemodel3.scdoc": (0, 0),
     "samplemodel5.scdoc": (0, 0),
     "samplemodel6.scdoc": (2, 2),
@@ -206,7 +206,7 @@ def test_ref_counters_are_per_import_not_per_process():
 
     first = import_sab.import_scdoc_bundle(
         load_scdoc(os.path.join(LIB, "SampleModel4.scdoc")))
-    assert first.import_report["ref_unbuilt"] == 31
+    assert first.import_report["ref_unbuilt"] == 29
     second = import_sab.import_scdoc_bundle(
         load_scdoc(os.path.join(LIB, "samplemodel6.scdoc")))
     assert second.import_report["ref_unbuilt"] == 0

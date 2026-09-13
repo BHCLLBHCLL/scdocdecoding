@@ -783,17 +783,17 @@
     "dropped": 0,
     "edges": 2,
     "face": 891,
-    "faces": 0,
+    "faces": 1,
     "inner": "ref",
     "kind": "spline",
     "loops": 1,
     "model": 0,
-    "path": "none",
+    "path": "sampled",
     "polys": 0,
     "ref": true,
-    "sampled": 0,
+    "sampled": 1,
     "surf": 1032,
-    "tried": "sampled"
+    "tried": ""
    },
    {
     "curve_edges": 3,
@@ -834,17 +834,17 @@
     "dropped": 0,
     "edges": 3,
     "face": 747,
-    "faces": 0,
+    "faces": 1,
     "inner": "ref",
     "kind": "spline",
     "loops": 1,
     "model": 0,
-    "path": "none",
+    "path": "sampled",
     "polys": 0,
     "ref": true,
-    "sampled": 0,
+    "sampled": 1,
     "surf": 879,
-    "tried": "sampled"
+    "tried": ""
    },
    {
     "curve_edges": 2,
@@ -944,27 +944,27 @@
     "path": "sampled",
     "polys": 1,
     "ref": true,
-    "sampled": 1,
+    "sampled": 2,
     "surf": 313,
     "tried": ""
    }
   ],
-  "free_edges": 368,
-  "free_loops": 94,
+  "free_edges": 378,
+  "free_loops": 95,
   "other_unbuilt": {},
   "paths": {
-   "none": 31,
+   "none": 29,
    "polygons": 5,
    "rebuild": 119,
-   "sampled": 22
+   "sampled": 24
   },
   "ref": {
    "faces": 52,
    "paths": {
-    "none": 31,
+    "none": 29,
     "polygons": 5,
     "rebuild": 0,
-    "sampled": 16
+    "sampled": 18
    }
   },
   "ref_inner": {
@@ -974,24 +974,24 @@
    "spline": 52
   },
   "ref_unbuilt_inner": {
-   "ref": 31
+   "ref": 29
   },
   "ref_unbuilt_small": {
    "curves=True/edges=0": 6,
    "curves=True/edges=1": 1,
-   "curves=True/edges=2": 7,
-   "curves=True/edges=3": 8,
+   "curves=True/edges=2": 6,
+   "curves=True/edges=3": 7,
    "curves=True/edges=4": 4,
    "curves=True/edges=5": 3
   },
   "report": {
    "dropped_faces": 0,
    "parts": 1,
-   "ref_built": 21,
+   "ref_built": 23,
    "ref_faces": 52,
    "ref_no_boundary": 6,
-   "ref_unbuilt": 31,
-   "unbuilt_faces": 31
+   "ref_unbuilt": 29,
+   "unbuilt_faces": 29
   },
   "sab": {
    "body": 2,
@@ -1004,10 +1004,10 @@
   "sab_faces": 177,
   "sample": "SampleModel4.scdoc",
   "seam_edges": 18,
-  "unbuilt": 31,
+  "unbuilt": 29,
   "warnings": [
-   "52 个面引用 ACIS ref 间接曲面（该类曲面的数据不在本 part）：其中 21 个仍由边界曲线重建，31 个未能重建（含 6 个无任何边界边）",
-   "SAB 重建：31 个面未能重建，0 个面因超出包围盒被丢弃"
+   "52 个面引用 ACIS ref 间接曲面（该类曲面的数据不在本 part）：其中 23 个仍由边界曲线重建，29 个未能重建（含 6 个无任何边界边）",
+   "SAB 重建：29 个面未能重建，0 个面因超出包围盒被丢弃"
   ]
  },
  {
@@ -1361,8 +1361,8 @@
     "tried": ""
    }
   ],
-  "free_edges": 1460,
-  "free_loops": 375,
+  "free_edges": 1395,
+  "free_loops": 374,
   "other_unbuilt": {},
   "paths": {
    "none": 1,

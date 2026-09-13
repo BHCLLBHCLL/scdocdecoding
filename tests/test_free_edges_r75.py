@@ -38,8 +38,8 @@ requires_lib = pytest.mark.skipif(not os.path.isdir(LIB),
 # free / seams / gaps - re-measured after R76's cylinder trim policy
 MEASURED = {
     "SampleModel1.scdoc": (36, 0, 36),
-    "SampleModel4.scdoc": (386, 18, 368),
-    "samplemodel2.scdoc": (1494, 34, 1460),
+    "SampleModel4.scdoc": (396, 18, 378),
+    "samplemodel2.scdoc": (1429, 34, 1395),
     "samplemodel6.scdoc": (2, 0, 2),
 }
 
