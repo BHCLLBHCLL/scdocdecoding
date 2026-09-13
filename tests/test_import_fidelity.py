@@ -451,6 +451,31 @@ def test_import_reports_a_part_to_body_hierarchy():
 
 @requires_lib
 @requires_occ
+def test_p133_hierarchy_groups_toggle_visibility_only():
+    """R23/P133: part groups show/hide bodies and never touch geometry."""
+    from scdm.document import load_scdoc
+    from scdm.import_sab import (apply_group_visibility,
+                                 import_hierarchy_groups,
+                                 import_scdoc_bundle)
+
+    kdoc = import_scdoc_bundle(
+        load_scdoc(os.path.join(LIB, "samplemodel2.scdoc")))
+    groups = import_hierarchy_groups(kdoc)
+    assert len(groups) == len(kdoc.import_report["hierarchy"]) > 10
+    assert all(g["imported"] and g["items"] for g in groups)
+
+    g = groups[0]
+    ids = {bid for _k, bid in g["items"]}
+    shapes = {b.id: b.shape for b in kdoc.bodies}
+    assert apply_group_visibility(kdoc, g, False) == len(ids)
+    assert all(b.visible is (b.id not in ids) for b in kdoc.bodies)
+    apply_group_visibility(kdoc, g, True)
+    assert all(b.visible for b in kdoc.bodies)
+    assert {b.id: b.shape for b in kdoc.bodies} == shapes, "geometry must not change"
+
+
+@requires_lib
+@requires_occ
 def test_import_warnings_report_unbuilt_faces():
     """P45: decoder loss is surfaced in doc.import_warnings, not swallowed."""
     from scdm.document import load_scdoc

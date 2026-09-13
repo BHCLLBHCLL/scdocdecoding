@@ -1204,6 +1204,38 @@ def import_summary(report, warnings=None, error=None) -> str:
     return warnings[0] if warnings else ""
 
 
+def import_hierarchy_groups(kdoc):
+    """R23/P133: read-only display groups from the import hierarchy.
+
+    Official parts map many-to-one onto bodies, so the tree needs the part as
+    the group and its bodies as items - the same {"name", "items"} shape the
+    user groups already use (items are (kind, id) tuples).
+    """
+    groups = []
+    for h in (getattr(kdoc, "import_report", {}) or {}).get("hierarchy") or []:
+        items = [("body", bid) for bid in h.get("bodies", [])]
+        if items:
+            groups.append({"name": h.get("name") or "部件", "items": items,
+                           "imported": True})
+    return groups
+
+
+def apply_group_visibility(kdoc, group, visible) -> int:
+    """R23/P133: show/hide one display group; returns how many bodies changed.
+
+    Only the visibility flag is touched - the geometry objects are the same
+    (the acceptance is "勾选即时生效、几何不变").
+    """
+    by_id = {b.id: b for b in kdoc.bodies}
+    n = 0
+    for (_kind, bid) in group.get("items", []):
+        b = by_id.get(bid)
+        if b is not None:
+            b.visible = bool(visible)
+            n += 1
+    return n
+
+
 def _model_label(model, index: int) -> str:
     """Human label for a SAB model: its first body's document id, else index."""
     try:

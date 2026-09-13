@@ -142,7 +142,11 @@ def session_from_scdoc(path: str) -> Session:
         from scdm.import_sab import import_scdoc_bundle
         from scdm import kernel as K
         if K.available():
+            from scdm.import_sab import import_hierarchy_groups
             ses.kdoc = import_scdoc_bundle(data)
+            # R23/P133: the official part structure becomes read-only display
+            # groups, so the tree can show/hide parts without a writer.
+            ses.kdoc.groups.extend(import_hierarchy_groups(ses.kdoc))
             ses.history.push(ses.kdoc.snapshot())
         else:
             # P47: do not let a missing kernel look like an empty file
