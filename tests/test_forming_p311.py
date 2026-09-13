@@ -84,14 +84,16 @@ def test_p311_axial_bend_volume_stature_and_developed_length():
     L, w, fl, r = 0.08, 0.03, 0.01, 0.002
     u = SM.axial_bend(L, w, T, fl, ANG, r, 0.42)
     base = L * w * T
-    flange = ANG * (r + T / 2.0) * T * L          # Pappus, one flange
-    assert K.volume(u) == pytest.approx(base + 2.0 * flange, rel=1e-9)
+    sector = ANG * (r + T / 2.0) * T * L          # Pappus, one bend sector
+    straight = fl * T * L                         # P315: the straight flange
+    assert K.volume(u) == pytest.approx(base + 2.0 * (sector + straight),
+                                        rel=1e-9)
     assert len(K.explore(u, "solid")) == 1 and len(K.explore(u, "shell")) == 1
-    # stature: the flanges rise OUTSIDE the base footprint
+    # stature: the flanges rise OUTSIDE the base footprint, to r + t + flange
     lo, hi = K._vertex_bbox(u)
     assert lo[1] == pytest.approx(-(r + T), abs=1e-9)
     assert hi[1] == pytest.approx(w + r + T, abs=1e-9)
-    assert hi[2] == pytest.approx(r + T, abs=1e-9)
+    assert hi[2] == pytest.approx(r + T + fl, abs=1e-9)
     # developed length = base + 2 * (flange + BA), BA = theta*(r + Kt)
     ba = SM.axial_bend_allowance(ANG, r, 0.42, T)
     assert ba == pytest.approx(SM.bend_allowance(ANG, r, 0.42, T), rel=1e-15)
@@ -107,8 +109,8 @@ def test_p311_axial_bend_rejects_illegal_input():
         SM.axial_bend(0.08, 0.03, T, -0.01, ANG)
     with pytest.raises(K.KernelError):
         SM.axial_bend(0.08, 0.03, T, 0.01, 0.0)
-    with pytest.raises(K.KernelError):
-        SM.axial_bend(0.08, 0.03, T, 0.01, math.pi + 0.1)
+    with pytest.raises(K.KernelError):      # past 90 deg it folds over the base
+        SM.axial_bend(0.08, 0.03, T, 0.01, math.pi / 2.0 + 0.1)
     with pytest.raises(K.KernelError):
         SM.axial_bend(0.08, 0.03, T, 0.01, ANG, r_inner=-0.001)
     with pytest.raises(K.KernelError):

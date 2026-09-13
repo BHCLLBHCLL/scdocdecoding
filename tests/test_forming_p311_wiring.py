@@ -45,8 +45,10 @@ def test_p311_op_volumes_are_closed_form():
     doc2 = KernelDoc()
     ub, msg2 = OPS["sheet.axial"](doc2, _axial(), 1000.0)
     base = 0.08 * 0.03 * t
-    flange = ANG * (0.002 + t / 2.0) * t * 0.08
-    assert K.volume(ub.shape) == pytest.approx(base + 2.0 * flange, rel=1e-9)
+    sector = ANG * (0.002 + t / 2.0) * t * 0.08
+    straight = 0.01 * t * 0.08                    # P315: straight flange
+    assert K.volume(ub.shape) == pytest.approx(base + 2.0 * (sector + straight),
+                                               rel=1e-9)
     assert "轴向折弯" in msg2
 
 
@@ -60,7 +62,8 @@ def test_p311_replay_is_reproducible():
         vols.append(tuple(K.volume(b.shape) for b in doc.bodies))
     t = 0.001
     want = (ANG * ((0.02 + 0.03) / 2.0 + t / 2.0) * t * 0.03,
-            0.08 * 0.03 * t + 2.0 * ANG * (0.002 + t / 2.0) * t * 0.08)
+            0.08 * 0.03 * t + 2.0 * (ANG * (0.002 + t / 2.0) * t * 0.08
+                                     + 0.01 * t * 0.08))
     for got, exp in zip(vols[0], want):
         assert got == pytest.approx(exp, rel=1e-9)
     assert vols[1] == pytest.approx(vols[0], rel=1e-6)

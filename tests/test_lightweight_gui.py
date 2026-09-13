@@ -509,10 +509,13 @@ class LightweightModeTests(unittest.TestCase):
         v._ask_numbers = lambda *a, **k: [80.0, 30.0, 1.0, 10.0, 90.0, 2.0, 0.42]
         v._do_sheet_axial()
         assert len(kdoc.bodies) == 2
-        base = 0.08 * 0.03 * 0.001
-        flange = (3.141592653589793 / 2) * (0.002 + 0.0005) * 0.001 * 0.08
+        t = 0.001
+        base = 0.08 * 0.03 * t
+        sector = (3.141592653589793 / 2) * (0.002 + t / 2) * t * 0.08
+        straight = 0.01 * t * 0.08
+        want2 = base + 2 * (sector + straight)
         got2 = K.volume(kdoc.bodies[1].shape)
-        assert abs(got2 - (base + 2 * flange)) / (base + 2 * flange) < 1e-9
+        assert abs(got2 - want2) / want2 < 1e-9
 
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""

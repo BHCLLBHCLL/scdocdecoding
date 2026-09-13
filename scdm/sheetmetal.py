@@ -291,16 +291,17 @@ def detect_bends(solid, min_angle_deg: float = 5.0) -> List[dict]:
             continue
         axd = ax
         def flat_len(pf, pn):
-            import scdm.additive as A
-            (a0, b0, c0), (a1, b1, c1) = A.shape_bbox(pf)
-            ext = (a1 - a0, b1 - b0, c1 - c0)
+            # P315: project the face's own vertices onto perp.  The old bbox
+            # shortcut only held for axis-aligned prisms ("for axis-aligned
+            # prisms the perp is axis-aligned"); with a slanted flange (an
+            # axial bend below 90 degrees) it measured the wrong flat and the
+            # developed length was off by ~5%.
             perp = _unit(_cross(axd, pn))
-            # extent along `perp` = projected bbox diagonal is an
-            # overestimate; use the bbox extents' projection of the dominant
-            # axes — for axis-aligned prisms the perp is axis-aligned
-            comps = [abs(perp[0]), abs(perp[1]), abs(perp[2])]
-            k = comps.index(max(comps))
-            return ext[k]
+            pts = [K.vertex_point(v) for v in K.explore(pf, "vertex")]
+            if not pts:
+                return 0.0
+            vals = [sum(p[i] * perp[i] for i in range(3)) for p in pts]
+            return max(vals) - min(vals)
         l1 = flat_len(uniq[0][0], n1)
         l2 = flat_len(uniq[1][0], n2)
         # thickness: r_outer - r_inner if the pair exists, else from flats
@@ -634,30 +635,61 @@ def axial_bend(length: float, width: float, t: float, flange: float,
         raise K.KernelError("轴向折弯：长度/宽度/板厚/立边必须为正")
     if r < 0:
         raise K.KernelError("轴向折弯：内半径不能为负")
-    if not (0.0 < ang <= math.pi + 1e-12):
-        raise K.KernelError("轴向折弯：折弯角度必须在 (0, π] 内")
+    # past 90 degrees the flange folds back over the base and the Pappus sum
+    # would double count the overlap, so the closed form stops at a right angle
+    if not (0.0 < ang <= math.pi / 2.0 + 1e-12):
+        raise K.KernelError("轴向折弯：折弯角度必须在 (0, 90°] 内（更大的角会折回底板）")
     if not (0.0 <= float(k) <= 1.0):
         raise K.KernelError("轴向折弯：K 因子必须在 [0, 1] 内")
     base = K.make_box(L, w, t)
     out = base
-    big = 10.0 * (r + t + L + w)
+    big = 10.0 * (r + t + L + w + fl)
+    r_mid = r + t / 2.0
     # a U-channel's flanges rise OUTSIDE the base footprint: the y=0 edge bends
-    # toward -y, the y=w edge toward +y (the first draft used the inside
-    # quadrants, so the flanges landed in the base and the fuse swallowed half)
+    # toward -y, the y=w edge toward +y (R58: the inside quadrants put the
+    # flanges in the base and the fuse swallowed half of them)
     for (y_edge, outward) in ((0.0, -1.0), (w, 1.0)):
-        # the flange is the ring around the bend axis clipped to the outward
-        # quadrant.  Sweeping the edge face with MakeRevol looks simpler but the
-        # swept FACE does not fuse cleanly (measured: half a flange lost), so
-        # the flange is built from exact cylinders and a clipping box instead.
         ay, az = y_edge, t + r
+        alpha0 = -math.pi / 2.0                 # sweep start (points -z)
+        alpha1 = (alpha0 - ang) if outward < 0 else (alpha0 + ang)
+        # tangent at the sweep end = the sheet direction leaving the bend
+        if outward < 0:
+            d = (math.sin(alpha1), -math.cos(alpha1))
+        else:
+            d = (-math.sin(alpha1), math.cos(alpha1))
+        nrm = (math.cos(alpha1), math.sin(alpha1))   # sheet normal at the exit
+        # 1) bend sector: the ring clipped by the start half-space and by the
+        #    end plane.  Sweeping the edge face with MakeRevol looks simpler but
+        #    the swept FACE does not fuse cleanly (R58 measured half a flange
+        #    lost), so the sector is exact cylinders intersected with boxes.
         ring = K.cut(K.make_cylinder(r + t, L, origin=(0.0, ay, az),
                                      axis=(1.0, 0.0, 0.0)),
                      K.make_cylinder(r, L, origin=(0.0, ay, az),
                                      axis=(1.0, 0.0, 0.0)))
-        oy = ay if outward > 0 else ay - big
-        quad = K.make_box(big, big, big,
-                          origin=(-big / 2.0, oy, az - big))
-        out = K.fuse(out, K.common(ring, quad))
+        oy = (ay - big) if outward < 0 else ay
+        start = K.make_box(big, big, big, origin=(-big / 2.0, oy, az - big))
+        beta = math.atan2(-d[1], -d[0])         # local +y  ->  -d
+        # the end box must have its local y=0 plane THROUGH the bend axis
+        # (origin at (ay, az)): built at world y=0 it would be tangent to the
+        # ring for the y=w flange and cut the sector wrongly
+        end = K.make_box(big, big, big,
+                         origin=(-big / 2.0, ay, az - big / 2.0))
+        end = K.rotate(end, (0.0, ay, az), (1.0, 0.0, 0.0), beta)
+        out = K.fuse(out, K.common(K.common(ring, start), end))
+        # 2) the STRAIGHT flange past the bend, following the exit tangent.
+        #    R58 shipped without it: the parameter never reached the geometry,
+        #    so the closed form and the solid disagreed AND the flange had no
+        #    tangent flat - which is why the bend detector could not pair it
+        #    (uniq < 2).  With it, the flange's outer face is genuinely tangent
+        #    to the bend cylinder and detect_bends/unfold read the U-channel.
+        cy = ay + r_mid * nrm[0]
+        cz = az + r_mid * nrm[1]
+        pts = []
+        for (sn, sd) in ((-1, 0), (1, 0), (1, 1), (-1, 1)):
+            pts.append((0.0,
+                        cy + nrm[0] * sn * t / 2.0 + d[0] * sd * fl,
+                        cz + nrm[1] * sn * t / 2.0 + d[1] * sd * fl))
+        out = K.fuse(out, K.prism(K.face_from_polygon(pts), (L, 0.0, 0.0)))
     return out
 
 
