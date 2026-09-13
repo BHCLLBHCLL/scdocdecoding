@@ -28,6 +28,8 @@ class LeftPanel(QWidget):
     tree_checked = pyqtSignal(object, int)
     layer_toggled = pyqtSignal(str, bool)
     group_toggled = pyqtSignal(str, bool)   # R26/P151: official/part group shown or hidden
+    group_isolate = pyqtSignal(str)         # R27/P157: show only this part
+    group_show_all = pyqtSignal()           # R27/P157: show every part again
     layer_assign = pyqtSignal(str)   # create layer from current selection
     layer_remove = pyqtSignal(str)
     group_save = pyqtSignal()
@@ -84,6 +86,10 @@ class LeftPanel(QWidget):
         self.group_list = QListWidget()
         self._block_group = False
         self.group_list.itemChanged.connect(self._on_group_item)
+        # R27/P157: right-click -> isolate / show all (menu built on demand)
+        self.group_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.group_list.customContextMenuRequested.connect(
+            self._on_group_menu)
         self.group_list.itemClicked.connect(
             lambda it: self.group_clicked.emit(it.text()))
         gv.addWidget(self.group_list)
@@ -435,8 +441,15 @@ class LeftPanel(QWidget):
 
         self.group_list.clear()
         self._block_group = True
+        report = dict(getattr(session.kdoc, "import_report", None) or {})
+        hint = ""
+        if report.get("ref_faces"):
+            hint += " · ref %d" % report["ref_faces"]
+        if report.get("unbuilt_faces"):
+            hint += " · 未重建 %d" % report["unbuilt_faces"]
         for g in getattr(session.kdoc, "groups", []) if session.kdoc else []:
-            it = QListWidgetItem(f"{g['name']}（{len(g['items'])}）")
+            suffix = hint if g.get("imported") else ""
+            it = QListWidgetItem(f"{g['name']}（{len(g['items'])}）{suffix}")
             it.setData(Qt.UserRole, ("group", g["name"]))
             # R26/P151: official part groups carry a checkbox; the layer pattern
             # is reused (block the signal while repopulating)
@@ -455,6 +468,26 @@ class LeftPanel(QWidget):
             self.view_list.addItem(QListWidgetItem(label))
         for sv in getattr(session, "saved_views", []) or []:
             self.view_list.addItem(QListWidgetItem(sv["name"]))
+
+    def _on_group_menu(self, pos):
+        """R27/P157: isolate / show-all for an official part group."""
+        item = self.group_list.itemAt(pos)
+        if item is None:
+            return
+        data = item.data(Qt.UserRole)
+        if not (data and isinstance(data, tuple) and data[0] == "group"):
+            return
+        try:
+            menu = QMenu(self.group_list)
+            act_iso = menu.addAction("隔离显示")
+            act_all = menu.addAction("全部显示")
+            chosen = menu.exec_(self.group_list.mapToGlobal(pos))
+        except Exception:
+            return
+        if chosen is act_iso:
+            self.group_isolate.emit(data[1])
+        elif chosen is act_all:
+            self.group_show_all.emit()
 
     def _on_group_item(self, item):
         """R26/P151: a part-group checkbox toggled -> tell the viewer."""

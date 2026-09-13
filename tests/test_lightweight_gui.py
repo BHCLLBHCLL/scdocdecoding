@@ -200,6 +200,29 @@ class LightweightModeTests(unittest.TestCase):
         it.setCheckState(Qt.Checked)
         assert a.visible is True
 
+    def test_p157_group_hints_and_show_all(self):
+        """R27/P157: node hints carry the import counts; show-all undoes isolation."""
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm.kdoc import KernelDoc
+
+        v = self.gui.ScdmViewer(path=None)
+        kdoc = KernelDoc()
+        a = kdoc.add_body(K.make_box(0.01, 0.01, 0.01), name="A")
+        b = kdoc.add_body(K.make_box(0.01, 0.01, 0.01), name="B")
+        kdoc.import_report = {"hierarchy": [{"name": "P1", "bodies": [a.id]},
+                                            {"name": "P2", "bodies": [b.id]}],
+                              "ref_faces": 3, "unbuilt_faces": 1}
+        v.session().kdoc = kdoc
+        v._import_groups()
+        hints = v.show_import_group_hints()
+        assert hints["ref_faces"] == 3 and hints["unbuilt_faces"] == 1
+        assert v.isolate_import_group("P1") == 1
+        assert a.visible is True and b.visible is False
+        assert v.show_all_import_groups() == 2
+        assert a.visible is True and b.visible is True
+
     def test_tool_manager_reason_plumbing(self):
         from scdm.tools.base import ToolManager
         msgs = []

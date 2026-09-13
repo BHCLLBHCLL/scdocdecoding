@@ -184,6 +184,9 @@ else:
             self.left.layer_toggled.connect(self._on_layer_toggled)
             # R26/P151: official part groups from the tree checkboxes
             self.left.group_toggled.connect(self.set_import_group_visible)
+            # R27/P157: right-click isolate / show-all for official parts
+            self.left.group_isolate.connect(self.isolate_import_group)
+            self.left.group_show_all.connect(self.show_all_import_groups)
             self.left.layer_assign.connect(self._on_layer_assign)
             self.left.layer_remove.connect(self._on_layer_remove)
             self.left.group_save.connect(self._on_group_save)
@@ -455,6 +458,21 @@ else:
                     self._set_status("隔离 %s（%d 个体）" % (name, n))
                     return n
             return 0
+
+        def show_all_import_groups(self):
+            """R27/P157: show every body again (undo of an isolation)."""
+            ses = self.session()
+            kdoc = getattr(ses, "kdoc", None)
+            if kdoc is None:
+                return 0
+            n = 0
+            for b in kdoc.bodies:
+                b.visible = True
+                n += 1
+            if self.scene:
+                self.scene.apply_visibility(ses)
+            self._set_status("全部显示（%d 个体）" % n)
+            return n
 
         def show_import_group_hints(self):
             """R25/P145: per-part degradation hints for the tree (ref faces etc)."""
