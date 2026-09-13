@@ -1025,6 +1025,44 @@ def hole_tapped(solid, face, nominal: float, pitch: float,
     return hole_simple(solid, face, d_tap, depth=depth, origin=origin)
 
 
+def louver(solid, face, length: float, width: float, height: float = 0.0,
+           origin: Optional[Vec3] = None):
+    """P247: 百叶开口（钣金成形）——矩形通切。
+
+    Signature mirrors the face-level forming pattern of sheetmetal.bead_groove
+    (face + dimensions + optional origin).  Closed form: the SLOT removes
+    length x width x thickness; ``height`` is the raised lip, which is
+    annotation/metadata here (it is not modelled as added material yet).
+
+    Current limitation, stated on purpose: the cutter is axis aligned, so the
+    face normal must be one of the six axis directions (the face frame is used
+    for the centre and the span).
+    """
+    if length <= 0 or width <= 0:
+        raise KernelError("百叶长宽必须为正")
+    if height < 0:
+        raise KernelError("百叶唇高不能为负")
+    n, base = _face_frame(face, origin)
+    axis = max(range(3), key=lambda i: abs(n[i]))
+    if abs(abs(n[axis]) - 1.0) > 1e-6:
+        raise KernelError("百叶：当前仅支持轴对齐平面")
+    lo, hi = _vertex_bbox(solid)
+    corners = [(x, y, z) for x in (lo[0], hi[0]) for y in (lo[1], hi[1])
+               for z in (lo[2], hi[2])]
+    d_pos = max(sum((c[i] - base[i]) * n[i] for i in range(3)) for c in corners)
+    d_neg = max(sum((base[i] - c[i]) * n[i] for i in range(3)) for c in corners)
+    margin = 1e-6
+    span = d_neg + d_pos + 2.0 * margin
+    start = tuple(base[i] - n[i] * (d_neg + margin) for i in range(3))
+    size = [0.0, 0.0, 0.0]
+    other = [i for i in range(3) if i != axis]
+    size[axis] = span
+    size[other[0]] = length
+    size[other[1]] = width
+    org = [start[i] - (size[i] / 2.0 if i != axis else 0.0) for i in range(3)]
+    return cut(solid, make_box(size[0], size[1], size[2], origin=tuple(org)))
+
+
 def dimple_round(solid, face, diameter: float, depth: float,
                 origin: Optional[Vec3] = None):
     """P218: 圆形凹坑（成形族）。
