@@ -1317,6 +1317,23 @@ def import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
     failed = len(failed_parts)
     dropped = getattr(_faces_from_model, "skipped", 0)
     unbuilt = getattr(_faces_from_model, "unbuilt", 0)
+    # R21/P122: the ACIS `ref` indirection cannot be resolved from this part
+    # (22 entity kinds, none a reference table; the SAT prints { ref N } with no
+    # inline geometry either).  Report the family honestly instead of folding it
+    # into a generic "unbuilt" count.
+    ref_faces = 0
+    for mdl in models:
+        for f in mdl.of_kind("face"):
+            s = mdl.e(f.surface) if f.surface is not None and f.surface >= 0 else None
+            if s is not None and _inner_of_kind(mdl, s, "ref") is not None:
+                ref_faces += 1
+    if ref_faces:
+        # wording matters: these faces REFERENCE a ref-间接 surface; some of them
+        # still get built from their boundary curves, so do not claim they are
+        # all missing - the unbuilt count above is the authoritative number.
+        doc.import_warnings.append(
+            "%d 个面引用 ACIS ref 间接曲面（该类曲面的数据不在本 part；其中未重建者已计入上面的未重建数）"
+            % ref_faces)
     if dropped or unbuilt:
         doc.import_warnings.append(
             "SAB 重建：%d 个面未能重建，%d 个面因超出包围盒被丢弃"
@@ -1348,6 +1365,7 @@ def import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
             "failed_parts": [label for (_i, label) in failed_parts],
             "unbuilt_faces": unbuilt,
             "dropped_faces": dropped,
+            "ref_faces": ref_faces,
             "mesh_bodies": list(mesh_bodies),
         }
         return doc
