@@ -375,6 +375,22 @@ def op_hole_tapped(kdoc, opts, scale):
     return _op_hole(kdoc, opts, scale, "tapped")
 
 
+def op_dimple(kdoc, opts, scale):
+    """P223: 圆形凹坑（成形族）——与孔族同 op 面但走成形校验。"""
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("凹坑：实体不存在")
+    faces = K.explore(body.shape, "face")
+    fi = opts.get("face_i", 0)
+    if not (0 <= fi < len(faces)):
+        raise ValueError("凹坑：面序号越界")
+    body.shape = K.dimple_round(body.shape, faces[fi],
+                                opts.get("diameter", 8.0) / scale,
+                                opts.get("depth", 2.0) / scale)
+    return body, ("圆形凹坑 Ø%g×%g" % (opts.get("diameter", 8.0),
+                                        opts.get("depth", 2.0)))
+
+
 def op_hole_cbore(kdoc, opts, scale):
     return _op_hole(kdoc, opts, scale, "cbore")
 
@@ -538,6 +554,7 @@ OPS = {
     "create.hole_cbore": op_hole_cbore,
     "create.hole_csink": op_hole_csink,
     "create.boss": op_boss,
+    "create.dimple": op_dimple,
 }
 
 

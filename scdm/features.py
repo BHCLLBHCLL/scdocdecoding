@@ -44,6 +44,7 @@ def resolve_face(shape, selector) -> Optional[Any]:
 _FEATURE_LABELS = {
     "hole": "孔 Ø{diameter:g}mm",
     "hole_tapped": "攻丝孔 M{nominal:g}×{pitch:g}",
+    "dimple": "凹坑 Ø{diameter:g}×{depth:g}",
     "hole_cbore": "沉头孔 Ø{diameter:g}",
     "hole_csink": "锥沉孔 Ø{diameter:g}",
     "boss": "凸台 Ø{diameter:g}×{height:g}",
@@ -137,6 +138,14 @@ def _apply_one(shape, feature: Feature, scale: float):
                                   float(p.get("depth", 10.0)) / scale,
                                   float(p.get("sink_diameter", 10.0)) / scale,
                                   angle_deg=float(p.get("angle", 90.0)))
+    if op == "dimple":
+        # R40/P223: forming feature - same face flow, dimple validation
+        face = resolve_face(shape, p.get("selector", {}))
+        if face is None:
+            return shape
+        return K.dimple_round(shape, face,
+                              float(p.get("diameter", 8.0)) / scale,
+                              float(p.get("depth", 2.0)) / scale)
     if op == "boss":
         face = resolve_face(shape, p.get("selector", {}))
         if face is None:

@@ -1288,6 +1288,30 @@ else:
                 self._commit("已创建攻丝孔 M%g×%g" % (vals[0], vals[1]))
             except Exception as exc:
                 self._set_status(f"攻丝孔参数非法：{exc}")
+        def _do_create_dimple(self):
+            """P223: 圆形凹坑 - forming feature (shallow blind cut + bounds)."""
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("凹坑：请先选择一个平面")
+                return
+            vals = self._ask_numbers("圆形凹坑", [("直径 mm", 8.0),
+                                                  ("深度 mm", 2.0)])
+            if not vals:
+                return
+            try:
+                from scdm import features as FEAT
+                sel = FEAT.selector_for(body.shape, face)
+                body.shape = K.dimple_round(body.shape, face,
+                                            vals[0] / ses.scale,
+                                            vals[1] / ses.scale)
+                ses.kdoc.record_feature(body.id, "dimple", selector=sel,
+                                        diameter=vals[0], depth=vals[1])
+                self._record("create.dimple", diameter=vals[0], depth=vals[1])
+                self._commit("已创建圆形凹坑 Ø%g×%g" % (vals[0], vals[1]))
+            except Exception as exc:
+                self._set_status(f"凹坑参数非法：{exc}")
+
         def _do_create_hole_cbore(self):
             ses = self.session()
             body, face = self._selected_face()
