@@ -183,6 +183,7 @@ class Scene:
         self._vert_actor = None
         self._sketch_actor = None
         self._sketch_pts_actor = None
+        self._constraint_actors = []   # P21: constraint glyph labels
         self._preview_actor = None
         self._preview_hidden = []
         self._highlight = []
@@ -348,6 +349,7 @@ class Scene:
                 self.renderer.RemoveActor(act)
         self._sketch_actor = None
         self._sketch_pts_actor = None
+        self.clear_constraint_marks()
         for act in getattr(self, "_light_actors", []):
             self.renderer.RemoveActor(act)
         self._light_actors = []
@@ -800,6 +802,21 @@ class Scene:
         if pts:
             self._sketch_pts_actor = _points_actor(pts, (0.10, 0.30, 0.65), 8)
             self.renderer.AddActor(self._sketch_pts_actor)
+
+    def clear_constraint_marks(self):
+        """P21: remove the constraint glyph actors."""
+        for a in getattr(self, "_constraint_actors", []):
+            self.renderer.RemoveActor(a)
+        self._constraint_actors = []
+
+    def show_constraint_marks(self, marks, scale=0.0035):
+        """P21: label applied sketch constraints; marks are (x, y, z, text)."""
+        self.clear_constraint_marks()
+        for mark in marks or ():
+            x, y, z, text = mark
+            a = _label_actor((x, y, z), text, scale=scale)
+            self.renderer.AddActor(a)
+            self._constraint_actors.append(a)
 
     def show_preview(self, shape, color=PRE, opacity=0.55, hide_body_id=None):
         """Show a translucent orange preview of a candidate shape (not committed)."""
@@ -1481,9 +1498,23 @@ def _polys(pts, tris):
     pd.SetPoints(vp)
     conn = np.column_stack([np.full(len(tris), 3, dtype=np.int64), tris]).reshape(-1)
     arr = vtk.vtkCellArray()
-    arr.SetCells(len(tris), numpy_support.numpy_to_vtkIdTypeArray(conn, deep=True))
+    arr.ImportLegacyFormat(numpy_support.numpy_to_vtkIdTypeArray(conn, deep=True))
     pd.SetPolys(arr)
     return pd
+
+
+def _label_actor(pos, text, color=(0.75, 0.12, 0.12), scale=0.0035):
+    """Billboarded text label (P21 constraint glyphs)."""
+    src = vtk.vtkVectorText()
+    src.SetText(str(text))
+    m = vtk.vtkPolyDataMapper()
+    m.SetInputConnection(src.GetOutputPort())
+    a = vtk.vtkActor()
+    a.SetMapper(m)
+    a.SetPosition(*pos)
+    a.SetScale(scale)
+    a.GetProperty().SetColor(*color)
+    return a
 
 
 def _lines_actor(segments, color, width):
@@ -1499,7 +1530,7 @@ def _lines_actor(segments, color, width):
     pd.SetPoints(vp)
     c = np.array(conn, dtype=np.int64).reshape(-1)
     arr = vtk.vtkCellArray()
-    arr.SetCells(len(segments), numpy_support.numpy_to_vtkIdTypeArray(c, deep=True))
+    arr.ImportLegacyFormat(numpy_support.numpy_to_vtkIdTypeArray(c, deep=True))
     pd.SetLines(arr)
     m = vtk.vtkPolyDataMapper()
     m.SetInputData(pd)
@@ -1538,7 +1569,7 @@ def _vertices_actor(vpts, color, size):
     c = np.hstack([np.ones((n, 1), dtype=np.int64),
                    np.arange(n, dtype=np.int64)[:, None]]).reshape(-1)
     arr = vtk.vtkCellArray()
-    arr.SetCells(n, numpy_support.numpy_to_vtkIdTypeArray(c, deep=True))
+    arr.ImportLegacyFormat(numpy_support.numpy_to_vtkIdTypeArray(c, deep=True))
     pd.SetVerts(arr)
     m = vtk.vtkPolyDataMapper()
     m.SetInputData(pd)
@@ -1561,7 +1592,7 @@ def _polylines_actor(points, cells, color, width):
     for cell in cells:
         flat.extend(cell)
     arr = vtk.vtkCellArray()
-    arr.SetCells(len(cells), numpy_support.numpy_to_vtkIdTypeArray(
+    arr.ImportLegacyFormat(numpy_support.numpy_to_vtkIdTypeArray(
         np.array(flat, dtype=np.int64), deep=True))
     pd.SetLines(arr)
     m = vtk.vtkPolyDataMapper()

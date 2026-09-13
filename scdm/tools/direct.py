@@ -96,6 +96,12 @@ class PullTool(DirectTool):
                 pulled = K.pull_face(body.shape, face, d)
             ses.kdoc.add_body(pulled, name=body.name + " 拉动副本")
             return f"复制拉动 {d * _scale(ses):.1f}mm"
+        # P16: an in-place pull is a replayable feature (selector + distance)
+        from scdm import features as FEAT
+        sel = FEAT.selector_for(body.shape, face)
+        ses.kdoc.record_feature(body.id, "pull", selector=sel,
+                                distance=d * _scale(ses),
+                                symmetric=bool(opts.get("symmetric")))
         if opts.get("symmetric"):
             body.shape = K.pull_face_symmetric(body.shape, face, d)
             return f"对称拉动 {d * _scale(ses):.1f}mm"
@@ -182,6 +188,9 @@ class CombineTool(DirectTool):
         if a is None or b is None:
             raise ToolError("合并的实体不存在")
         mode = opts.get("mode", "fuse")
+        # P22: record the whole-body op (slots = current body order)
+        slots = [kdoc.bodies.index(x) for x in (a, b)
+                 if x in kdoc.bodies]
         if mode == "cut":
             a.shape = K.cut(a.shape, b.shape)
         elif mode == "common":
@@ -189,6 +198,8 @@ class CombineTool(DirectTool):
         else:
             a.shape = K.fuse(a.shape, b.shape)
         kdoc.remove(b.id)
+        if len(slots) == 2:
+            kdoc.record_doc_feature(mode, slots)
         return f"合并 ({mode})"
 
 
@@ -219,10 +230,17 @@ class SplitTool(DirectTool):
             origin = opts["origin"]
         parts = K.split_by_plane(body.shape, origin, normal)
         kdoc = ses.kdoc
+        # P2: the SpaceClaim split option decides whether both sides survive.
+        if not opts.get("keep_both", True) and parts:
+            c0 = K.cog(body.shape)
+            keep = min(parts, key=lambda s: sum(
+                (K.cog(s)[k] - c0[k]) ** 2 for k in range(3)))
+            body.shape = keep
+            return "已分割实体（仅保留原始一侧）"
         kdoc.remove(body.id)
         for i, sh in enumerate(parts, 1):
             kdoc.add_body(sh, name=f"{body.name} 段{i}")
-        return "已分割实体"
+        return f"已分割实体（保留 {len(parts)} 段）"
 
 
 TOOLS: Dict[str, DirectTool] = {

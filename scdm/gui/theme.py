@@ -1,79 +1,115 @@
-"""Shared Fusion light theme (SpaceClaim-like chrome, original assets)."""
+"""Shared Fusion light theme (cabdecoding / hmdecoding chrome)."""
 from __future__ import annotations
 
 from PyQt5.QtGui import QColor, QFont, QPalette
 
 APP_QSS = """
-QMainWindow { background: #F0F0F0; }
-QSplitter::handle { background: #E2E2E2; }
-QSplitter::handle:horizontal { width: 5px; }
-QSplitter::handle:vertical { height: 5px; }
-QSplitter::handle:hover { background: #C5C5C5; }
+QMainWindow { background: #e8e8e8; }
+QMenuBar {
+    background: #f0f0f0; border-bottom: 1px solid #c0c0c0; padding: 1px;
+}
+QMenuBar::item { padding: 3px 10px; }
+QMenuBar::item:selected { background: #cde4f7; }
+QMenu { background: #f7f7f7; border: 1px solid #a0a0a0; }
+QMenu::item { padding: 4px 24px 4px 12px; }
+QMenu::item:selected { background: #cde4f7; color: #000; }
+QSplitter::handle { background: #d0d0d0; }
+QSplitter::handle:horizontal { width: 4px; }
+QSplitter::handle:vertical { height: 4px; }
+QSplitter::handle:hover { background: #90caf9; }
 QStatusBar {
-    background: #F4F4F4; border-top: 1px solid #D6D6D6;
-    min-height: 26px; color: #333; font-size: 12px;
+    background: #ececec; border-top: 1px solid #b8b8b8;
+    min-height: 24px; color: #333; font-size: 12px;
 }
 QStatusBar::item { border: none; }
+QStatusBar QLabel { padding: 0 6px; }
 QToolBar#QuickAccess {
-    background: #ECECEC; border: none; border-bottom: 1px solid #D6D6D6;
-    spacing: 4px; padding: 3px 8px; min-height: 28px;
+    background: #ececec; border: none; border-bottom: 1px solid #c0c0c0;
+    spacing: 2px; padding: 2px 6px; min-height: 30px;
 }
-QTabBar#DocTabs { background: #EFEFEF; }
+QToolBar#QuickAccess QToolButton {
+    padding: 2px 6px 1px 6px; margin: 1px;
+    border: 1px solid transparent; border-radius: 3px;
+}
+QToolBar#QuickAccess QToolButton:hover {
+    background: #d6ebf8; border: 1px solid #7eb6d9;
+}
+QToolBar#QuickAccess QToolButton:pressed { background: #b8d8ef; }
+QToolBar#QuickAccess QToolButton:checked {
+    background: #b8d8ef; border: 1px solid #5a9ac6;
+}
+QTabBar#DocTabs { background: #e8e8e8; }
 QTabBar#DocTabs::tab {
-    height: 24px; padding: 4px 14px; background: #E8E8E8;
-    border: 1px solid #D4D4D4; border-bottom: none; color: #333; font-size: 12px;
+    height: 24px; padding: 4px 14px; background: #ececec;
+    border: 1px solid #c8c8c8; border-bottom: none; color: #333; font-size: 12px;
+    margin-right: 1px;
 }
-QTabBar#DocTabs::tab:selected { background: #FFFFFF; color: #111; }
-QWidget#LeftPanel { background: #FAFAFA; border-right: 1px solid #D6D6D6; }
+QTabBar#DocTabs::tab:selected {
+    background: #ffffff; color: #111; font-weight: bold;
+}
+QWidget#LeftPanel { background: #f5f5f5; border-right: 1px solid #9a9a9a; }
+QLabel#PaneTitle {
+    background: qlineargradient(x1:0,y1:0,x2:0,y2:1,
+        stop:0 #5b9bd5, stop:1 #2e75b6);
+    color: white; font-weight: bold; font-size: 11px;
+    padding: 4px 8px;
+}
 QGroupBox {
-    font-size: 12px; color: #555; border: 1px solid #E0E0E0;
-    border-radius: 2px; margin-top: 10px; padding: 8px 6px 6px 6px;
-    background: #FFFFFF;
+    font-size: 12px; color: #333; border: 1px solid #9a9a9a;
+    border-radius: 0px; margin-top: 10px; padding: 10px 8px 8px 8px;
+    background: #ffffff;
 }
 QGroupBox::title {
-    subcontrol-origin: margin; left: 8px; padding: 0 4px;
-    color: #666; font-size: 11px;
+    subcontrol-origin: margin; left: 8px; padding: 0 5px;
+    color: #333; font-size: 11px; font-weight: bold;
 }
 QTreeWidget, QListWidget, QTableWidget {
-    background: #FFFFFF; border: none; font-size: 12px; color: #2A2A2A;
-    outline: none; alternate-background-color: #F7F8FA;
+    background: #ffffff; border: none; font-size: 12px; color: #2A2A2A;
+    outline: none; alternate-background-color: #f7f8fa;
 }
-QTreeWidget::item, QListWidget::item { height: 22px; padding: 1px 4px; }
+QTreeWidget::item, QListWidget::item { height: 22px; padding: 2px 4px; }
+QTreeWidget::item:hover, QListWidget::item:hover { background: #e8f3fb; }
 QTreeWidget::item:selected, QListWidget::item:selected, QTableWidget::item:selected {
-    background: #CDE4F7; color: #111;
+    background: #cde4f7; color: #111;
 }
 QHeaderView::section {
-    background: #F5F5F5; color: #555; padding: 5px 8px; border: none;
-    border-bottom: 1px solid #E2E2E2; font-size: 11px;
+    background: qlineargradient(x1:0,y1:0,x2:0,y2:1,
+        stop:0 #f6f6f6, stop:1 #e0e0e0);
+    color: #333; padding: 4px 8px;
+    border: 1px solid #c0c0c0; font-size: 11px; font-weight: bold;
 }
-QTabWidget::pane { border: 1px solid #E0E0E0; background: #FFFFFF; }
+QTabWidget::pane { border: 1px solid #9a9a9a; background: #ffffff; }
 QTabBar::tab {
-    height: 22px; padding: 3px 10px; background: #F0F0F0;
-    border: 1px solid #E0E0E0; color: #444; font-size: 11px;
+    height: 24px; padding: 4px 12px; background: #d8d8d8;
+    border: 1px solid #9a9a9a; color: #444; font-size: 11px;
+    margin-right: 1px;
 }
-QTabBar::tab:selected { background: #FFFFFF; color: #111; }
+QTabBar::tab:selected { background: #ffffff; color: #111; font-weight: bold; }
 QCheckBox, QRadioButton { font-size: 12px; spacing: 6px; color: #333; }
-QScrollBar:vertical { width: 10px; background: #F5F5F5; }
-QScrollBar::handle:vertical { background: #C8C8C8; min-height: 24px; border-radius: 4px; }
-QScrollBar:horizontal { height: 10px; background: #F5F5F5; }
-QScrollBar::handle:horizontal { background: #C8C8C8; min-width: 24px; border-radius: 4px; }
+QScrollBar:vertical { width: 10px; background: #f5f5f5; }
+QScrollBar::handle:vertical { background: #bdbdbd; min-height: 24px; border-radius: 4px; }
+QScrollBar:horizontal { height: 10px; background: #f5f5f5; }
+QScrollBar::handle:horizontal { background: #bdbdbd; min-width: 24px; border-radius: 4px; }
+QToolButton { border: 1px solid transparent; border-radius: 3px; }
+QToolButton:hover { background: #d6ebf8; border-color: #7eb6d9; }
+QToolButton:checked { background: #b8d8ef; border-color: #5a9ac6; }
 """
 
 
 def apply_palette(app):
     pal = QPalette()
-    pal.setColor(QPalette.Window, QColor(240, 240, 240))
+    pal.setColor(QPalette.Window, QColor(232, 232, 232))
     pal.setColor(QPalette.Base, QColor(255, 255, 255))
     pal.setColor(QPalette.AlternateBase, QColor(247, 248, 250))
     pal.setColor(QPalette.Text, QColor(42, 42, 42))
     pal.setColor(QPalette.WindowText, QColor(42, 42, 42))
-    pal.setColor(QPalette.Button, QColor(240, 240, 240))
+    pal.setColor(QPalette.Button, QColor(245, 245, 245))
     pal.setColor(QPalette.ButtonText, QColor(42, 42, 42))
-    pal.setColor(QPalette.Highlight, QColor(0, 120, 215))
+    pal.setColor(QPalette.Highlight, QColor(46, 117, 182))
     pal.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
     pal.setColor(QPalette.ToolTipBase, QColor(255, 255, 255))
     pal.setColor(QPalette.ToolTipText, QColor(32, 32, 32))
-    pal.setColor(QPalette.Mid, QColor(214, 214, 214))
+    pal.setColor(QPalette.Mid, QColor(200, 200, 200))
     app.setPalette(pal)
 
 

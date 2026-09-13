@@ -331,6 +331,60 @@ def op_repair_check(kdoc, opts, scale):
     return body, f"检查几何：{total} 项问题，已修复 {fixedn}"
 
 
+def _op_hole(kdoc, opts, scale, kind):
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("孔：实体不存在")
+    faces = K.explore(body.shape, "face")
+    fi = opts.get("face_i", 0)
+    if not (0 <= fi < len(faces)):
+        raise ValueError("孔：面序号越界")
+    face = faces[fi]
+    d = opts.get("diameter", 5.0) / scale
+    depth = opts.get("depth", 0.0)
+    if kind == "simple":
+        body.shape = K.hole_simple(
+            body.shape, face, d, depth=None if depth <= 0 else depth / scale)
+        return body, f"孔 d={opts.get('diameter', 5.0)}mm"
+    if kind == "cbore":
+        body.shape = K.hole_counterbore(
+            body.shape, face, d, depth / scale,
+            opts.get("cbore_diameter", 10.0) / scale,
+            opts.get("cbore_depth", 3.0) / scale)
+        return body, f"沉头孔 d={opts.get('diameter', 5.0)}mm"
+    body.shape = K.hole_countersink(
+        body.shape, face, d, depth / scale,
+        opts.get("sink_diameter", 10.0) / scale,
+        angle_deg=opts.get("angle", 90.0))
+    return body, f"锥沉孔 d={opts.get('diameter', 5.0)}mm"
+
+
+def op_hole(kdoc, opts, scale):
+    return _op_hole(kdoc, opts, scale, "simple")
+
+
+def op_hole_cbore(kdoc, opts, scale):
+    return _op_hole(kdoc, opts, scale, "cbore")
+
+
+def op_hole_csink(kdoc, opts, scale):
+    return _op_hole(kdoc, opts, scale, "csink")
+
+
+def op_boss(kdoc, opts, scale):
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("凸台：实体不存在")
+    faces = K.explore(body.shape, "face")
+    fi = opts.get("face_i", 0)
+    if not (0 <= fi < len(faces)):
+        raise ValueError("凸台：面序号越界")
+    body.shape = K.boss_round(body.shape, faces[fi],
+                              opts.get("diameter", 6.0) / scale,
+                              opts.get("height", 4.0) / scale)
+    return body, f"凸台 d={opts.get('diameter', 6.0)}mm"
+
+
 def op_insert_box(kdoc, opts, scale):
     from scdm.kdoc import KBody
     w = opts.get("w", 10.0) / scale
@@ -361,6 +415,33 @@ def op_sheet_bend(kdoc, opts, scale):
 
 def _mk_body(kdoc, name):
     return kdoc.add_body(K.make_box(0.001, 0.001, 0.001), name=name)
+
+
+def op_sheet_hem(kdoc, opts, scale):
+    from scdm import sheetmetal as SM
+    w = opts.get("width", 20.0) / scale
+    t = opts.get("thickness", 1.0) / scale
+    l1 = opts.get("flat1", 30.0) / scale
+    hl = opts.get("hem", 5.0) / scale
+    r = opts.get("r_inner", 0.5) / scale
+    solid = SM.hem(w, t, l1, hl, r)
+    return kdoc.add_body(solid, name="卷边件"), "已创建卷边"
+
+
+def op_sheet_bead(kdoc, opts, scale):
+    from scdm import sheetmetal as SM
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("加强筋：实体不存在")
+    faces = K.explore(body.shape, "face")
+    fi = opts.get("face_i", 0)
+    if not (0 <= fi < len(faces)):
+        raise ValueError("加强筋：面序号越界")
+    length = opts.get("length", 0.0)
+    body.shape = SM.bead_groove(body.shape, faces[fi],
+                                opts.get("radius", 2.0) / scale,
+                                length=None if length <= 0 else length / scale)
+    return body, f"加强筋 r={opts.get('radius', 2.0)}mm"
 
 
 def op_sheet_unfold(kdoc, opts, scale):
@@ -435,9 +516,15 @@ OPS = {
     "insert.box": op_insert_box,
     "sheet.bend": op_sheet_bend,
     "sheet.unfold": op_sheet_unfold,
+    "sheet.hem": op_sheet_hem,
+    "sheet.bead": op_sheet_bead,
     "surface.thicken": op_surface_thicken,
     "surface.offset": op_surface_offset,
     "surface.untrim": op_surface_untrim,
+    "create.hole": op_hole,
+    "create.hole_cbore": op_hole_cbore,
+    "create.hole_csink": op_hole_csink,
+    "create.boss": op_boss,
 }
 
 

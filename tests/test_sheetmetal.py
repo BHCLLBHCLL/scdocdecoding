@@ -201,3 +201,146 @@ def test_bend_relief_both_ends_and_round():
     assert K.volume(r01) < K.volume(r0) < v0
     rr = SM.bend_relief(b, width=0.004, depth=0.003, end=0, round_=True)
     assert K.volume(rr) < v0
+
+# --------------------------------------------------- P6: hem + bead
+def test_hem_volume_matches_pappus():
+    """sheet.hem -> flat + 180deg roll-back flange; volume is exact."""
+    import math
+    w, t, l1, hl, r = 0.02, 0.001, 0.03, 0.005, 0.0005
+    h = SM.hem(w, t, l1, hl, r)
+    expect = l1 * w * t + hl * w * t + math.pi * (r + t / 2.0) * t * w
+    assert K.volume(h) == pytest.approx(expect, rel=1e-9)
+    # the return flange sits above the flat (no self-intersection)
+    from scdm import additive as A
+    (x0, y0, z0), (x1, y1, z1) = A.shape_bbox(h)
+    assert (z1 - z0) > t + SM.hem_flange_offset(t, r)
+
+
+def test_hem_default_inner_radius_is_half_thickness():
+    h1 = SM.hem(0.02, 0.001, 0.03, 0.005)
+    h2 = SM.hem(0.02, 0.001, 0.03, 0.005, 0.0005)
+    assert K.volume(h1) == pytest.approx(K.volume(h2), rel=1e-12)
+
+
+def test_bead_groove_removes_half_cylinder():
+    """sheet.bead -> axis-in-face cutter removes 0.5*pi*r^2*span."""
+    import math
+    box = K.make_box(0.02, 0.02, 0.02)
+    top = [f for f in K.explore(box, "face")
+           if abs(K.face_normal_center(f)[1][2] - 0.02) < 1e-9][0]
+    out = SM.bead_groove(box, top, 0.002)
+    removed = 0.5 * math.pi * 0.002 ** 2 * 0.02
+    assert K.volume(out) == pytest.approx(8e-6 - removed, rel=1e-9)
+
+
+def test_sheet_hem_and_bead_ops_replay():
+    """sheet.hem / sheet.bead are replayable script ops."""
+    from scdm import scripting as SCR
+    from scdm.kdoc import KernelDoc
+
+    doc = KernelDoc()
+    report = SCR.replay([{"cmd": "sheet.hem",
+                          "opts": {"width": 20.0, "thickness": 1.0,
+                                   "flat1": 30.0, "hem": 5.0,
+                                   "r_inner": 0.5}}], doc)
+    assert report == ["OK sheet.hem"], report
+    assert len(doc.bodies) == 1
+
+    doc2 = KernelDoc()
+    doc2.add_body(K.make_box(0.02, 0.02, 0.02), name="B")
+    report = SCR.replay([{"cmd": "sheet.bead",
+                          "opts": {"target": "last", "face_i": 5,
+                                   "radius": 2.0, "length": 0.0}}], doc2)
+    assert report == ["OK sheet.bead"], report
+    assert K.volume(doc2.bodies[0].shape) < 8e-6
+
+
+# ------------------------------------------------- P18: closed hem / flat
+def test_hem_closed_crushes_onto_the_flat_exactly():
+    """sheet.hem closed=True -> flat + fold + return plate on top of the flat."""
+    import math
+    from scdm import additive as A
+    w, t, l1, hl = 0.02, 0.001, 0.03, 0.005
+    h = SM.hem(w, t, l1, hl, closed=True)
+    expect = w * t * (l1 + hl) + 2.0 * w * t * t
+    assert K.volume(h) == pytest.approx(expect, rel=1e-9)
+    (x0, y0, z0), (x1, y1, z1) = A.shape_bbox(h)
+    assert (z1 - z0) == pytest.approx(2.0 * t, rel=1e-9)
+    assert (x1 - x0) == pytest.approx(l1 + t, rel=1e-9)
+    # the open variant is taller (the flange stands 2r above the flat)
+    o = SM.hem(w, t, l1, hl, 0.0005, closed=False)
+    (_, _, oz0), (_, _, oz1) = A.shape_bbox(o)
+    assert (oz1 - oz0) > (z1 - z0)
+    assert not math.isnan(K.volume(o))
+
+
+def test_flat_pattern_matches_developed_length():
+    """sheet.flat -> blank length == flat1 + bend allowance + flat2."""
+    import math
+    w, t, l1, l2, r, k = 0.02, 0.001, 0.03, 0.02, 0.002, 0.42
+    b = SM.bend_from_flat(w, t, l1, l2, math.pi / 2, r, k)
+    pat = SM.flat_pattern(b, k)
+    ba = SM.bend_allowance(math.pi / 2, r, k, t)
+    assert pat["length"] == pytest.approx(l1 + ba + l2, rel=1e-6)
+    assert pat["width"] == pytest.approx(w, rel=1e-6)
+    assert len(pat["outline"]) == 5
+
+
+def test_flat_pattern_dxf_file():
+    """sheet.flat -> DXF carrying the blank outline plus its two dimensions."""
+    import math
+    import os
+    import tempfile
+    b = SM.bend_from_flat(0.02, 0.001, 0.03, 0.02, math.pi / 2, 0.002, 0.42)
+    fd, path = tempfile.mkstemp(suffix=".dxf")
+    os.close(fd)
+    try:
+        SM.flat_pattern_dxf(b, path)
+        text = open(path, encoding="utf-8").read()
+    finally:
+        os.unlink(path)
+    assert text.startswith("0\nSECTION") and text.rstrip().endswith("EOF")
+    assert text.count("\nLINE\n") >= 5        # 4 blank edges + dimension lines
+    assert text.count("\nTEXT\n") >= 2        # 2 dimensions (+ bend labels)
+
+def test_bend_table_lookup():
+    """sheet.flat / P26: the material/thickness bend table drives K and R."""
+    assert SM.bend_table_entry("steel", 1.0) == (0.42, 1.0)
+    k, r = SM.bend_table_entry("Stainless", 2.0)
+    assert k == pytest.approx(0.40)
+    assert r == pytest.approx(1.6)
+    with pytest.raises(ValueError):
+        SM.bend_table_entry("unobtainium", 1.0)
+
+
+def test_flat_pattern_reports_bend_line_position():
+    """P26: the bend line sits at flat1 + BA/2 along the developed length."""
+    import math
+    w, t, l1, l2, r, k = 0.02, 0.001, 0.03, 0.02, 0.002, 0.42
+    b = SM.bend_from_flat(w, t, l1, l2, math.pi / 2, r, k)
+    ba = SM.bend_allowance(math.pi / 2, r, k, t)
+    pat = SM.flat_pattern(b, k)
+    assert len(pat["bend_lines"]) == 1
+    bl = pat["bend_lines"][0]
+    assert bl["x"] == pytest.approx(l1 + ba / 2.0, rel=1e-6)
+    assert bl["angle_deg"] == pytest.approx(90.0, rel=1e-6)
+    assert bl["radius"] == pytest.approx(r, rel=1e-6)
+    # bend_lines=False keeps the outline only
+    assert SM.flat_pattern(b, k, bend_lines=False)["bend_lines"] == []
+
+
+def test_flat_pattern_dxf_marks_bend_lines():
+    """sheet.flat / P26: the DXF carries a BEND layer with the angle label."""
+    import math
+    import os
+    import tempfile
+    b = SM.bend_from_flat(0.02, 0.001, 0.03, 0.02, math.pi / 2, 0.002, 0.42)
+    fd, path = tempfile.mkstemp(suffix=".dxf")
+    os.close(fd)
+    try:
+        SM.flat_pattern_dxf(b, path)
+        text = open(path, encoding="utf-8").read()
+    finally:
+        os.unlink(path)
+    assert "\nBEND\n" in text
+    assert "90 deg R2.00" in text

@@ -73,6 +73,136 @@ def bend_from_flat(width: float, t: float, len1: float, len2: float,
 # ----------------------------------------------------------------------
 # bend detection + unfold
 # ----------------------------------------------------------------------
+def hem(width: float, t: float, len1: float, hem_len: float,
+        r_inner: Optional[float] = None, closed: bool = False) -> "object":
+    """卷边: flat + 180-degree roll-back flange.
+
+    closed=False (P6): open hem with inner radius r (default t/2); the return
+    flange sits 2r above the flat and the bend volume is exact by Pappus:
+    theta * (r + t/2) * t * width.
+    closed=True (P18): crushed/closed hem - flat + fold + return plate lying
+    directly on the flat, so the volume is exactly
+    width * t * (len1 + hem_len) + 2 * width * t^2.
+    """
+    if closed:
+        f1 = K.make_box(len1, width, t)
+        fold = K.make_box(t, width, 2.0 * t, origin=(len1, 0.0, 0.0))
+        # the return plate ends where the fold begins, so the three boxes are
+        # disjoint and the union volume is exactly w*t*(len1+hem_len) + 2*w*t^2
+        back = K.make_box(hem_len, width, t,
+                          origin=(len1 - hem_len, 0.0, t))
+        return K.fuse(K.fuse(f1, fold), back)
+    r = (t / 2.0) if r_inner is None else float(r_inner)
+    return bend_from_flat(width, t, len1, hem_len, math.pi, r, 0.42)
+
+
+BEND_TABLES = {
+    # material -> (K factor, inner-radius factor / thickness)
+    "steel": (0.42, 1.0),
+    "aluminum": (0.44, 1.0),
+    "stainless": (0.40, 0.8),
+    "copper": (0.45, 1.0),
+}
+
+
+def bend_table_entry(material: str, thickness_mm: float):
+    """P26: (K, inner radius in mm) for a material/thickness from the table."""
+    key = (material or "steel").strip().lower()
+    entry = BEND_TABLES.get(key)
+    if entry is None:
+        raise ValueError("未知材料 %s（可选：%s）"
+                         % (material, ", ".join(sorted(BEND_TABLES))))
+    k, rf = entry
+    return k, rf * float(thickness_mm)
+
+
+def flat_pattern(solid, k: float = 0.42, bend_lines: bool = True):
+    """P18/P26: developed outline of a bent sheet (+ bend-line positions).
+
+    Returns {"length", "width", "outline", "bend_lines": [{"x", "radius",
+    "angle_deg"}]}, x measured from the blank start along the developed length.
+    """
+    import scdm.additive as _A
+    flat = unfold(solid, k=k)
+    (x0, y0, _z0), (x1, y1, _z1) = _A.shape_bbox(flat)
+    out = {"length": x1 - x0, "width": y1 - y0,
+           "outline": [(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)],
+           "bend_lines": []}
+    if bend_lines:
+        try:
+            bends = detect_bends(solid)
+        except Exception:
+            bends = []
+        x = 0.0
+        for b in bends:
+            ba = bend_allowance(b["angle_rad"], b["r_inner"], k, b["t"])
+            out["bend_lines"].append({
+                "x": x + b["flat1_len"] + ba / 2.0,
+                "radius": b["r_inner"],
+                "angle_deg": math.degrees(b["angle_rad"]),
+            })
+            x += b["flat1_len"] + ba + b["flat2_len"]
+    return out
+
+
+def flat_pattern_dxf(solid, path: str, k: float = 0.42,
+                     material: Optional[str] = None) -> str:
+    """P18/P26: DXF of the blank with bend lines (layer BEND) + angle labels."""
+    from scdm import drawing as D
+    if material is not None:
+        k, _r = bend_table_entry(material, 1.0)
+    pat = flat_pattern(solid, k)
+    outline = pat["outline"]
+    y_lo, y_hi = outline[0][1], outline[2][1]
+    extra = []
+    for bl in pat["bend_lines"]:
+        extra.append(((bl["x"], y_lo), (bl["x"], y_hi), "BEND",
+                      "%.0f deg R%.2f" % (bl["angle_deg"], bl["radius"] * 1000.0)))
+    return D.write_dxf([("展开", [outline])], path, dimensions=True,
+                       extra_lines=extra)
+
+
+
+def hem_flange_offset(t: float, r_inner: Optional[float] = None) -> float:
+    """Z offset of the return flange above the flat (for verification)."""
+    r = (t / 2.0) if r_inner is None else float(r_inner)
+    return 2.0 * r
+
+
+def bead_groove(solid, face, radius: float, length: Optional[float] = None,
+                centre: Optional[Vec3] = None,
+                along: Optional[Vec3] = None) -> "object":
+    """P6 加强筋: half-round groove along a planar face.
+
+    The cutter is a cylinder whose AXIS LIES IN the face plane, so exactly
+    half of it is inside the material: removed = 0.5 * pi * r^2 * span,
+    where span is the face extent along the chosen in-plane direction.
+    """
+    n, c = K.face_normal_center(face)
+    n = tuple(float(v) for v in n)
+    base = tuple(float(v) for v in (centre if centre is not None else c))
+    if along is None:
+        lo, hi = K._vertex_bbox(face)
+        for i in sorted(range(3), key=lambda k: hi[k] - lo[k], reverse=True):
+            v = [0.0, 0.0, 0.0]
+            v[i] = 1.0
+            if abs(sum(v[k] * n[k] for k in range(3))) < 0.9:
+                along = tuple(v)
+                span = hi[i] - lo[i]
+                break
+    else:
+        along = tuple(float(v) for v in along)
+        proj = [sum(K.vertex_point(x)[k] * along[k] for k in range(3))
+                for x in K.explore(face, "vertex")]
+        span = max(proj) - min(proj)
+    if along is None:
+        raise K.KernelError("加强筋：无法确定面内方向")
+    L = (float(length) if length is not None else span) + 2e-6
+    start = tuple(base[i] - along[i] * L / 2.0 for i in range(3))
+    cutter = K.make_cylinder(float(radius), L, origin=start, axis=along)
+    return K.cut(solid, cutter)
+
+
 def detect_bends(solid, min_angle_deg: float = 5.0) -> List[dict]:
     """Find cylindrical bend faces in a prismatic sheet part.
 

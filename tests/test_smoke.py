@@ -49,6 +49,22 @@ class GuiSmokeTests(unittest.TestCase):
         v.on_command("view.fit")
         self.assertEqual(v.tools.active, "tool.select")
 
+    def test_tool_guide_and_smart_bar(self):
+        from PyQt5.QtWidgets import QWidget
+        from scdm.gui.viewport import ViewportHost
+
+        host = ViewportHost(QWidget())
+        host.resize(800, 600)
+        host.set_guide("tool.pull", "拉动 1 个面")
+        self.assertFalse(host.guide.isHidden())
+        self.assertIn("拉动", host.guide.caption.text())
+        host.show_mini(True)
+        self.assertFalse(host.mini.isHidden())
+        host.mini.set_value("5.00 mm")
+        self.assertEqual(host.mini.value.text(), "5.00 mm")
+        host.set_guide("tool.select")
+        self.assertTrue(host.guide.isHidden())
+
     def test_live_commands_reasonable(self):
         from scdm.catalog import live_commands
 
@@ -121,6 +137,110 @@ class GuiSmokeTests(unittest.TestCase):
         self.assertIsNotNone(scene._preview_actor)
         scene.clear_preview()
         self.assertIsNone(scene._preview_actor)
+        scene.show_pull_handles((0, 0, 0.01), (0, 0, 1), length=0.008, distance_mm=5.0)
+        self.assertGreaterEqual(len(scene._handle_actors), 1)
+        scene.clear_handles()
+        self.assertEqual(scene._handle_actors, [])
+        scene.show_move_handles((0, 0, 0), length=0.008)
+        self.assertGreaterEqual(len(scene._handle_actors), 1)
+        xy = scene.world_to_display((0, 0, 0))
+        self.assertEqual(len(xy), 2)
+
+
+    def test_feature_tree_lists_history(self):
+        """P16: a body's feature history appears as child nodes in the tree."""
+        v = self.gui.ScdmViewer(path=os.path.join(_ROOT, "box.scdoc"))
+        ses = v.session()
+        if not self.has_occ or ses.kdoc is None:
+            self.skipTest("kernel not available")
+        import math
+
+        from scdm import features as FEAT
+        from scdm import kernel as K
+
+        body = ses.kdoc.add_body(K.make_box(0.02, 0.02, 0.02), name="测试块")
+        top = [f for f in K.explore(body.shape, "face")
+               if abs(K.face_normal_center(f)[1][2] - 0.02) < 1e-9][0]
+        ses.kdoc.record_feature(body.id, "hole",
+                                selector=FEAT.selector_for(body.shape, top),
+                                diameter=5.0, depth=0.0)
+        ses.kdoc.record_feature(body.id, "shell", thickness=1.0)
+        v.left.populate_tree(ses)
+
+        labels = []
+
+        def walk(item):
+            labels.append(item.text(0))
+            for i in range(item.childCount()):
+                walk(item.child(i))
+
+        for i in range(v.left.tree.topLevelItemCount()):
+            walk(v.left.tree.topLevelItem(i))
+        self.assertTrue(any("孔 Ø5mm" in t for t in labels), labels)
+        self.assertTrue(any("抽壳 1mm" in t for t in labels), labels)
+
+    def test_constraint_marks_render_and_clear(self):
+        """P21: constraint glyph actors are added and removed on demand."""
+        import vtk
+
+        class _FakeWidget:
+            def __init__(self):
+                self.rw = vtk.vtkRenderWindow()
+                self.iren = vtk.vtkRenderWindowInteractor()
+                self.iren.SetRenderWindow(self.rw)
+
+            def GetRenderWindow(self):
+                return self.rw
+
+            def GetInteractor(self):
+                return self.iren
+
+            def Initialize(self):
+                pass
+
+            def Start(self):
+                pass
+
+        from scdm.gui.scene import Scene
+
+        scene = Scene(_FakeWidget())
+        scene.render = lambda: None
+        self.assertEqual(len(scene._constraint_actors), 0)
+        scene.show_constraint_marks([(0.0, 0.0, 0.0, "H"),
+                                     (0.005, 0.0, 0.0, "\u219410.0")])
+        self.assertEqual(len(scene._constraint_actors), 2)
+        scene.show_constraint_marks([])
+        self.assertEqual(len(scene._constraint_actors), 0)
+        scene.show_constraint_marks([(0.0, 0.0, 0.0, "V")])
+        scene.clear_constraint_marks()
+        self.assertEqual(scene._constraint_actors, [])
+    def test_official_document_tree_is_read_only_faithful(self):
+        """P27: a loaded official document shows its PartDef/layer structure."""
+        lib = r"C:\Program Files\ANSYS Inc\v195\scdm\Library\SrModels\samplemodel2.scdoc"
+        if not os.path.exists(lib):
+            self.skipTest("SpaceClaim library absent")
+        from scdm.document import Session, load_scdoc
+
+        data = load_scdoc(lib)
+        ses = Session(name="official", data=data)
+        # no kernel import here: the tree must work straight from document.xml
+        win = self.gui.ScdmViewer.__new__(self.gui.ScdmViewer)
+        from scdm.gui.left_panel import LeftPanel
+        panel = LeftPanel()
+        panel.populate_tree(ses)
+        labels = []
+
+        def walk(item):
+            labels.append(item.text(0))
+            for i in range(item.childCount()):
+                walk(item.child(i))
+
+        for i in range(panel.tree.topLevelItemCount()):
+            walk(panel.tree.topLevelItem(i))
+        self.assertIn("文档结构（只读）", labels)
+        parts = len(getattr(data["doc"], "parts", []) or [])
+        self.assertIn("零件 PartDef：%d 个" % parts, labels)
+        self.assertTrue(any(t.startswith("图层：") for t in labels), labels)
 
 
 if __name__ == "__main__":

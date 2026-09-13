@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from scdm import kernel as K
+from scdm.features import FeatureHistory, FeatureStack
 
 Vec3 = Tuple[float, float, float]
 
@@ -29,6 +30,8 @@ class Sketch:
     xdir: Tuple[float, float, float] = (1.0, 0.0, 0.0)     # custom plane only
     curves: List[tuple] = field(default_factory=list)  # ('line',p1,p2)|('rect',p1,p2)|('circle',c,r)|('poly',pts)
     construction: List[tuple] = field(default_factory=list)
+    # P21: applied solver constraints, e.g. ('h', i, j, None) / ('dist', i, j, d)
+    constraints: List[tuple] = field(default_factory=list)
 
 
 @dataclass
@@ -46,11 +49,16 @@ class Component:
 
     def lightweight_body_ids(self) -> set:
         return set(self.body_ids) if self.lightweight else set()
-    lightweight: bool = False
-    # lightweight bodies are drawn as a bounding-box wireframe (no full tessellation)
 
-    def lightweight_body_ids(self) -> set:
-        return set(self.body_ids) if self.lightweight else set()
+
+@dataclass
+class Configuration:
+    """P23: a named assembly state (component visibility / body suppression)."""
+    id: str
+    name: str
+    hidden_components: List[str] = field(default_factory=list)
+    suppressed_bodies: List[str] = field(default_factory=list)
+    transforms: Dict[str, tuple] = field(default_factory=dict)
 
 
 class KernelDoc:
@@ -61,6 +69,16 @@ class KernelDoc:
         self.mates: List[dict] = []   # {"type", "a": comp_id, "b": comp_id,
         #                               "value", "angle", "slide"}
         self.parametrics: List[Any] = []  # scdm.params.Parametric
+        self.features: Dict[str, FeatureStack] = {}   # P5: per-body feature history
+        self.instances: List[dict] = []   # P8: placed copies of a source body
+        self.document_features = FeatureHistory()   # P22: multi-body features
+        self.configurations: List[Configuration] = []   # P23: assembly states
+        self.active_configuration: Optional[str] = None
+        self.import_warnings: List[str] = []   # P30: import degradation notes
+        # P47: machine-readable version of the same facts, for the GUI report
+        # ({"parts", "failed_parts": [(index, name)], "unbuilt_faces",
+        #   "dropped_faces", "mesh_bodies": [names], "fatal": str|None})
+        self.import_report: dict = {}
         self.param_table = None           # scdm.params.ParamTable (optional)
         self.sim = None                   # scdm.simprep.SimModel (H8)
         self.named: List[dict] = []  # named selections: {"name": str, "items": [(kind,id)]}
@@ -74,6 +92,7 @@ class KernelDoc:
         body = self.add_body(parametric.build(scale), name=parametric.body_name)
         parametric.body_id = body.id
         self.parametrics.append(parametric)
+        self.features.setdefault(body.id, FeatureStack())
         return body
 
     def rebuild_parametric(self, parametric, scale: float = 1000.0) -> Optional[KBody]:
@@ -82,8 +101,116 @@ class KernelDoc:
         body = self.body_by_id(bid) if bid else None
         if body is None:
             return self.add_parametric(parametric, scale)
-        body.shape = parametric.build(scale)
+        shape = parametric.build(scale)
+        stack = self.features.get(body.id)
+        if stack is not None and len(stack):
+            shape = stack.apply(shape, scale)   # P5: replay the feature history
+        body.shape = shape
         return body
+
+    # ---- P5: feature history -------------------------------------------
+    def feature_stack(self, body_id: str) -> FeatureStack:
+        """The (possibly empty) feature history attached to a body."""
+        return self.features.setdefault(body_id, FeatureStack())
+
+    def record_feature(self, body_id: str, op: str, **params) -> None:
+        """Append a replayable feature to a body's history."""
+        self.feature_stack(body_id).add(op, **params)
+
+    def clear_features(self, body_id: str) -> None:
+        self.features.pop(body_id, None)
+
+    # ---- P23: assembly configurations -----------------------------------
+    def add_configuration(self, name: Optional[str] = None,
+                          hidden_components=None, suppressed_bodies=None,
+                          transforms=None) -> Configuration:
+        cid = "CFG%d" % (len(self.configurations) + 1)
+        cfg = Configuration(cid, name or ("配置%d" % (len(self.configurations) + 1)),
+                            list(hidden_components or []),
+                            list(suppressed_bodies or []),
+                            dict(transforms or {}))
+        self.configurations.append(cfg)
+        return cfg
+
+    def capture_configuration(self, name: Optional[str] = None) -> Configuration:
+        """Snapshot the CURRENT visibility/suppression state as a configuration."""
+        cfg = self.add_configuration(name)
+        for c in self.components:
+            if not c.visible:
+                cfg.hidden_components.append(c.id)
+        for b in self.bodies:
+            if not b.visible:
+                cfg.suppressed_bodies.append(b.id)
+        return cfg
+
+    def configuration_by(self, ref: str) -> Optional[Configuration]:
+        for c in self.configurations:
+            if c.id == ref or c.name == ref:
+                return c
+        return None
+
+    def apply_configuration(self, ref: str) -> int:
+        """Apply a named configuration; returns how many objects changed."""
+        cfg = self.configuration_by(ref)
+        if cfg is None:
+            return 0
+        changed = 0
+        hidden = set(cfg.hidden_components)
+        for c in self.components:
+            vis = c.id not in hidden
+            if c.visible != vis:
+                changed += 1
+            c.visible = vis
+        suppressed = set(cfg.suppressed_bodies)
+        for b in self.bodies:
+            vis = b.id not in suppressed
+            if b.visible != vis:
+                changed += 1
+            b.visible = vis
+        for cid, mat in cfg.transforms.items():
+            comp = self.component_by_id(cid)
+            if comp is not None:
+                comp.transform = tuple(mat)
+                changed += 1
+        self.active_configuration = cfg.id
+        return changed
+
+    # ---- P22: document-level (multi-body) feature history ----------------
+    def record_doc_feature(self, op: str, inputs, **params):
+        """Append a whole-body feature (pattern/mirror/combine/split)."""
+        return self.document_features.add(op, inputs, **params)
+
+    def replay_document(self, scale: float = 1000.0, apply: bool = False):
+        """Rebuild parametric bases + per-body features + doc features.
+
+        Returns the live shape list; with apply=True the bodies are replaced
+        (names and ids are regenerated, order preserved).
+        """
+        bases = []
+        names = []
+        if self.parametrics:
+            for p in self.parametrics:
+                shape = p.build(scale)
+                stack = self.features.get(getattr(p, "body_id", ""))
+                if stack is not None and len(stack):
+                    shape = stack.apply(shape, scale)
+                bases.append(shape)
+                names.append(p.body_name)
+        else:
+            for b in self.bodies:
+                shape = b.shape
+                stack = self.features.get(b.id)
+                if stack is not None and len(stack):
+                    shape = stack.apply(shape, scale)
+                bases.append(shape)
+                names.append(b.name)
+        shapes = self.document_features.replay(bases, scale)
+        if apply:
+            self.bodies = []
+            for i, sh in enumerate(shapes):
+                nm = names[i] if i < len(names) else "特征体%d" % (i + 1)
+                self.add_body(sh, name=nm)
+        return shapes
 
     @property
     def notes(self) -> List[dict]:
@@ -156,7 +283,49 @@ class KernelDoc:
         b = self.body_by_id(bid)
         if b:
             self.bodies.remove(b)
+        # P8: drop instance links that referenced (or were placed as) this body
+        self.instances = [i for i in self.instances
+                          if i.get("body_id") != bid and i.get("source") != bid]
         return b
+
+    # ---- P8: same-part instances ---------------------------------------
+    def add_instance(self, source_body_id: str, transform=None,
+                     name: Optional[str] = None) -> Optional[KBody]:
+        """Place a copy of a source body (the part definition) at a transform.
+
+        The copy is a full body; the link back to the source is what lets
+        sync_instances() propagate a later edit to every placement.
+        """
+        src = self.body_by_id(source_body_id)
+        if src is None:
+            return None
+        shape = (K.apply_mat4(src.shape, transform) if transform is not None
+                 else K.copy_shape(src.shape))
+        body = self.add_body(shape, name=name or (src.name + " 实例"))
+        self.instances.append({
+            "id": f"I{len(self.instances) + 1}", "source": source_body_id,
+            "body_id": body.id, "transform": transform, "name": body.name})
+        return body
+
+    def instances_of(self, source_body_id: str) -> List[dict]:
+        """Every placement derived from a source body."""
+        return [i for i in self.instances if i.get("source") == source_body_id]
+
+    def sync_instances(self, source_body_id: str) -> int:
+        """Re-derive every instance of a source body from its current shape."""
+        src = self.body_by_id(source_body_id)
+        if src is None:
+            return 0
+        n = 0
+        for inst in self.instances_of(source_body_id):
+            b = self.body_by_id(inst["body_id"])
+            if b is None:
+                continue
+            b.shape = (K.apply_mat4(src.shape, inst["transform"])
+                       if inst.get("transform") is not None
+                       else K.copy_shape(src.shape))
+            n += 1
+        return n
 
     def snapshot(self) -> List[tuple]:
         if not K.available():

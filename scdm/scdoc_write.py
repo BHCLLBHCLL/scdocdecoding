@@ -1250,9 +1250,15 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
         return bytes(out)
 
     # official SpaceClaim writes ONE body per part file (samplemodel2):
-    # each body becomes its own partN.sab
+    # each body becomes its own partN.sab.
+    # P15: placed instances are NOT written as extra parts - they become extra
+    # ComponentDefs referencing their definition part (so one part file backs
+    # N placements).
+    instances = [dict(i) for i in getattr(kdoc, "instances", [])]
+    inst_ids = {i.get("body_id") for i in instances}
+    bodies = [b for b in kdoc.bodies if b.id not in inst_ids]
     groups = []
-    for b in kdoc.bodies:
+    for b in bodies:
         groups.append((b.name, [_item_of(b)],
                        [tuple(getattr(b, "color", None)
                               or (0.745, 0.902, 0.961))]))
@@ -1268,7 +1274,8 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
     DOC_GUID = "9d32a3b4-809e-4cc1-8dd7-f73febd3c257"
     doc_plan = _allocate_assembly_ids(groups, kdoc)
     doc_xml = _assembly_document_xml(kdoc, groups, name or "design",
-                                     ids=doc_plan)
+                                     ids=doc_plan, bodies=bodies,
+                                     instances=instances)
     with zipfile.ZipFile(template) as src, \
             zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as out:
         for n in src.namelist():
@@ -1333,7 +1340,7 @@ def write_scdoc_multi(path: str, kdoc, name: str = "design") -> int:
             tessellations = []
             items_all = []
             ids_all = []
-            for gi, body in enumerate(kdoc.bodies):
+            for gi, body in enumerate(bodies):
                 it = _item_of(body)
                 items_all.append(it)
                 ids_all.append(doc_plan["facet_ids"][gi])
@@ -1402,7 +1409,7 @@ def _allocate_assembly_ids(groups, kdoc):
     plan = {"part": [], "body": [], "faces": [], "edges": [],
             "cap_body": [], "cap_part": [], "comp": [],
             "cont_part": [], "cont_comp": [], "cont_cap": [],
-            "facet_ids": []}
+            "inst_comp": [], "inst_cap": [], "facet_ids": []}
     for gi, (gname, items, colors) in enumerate(groups):
         nf, ne = _counts_of(items[0])
         pid = alloc.take_desired(22 + 60 * gi)
@@ -1426,12 +1433,17 @@ def _allocate_assembly_ids(groups, kdoc):
         plan["cont_part"].append(alloc.take_desired(240 + ci))
         plan["cont_comp"].append(alloc.take_desired(260 + ci))
         plan["cont_cap"].append(alloc.take_desired(280 + ci))
+    # P15: extra component instances (one per placed instance of a definition)
+    for ii in range(len(getattr(kdoc, "instances", []))):
+        plan["inst_comp"].append(alloc.take_desired(340 + 2 * ii))
+        plan["inst_cap"].append(alloc.take_desired(341 + 2 * ii))
     plan["next"] = max(alloc.used) + 1
     return plan
 
 
 def _assembly_document_xml(kdoc, groups, name: str,
-                           ids: "dict | None" = None) -> bytes:
+                           ids: "dict | None" = None,
+                           bodies=None, instances=None) -> bytes:
     """Assembly document.xml replicating the OFFICIAL save skeleton.
 
     Field-level provenance: references/golden/assembly_sample.scdoc (the
@@ -1476,6 +1488,8 @@ def _assembly_document_xml(kdoc, groups, name: str,
     cont_part_ids = ids.get("cont_part", [])
     cont_comp_ids = ids.get("cont_comp", [])
     cont_cap_ids = ids.get("cont_cap", [])
+    inst_comp_ids = ids.get("inst_comp", [])
+    inst_cap_ids = ids.get("inst_cap", [])
 
     def body_part_def(gi, body, items, colors):
         fid = face_ids[gi]
@@ -1509,8 +1523,9 @@ def _assembly_document_xml(kdoc, groups, name: str,
     comp_xml = []
     part_xml = []
     captions = []
+    defs = list(bodies) if bodies is not None else list(kdoc.bodies)
     for gi, (gname, items, colors) in enumerate(groups):
-        body = kdoc.bodies[gi]
+        body = defs[gi]
         part_xml.append(body_part_def(gi, body, items, colors))
         captions.append(
             '<CaptionDef Id="0:%d"><updateState>0:%d</updateState>'
@@ -1534,6 +1549,34 @@ def _assembly_document_xml(kdoc, groups, name: str,
             '<lastEvaluatedTrans>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1'
             '</lastEvaluatedTrans></ComponentDef>'
             % (comp_ids[gi], comp_ids[gi], DOC_GUID, part_ids[gi]))
+    # P15: one additional ComponentDef per placed INSTANCE, all referencing the
+    # same definition part (source refId) with the instance's own transform.
+    insts = list(instances or [])
+    body_part_index = {b.id: gi for gi, b in enumerate(defs)}
+    for ii, inst in enumerate(insts):
+        gi = body_part_index.get(inst.get("source"))
+        if gi is None or ii >= len(inst_comp_ids):
+            continue
+        cid = inst_comp_ids[ii]
+        cap = inst_cap_ids[ii]
+        trans = inst.get("transform")
+        if trans:
+            flat = " ".join("%.12g" % float(v) for row in trans for v in row)
+        else:
+            flat = "1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"
+        comp_xml.append(
+            '<ComponentDef Id="0:%d"><updateState>0:%d</updateState>'
+            '<source sctype="SpaceClaim.BasicMoniker`1[[SpaceClaim.IEvaluation,'
+            ' Core]], Core" refId="%s:%d" /><trans>%s</trans>'
+            '<lastAccuracy>0</lastAccuracy>'
+            '<lastEvaluatedTrans>%s</lastEvaluatedTrans></ComponentDef>'
+            % (cid, cid, DOC_GUID, part_ids[gi], flat, flat))
+        captions.append(
+            '<CaptionDef Id="0:%d"><updateState>0:%d</updateState>'
+            '<subjectId>0:%d</subjectId><name>%s</name><description></description>'
+            '<type version="82">Normal</type></CaptionDef>'
+            % (cap, cap, cid, _xml_esc(inst.get("name") or "实例")))
+
     # container component parts: one EMPTY PartDef per kdoc component plus its
     # ComponentDef instance (official assembly_sample.scdoc layout: bodies stay
     # externalized as root-level instances, the container part carries no body)

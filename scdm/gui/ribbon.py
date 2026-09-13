@@ -10,30 +10,53 @@ from PyQt5.QtWidgets import (
 from scdm.catalog import TABS, Command, Group
 from scdm.gui.icons import make_icon
 
+# Match cabdecoding toolbar density (22) and Office large-command scale (~32).
 LARGE_ICON = 32
-SMALL_ICON = 24
-RIBBON_BODY_H = 118
+SMALL_ICON = 22
+RIBBON_BODY_H = 110
 
 RIBBON_QSS = """
-QWidget#RibbonBar { background: #F0F0F0; }
-QTabBar#RibbonTabs { background: #E8E8E8; }
+QWidget#RibbonBar {
+    background: qlineargradient(x1:0,y1:0,x2:0,y2:1,
+        stop:0 #f2f2f2, stop:1 #e6e6e6);
+}
+QTabBar#RibbonTabs {
+    background: transparent;
+}
 QTabBar#RibbonTabs::tab {
-    height: 28px; padding: 5px 16px; background: #E8E8E8;
+    height: 28px; padding: 5px 16px;
+    background: transparent;
     border: none; color: #333; font-size: 12px;
+    margin-right: 1px;
 }
 QTabBar#RibbonTabs::tab:selected {
-    background: #FFFFFF; border-bottom: 2px solid #0078D7; color: #111;
+    background: #ffffff; color: #111; font-weight: bold;
+    border-bottom: 2px solid #2e75b6;
 }
-QWidget#RibbonBody { background: #FFFFFF; border-bottom: 1px solid #D4D4D4; }
-QLabel#GroupTitle { color: #6A6A6A; font-size: 11px; padding: 2px 6px 3px 6px; }
-QFrame#GroupSep { background: #E4E4E4; max-width: 1px; margin: 10px 5px 16px 5px; }
+QTabBar#RibbonTabs::tab:hover:!selected { background: #f3f6f9; }
+QWidget#RibbonBody {
+    background: #ffffff;
+    border-bottom: 1px solid #c0c0c0;
+}
+QLabel#GroupTitle {
+    color: #6a6a6a; font-size: 11px;
+    padding: 1px 6px 3px 6px;
+}
+QFrame#GroupSep {
+    background: #d0d0d0; max-width: 1px;
+    margin: 10px 8px 16px 8px;
+}
 QToolButton {
     border: 1px solid transparent; border-radius: 3px;
     background: transparent; font-size: 11px; color: #333;
+    padding: 2px 6px 1px 6px;
 }
-QToolButton:hover { background: #E5F1FB; border-color: #C0D4EA; }
-QToolButton:checked { background: #CDE4F7; border-color: #0078D7; }
-QToolButton:pressed { background: #B7D7F0; }
+QToolButton:hover { background: #e3f2fd; border-color: #90caf9; }
+QToolButton:checked {
+    background: #bbdefb; border-color: #5a9ac6;
+}
+QToolButton:pressed { background: #90caf9; }
+QToolButton:disabled { color: #9a9a9a; }
 """
 
 
@@ -57,14 +80,18 @@ class RibbonButton(QToolButton):
             self.setIcon(make_icon(cmd.icon, LARGE_ICON))
             self.setIconSize(QSize(LARGE_ICON, LARGE_ICON))
             self.setText(cmd.name)
-            width = 58 if len(cmd.name) <= 3 else 74
-            self.setFixedSize(width, 80)
+            n = len(cmd.name)
+            width = 58 if n <= 2 else (66 if n <= 3 else 80)
+            self.setFixedSize(width, 86)
         else:
-            self.setToolButtonStyle(Qt.ToolButtonIconOnly)
+            # Office/SpaceClaim small cmds: icon + label, readable at a glance.
+            self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
             self.setIcon(make_icon(cmd.icon, SMALL_ICON))
             self.setIconSize(QSize(SMALL_ICON, SMALL_ICON))
             self.setText(cmd.name)
-            self.setFixedSize(36, 36)
+            n = len(cmd.name)
+            width = 72 if n <= 2 else (84 if n <= 3 else 98)
+            self.setFixedSize(width, 28)
         self.clicked.connect(lambda: self.triggered_id.emit(cmd.id))
 
 
@@ -73,8 +100,8 @@ class RibbonGroup(QWidget):
         super().__init__(parent)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
         root = QVBoxLayout(self)
-        root.setContentsMargins(10, 6, 10, 4)
-        root.setSpacing(1)
+        root.setContentsMargins(10, 6, 10, 2)
+        root.setSpacing(0)
         row = QHBoxLayout()
         row.setSpacing(4)
         row.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
@@ -86,12 +113,12 @@ class RibbonGroup(QWidget):
             row.addWidget(b, 0, Qt.AlignTop)
             self.buttons.append(b)
         if small:
-            nrows = 3 if (not large and len(small) <= 3) else 2
+            nrows = 3
             grid_host = QWidget()
             grid = QGridLayout(grid_host)
-            grid.setContentsMargins(0, 4, 0, 0)
+            grid.setContentsMargins(2, 2, 2, 0)
             grid.setHorizontalSpacing(3)
-            grid.setVerticalSpacing(3)
+            grid.setVerticalSpacing(2)
             for i, c in enumerate(small):
                 b = RibbonButton(c)
                 grid.addWidget(b, i % nrows, i // nrows)
@@ -188,24 +215,24 @@ class RibbonBar(QWidget):
         self.tabs.setCurrentIndex(design_idx)
         self._show_tab("design")
 
-    def _on_tab(self, index: int):
-        tid = self._tab_ids[index]
-        self.tab_changed.emit(tid)
-        if tid == "file":
-            return
-        self._show_tab(tid)
+    def _on_tab(self, idx: int):
+        if 0 <= idx < len(self._tab_ids):
+            tid = self._tab_ids[idx]
+            self._show_tab(tid)
+            self.tab_changed.emit(tid)
 
-    def _show_tab(self, tid: str):
+    def _show_tab(self, tab_id: str):
+        host = self._pages.get(tab_id)
+        if host is None:
+            return
         lay = self.body.layout()
         if self._current_host is not None:
             lay.removeWidget(self._current_host)
             self._current_host.hide()
-        host = self._pages.get(tid)
-        if host is None:
-            return
+            self._current_host.setParent(None)
+        self._current_host = host
         lay.insertWidget(0, host)
         host.show()
-        self._current_host = host
 
     def select_tab(self, tid: str):
         if tid in self._tab_ids:
@@ -217,7 +244,7 @@ class RibbonBar(QWidget):
     def restore_design(self):
         self.select_tab("design")
 
-    def set_checked(self, cmd_id: str, on: bool):
+    def set_checked(self, cmd_id: str, on: bool = True):
         b = self._buttons.get(cmd_id)
         if b and b.isCheckable():
             b.blockSignals(True)

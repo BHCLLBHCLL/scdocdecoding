@@ -113,20 +113,51 @@ def solve_dimensions(points: Sequence[Point2], dims: Sequence[Tuple[int, int, fl
             for (i, j, _d) in dims]
 
 
+CIRCLE_SEGMENTS = 64
+
+
+def circle_ring(cx: float, cy: float, r: float,
+                segments: int = CIRCLE_SEGMENTS) -> List[Point2]:
+    """Closed polygon approximation of a circle (P10: circles can extrude)."""
+    return [[cx + r * math.cos(math.tau * i / segments),
+             cy + r * math.sin(math.tau * i / segments)]
+            for i in range(segments)]
+
+
+def polygon_area(pts: Sequence[Point2]) -> float:
+    """Shoelace area of a closed polygon (absolute value)."""
+    a = 0.0
+    n = len(pts)
+    for i in range(n):
+        x1, y1 = pts[i]
+        x2, y2 = pts[(i + 1) % n]
+        a += x1 * y2 - x2 * y1
+    return abs(a) / 2.0
+
+
 def sketch_outline(curves: Sequence[tuple]) -> Optional[List[Point2]]:
     """Return the 2D outer loop of a sketch as an ordered point list, or None.
 
-    Supports: ('rect', p1, p2) and chains of ('line', p1, p2) forming a closed loop.
+    Supports: ('rect', p1, p2), ('circle', centre, r), ('poly', [pts]) and
+    chains of ('line', p1, p2) forming a closed loop.
     """
     def xy(t):
         return [float(t[0]), float(t[1])]
+
+    def dedupe(pts):
+        if len(pts) > 2 and _near(pts[0], pts[-1]):
+            return pts[:-1]
+        return pts
 
     for c in curves:
         if c[0] == "rect":
             p1, p2 = xy(c[1]), xy(c[2])
             return [p1, [p2[0], p1[1]], p2, [p1[0], p2[1]]]
+        if c[0] == "circle":
+            ctr = xy(c[1])
+            return circle_ring(ctr[0], ctr[1], float(c[2]))
         if c[0] == "poly":
-            return [xy(p) for p in c[1]]
+            return dedupe([xy(p) for p in c[1]])
     # otherwise collect line segments and try to form a closed loop
     segs = []
     for c in curves:
@@ -197,6 +228,65 @@ def _unit3(v):
 def _cross(a, b):
     return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2],
             a[0] * b[1] - a[1] * b[0])
+
+
+GLYPH_LABELS = {
+    "h": "H", "v": "V", "par": "∥", "perp": "⊥", "equal": "=",
+    "coin": "●", "mid": "M", "fixed": "▣", "tangent": "T",
+    "dist": "↔", "radius": "R",
+}
+
+
+def constraint_glyphs(constraints, points, segments):
+    """P21: (label, uv, value_mm) markers for a sketch's applied constraints.
+
+    Positions are derived from the CURRENT points/segments, so a constraint
+    whose indices no longer resolve (the sketch was edited) is skipped instead
+    of raising. Dimension values are reported in mm.
+    """
+    out = []
+    n = len(points or ())
+
+    def mid(i, j):
+        if i < n and j < n:
+            return [(points[i][0] + points[j][0]) / 2.0,
+                    (points[i][1] + points[j][1]) / 2.0]
+        return None
+
+    def seg_mid(s):
+        if segments and 0 <= s < len(segments):
+            a, b = segments[s]
+            return mid(a, b)
+        return None
+
+    for c in constraints or ():
+        kind = c[0]
+        label = GLYPH_LABELS.get(kind)
+        if label is None:
+            continue
+        uv = None
+        value = None
+        if kind == "dist":
+            uv = mid(c[1], c[2])
+            value = float(c[3]) * 1000.0 if c[3] is not None else None
+        elif kind in ("h", "v", "coin"):
+            uv = mid(c[1], c[2])
+        elif kind in ("par", "perp", "equal"):
+            m1, m2 = seg_mid(c[1]), seg_mid(c[2])
+            if m1 and m2:
+                uv = [(m1[0] + m2[0]) / 2.0, (m1[1] + m2[1]) / 2.0]
+        elif kind == "mid":
+            uv = (mid(c[1], c[1]) if c[1] < n else None) or seg_mid(c[2])
+        elif kind == "fixed":
+            uv = [float(c[2]), float(c[3])]
+        elif kind == "tangent":
+            if c[2] < n:
+                uv = [points[c[2]][0], points[c[2]][1]]
+            value = float(c[3]) * 1000.0 if len(c) > 3 and c[3] else None
+        if uv is None:
+            continue
+        out.append({"kind": kind, "label": label, "uv": uv, "value_mm": value})
+    return out
 
 
 def sketch_axes(plane: str = "xy", origin=(0.0, 0.0, 0.0),
@@ -280,6 +370,117 @@ def point_segment_distance(p, a, b):
         return math.hypot(px - ax, py - ay), 0.0
     t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / L2))
     return math.hypot(px - (ax + t * dx), py - (ay + t * dy)), t
+
+
+def snap_uv(uv, points, segments, tol, snap_end: bool = True,
+            snap_mid: bool = True, grid_step: Optional[float] = None,
+            anchors=None, snap_coincident: bool = False):
+    """Snap a sketch-plane pick; returns (uv, kind).
+
+    SpaceClaim UX order: entity snaps win over the grid and the nearest entity
+    wins; kind is 'coincident' | 'endpoint' | 'midpoint' | 'grid' | None.
+    P2: these options used to be stored but never consulted by the picker.
+    P19: 'coincident' snaps to existing sketch anchors (point entities and
+    circle centres) and takes priority over endpoint / midpoint.
+    """
+    # 重合 has absolute priority: an existing sketch anchor wins even when a
+    # midpoint happens to be closer to the raw pick.
+    coincident = None
+    if snap_coincident:
+        for p in anchors or ():
+            d = math.hypot(p[0] - uv[0], p[1] - uv[1])
+            if d <= tol and (coincident is None or d < coincident[0]):
+                coincident = (d, [float(p[0]), float(p[1])])
+    if coincident is not None:
+        return coincident[1], "coincident"
+    best = None
+    if snap_end:
+        for p in points or ():
+            d = math.hypot(p[0] - uv[0], p[1] - uv[1])
+            if d <= tol and (best is None or d < best[0]):
+                best = (d, [float(p[0]), float(p[1])], "endpoint")
+    if snap_mid:
+        for seg in segments or ():
+            a, b = seg[0], seg[1]
+            if 0 <= a < len(points) and 0 <= b < len(points):
+                m = [(points[a][0] + points[b][0]) / 2.0,
+                     (points[a][1] + points[b][1]) / 2.0]
+                d = math.hypot(m[0] - uv[0], m[1] - uv[1])
+                if d <= tol and (best is None or d < best[0]):
+                    best = (d, m, "midpoint")
+    if best is not None:
+        return best[1], best[2]
+    if grid_step and grid_step > 0:
+        return [round(v / grid_step) * grid_step for v in uv], "grid"
+    return [float(uv[0]), float(uv[1])], None
+
+
+def _seg_intersection(a, b, c, d, eps: float = 1e-12):
+    """Parameter (t, u) of the intersection of segments ab and cd, else None."""
+    r = (b[0] - a[0], b[1] - a[1])
+    s = (d[0] - c[0], d[1] - c[1])
+    den = r[0] * s[1] - r[1] * s[0]
+    if abs(den) < eps:
+        return None
+    t = ((c[0] - a[0]) * s[1] - (c[1] - a[1]) * s[0]) / den
+    u = ((c[0] - a[0]) * r[1] - (c[1] - a[1]) * r[0]) / den
+    if eps < t < 1.0 - eps and eps < u < 1.0 - eps:
+        return t, u
+    return None
+
+
+def _lerp(a, b, t):
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
+
+
+def split_at_intersections(curves: Sequence[tuple]):
+    """P19: split every line segment at its interior crossings.
+
+    Non-line curves and untouched lines are returned unchanged. This is the
+    geometric core of trim (and of extend): both need the crossing points.
+    """
+    segs = [c for c in curves if c[0] == "line"]
+    cuts = [[] for _ in segs]
+    for i in range(len(segs)):
+        a, b = segs[i][1], segs[i][2]
+        for j in range(i + 1, len(segs)):
+            c, d = segs[j][1], segs[j][2]
+            hit = _seg_intersection(a, b, c, d)
+            if hit is None:
+                continue
+            t, u = hit
+            cuts[i].append(t)
+            cuts[j].append(u)
+    out = []
+    for k, c in enumerate(segs):
+        a, b = c[1], c[2]
+        ts = [0.0] + sorted(cuts[k]) + [1.0]
+        for lo, hi in zip(ts, ts[1:]):
+            out.append(("line", tuple(_lerp(a, b, lo)), tuple(_lerp(a, b, hi))))
+    for c in curves:
+        if c[0] != "line":
+            out.append(c)
+    return out
+
+
+def trim_at(curves: Sequence[tuple], pick, tol: float = 0.005):
+    """P19: remove the line segment nearest pick, after splitting crossings.
+
+    Returns (remaining_curves, n_removed).
+    """
+    split = split_at_intersections(curves)
+    best_i = None
+    best_d = None
+    for i, c in enumerate(split):
+        if c[0] != "line":
+            continue
+        mid = [(c[1][0] + c[2][0]) / 2.0, (c[1][1] + c[2][1]) / 2.0]
+        d = math.hypot(mid[0] - pick[0], mid[1] - pick[1])
+        if best_d is None or d < best_d:
+            best_d, best_i = d, i
+    if best_i is None or best_d is None or best_d > tol:
+        return list(curves), 0
+    return [c for i, c in enumerate(split) if i != best_i], 1
 
 
 def chain_polylines(polys: Sequence[Sequence[Point2]],

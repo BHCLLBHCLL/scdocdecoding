@@ -1,7 +1,7 @@
 """Left navigation: structure / layers / selection / groups / views + options + properties."""
 from __future__ import annotations
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtWidgets import (
     QAbstractItemView, QCheckBox, QDoubleSpinBox, QGroupBox, QHBoxLayout,
     QHeaderView, QLabel, QListWidget, QListWidgetItem, QMenu, QInputDialog,
@@ -11,12 +11,13 @@ from PyQt5.QtWidgets import (
 )
 
 from scdm.document import Session
+from scdm.gui.icons import make_icon
 
 
 def _section(title: str, widget: QWidget) -> QWidget:
     box = QGroupBox(title)
     lay = QVBoxLayout(box)
-    lay.setContentsMargins(8, 12, 8, 8)
+    lay.setContentsMargins(6, 10, 6, 6)
     lay.setSpacing(4)
     lay.addWidget(widget)
     return box
@@ -54,6 +55,7 @@ class LeftPanel(QWidget):
         self.tree.setRootIsDecorated(True)
         self.tree.setIndentation(16)
         self.tree.setUniformRowHeights(True)
+        self.tree.setIconSize(QSize(18, 18))
         self.tree.itemClicked.connect(self.tree_clicked.emit)
         self.tree.itemChanged.connect(self._on_item_changed)
         self.nav.addTab(self.tree, "结构")
@@ -196,6 +198,29 @@ class LeftPanel(QWidget):
             self._opt_pages[cmd] = (w, boxes, sp)
             self.opt_stack.addWidget(w)
 
+        def checks_nyi(cmd, labels, note):
+            """Greyed-out option page: the option exists in SpaceClaim but is
+            not wired here - declared instead of silently accepted (P2)."""
+            w = QWidget()
+            f = QVBoxLayout(w)
+            f.setContentsMargins(4, 4, 4, 4)
+            f.setSpacing(6)
+            boxes = []
+            for label in labels:
+                cb = QCheckBox(label)
+                cb.setChecked(False)
+                cb.setEnabled(False)
+                cb.setToolTip("未接线：" + note)
+                f.addWidget(cb)
+                boxes.append(cb)
+            hint = QLabel("未接线：" + note)
+            hint.setWordWrap(True)
+            hint.setStyleSheet("color:#8a8a8a; font-size:11px;")
+            f.addWidget(hint)
+            f.addStretch(1)
+            self._opt_pages[cmd] = (w, boxes)
+            self.opt_stack.addWidget(w)
+
         checks("tool.select", [("捕捉到栅格", False), ("端点", True), ("中点", True), ("重合", False)])
         check_spin("tool.pull", [("对称", False), ("复制", False), ("到面", False)],
                    [("距离", 5.0)])
@@ -204,6 +229,11 @@ class LeftPanel(QWidget):
         radios("tool.combine", ["合并", "减去", "相交"])
         checks("mode.sketch", [("草图网格", True), ("捕捉栅格", True)])
         checks("mode.section", [("剖面显示", True), ("截面可拉", True)])
+        checks("tool.split_body", [("保留两侧", True)])
+        checks_nyi("tool.fill", ["保留边", "相切连续"],
+                   "填充走 OCCT Defeaturing，无保留边/相切参数")
+        checks_nyi("tool.replace", ["延伸目标面"],
+                   "替换为平面移动+愈合，无延伸语义")
         checks("measure.dist", [("自动标注", True)])
         checks("insert.cyl", [("创建后进入拉动", True)])
         checks("insert.sphere", [("创建后进入拉动", True)])
@@ -227,6 +257,14 @@ class LeftPanel(QWidget):
         if 0 <= index < len(boxes):
             return bool(boxes[index].isChecked())
         return False
+
+    def set_checked(self, cmd: str, index: int, on: bool) -> None:
+        page = self._opt_pages.get(cmd)
+        if not page:
+            return
+        boxes = page[1]
+        if 0 <= index < len(boxes):
+            boxes[index].setChecked(bool(on))
 
     def spin_value(self, cmd: str, index: int):
         """Value of a mm spinbox on the option page, or None when absent."""
@@ -272,7 +310,41 @@ class LeftPanel(QWidget):
             it.setCheckState(0, Qt.Checked if session.show_planes else Qt.Unchecked)
             root.addChild(it)
 
+        def add_features(node, body_id):
+            """P16: list a body's feature history under its tree node."""
+            stack = getattr(session.kdoc, "features", {}).get(body_id)
+            if stack is None:
+                return
+            for fi, feat in enumerate(stack.features):
+                fnode = QTreeWidgetItem([feat.label()])
+                fnode.setData(0, Qt.UserRole, ("feature", body_id, fi))
+                fnode.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+                node.addChild(fnode)
+
         doc = session.design_doc
+        # P27: read-only view of the loaded official document structure
+        if session.data and doc is not None:
+            info = QTreeWidgetItem(["文档结构（只读）"])
+            info.setData(0, Qt.UserRole, ("docinfo", ""))
+            info.setFlags(Qt.ItemIsEnabled)
+            root.addChild(info)
+            parts = list(getattr(doc, "parts", []) or [])
+            pit = QTreeWidgetItem(["零件 PartDef：%d 个" % len(parts)])
+            pit.setData(0, Qt.UserRole, ("docparts", len(parts)))
+            info.addChild(pit)
+            layers = list(getattr(doc, "layers", []) or [])
+            lit = QTreeWidgetItem(["图层：%d 个" % len(layers)])
+            lit.setData(0, Qt.UserRole, ("doclayers", len(layers)))
+            info.addChild(lit)
+            for lay in layers[:12]:
+                sub = QTreeWidgetItem([getattr(lay, "name", "") or "图层"])
+                sub.setData(0, Qt.UserRole, ("doclayer", getattr(lay, "id", "")))
+                sub.setFlags(Qt.ItemIsEnabled)
+                lit.addChild(sub)
+            caps = list(getattr(doc, "captions", []) or [])
+            info.addChild(QTreeWidgetItem(["标题 Caption：%d 个" % len(caps)]))
+            named = list(getattr(doc, "named_selections", []) or [])
+            info.addChild(QTreeWidgetItem(["命名选择：%d 个" % len(named)]))
         if session.kdoc is not None and session.kdoc.bodies:
             if session.kdoc.components:
                 for comp in session.kdoc.components:
@@ -288,16 +360,29 @@ class LeftPanel(QWidget):
                             sub.setData(0, Qt.UserRole, ("body", bid))
                             sub.setCheckState(0, Qt.Checked if body.visible else Qt.Unchecked)
                             it.addChild(sub)
+                            add_features(sub, bid)
             for body in session.kdoc.bodies:
                 it = QTreeWidgetItem([body.name])
                 it.setData(0, Qt.UserRole, ("body", body.id))
                 it.setCheckState(0, Qt.Checked if body.visible else Qt.Unchecked)
                 root.addChild(it)
+                add_features(it, body.id)
             for sk in session.kdoc.sketches:
                 it = QTreeWidgetItem([sk.name])
                 it.setData(0, Qt.UserRole, ("sketch", sk.id))
                 it.setCheckState(0, Qt.Checked)
                 root.addChild(it)
+            doc_feats = getattr(getattr(session.kdoc, "document_features",
+                                        None), "features", [])
+            if doc_feats:
+                fh = QTreeWidgetItem(["特征历史"])
+                fh.setData(0, Qt.UserRole, ("feature_history", ""))
+                fh.setFlags(Qt.ItemIsEnabled)
+                root.addChild(fh)
+                for fi, feat in enumerate(doc_feats):
+                    sub = QTreeWidgetItem(["%d. %s" % (fi + 1, feat.label())])
+                    sub.setData(0, Qt.UserRole, ("doc_feature", fi))
+                    fh.addChild(sub)
             for ns in getattr(session.kdoc, "named", []):
                 it = QTreeWidgetItem([f"命名选择: {ns['name']}"])
                 it.setData(0, Qt.UserRole, ("named", ns["name"]))

@@ -160,20 +160,15 @@ def _face_node(reader: _Reader) -> FaceNode:
     """Official 4-word header [face_doc_id, 0, node_id, corner_count];
     legacy 5-word streams start with a 0 word instead."""
     w0 = reader.u32()
+    w1 = reader.u32()
+    w2 = reader.u32()
+    # P13: the second word is a PER-FILE constant (observed 0 / 1 / 4 / 7 /
+    # 161 across the official library), not a fixed 0 - requiring 0 here is
+    # what made 5 of the 6 official SrModels unreadable.
     if w0 == 0:
-        node_id = reader.u32()
-        z = reader.u32()
-        if z != 0:
-            raise FacetsError('bad legacy face-node header at byte %d'
-                              % (reader.pos - 4))
-        face_doc_id = node_id
+        face_doc_id = node_id = w1        # legacy [0, node_id, 0, corners]
     else:
-        face_doc_id = w0
-        z = reader.u32()
-        if z != 0:
-            raise FacetsError('bad face-node header at byte %d'
-                              % (reader.pos - 4))
-        node_id = reader.u32()
+        face_doc_id, node_id = w0, w2     # official [fid, X, node_id, corners]
     corner_count = reader.u32()
     if not (3 <= corner_count <= 1000000):
         raise FacetsError('implausible corner count %d' % corner_count)
@@ -198,18 +193,60 @@ def _face_node(reader: _Reader) -> FaceNode:
 
 
 def _edge_table(reader: _Reader, out: FacetsFile) -> None:
-    """[count, count x (edge_id, 0, doc_id_number)]."""
+    """[count, count x (edge_id, X, doc_id_number)].
+
+    X is the same per-file constant as in the body/face headers (P13): the
+    official library uses 1 / 4 / 7 / 161 there, so it must not be required
+    to be 0.
+    """
     if reader.words_left() < 1:
         return
     count = reader.u32()
+    if count > reader.words_left() // 3:
+        raise FacetsError('edge table count %d exceeds the stream' % count)
     for _ in range(count):
         edge_id = reader.u32()
-        zero = reader.u32()
+        reader.u32()                     # per-file constant (was required 0)
         doc_num = reader.u32()
-        if zero != 0:
-            raise FacetsError('edge table entry not (id, 0, doc): (%d, %d, %d)'
-                              % (edge_id, zero, doc_num))
         out.edge_map[edge_id] = '0:%d' % doc_num
+
+
+def _parse_official_bodies(reader: _Reader, out: FacetsFile,
+                           n_bodies: int) -> None:
+    """Per-body sections: [bid, X, upd, Y, n_faces, Z] then face nodes.
+
+    X/Y/Z vary across official files (0/5/0 in ours, 7/7/0 or 161/5/2 in the
+    library), so only the face count is treated as structural (P13).
+    """
+    for bi in range(n_bodies):
+        bid = reader.u32()
+        reader.u32()                     # per-file constant X
+        upd = reader.u32()
+        reader.u32()                     # section kind (5 or 7 observed)
+        n_faces = reader.u32()
+        reader.u32()                     # trailer (0 / 1 / 2 observed)
+        # 1 is legitimate: our curved-face writer packs a whole sphere/torus
+        # tessellation into ONE face node.
+        if not (1 <= n_faces <= 10000000):
+            raise FacetsError('implausible body face count %d' % n_faces)
+        body = {"body_doc_id": '0:%d' % bid, "update_state": upd, "faces": []}
+        out.bodies.append(body)
+        for fi in range(n_faces):
+            node = _face_node(reader)
+            out.faces.append(node)
+            out.node_face_map[node.node_id] = len(out.faces) - 1
+            body["faces"].append(len(out.faces) - 1)
+            if fi < n_faces - 1:
+                # P13: the inter-face separator carries the same per-file
+                # constant (0 in our writer, 1 / 161 in official files) - it
+                # is consumed but not validated.
+                reader.u32()
+        _edge_table(reader, out)
+        if bi < n_bodies - 1:
+            t1 = reader.u32()
+            reader.u32()                 # observed 0 / 1 / 2, not always 0
+            if t1 != 1:
+                raise FacetsError('body terminator %d != 1' % t1)
 
 
 def parse_facets(data: bytes) -> FacetsFile:
@@ -222,39 +259,25 @@ def parse_facets(data: bytes) -> FacetsFile:
     n_bodies = reader.u32()
     out.header_words = [n_bodies, reader.u32(), reader.u32()]
     # legacy single-body streams: [body_id, 0, 0, 0, mesh_base, 0] then faces;
-    # official streams: per-body sections [body_id, 0, upd, 5, n_faces, 0].
+    # official streams: per-body sections [body_id, X, upd, Y, n_faces, Z]
+    # with Y in (5, 7) and X/Z per-file constants (P13).
     peek = reader.peek_words(6)
-    if len(peek) >= 6 and peek[3] == 5:
-        for bi in range(n_bodies):
-            bid = reader.u32()
-            z0 = reader.u32()
-            upd = reader.u32()
-            five = reader.u32()
-            n_faces = reader.u32()
-            z1 = reader.u32()
-            if five != 5 or z0 != 0 or z1 != 0:
-                raise FacetsError('bad body section header')
-            body = {"body_doc_id": '0:%d' % bid, "update_state": upd,
-                    "faces": []}
-            out.bodies.append(body)
-            for fi in range(n_faces):
-                out.faces.append(_face_node(reader))
-                out.node_face_map[out.faces[-1].node_id] = len(out.faces) - 1
-                body["faces"].append(len(out.faces) - 1)
-                if fi < n_faces - 1:
-                    sep = reader.u32()
-                    if sep != 0:
-                        raise FacetsError(
-                            'face separator %d != 0 at byte %d'
-                            % (sep, reader.pos - 4))
-            _edge_table(reader, out)
-            if bi < n_bodies - 1:
-                t1 = reader.u32()
-                t2 = reader.u32()
-                if (t1, t2) != (1, 0):
-                    raise FacetsError(
-                        'body terminator (%d, %d) != (1, 0)' % (t1, t2))
-    else:
+    parsed = False
+    official_error = None
+    if n_bodies and len(peek) >= 6 and peek[3] in (5, 7) \
+            and 1 <= peek[4] <= 10000000:
+        start = reader.pos
+        try:
+            _parse_official_bodies(reader, out, n_bodies)
+            parsed = True
+        except FacetsError as exc:
+            official_error = exc
+            reader.pos = start        # not the official grammar: use legacy
+            out.bodies.clear()
+            out.faces.clear()
+            out.edge_map.clear()
+            out.node_face_map.clear()
+    if not parsed:
         # legacy layout: body id + 4 opaque words, face nodes, edge table
         body_id = reader.u32()
         for _ in range(4):
@@ -267,7 +290,14 @@ def parse_facets(data: bytes) -> FacetsFile:
                        and pk[2] == 0 and 3 <= pk[4] <= 1000000)
             if not is_face:
                 break
-            out.faces.append(_face_node(reader))
+            try:
+                out.faces.append(_face_node(reader))
+            except FacetsError as exc:
+                # P13 diagnostics: say which grammar failed and how, instead of
+                # surfacing an unrelated truncation deep inside a face node.
+                raise FacetsError(
+                    'facets parse failed (official: %s; legacy: %s at byte %d)'
+                    % (official_error, exc, reader.pos)) from exc
             out.node_face_map[out.faces[-1].node_id] = len(out.faces) - 1
             out.bodies[0]["faces"].append(len(out.faces) - 1)
         _edge_table(reader, out)

@@ -70,6 +70,7 @@ TABS: Tuple[Tab, ...] = (
             C("sketch.construction", "构造线", "Construction", "M3", "const"),
             C("sketch.offset", "偏移", "Offset", "M3", "offset"),
             C("sketch.layout", "布局", "Layout", "M3", "layout"),
+            C("sketch.trim", "修剪", "Trim", "M3", "cut"),
             C("sketch.grid", "网格", "Grid", "M3", "grid", checkable=True),
         )),
         Group("模式", "Mode", (
@@ -98,6 +99,13 @@ TABS: Tuple[Tab, ...] = (
             C("con.eq", "相等", "Equal", "M3", "eq"),
             C("con.par", "平行垂直", "Par/Perp", "M3", "par"),
             C("con.fix", "中点固定", "Mid/Fix", "M3", "fix"),
+        )),
+        Group("特征", "Features", (
+            C("create.hole", "孔", "Hole", "M4", "circle", large=True,
+              note="简单孔/通孔"),
+            C("create.hole_cbore", "沉头孔", "Counterbore", "M4", "cyl"),
+            C("create.hole_csink", "锥沉孔", "Countersink", "M4", "cyl"),
+            C("create.boss", "凸台", "Boss", "M4", "cyl"),
         )),
         Group("生成", "Create", (
             C("create.pattern", "阵列", "Pattern", "M4", "pattern"),
@@ -147,6 +155,10 @@ TABS: Tuple[Tab, ...] = (
             C("asm.mate", "配合", "Mate", "M4", "coin"),
             C("asm.explode", "爆炸图", "Explode", "M4", "pattern"),
             C("asm.light", "轻量化", "Lightweight", "M4", "transp"),
+            C("asm.instance", "实例", "Instance", "M4", "copy"),
+            C("asm.sync", "同步实例", "Sync", "M4", "redo"),
+            C("asm.config", "保存配置", "Save Config", "M4", "save"),
+            C("asm.config_apply", "应用配置", "Apply Config", "M4", "load"),
         )),
     )),
     Tab("measure", "测量", "Measure", (
@@ -230,11 +242,17 @@ TABS: Tuple[Tab, ...] = (
             C("sheet.rip", "撕裂", "Rip", "M5", "rip"),
             C("sheet.corner", "角落释放", "Corner", "M5", "corner"),
             C("sheet.jog", "折叠", "Jog", "M5", "jog"),
+            C("sheet.hem", "卷边", "Hem", "M5", "bend"),
+            C("sheet.bead", "加强筋", "Bead", "M5", "jog"),
+            C("sheet.flat", "展开图", "Flat Pattern", "M5", "unfold"),
         )),
     )),
 Tab("detail", "详细", "Detailing", (
         Group("工程图", "Drawing", (
             C("det.view", "视图", "Views", "M5", "iso"),
+            C("det.proj", "投影视图", "Projected", "M5", "viewy"),
+            C("det.section", "剖视图", "Section", "M5", "viewz"),
+            C("det.dxf", "导出 DXF", "DXF", "M5", "export"),
             C("det.dim", "尺寸", "Dimension", "M5", "dim"),
             C("det.note", "注释", "Note", "M5", "note"),
             C("det.params", "参数", "Parameters", "M5", "params"),
@@ -313,7 +331,7 @@ M3_LIVE = {
     "sketch.line", "sketch.rect", "sketch.circle", "sketch.point",
     "sketch.tangent", "sketch.rect3", "sketch.circle3", "sketch.ellipse",
     "sketch.spline", "sketch.construction", "sketch.offset", "sketch.layout",
-    "sketch.grid", "create.project",
+    "sketch.grid", "sketch.trim", "create.project",
     "con.dim", "con.hv", "con.coin", "con.perp",
     "con.eq", "con.par", "con.tan", "con.mid", "con.fix",
 }
@@ -322,16 +340,19 @@ M4_LIVE = {
     "file.recover", "insert.component", "prep.named",
     "create.pattern", "create.mirror", "create.shell", "create.blend",
     "create.chamfer", "create.draft", "insert.helix",
+    "create.hole", "create.hole_cbore", "create.hole_csink", "create.boss",
     "repair.stitch", "repair.solidify", "repair.gaps", "repair.missing",
     "repair.extra", "repair.small", "repair.check",
     "measure.interfere",
     "asm.insert", "asm.create", "asm.move", "asm.anchor", "asm.mate",
-    "asm.explode", "asm.light",
+    "asm.explode", "asm.light", "asm.instance", "asm.sync",
+    "asm.config", "asm.config_apply",
     "tools.script", "tools.record", "tools.customize",
 }
 
 M5_LIVE = {
     "sheet.bend", "sheet.unfold", "sheet.rip", "sheet.corner", "sheet.jog",
+    "sheet.hem", "sheet.bead", "sheet.flat",
     "surface.thicken", "surface.offset", "surface.untrim", "surface.extend",
     "surface.patch", "surface.blend",
     "sim.load", "sim.support", "sim.contact", "sim.report",
@@ -340,7 +361,8 @@ M5_LIVE = {
     "facet.reverse", "facet.smooth", "facet.reduce", "facet.fill", "facet.convert",
     "wb.params", "wb.publish",
     "add.build", "add.orient", "add.support", "add.lattice",
-    "det.view", "det.dim", "det.note", "det.bom",
+    "det.view", "det.dim", "det.note", "det.bom", "det.proj", "det.section",
+    "det.dxf",
     "ks.render",
 }
 

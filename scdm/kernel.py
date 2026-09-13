@@ -637,7 +637,75 @@ def offset_faces(solid, face, distance: float):
     return pull_face(solid, face, distance)
 
 
+def _edge_length(edge, deflection: float = 2e-3) -> float:
+    """Polyline length of an edge (cheap, coarse - only used for guarding)."""
+    pts = edge_polyline(edge, deflection)
+    return sum(math.dist(pts[i], pts[i + 1]) for i in range(len(pts) - 1))
+
+
+def edge_treatment_violation(shape, radius: float, edges=None):
+    """P14: the first edge shorter than 2*radius, else None.
+
+    Heuristic pre-flight: OCCT's fillet/chamfer can hit a native access
+    violation (uncatchable from Python) when the radius approaches the local
+    material width - e.g. 1mm radius on a 1mm-thick shelled wall. Refusing the
+    operation with a KernelError keeps the process alive.
+    """
+    src = list(edges) if edges is not None else explore(shape, "edge")
+    for e in src:
+        L = _edge_length(e)
+        if L < 2.0 * float(radius):
+            return L
+    return None
+
+
+def min_wall_gap(shape, max_faces: int = 400):
+    """Minimum distance between parallel opposite PLANAR faces (~wall thickness).
+
+    P14: this is the proxy that catches thin-walled solids - a 1mm shell has
+    no 1mm-long edges, but its inner and outer faces are 1mm apart.
+    Returns None when the shape has too many faces for the O(n^2) scan.
+    """
+    planar = []
+    for f in explore(shape, "face"):
+        n, c = face_normal_center(f)
+        planar.append((tuple(float(v) for v in n),
+                       tuple(float(v) for v in c)))
+        if len(planar) > max_faces:
+            return None
+    best = None
+    for i in range(len(planar)):
+        n1, c1 = planar[i]
+        for j in range(i + 1, len(planar)):
+            n2, c2 = planar[j]
+            if sum(n1[k] * n2[k] for k in range(3)) > -0.999:
+                continue
+            d = abs(sum((c2[k] - c1[k]) * n1[k] for k in range(3)))
+            if d > 1e-9 and (best is None or d < best):
+                best = d
+    return best
+
+
+def _guard_edge_treatment(shape, radius: float, edges, kind: str,
+                          mm: float = 1000.0) -> None:
+    if radius <= 0:
+        raise KernelError("%s：半径/距离必须为正" % kind)
+    short = edge_treatment_violation(shape, radius, edges)
+    if short is not None:
+        raise KernelError(
+            "%s %.3fmm 被拒绝：存在长度仅 %.3fmm 的边（需小于边长的一半）。"
+            "该几何会触发 OCCT 原生崩溃，请减小半径或先加厚材料。"
+            % (kind, radius * mm, short * mm))
+    gap = min_wall_gap(shape)
+    if gap is not None and radius >= gap * 0.5:
+        raise KernelError(
+            "%s %.3fmm 被拒绝：检测到最小壁厚 %.3fmm（须小于壁厚的一半）。"
+            "该几何会触发 OCCT 原生崩溃，请减小半径或先加厚材料。"
+            % (kind, radius * mm, gap * mm))
+
+
 def fillet_edges(shape, radius: float, edges: Optional[Sequence] = None):
+    _guard_edge_treatment(shape, radius, edges, "倒圆半径")   # P14
     o = _occ()
     mk = o["fillet"].BRepFilletAPI_MakeFillet(shape)
     use = list(edges) if edges is not None else explore(shape, "edge")
@@ -650,6 +718,7 @@ def fillet_edges(shape, radius: float, edges: Optional[Sequence] = None):
 
 
 def chamfer_edges(shape, dist: float, edges: Optional[Sequence] = None):
+    _guard_edge_treatment(shape, dist, edges, "倒角距离")   # P14
     o = _occ()
     mk = o["fillet"].BRepFilletAPI_MakeChamfer(shape)
     use = list(edges) if edges is not None else explore(shape, "edge")
@@ -673,6 +742,59 @@ def shell_solid(shape, thickness: float, opening_faces: Sequence):
     if not mk.IsDone():
         raise KernelError("抽壳失败")
     return mk.Shape()
+
+
+def sew_bodies(faces: Iterable, tol: float = 1e-6):
+    """Sew faces and keep EVERY lobe (P29 import fidelity).
+
+    sew_faces collapses the result to the first solid/shell, which silently
+    discards the other lobes - official bodies routinely sew into several
+    shells (SampleModel1: 8 shells / 103 faces -> 4 faces after collapsing).
+    A single closed shell still becomes a solid, so callers that need a solid
+    keep working; multi-lobe results come back as the sewn compound.
+    """
+    o = _occ()
+    sew = o["bapi"].BRepBuilderAPI_Sewing(tol)
+    n = 0
+    for f in faces:
+        sew.Add(f)
+        n += 1
+    if n == 0:
+        raise KernelError("没有可缝合的面")
+    sew.Perform()
+    sewn = sew.SewedShape()
+    n_sewn = len(explore(sewn, "face"))
+
+    def _keeps_all(candidate):
+        """Only accept a conversion that does not drop faces (P29)."""
+        try:
+            return len(explore(candidate, "face")) >= n_sewn
+        except Exception:
+            return False
+
+    solids = explore(sewn, "solid")
+    shells = explore(sewn, "shell")
+    if len(solids) == 1 and len(shells) <= 1 and _keeps_all(solids[0]):
+        return solids[0]
+    if not solids and len(shells) == 1:
+        try:
+            solid = o["bapi"].BRepBuilderAPI_MakeSolid(shells[0]).Solid()
+            if _keeps_all(solid):
+                return solid
+        except Exception:
+            pass
+        return sewn
+    if len(solids) > 1 and not shells:
+        out = solids[0]
+        for s in solids[1:]:
+            try:
+                out = fuse(out, s)
+            except Exception:
+                return sewn
+        if _keeps_all(out):
+            return out
+        return sewn
+    return sewn
 
 
 def sew_faces(faces: Iterable, tol: float = 1e-6):
@@ -749,6 +871,9 @@ def fillet_variable(shape, spec):
     from OCC.Core.TopoDS import topods
     for item in spec:
         edge, rad = item
+        rmax = (float(rad) if isinstance(rad, (int, float))
+                else max(float(r) for _u, r in rad))
+        _guard_edge_treatment(shape, rmax, [edge], "变半径倒圆")   # P14
         mk.Add(topods.Edge(edge))
         idx = mk.NbContours()
         if isinstance(rad, (int, float)):
@@ -836,6 +961,109 @@ def draft_neutral(solid, draft_faces, angle_rad: float, neutral_face):
     if not mk.IsDone():
         raise KernelError("拔模失败")
     return mk.Shape()
+
+
+def _vertex_bbox(shape):
+    """(lo, hi) bounding box from the shape's own vertices (no Bnd_Box dep)."""
+    pts = [vertex_point(v) for v in explore(shape, "vertex")]
+    if not pts:
+        raise KernelError("无法计算包围盒：实体没有顶点")
+    lo = tuple(min(p[i] for p in pts) for i in range(3))
+    hi = tuple(max(p[i] for p in pts) for i in range(3))
+    return lo, hi
+
+
+def _face_frame(face, origin=None):
+    n, c = face_normal_center(face)
+    n = tuple(float(v) for v in n)
+    base = tuple(float(v) for v in (origin if origin is not None else c))
+    return n, base
+
+
+def hole_simple(solid, face, diameter: float, depth: Optional[float] = None,
+                origin: Optional[Vec3] = None):
+    """SpaceClaim 简单孔: cut a cylindrical hole normal to a planar face.
+
+    `depth=None` cuts through the whole body. The removed volume is exactly
+    pi*r^2*depth (or pi*r^2*thickness for a through hole) - P4 feature family.
+    """
+    n, base = _face_frame(face, origin)
+    r = float(diameter) / 2.0
+    if depth is None:
+        # P5 fix: a through cutter must span the body on BOTH sides of the
+        # face - centring it on the face can miss the far side on bodies that
+        # are not symmetric about that face (e.g. a 20x20x40 box).
+        lo, hi = _vertex_bbox(solid)
+        corners = [(x, y, z) for x in (lo[0], hi[0])
+                   for y in (lo[1], hi[1]) for z in (lo[2], hi[2])]
+        d_pos = max(sum((c[i] - base[i]) * n[i] for i in range(3))
+                    for c in corners)
+        d_neg = max(sum((base[i] - c[i]) * n[i] for i in range(3))
+                    for c in corners)
+        margin = 1e-6
+        start = tuple(base[i] - n[i] * (d_neg + margin) for i in range(3))
+        h = d_neg + d_pos + 2.0 * margin
+    else:
+        d = float(depth)
+        start = tuple(base[i] - n[i] * d for i in range(3))
+        h = d + 1e-6
+    return cut(solid, make_cylinder(r, h, origin=start, axis=n))
+
+
+def hole_counterbore(solid, face, diameter: float, depth: float,
+                     cbore_diameter: float, cbore_depth: float,
+                     origin: Optional[Vec3] = None):
+    """SpaceClaim 沉头孔: cylindrical counterbore at the face + pilot below it.
+
+    The two cutters meet at the counterbore floor, so no volume is counted
+    twice: removed = pi*R^2*cbore_depth + pi*r^2*(depth - cbore_depth).
+    """
+    n, base = _face_frame(face, origin)
+    r = float(diameter) / 2.0
+    R = float(cbore_diameter) / 2.0
+    cd = float(cbore_depth)
+    rest = max(float(depth) - cd, 0.0)
+    start = tuple(base[i] - n[i] * cd for i in range(3))
+    cutter = make_cylinder(R, cd + 1e-6, origin=start, axis=n)
+    if rest > 0:
+        pstart = tuple(base[i] - n[i] * (cd + rest) for i in range(3))
+        cutter = fuse(cutter, make_cylinder(r, rest + 1e-6,
+                                            origin=pstart, axis=n))
+    return cut(solid, cutter)
+
+
+def hole_countersink(solid, face, diameter: float, depth: float,
+                     sink_diameter: float, angle_deg: float = 90.0,
+                     origin: Optional[Vec3] = None):
+    """SpaceClaim 锥沉孔: conical countersink at the face + pilot below it.
+
+    removed = frustum(h) + pi*r^2*(depth - h), h = (R - r)/tan(angle/2).
+    """
+    o = _occ()
+    n, base = _face_frame(face, origin)
+    r = float(diameter) / 2.0
+    R = float(sink_diameter) / 2.0
+    if R <= r:
+        raise KernelError("锥沉孔：锥口直径必须大于孔径")
+    half = math.radians(float(angle_deg) / 2.0)
+    h = (R - r) / math.tan(half)
+    inner = tuple(base[i] - n[i] * h for i in range(3))
+    ax = o["gp"].gp_Ax2(o["gp"].gp_Pnt(*inner), o["gp"].gp_Dir(*n))
+    cutter = o["prim"].BRepPrimAPI_MakeCone(ax, r, R, h).Shape()
+    rest = max(float(depth) - h, 0.0)
+    if rest > 0:
+        pstart = tuple(base[i] - n[i] * (h + rest) for i in range(3))
+        cutter = fuse(cutter, make_cylinder(r, rest + 1e-6,
+                                           origin=pstart, axis=n))
+    return cut(solid, cutter)
+
+
+def boss_round(solid, face, diameter: float, height: float,
+               origin: Optional[Vec3] = None):
+    """SpaceClaim 凸台: fuse a cylinder onto a planar face (volume += pi r^2 h)."""
+    n, base = _face_frame(face, origin)
+    r = float(diameter) / 2.0
+    return fuse(solid, make_cylinder(r, float(height), origin=base, axis=n))
 
 
 def pattern_path(shape, path_edge, count: int, align_tangent: bool = False):
@@ -930,9 +1158,24 @@ def pull_auto(shape, subshape, direction=None, distance=0.001,
 
 
 def face_from_polygon(pts: Sequence[Vec3]):
+    """Planar face from a closed polygon.
+
+    P29: official loops can repeat points (seam vertices, duplicated coedges) and
+    OCCT raises StdFail_NotDone from MakePolygon::Close on those - dedupe first
+    and require at least 3 distinct vertices.
+    """
     o = _occ()
-    mk = o["bapi"].BRepBuilderAPI_MakePolygon()
+    clean = []
     for p in pts:
+        p = (float(p[0]), float(p[1]), float(p[2]))
+        if not clean or math.dist(clean[-1], p) > 1e-9:
+            clean.append(p)
+    if len(clean) > 1 and math.dist(clean[0], clean[-1]) < 1e-9:
+        clean.pop()
+    if len(clean) < 3:
+        raise KernelError("多边形顶点不足（去重后 %d 个）" % len(clean))
+    mk = o["bapi"].BRepBuilderAPI_MakePolygon()
+    for p in clean:
         mk.Add(o["gp"].gp_Pnt(*p))
     mk.Close()
     if not mk.IsDone():

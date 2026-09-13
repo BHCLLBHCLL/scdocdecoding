@@ -17,6 +17,7 @@ class SelectionModel:
     snap_grid: bool = False
     snap_end: bool = True
     snap_mid: bool = True
+    snap_coin: bool = False    # P19: 重合 - snap to existing sketch anchors
     items: List[Sel] = field(default_factory=list)
 
     def clear(self) -> None:

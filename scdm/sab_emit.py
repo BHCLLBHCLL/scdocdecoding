@@ -1168,9 +1168,14 @@ CID_TCOEDGE = 34
 
 
 def _rec_header(name, cid, seen, kind=T_RECORD):
-    """Serialize a record/chain header with class-name interning."""
+    """Serialize a record/chain header with class-name interning.
+
+    P0: interning requires a real class id. Without the cid-is-None guard a
+    missing entry (seen.get(name) -> None) compares equal to cid=None and
+    takes the interning branch, crashing in _ri(None).
+    """
     out = bytearray()
-    if seen is not None and seen.get(name) == cid:
+    if seen is not None and cid is not None and seen.get(name) == cid:
         out += bytes([kind, 5, T_ID]) + _ri(cid)
         return bytes(out)
     hdrlen = len(name) + (5 if cid is not None else 0)
@@ -1337,20 +1342,6 @@ NULLBS_TEMPLATE = (
     + bytes([T_FLAG_B, T_FLAG_A]) + _td(1.0)
     + bytes([T_FLAG_A]) + _td(0.0)
 )
-
-
-def _rec_header(name, cid, seen, kind=T_RECORD):
-    """Serialize a record/chain header with class-name interning."""
-    out = bytearray()
-    if seen is not None and seen.get(name) == cid:
-        out += bytes([kind, 5, T_ID]) + _ri(cid)
-        return bytes(out)
-    hdrlen = len(name) + 5
-    out += bytes([kind, hdrlen]) + name.encode("latin-1")
-    out += bytes([T_ID]) + _ri(cid)
-    if seen is not None:
-        seen[name] = cid
-    return bytes(out)
 
 
 def _attrib(owner_idx, value, nxt_idx=None, prv_idx=None, type_id=14675622,

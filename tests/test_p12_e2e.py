@@ -60,21 +60,29 @@ def test_full_task_chain_roundtrip():
 
 
 def test_task_chain_script_record_replay():
-    """录放链：脚本记录的 pull 操作重放后体积等价（§20.8 录制→回放）。"""
+    """录放链：Recorder 记录 pull -> replay 重放 -> 体积按拉动量增长（§20.8）。
+
+    P0 修复：旧实现用 {"op": ...} 键（replay 只认 "cmd"）会落到「跳过未知命令」
+    分支、且以 or True 收尾，实际从未重放也永不失败；现改为真实 API + 量化体积断言。
+    """
     from scdm import scripting as SCR
 
     doc = KernelDoc()
     box = K.make_box(0.01, 0.01, 0.01)
-    doc.add_body(box, name="S")
+    body = doc.add_body(box, name="S")
+    v0 = K.volume(body.shape)
+
     rec = SCR.Recorder()
-    # 拉一个面：记录 ops，再用 replay 消费同形步骤
-    steps = [{"op": "pull", "target": "body", "index": 0,
-              "distance": 0.005}]
-    try:
-        out = SCR.replay(steps, doc)
-        assert out  # replay returned a non-empty report
-    except Exception as exc:  # noqa: BLE001 - replay may need exact ids
-        # 门禁语义：replay 引擎存在且可调用；面级步骤需 session 上下文
-        # 时以脚本加载 API 为准
-        assert SCR.load_script is not None
-        assert "pull" in str(exc) or True
+    rec.start()
+    rec.note("tool.pull", target="last", index=0, face_i=0, distance=5.0)
+    steps = rec.stop()
+    assert steps == [{"cmd": "tool.pull",
+                      "opts": {"target": "last", "index": 0,
+                               "face_i": 0, "distance": 5.0}}]
+
+    report = SCR.replay(steps, doc)
+    assert report == ["OK tool.pull"], report
+    v1 = K.volume(doc.bodies[0].shape)
+    # 10mm 立方体的 face 0：面积 1e-4 m^2，拉动 5mm => +5e-7 m^3
+    assert v1 == pytest.approx(v0 + 0.01 * 0.01 * 0.005, rel=1e-9)
+    assert v1 > v0

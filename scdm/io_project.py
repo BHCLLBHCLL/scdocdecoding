@@ -1,4 +1,9 @@
-"""Native session package: zip of JSON + BREP bodies (.scdm)."""
+"""Native session package: zip of JSON + BREP bodies (.scdm).
+
+P22: the manifest now also carries the modelling history (per-body feature
+stacks + document-level features), assembly instances and components, so a
+saved project reopens with its parametric intent, not just its geometry.
+"""
 from __future__ import annotations
 
 import json
@@ -6,13 +11,14 @@ import zipfile
 from typing import Any
 
 from scdm import kernel as K
-from scdm.kdoc import KernelDoc
+from scdm.features import FeatureHistory, FeatureStack
+from scdm.kdoc import Component, KernelDoc
 
 
 def save_scdm(path: str, kdoc: KernelDoc) -> None:
     manifest = {
         "format": "scdm-session",
-        "version": 1,
+        "version": 2,
         "bodies": [{"id": b.id, "name": b.name, "color": list(b.color), "visible": b.visible,
                     "layer": getattr(b, "layer", "默认") or "默认",
                     "file": f"bodies/{b.id}.brep"} for b in kdoc.bodies],
@@ -24,6 +30,29 @@ def save_scdm(path: str, kdoc: KernelDoc) -> None:
         "groups": [{"name": n.get("name", ""),
                     "items": [list(it) for it in n.get("items", [])]}
                    for n in getattr(kdoc, "groups", [])],
+        "features": {bid: stack.as_dict()
+                     for bid, stack in getattr(kdoc, "features", {}).items()
+                     if len(stack)},
+        "document_features": getattr(kdoc, "document_features",
+                                     FeatureHistory()).as_dict(),
+        "instances": [dict(i) for i in getattr(kdoc, "instances", [])],
+        "components": [{"id": c.id, "name": c.name,
+                        "body_ids": list(c.body_ids),
+                        "anchored": bool(c.anchored),
+                        "visible": bool(c.visible),
+                        "lightweight": bool(c.lightweight),
+                        "explosion": (list(c.explosion)
+                                      if c.explosion is not None else None),
+                        "transform": (list(c.transform)
+                                      if c.transform is not None else None)}
+                       for c in getattr(kdoc, "components", [])],
+        "mates": [dict(m) for m in getattr(kdoc, "mates", [])],
+        "configurations": [{"id": c.id, "name": c.name,
+                            "hidden_components": list(c.hidden_components),
+                            "suppressed_bodies": list(c.suppressed_bodies),
+                            "transforms": {k: list(v) for k, v in c.transforms.items()}}
+                           for c in getattr(kdoc, "configurations", [])],
+        "active_configuration": getattr(kdoc, "active_configuration", None),
     }
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
@@ -55,4 +84,31 @@ def load_scdm(path: str) -> KernelDoc:
     doc.groups = [{"name": n.get("name", ""),
                    "items": [tuple(it) for it in n.get("items", [])]}
                   for n in man.get("groups", [])]
+    # P22: modelling history + assembly state
+    doc.features = {bid: FeatureStack.from_dict(data)
+                    for bid, data in (man.get("features") or {}).items()}
+    doc.document_features = FeatureHistory.from_dict(
+        man.get("document_features") or [])
+    doc.instances = [dict(i) for i in man.get("instances", [])]
+    for c in man.get("components", []):
+        comp = Component(id=c.get("id") or "C1", name=c.get("name") or "组件",
+                         body_ids=list(c.get("body_ids") or []),
+                         anchored=bool(c.get("anchored", False)),
+                         visible=bool(c.get("visible", True)),
+                         lightweight=bool(c.get("lightweight", False)),
+                         explosion=(tuple(c["explosion"])
+                                    if c.get("explosion") is not None else None),
+                         transform=(tuple(c["transform"])
+                                    if c.get("transform") is not None else None))
+        doc.components.append(comp)
+    doc._c = len(doc.components) + 1
+    doc.mates = [dict(m) for m in man.get("mates", [])]
+    from scdm.kdoc import Configuration
+    doc.configurations = [
+        Configuration(c.get("id") or "CFG1", c.get("name") or "配置",
+                      list(c.get("hidden_components") or []),
+                      list(c.get("suppressed_bodies") or []),
+                      {k: tuple(v) for k, v in (c.get("transforms") or {}).items()})
+        for c in man.get("configurations", [])]
+    doc.active_configuration = man.get("active_configuration")
     return doc
