@@ -1,6 +1,7 @@
 """Rebuild OCCT solids from decoded SAB topology (planar faces first)."""
 from __future__ import annotations
 
+import math
 from typing import Any, List, Optional
 
 from scdm import kernel as K
@@ -818,14 +819,7 @@ def _straight_span(model, edge_ent, curve):
     the range and, per P45, authoritative; this is the same precedence
     `SabModel.edge_endpoints` applies at the topology level.
     """
-    def _pt(vertex_idx):
-        if vertex_idx is None or vertex_idx < 0:
-            return None
-        v = model.e(vertex_idx)
-        return model.point_of_vertex(v) if v is not None else None
-
-    p1 = _pt(getattr(edge_ent, "v1", None))
-    p2 = _pt(getattr(edge_ent, "v2", None))
+    p1, p2 = _vertices_of(model, edge_ent)
     if p1 is None or p2 is None:
         return None
     d = curve.direction
@@ -840,8 +834,148 @@ def _straight_span(model, edge_ent, curve):
         return None
     return (t1, t2)
 
-def _edge_curve(model, edge_ent):
-    """Geom_Curve + (t0, t1) for an edge from its curve reference, or None."""
+# R74: how far a vertex may sit from the curve before we stop trusting it as
+# the trim source (metres, model units).  Measured vertex-to-curve distances
+# are bimodal - on-curve <= 1e-12 and off-curve >= 1e-2 - with a handful in
+# between, so the gate can sit anywhere in the gap; 1e-6 keeps the on-curve
+# majority and falls back to the recorded range for the rest.
+VERTEX_ON_CURVE_TOL = 1e-6
+
+
+def _vertices_of(model, edge_ent):
+    """(v1_point, v2_point) or (None, None) - never raises (P45 source)."""
+    def _pt(vertex_idx):
+        if vertex_idx is None or vertex_idx < 0:
+            return None
+        v = model.e(vertex_idx)
+        return model.point_of_vertex(v) if v is not None else None
+
+    return _pt(getattr(edge_ent, "v1", None)), _pt(getattr(edge_ent, "v2", None))
+
+
+def _arc_range_matches_vertices(ell, p1, p2, t0, t1, tol=None) -> bool:
+    """Does the recorded range land on the edge's vertices? (R74)
+
+    Only when it does NOT do we need the vertex-derived arc: keeping the
+    recorded range everywhere it is consistent is what makes the R74 change
+    a strict improvement instead of a different set of guesses.
+    """
+    if p1 is None or p2 is None:
+        return True
+    tol = VERTEX_ON_CURVE_TOL if tol is None else tol
+    try:
+        q0, q1 = ell.Value(t0), ell.Value(t1)
+    except Exception:
+        return False
+
+    def _d(q, p):
+        return max(abs(p[i] - q.Coord(i + 1)) for i in range(3))
+
+    return (max(_d(q0, p1), _d(q1, p2)) <= tol
+            or max(_d(q0, p2), _d(q1, p1)) <= tol)
+
+
+def _arc_overshoot(ell, a1, delta, face_ent) -> float:
+    """How far outside the face's own point bbox does this arc reach,
+    relative to the face diagonal?  (0.0 = inside).
+
+    For a PLANAR face the point bbox is tight in the plane, so a branch that
+    leaves it by more than the whole diagonal cannot be that face's boundary
+    (samplemodel2 face 62: a 42 mm strip whose wrong branch reaches 4.8 m).
+    A >180-degree arc of a CURVED face legitimately bulges past the
+    chord-based bbox, which is why this is only a gross-error test.
+    """
+    fbox = _face_bbox(face_ent)
+    if fbox is None:
+        return 0.0
+    diag = sum((fbox[1][i] - fbox[0][i]) ** 2 for i in range(3)) ** 0.5
+    if diag <= 0.0:
+        return 0.0
+    worst = 0.0
+    for i in range(1, 5):
+        q = ell.Value(a1 + delta * i / 5.0)
+        for k in range(3):
+            out = max(fbox[0][k] - q.Coord(k + 1), q.Coord(k + 1) - fbox[1][k])
+            worst = max(worst, out)
+    return worst / diag
+
+
+def _arc_span(model, edge_ent, curve, ell, face_ent=None):
+    """(t0, t1) on an ellipse from the edge's VERTICES (R74).
+
+    Same precedence as `_straight_span`: the recorded pstart/pend can belong
+    to another trimming of the same surface (samplemodel2 edge 2372 decodes
+    13.5 m away with a recorded sweep of 0.052 rad), while the vertices are
+    independent.  The recorded sweep still picks which way round the arc goes
+    (it is usually right); when BOTH branches leave the face's point bbox by
+    more than its own diagonal the read is not trustworthy at all and the
+    caller falls back to the recorded range.
+    """
+    from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
+
+    p1, p2 = _vertices_of(model, edge_ent)
+    if p1 is None or p2 is None:
+        return None
+    try:
+        ax3 = ell.Position()
+        org = ax3.Location()
+        ux = ax3.XDirection()
+        uy = ax3.YDirection()
+        major = ell.MajorRadius()
+        minor = ell.MinorRadius()
+    except Exception:
+        return None
+    if major <= 0.0 or minor <= 0.0:
+        return None
+
+    def _angle(p):
+        dx, dy, dz = p[0] - org.X(), p[1] - org.Y(), p[2] - org.Z()
+        a = (dx * ux.X() + dy * ux.Y() + dz * ux.Z()) / major
+        b = (dx * uy.X() + dy * uy.Y() + dz * uy.Z()) / minor
+        return math.atan2(b, a) if (a or b) else None
+
+    a1, a2 = _angle(p1), _angle(p2)
+    if a1 is None or a2 is None:
+        return None
+    # gate: only trust the vertices when they really sit on this ellipse
+    for p, a in ((p1, a1), (p2, a2)):
+        q = ell.Value(a)
+        if max(abs(p[i] - q.Coord(i + 1)) for i in range(3)) > VERTEX_ON_CURVE_TOL:
+            return None
+    sweep = abs((edge_ent.pend or 0.0) - (edge_ent.pstart or 0.0))
+    short = (a2 - a1 + math.pi) % (2.0 * math.pi) - math.pi
+    long = short - math.copysign(2.0 * math.pi, short)
+    delta = short if abs(abs(short) - sweep) <= abs(abs(long) - sweep) else long
+    if abs(delta) < 1e-12:
+        return None
+    # The gross-overshoot guard is restricted to PLANAR faces: there the
+    # point bbox is tight in the plane, so a branch that leaves it by more
+    # than the whole diagonal is not this face's boundary (samplemodel2 face
+    # 62 stores a 2*pi sweep on a 0.13 mm edge of a 42 mm strip, which built
+    # a 4.8 m face and got the face dropped).  A curved face's bbox is
+    # chord-based and a >180-degree arc legitimately bulges past it - the
+    # same guard there MEASURED as harmful (samplemodel5 0/0 -> 388/284).
+    if face_ent is not None and getattr(face_ent, "kind", None) == "plane":
+        other = long if delta == short else short
+        over, over_other = (_arc_overshoot(ell, a1, delta, face_ent),
+                            _arc_overshoot(ell, a1, other, face_ent))
+        if over > 1.0 and over_other < over:
+            delta, over = other, over_other
+        if over > 1.0:
+            return None
+    # R74 MEASURED: a DECREASING span handed to Geom_TrimmedCurve on a
+    # periodic basis curve comes back as the COMPLEMENT arc (samplemodel2
+    # edge 71: params 4.71 -> 10.94, a 4.8 m sweep across a 42 mm face).
+    # Always hand over an increasing range - the wire builder orients the
+    # edge itself.
+    return (a1 + min(0.0, delta), a1 + max(0.0, delta))
+
+def _edge_curve(model, edge_ent, face_ent=None):
+    """Geom_Curve + (t0, t1) for an edge from its curve reference, or None.
+
+    `face_ent` is optional and only used to sanity-check an arc's branch
+    against the face's own point bbox (R74).
+    """
     from OCC.Core.Geom import (Geom_BSplineCurve, Geom_Ellipse, Geom_Line,
                                Geom_TrimmedCurve)
     from OCC.Core.gp import gp_Ax2, gp_Dir, gp_Pnt
@@ -867,7 +1001,23 @@ def _edge_curve(model, edge_ent):
             ax = gp_Ax2(gp_Pnt(*c.origin), gp_Dir(*c.normal),
                         gp_Dir(*major))
             el = Geom_Ellipse(ax, mlen, mlen * ratio)
-            return Geom_TrimmedCurve(el, min(t0, t1), max(t0, t1))
+            # R74: the recorded range can belong to another trimming of the
+            # same surface; the vertices win (same precedence as the straight
+            # and P45 paths), the recorded sweep only picks the arc branch.
+            span = None
+            p1, p2 = _vertices_of(model, edge_ent)
+            # only replace the recorded range when it demonstrably misses the
+            # edge's own vertices (R74 minimal-change rule)
+            p1, p2 = _vertices_of(model, edge_ent)
+            # minimal change (R74): keep the recorded range wherever it lands
+            # on the edge's own vertices; only a demonstrably wrong range is
+            # replaced by the vertex-derived arc.
+            span = None
+            if not _arc_range_matches_vertices(el, p1, p2, t0, t1):
+                span = _arc_span(model, edge_ent, c, el, face_ent)
+            if span is None:
+                span = (min(t0, t1), max(t0, t1))
+            return Geom_TrimmedCurve(el, span[0], span[1])
         if c.kind == "intcurve":
             nubs = _inner_of_kind(model, c, "nubs")
             if nubs is None or not nubs.bs_poles:
@@ -1037,7 +1187,7 @@ def _planar_face_from_wires(model, face_ent, plane_ent):
             edge_ent = model.e(ce.edge) if ce.edge >= 0 else None
             if edge_ent is None:
                 continue
-            curve = _edge_curve(model, edge_ent)
+            curve = _edge_curve(model, edge_ent, face_ent)
             if curve is None:
                 continue
             try:

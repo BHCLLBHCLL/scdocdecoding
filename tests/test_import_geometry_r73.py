@@ -42,12 +42,16 @@ spec = importlib.util.spec_from_file_location(
 diff = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(diff)
 
-# R73 measured ceilings (R72 values in brackets); the check is "must not get
-# worse", the same shape as the import BASELINE floors.
+# Free-edge / free-loop ceilings: "must not get worse", the same shape as the
+# import BASELINE floors.  Measured: R72 -> R73 -> R74
+#   SampleModel1: 270/84  -> 129/53  -> 56/24
+#   SampleModel4: 441/112 -> 418/111 -> 423/113
+#   samplemodel2: 3542/547 -> 2546/464 -> 2325/438
+#   samplemodel3 0/0, samplemodel5 0/0, samplemodel6 2/2 (unchanged)
 FREE_CEILING = {
-    "SampleModel1.scdoc": (140, 60),      # R72: 270 / 84
-    "SampleModel4.scdoc": (430, 116),     # R72: 441 / 112
-    "samplemodel2.scdoc": (2600, 480),    # R72: 3542 / 547
+    "SampleModel1.scdoc": (70, 30),
+    "SampleModel4.scdoc": (430, 116),
+    "samplemodel2.scdoc": (2400, 450),
     "samplemodel3.scdoc": (0, 0),
     "samplemodel5.scdoc": (0, 0),
     "samplemodel6.scdoc": (2, 2),

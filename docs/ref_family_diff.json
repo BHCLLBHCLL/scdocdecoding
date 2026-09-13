@@ -9,13 +9,13 @@
   "dropped": 0,
   "faces": 109,
   "faces_detail": [],
-  "free_edges": 129,
-  "free_loops": 53,
+  "free_edges": 56,
+  "free_loops": 24,
   "other_unbuilt": {},
   "paths": {
    "none": 0,
-   "polygons": 58,
-   "rebuild": 51,
+   "polygons": 56,
+   "rebuild": 53,
    "sampled": 0
   },
   "ref": {
@@ -948,8 +948,8 @@
     "tried": "sampled"
    }
   ],
-  "free_edges": 418,
-  "free_loops": 111,
+  "free_edges": 423,
+  "free_loops": 113,
   "other_unbuilt": {
    "plane": 2
   },
@@ -1017,8 +1017,8 @@
    "edge_payload": 2,
    "edge_ref_only": 38
   },
-  "dropped": 1,
-  "faces": 1812,
+  "dropped": 0,
+  "faces": 1813,
   "faces_detail": [
    {
     "curve_edges": 2,
@@ -1361,14 +1361,14 @@
     "tried": ""
    }
   ],
-  "free_edges": 2546,
-  "free_loops": 464,
+  "free_edges": 2325,
+  "free_loops": 438,
   "other_unbuilt": {},
   "paths": {
    "none": 1,
-   "polygons": 668,
-   "rebuild": 1131,
-   "sampled": 13
+   "polygons": 652,
+   "rebuild": 1148,
+   "sampled": 12
   },
   "ref": {
    "faces": 20,
@@ -1392,7 +1392,7 @@
    "curves=True/edges=2": 1
   },
   "report": {
-   "dropped_faces": 1,
+   "dropped_faces": 0,
    "parts": 25,
    "ref_built": 19,
    "ref_faces": 20,
@@ -1413,7 +1413,7 @@
   "unbuilt": 1,
   "warnings": [
    "20 个面引用 ACIS ref 间接曲面（该类曲面的数据不在本 part）：其中 19 个仍由边界曲线重建，1 个未能重建（含 0 个无任何边界边）",
-   "SAB 重建：1 个面未能重建，1 个面因超出包围盒被丢弃"
+   "SAB 重建：1 个面未能重建，0 个面因超出包围盒被丢弃"
   ]
  },
  {
