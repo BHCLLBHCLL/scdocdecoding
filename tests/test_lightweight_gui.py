@@ -639,6 +639,37 @@ class LightweightModeTests(unittest.TestCase):
         assert sym.size == 6.0 and sym.length == 30.0 and sym.pitch == 100.0
         assert "焊接符号" in self._status(v)
 
+    def test_p352_chain_button_totals_the_run(self):
+        """R69/P352: the sheet dialog totals a contiguous run and mounts the
+        stacked-tolerance dimension; a broken run explains itself."""
+        os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+        from scdm import drawing as D
+        from scdm.gui.sheet import SheetDialog
+
+        views = [('前视', [[(0.0, 0.0), (0.10, 0.0), (0.10, 0.02),
+                            (0.0, 0.02), (0.0, 0.0)]])]
+        dims = []
+        for (x0, x1, val, tol) in ((0.0, 0.02, 20.0, 0.1),
+                                   (0.02, 0.05, 30.0, 0.2),
+                                   (0.05, 0.10, 50.0, 0.3)):
+            d = D.Dimension('前视', 'h', val, (x0, 0.0), (x1, 0.0), -0.01)
+            d.tol = tol
+            dims.append(d)
+        dlg = SheetDialog(views, dims)
+        total = dlg.add_chain_total()
+        assert total is not None and len(dlg.canvas.dims) == 4
+        assert abs(total.value_mm - 100.0) < 1e-9
+        assert abs(total.tol - 0.6) < 1e-12
+        assert D.dim_text(total) == '100.0 ±0.6'
+        assert '3 段' in dlg.chain_text()
+        # a broken run: no total mounted, and the hint says why
+        dlg.canvas.dims = dims[:1] + [D.Dimension('前视', 'h', 20.0,
+                                                  (0.03, 0.0), (0.05, 0.0),
+                                                  -0.01)]
+        assert dlg.add_chain_total() is None
+        dlg.prompt_chain()
+        assert '尺寸链不成立' in dlg.hint.text()
+
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""
         from scdm import kernel as K

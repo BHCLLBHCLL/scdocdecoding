@@ -169,6 +169,7 @@ class Dimension:
     offset: float = 0.01
     assoc: Optional[dict] = None      # P24: edge selector for re-measurement
     stale: bool = False               # P48: association lost; value not trusted
+    tol: float = 0.0                  # P352: symmetric tolerance (mm) for chains
 
     def normal(self):
         """P48: unit direction the offset moves the dimension line along."""
@@ -224,6 +225,21 @@ class Dimension:
     def text_at(self):
         (p, q) = self.line()
         return ((p[0] + q[0]) / 2.0, (p[1] + q[1]) / 2.0)
+
+
+def dim_text(d) -> str:
+    """The ONE label for a dimension (value + tolerance + stale marker).
+
+    P352/R69 rule 84: the canvas, the SVG and the DXF all render this, so the
+    tolerance can never show up in one export and not the other.
+    """
+    txt = "%.1f" % float(d.value_mm)
+    tol = float(getattr(d, "tol", 0.0) or 0.0)
+    if tol > 0:
+        txt += " ±%.3g" % tol
+    if getattr(d, "stale", False):
+        txt += "?"
+    return txt
 
 
 def edge_selector(shape, edge):
@@ -422,8 +438,7 @@ def write_dxf(views, path: str, fmt: str = "A4", dimensions=True,
                 sp, sq = _place(p, pl), _place(q, pl)
                 body.append(_dxf_line(sp, sq))
                 tx, ty = d.text_at()
-                body.append(_dxf_text(_place((tx, ty), pl), 3.5,
-                                      "%.1f" % d.value_mm))
+                body.append(_dxf_text(_place((tx, ty), pl), 3.5, dim_text(d)))
         for a in annotations or ():
             if getattr(a, "view", "") != name:
                 continue
@@ -525,8 +540,7 @@ def svg_sheet(views, path: str, fmt: str = "A4", title: str = "",
                 # P48: a dimension whose edge association was lost keeps its
                 # stored value but is drawn as a warning, never as a fact
                 colour = "#c60" if getattr(d, "stale", False) else "#b00"
-                value = f"{d.value_mm:.1f}" + ("?" if getattr(d, "stale", False)
-                                               else "")
+                value = dim_text(d)          # P352: value + tolerance, one source
                 out.append(f'<line class="dim" x1="{sp[0]:.3f}" y1="{sp[1]:.3f}" '
                            f'x2="{sq[0]:.3f}" y2="{sq[1]:.3f}" stroke="{colour}" '
                            f'stroke-width="0.2"/>')

@@ -412,7 +412,8 @@ class SheetCanvas(QWidget):
             a, b = self.to_px(*p1), self.to_px(*p2)
             p.drawLine(a, b)
             t = self.to_px(*d.text_at())
-            txt = '%.1f' % d.value_mm + ('?' if getattr(d, 'stale', False) else '')
+            from scdm.drawing import dim_text
+            txt = dim_text(d)            # P352: same label as the exports
             p.setFont(QFont('', 9))
             p.drawText(t + QPointF(3, -3), txt)
             hp = self.handle_px(i)
@@ -466,8 +467,10 @@ class SheetDialog(QDialog):
         row = QHBoxLayout()
         self.btn_note = QPushButton('加引线')
         self.btn_datum = QPushButton('加基准')
+        self.btn_chain = QPushButton('尺寸链')
         row.addWidget(self.btn_note)
         row.addWidget(self.btn_datum)
+        row.addWidget(self.btn_chain)
         self.btn_undo = QPushButton('撤销')
         self.btn_redo = QPushButton('重做')
         self.btn_svg = QPushButton('导出 SVG')
@@ -479,6 +482,7 @@ class SheetDialog(QDialog):
         lay.addLayout(row)
         self.btn_note.clicked.connect(self.prompt_leader)
         self.btn_datum.clicked.connect(self.prompt_datum)
+        self.btn_chain.clicked.connect(self.prompt_chain)
         self.btn_undo.clicked.connect(self.canvas.undo_last)
         self.btn_redo.clicked.connect(self.canvas.redo_last)
         self.btn_svg.clicked.connect(self.export_svg)
@@ -496,6 +500,29 @@ class SheetDialog(QDialog):
                       text=str(text), arrow=arrow, text_height=text_height)
         self._mount_note(note)
         return note
+
+    def add_chain_total(self, mode: str = "worst"):
+        """P352: 把当前尺寸串成链，并把总尺寸（含叠加公差）挂到图上。
+
+        Returns the total Dimension, or None when the run is not a chain (the
+        caller gets the verdict text through the status bar, not an exception).
+        """
+        from scdm import dimchain as DC
+        try:
+            verdict = DC.check_chain(self.canvas.dims)
+            total = DC.chain_dimension(self.canvas.dims, mode=mode)
+        except ValueError:
+            return None
+        self.canvas.undo.push(self.canvas.state())
+        self.canvas.dims.append(total)
+        self.canvas.update()
+        self.canvas.changed.emit()
+        self._chain_text = DC.describe(verdict)
+        return total
+
+    def chain_text(self) -> str:
+        """The last chain verdict, one line (rule 84: same wording everywhere)."""
+        return getattr(self, "_chain_text", "")
 
     def add_datum(self, label: str = "A", anchor=None, view=None,
                   target: bool = False):
@@ -542,6 +569,17 @@ class SheetDialog(QDialog):
             return self.add_datum(text)
         except ValueError:
             return None
+
+    def prompt_chain(self):
+        """Button path: total the chain and show the verdict in the hint line."""
+        total = self.add_chain_total()
+        if total is None:
+            self.hint.setText("尺寸链不成立：尺寸不连续或方向不一致"
+                              "（" + self.chain_text() + "）")
+            return None
+        self.hint.setText(self.chain_text() + "；已挂总尺寸 " + "%.1f" % total.value_mm
+                          + (" ±%.3g" % total.tol if total.tol > 0 else ""))
+        return total
 
     def export_svg(self) -> Optional[str]:
         fn, _ = QFileDialog.getSaveFileName(self, '导出图纸', 'sheet.svg',
