@@ -1323,6 +1323,39 @@ else:
             except Exception as exc:
                 self._set_status(f"凹坑参数非法：{exc}")
 
+        def _do_create_louver(self):
+            """P271: 百叶 - rectangular forming opening with an optional lip."""
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("百叶：请先选择一个平面")
+                return
+            vals = self._ask_numbers("百叶", [("长度 mm", 10.0), ("宽度 mm", 3.0),
+                                            ("唇高 mm（0=无唇）", 0.0)])
+            if not vals:
+                return
+            try:
+                from scdm import features as FEAT
+                sel = FEAT.selector_for(body.shape, face)
+                body.shape = K.louver(body.shape, face, vals[0] / ses.scale,
+                                      vals[1] / ses.scale,
+                                      height=vals[2] / ses.scale)
+                ses.kdoc.record_feature(body.id, "louver", selector=sel,
+                                        length=vals[0], width=vals[1],
+                                        height=vals[2])
+                self._record("create.louver", length=vals[0], width=vals[1],
+                             height=vals[2])
+                if self.scene is not None and hasattr(
+                        self.scene, "show_form_marker"):
+                    n3, c3 = K.face_normal_center(face)
+                    self.scene.show_form_marker(tuple(c3),
+                                                (-n3[0], -n3[1], -n3[2]),
+                                                max(vals[0], vals[1]) / ses.scale,
+                                                0.0)
+                self._commit("已创建百叶 %g×%g" % (vals[0], vals[1]))
+            except Exception as exc:
+                self._set_status(f"百叶参数非法：{exc}")
+
         def _do_create_hole_cbore(self):
             ses = self.session()
             body, face = self._selected_face()

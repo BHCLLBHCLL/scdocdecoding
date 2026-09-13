@@ -45,6 +45,7 @@ _FEATURE_LABELS = {
     "hole": "孔 Ø{diameter:g}mm",
     "hole_tapped": "攻丝孔 M{nominal:g}×{pitch:g}",
     "dimple": "凹坑 Ø{diameter:g}×{depth:g}",
+    "louver": "百叶 {length:g}×{width:g}",
     "hole_cbore": "沉头孔 Ø{diameter:g}",
     "hole_csink": "锥沉孔 Ø{diameter:g}",
     "boss": "凸台 Ø{diameter:g}×{height:g}",
@@ -138,6 +139,15 @@ def _apply_one(shape, feature: Feature, scale: float):
                                   float(p.get("depth", 10.0)) / scale,
                                   float(p.get("sink_diameter", 10.0)) / scale,
                                   angle_deg=float(p.get("angle", 90.0)))
+    if op == "louver":
+        # P271: forming feature on a sheet face (optional lip via height)
+        face = resolve_face(shape, p.get("selector", {}))
+        if face is None:
+            return shape
+        return K.louver(shape, face,
+                        float(p.get("length", 10.0)) / scale,
+                        float(p.get("width", 3.0)) / scale,
+                        height=float(p.get("height", 0.0)) / scale)
     if op == "dimple":
         # R40/P223: forming feature - same face flow, dimple validation
         face = resolve_face(shape, p.get("selector", {}))

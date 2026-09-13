@@ -375,6 +375,23 @@ def op_hole_tapped(kdoc, opts, scale):
     return _op_hole(kdoc, opts, scale, "tapped")
 
 
+def op_louver(kdoc, opts, scale):
+    """P271: 百叶（钣金成形）——矩形开口 + 可选唇边。"""
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("百叶：实体不存在")
+    faces = K.explore(body.shape, "face")
+    fi = opts.get("face_i", 0)
+    if not (0 <= fi < len(faces)):
+        raise ValueError("百叶：面序号越界")
+    body.shape = K.louver(body.shape, faces[fi],
+                          opts.get("length", 10.0) / scale,
+                          opts.get("width", 3.0) / scale,
+                          height=opts.get("height", 0.0) / scale)
+    return body, ("百叶 %g×%g" % (opts.get("length", 10.0),
+                                   opts.get("width", 3.0)))
+
+
 def op_dimple(kdoc, opts, scale):
     """P223: 圆形凹坑（成形族）——与孔族同 op 面但走成形校验。"""
     body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
@@ -555,6 +572,7 @@ OPS = {
     "create.hole_csink": op_hole_csink,
     "create.boss": op_boss,
     "create.dimple": op_dimple,
+    "create.louver": op_louver,
 }
 
 
