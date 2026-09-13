@@ -223,8 +223,10 @@ def main(argv=None) -> int:
             json.dump(rows, fh, ensure_ascii=False, indent=1, sort_keys=True)
         print("wrote %s" % args.json)
     if args.md:
-        head = ("# ref 族差异表（R72/P358 实测）\n\n"
-                "复算：`python tools/ref_family_diff.py --md docs/REF_FAMILY_DIFF.md`\n\n")
+        head = ("# ref 族差异表（当前状态）\n\n"
+                "本文件是**当前状态**快照，每轮刷新；轮次基线见 docs/ROUND_R72_20260912.md（R72 原始记录）\n"
+                "与 docs/ROUND_R73_20260912.md（R73 修改后的自由边/自由环）。\n\n"
+                "复算：`python tools/ref_family_diff.py --md docs/REF_FAMILY_DIFF_TABLE.md`\n\n")
         with open(args.md, "w", encoding="utf-8") as fh:
             fh.write(head + md + "\n")
         print("wrote %s" % args.md)

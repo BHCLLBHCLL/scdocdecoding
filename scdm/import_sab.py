@@ -807,6 +807,39 @@ def _bspline_surface(model, surf_head):
         return None
 
 
+def _straight_span(model, edge_ent, curve):
+    """(t0, t1) on the unit-direction line, taken from the edge's VERTICES.
+
+    R73: the recorded direction of a straight edge can be a scaled VECTOR
+    (SampleModel1: |dir| = 0.001) while `gp_Dir` normalises it, so the
+    recorded pstart/pend are in the vector's units - the decoded edge then
+    misses its own vertices by a factor of 1000 (edge 88: -3.996 instead of
+    0.002) and no boundary wire can close.  The vertices are independent of
+    the range and, per P45, authoritative; this is the same precedence
+    `SabModel.edge_endpoints` applies at the topology level.
+    """
+    def _pt(vertex_idx):
+        if vertex_idx is None or vertex_idx < 0:
+            return None
+        v = model.e(vertex_idx)
+        return model.point_of_vertex(v) if v is not None else None
+
+    p1 = _pt(getattr(edge_ent, "v1", None))
+    p2 = _pt(getattr(edge_ent, "v2", None))
+    if p1 is None or p2 is None:
+        return None
+    d = curve.direction
+    n = (d[0] ** 2 + d[1] ** 2 + d[2] ** 2) ** 0.5
+    if n < 1e-15:
+        return None
+    u = (d[0] / n, d[1] / n, d[2] / n)
+    o = curve.origin
+    t1 = sum((p1[i] - o[i]) * u[i] for i in range(3))
+    t2 = sum((p2[i] - o[i]) * u[i] for i in range(3))
+    if abs(t2 - t1) < 1e-12:
+        return None
+    return (t1, t2)
+
 def _edge_curve(model, edge_ent):
     """Geom_Curve + (t0, t1) for an edge from its curve reference, or None."""
     from OCC.Core.Geom import (Geom_BSplineCurve, Geom_Ellipse, Geom_Line,
@@ -821,7 +854,10 @@ def _edge_curve(model, edge_ent):
     try:
         if c.kind == "straight" and c.direction:
             lin = Geom_Line(gp_Pnt(*c.origin), gp_Dir(*c.direction))
-            return Geom_TrimmedCurve(lin, min(t0, t1), max(t0, t1))
+            span = _straight_span(model, edge_ent, c)
+            if span is None:
+                span = (min(t0, t1), max(t0, t1))
+            return Geom_TrimmedCurve(lin, span[0], span[1])
         if c.kind == "ellipse":
             ratio = c.ratio if c.ratio else 1.0
             major = c.xdir or (1.0, 0.0, 0.0)
@@ -1071,8 +1107,22 @@ def _rebuild_face(model, face_ent, box=None):
         # cylinder; anything else is a truncated cone (P46) and gets the same
         # treatment once the surface is built.
         semi = surf_ent.semangle if surf_ent.semangle is not None else 0.0
-        if (not surf_ent.radius or surf_ent.origin is None
-                or surf_ent.normal is None or surf_ent.xdir is None):
+        if (surf_ent.origin is None or surf_ent.normal is None
+                or surf_ent.xdir is None):
+            return []
+        # R73/P362: the cone record's ref direction is a VECTOR whose length
+        # is the radius - the same convention _edge_curve already uses for
+        # ellipse curves.  SampleModel1 is the discriminating case: there
+        # |ref| = 0.015 while the separate radius token holds 0.001, and only
+        # |ref| puts the face's boundary curves ON the surface (41/41 faces
+        # exact vs 5/41; samplemodel2 455/457 vs 425/457).  A UNIT ref vector
+        # carries direction only, so the separate token stays authoritative.
+        xlen = (surf_ent.xdir[0] ** 2 + surf_ent.xdir[1] ** 2
+                + surf_ent.xdir[2] ** 2) ** 0.5
+        radius = surf_ent.radius
+        if xlen > 0.0 and abs(xlen - 1.0) > 1e-9:
+            radius = xlen
+        if not radius:
             return []
         try:
             from OCC.Core.Geom import (Geom_ConicalSurface,
@@ -1147,7 +1197,7 @@ def _rebuild_face(model, face_ent, box=None):
                         # nothing on the cone splits and cost 3 s per import, so
                         # cones stay on the cheap path
                         f = _face_from_window(
-                            Geom_ConicalSurface(ax, ang, surf_ent.radius),
+                            Geom_ConicalSurface(ax, ang, radius),
                             face_ent)
                     except Exception:
                         f = None
@@ -1155,14 +1205,20 @@ def _rebuild_face(model, face_ent, box=None):
                         return [f]
                 try:
                     mk = BRepBuilderAPI_MakeFace(
-                        Geom_ConicalSurface(ax, semi, surf_ent.radius),
+                        Geom_ConicalSurface(ax, semi, radius),
                         0.0, 2.0 * 3.141592653589793, v0, v1, 1e-6)
                 except Exception:
                     return []
                 if not mk.IsDone():
                     return []
                 return _clip_to_bbox(mk.Face(), fbox)
-            surf = Geom_CylindricalSurface(ax, surf_ent.radius)
+            surf = Geom_CylindricalSurface(ax, radius)
+            # R73 tried trimming the patch by the face's OWN boundary curves
+            # instead of the analytic window (see docs/ROUND_R73): the wires
+            # do not chain for 33/42 SampleModel4 faces, and without the
+            # pcurves OCCT then rejects 3 of 4 built faces (invalid / non
+            # positive area).  Measured and reverted; P362-R74 continues it
+            # with GeomProjLib.Curve2d + BRep_Builder.UpdateEdge.
             # R11 tried the recorded window here first (it does fix the arc
             # faces) but the sampled validation on EVERY cylinder cost 7.3 ->
             # 23.3 s per import, so it must come back behind a cheap pre-filter.
@@ -1182,7 +1238,7 @@ def _rebuild_face(model, face_ent, box=None):
                                 dx * fy[0] + dy * fy[1] + dz * fy[2]))
                 hull = _proj_hull(pts)
                 if hull:
-                    arcs = _circle_hull_arcs(surf_ent.radius, hull)
+                    arcs = _circle_hull_arcs(radius, hull)
             # R13/P75 tried two guards here, both inert on the current data and
             # therefore reverted (see docs/ROUND_R13): (a) an O(1) pre-filter
             # that retries the recorded window when the analytic arc exceeds
@@ -1490,9 +1546,13 @@ def import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
         [model] if model is not None else [])
     doc = KernelDoc()
     failed_parts = []
-    # P45: the decoder's own loss counters, surfaced to the user
+    # P45: the decoder's own loss counters, surfaced to the user.  R73: the
+    # ref split (unbuilt_ref) MUST be reset here too - it is a module-level
+    # function attribute, so without this a second import in the same process
+    # inherits the first one's ref losses and the report goes negative.
     _faces_from_model.skipped = 0
     _faces_from_model.unbuilt = 0
+    _faces_from_model.unbuilt_ref = 0
     hierarchy = []
     for i, mdl in enumerate(models, 1):
         part_doc = import_model(mdl, color=color)
