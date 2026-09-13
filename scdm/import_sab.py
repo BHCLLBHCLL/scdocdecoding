@@ -1065,6 +1065,13 @@ def _rebuild_face(model, face_ent, box=None):
                 hull = _proj_hull(pts)
                 if hull:
                     arcs = _circle_hull_arcs(surf_ent.radius, hull)
+            # R13/P75 tried two guards here, both inert on the current data and
+            # therefore reverted (see docs/ROUND_R13): (a) an O(1) pre-filter
+            # that retries the recorded window when the analytic arc exceeds
+            # pi, (b) an angular span from the projected corners when the hull
+            # is degenerate.  The remaining two splits are NOT produced by this
+            # branch - the next step is to instrument _rebuild_face to report
+            # which path returned the pieces.
             out = []
             for (u0, ulen) in (arcs if arcs else [(0.0, 2.0 * 3.141592653589793)]):
                 if ulen < 1e-9:
