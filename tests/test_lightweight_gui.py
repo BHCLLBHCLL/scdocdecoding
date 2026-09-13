@@ -517,6 +517,34 @@ class LightweightModeTests(unittest.TestCase):
         got2 = K.volume(kdoc.bodies[1].shape)
         assert abs(got2 - want2) / want2 < 1e-9
 
+    def test_p319_material_command_sets_the_part_material(self):
+        """R60/P319: the det.mat command sets the material and reports mass =
+        volume x density (the BOM then carries it)."""
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm import materials as MAT
+        from scdm.kdoc import KernelDoc
+
+        v = self.gui.ScdmViewer(path=None)
+        kdoc = KernelDoc()
+        body = kdoc.add_body(K.make_box(0.02, 0.02, 0.02), name="B")
+        v.session().kdoc = kdoc
+        v._commit = lambda *a, **k: None
+        keys = sorted(MAT.MATERIALS)
+        labels = ["%s（%s, %g kg/m³）" % (k, MAT.MATERIALS[k]["name"],
+                                         MAT.MATERIALS[k]["density"])
+                  for k in keys]
+        v._ask_choice = lambda *a, **k: labels[keys.index("aluminum")]
+        v._do_det_mat()
+        p = kdoc.properties[body.id]
+        assert p.material == "aluminum"
+        assert abs(p.mass(body.shape) * 1000.0 - 21.6) < 1e-9
+        assert "质量" in self._status(v)
+        rows = MAT.bom_rows(kdoc.bodies, kdoc.properties, 1000.0)
+        assert rows[0]["material_name"] == "铝合金"
+        assert abs(rows[0]["mass_g"] - 21.6) < 1e-9
+
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""
         from scdm import kernel as K

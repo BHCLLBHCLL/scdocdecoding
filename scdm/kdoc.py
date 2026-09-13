@@ -80,6 +80,7 @@ class KernelDoc:
         #   "dropped_faces", "mesh_bodies": [names], "fatal": str|None})
         self.import_report: dict = {}
         self.weldments: List[Any] = []    # P291: beam/weldment groups
+        self.properties: Dict[str, Any] = {}   # P319: body id -> PartProperties
         self.param_table = None           # scdm.params.ParamTable (optional)
         self.sim = None                   # scdm.simprep.SimModel (H8)
         self.named: List[dict] = []  # named selections: {"name": str, "items": [(kind,id)]}
@@ -113,6 +114,25 @@ class KernelDoc:
     def feature_stack(self, body_id: str) -> FeatureStack:
         """The (possibly empty) feature history attached to a body."""
         return self.features.setdefault(body_id, FeatureStack())
+
+    # ---- P319: part properties (material + custom fields) ---------------
+    def part_properties(self, body_id: str):
+        """The body's properties, created on first use (default material)."""
+        from scdm.materials import PartProperties
+        p = self.properties.get(body_id)
+        if p is None:
+            p = PartProperties()
+            self.properties[body_id] = p
+        return p
+
+    def set_material(self, body_id: str, material: str):
+        """Set the body's material; returns the properties object."""
+        from scdm.materials import PartProperties
+        old = self.properties.get(body_id)
+        p = PartProperties(material=material,
+                           custom=dict(old.custom) if old is not None else {})
+        self.properties[body_id] = p
+        return p
 
     def record_feature(self, body_id: str, op: str, **params) -> None:
         """Append a replayable feature to a body's history."""

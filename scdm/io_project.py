@@ -20,7 +20,7 @@ from scdm.kdoc import Component, KernelDoc
 def save_scdm(path: str, kdoc: KernelDoc) -> None:
     manifest = {
         "format": "scdm-session",
-        "version": 3,
+        "version": 4,
         "bodies": [{"id": b.id, "name": b.name, "color": list(b.color), "visible": b.visible,
                     "layer": getattr(b, "layer", "默认") or "默认",
                     "file": f"bodies/{b.id}.brep"} for b in kdoc.bodies],
@@ -57,6 +57,9 @@ def save_scdm(path: str, kdoc: KernelDoc) -> None:
         "active_configuration": getattr(kdoc, "active_configuration", None),
         # P291: beam/weldment groups (shared section + members + weld symbols)
         "weldments": [w.to_dict() for w in getattr(kdoc, "weldments", [])],
+        # P319: part properties (material + custom fields) per body
+        "properties": {bid: p.to_dict()
+                       for bid, p in getattr(kdoc, "properties", {}).items()},
     }
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
@@ -110,6 +113,9 @@ def load_scdm(path: str) -> KernelDoc:
     from scdm import beams as BEAMS
     doc.weldments = [BEAMS.Weldment.from_dict(w)
                      for w in (man.get("weldments") or [])]
+    from scdm.materials import PartProperties
+    doc.properties = {bid: PartProperties.from_dict(p)
+                      for bid, p in (man.get("properties") or {}).items()}
     from scdm.kdoc import Configuration
     doc.configurations = [
         Configuration(c.get("id") or "CFG1", c.get("name") or "配置",

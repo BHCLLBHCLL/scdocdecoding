@@ -269,6 +269,8 @@ Tab("detail", "详细", "Detailing", (
             C("det.note", "注释", "Note", "M5", "note"),
             C("det.params", "参数", "Parameters", "M5", "params"),
             C("det.bom", "BOM", "BOM", "M5", "list"),
+            C("det.mat", "材料", "Material", "M5", "params",
+              note="零件材料与属性（质量 = 体积×密度）"),
         )),
     )),
     Tab("beam", "梁/焊件", "Beam", (
@@ -390,7 +392,7 @@ M5_LIVE = {
     "facet.reverse", "facet.smooth", "facet.reduce", "facet.fill", "facet.convert",
     "wb.params", "wb.publish",
     "add.build", "add.orient", "add.support", "add.lattice",
-    "det.view", "det.dim", "det.note", "det.bom", "det.proj", "det.section",
+    "det.view", "det.dim", "det.note", "det.bom", "det.mat", "det.proj", "det.section",
     "det.dxf",
     "ks.render",
 }

@@ -2695,20 +2695,49 @@ else:
             dlg = QDialog(self)
             dlg.setWindowTitle("BOM")
             lay = QVBoxLayout(dlg)
-            tab = QTableWidget(len(ses.kdoc.bodies), 4)
-            tab.setHorizontalHeaderLabels(["名称", "体积 mm³", "面积 mm²", "重心 mm"])
-            scale = ses.scale
-            for i, b in enumerate(ses.kdoc.bodies):
-                vol = K.volume(b.shape) * scale ** 3
-                area = K.area(b.shape) * scale ** 2
-                c = K.cog(b.shape)
-                row = [b.name, f"{vol:.2f}", f"{area:.2f}",
-                       f"{c[0]*scale:.2f}, {c[1]*scale:.2f}, {c[2]*scale:.2f}"]
+            from scdm import materials as MAT
+            rows = MAT.bom_rows(ses.kdoc.bodies, ses.kdoc.properties, ses.scale)
+            tab = QTableWidget(len(rows), 5)
+            tab.setHorizontalHeaderLabels(["名称", "材料", "体积 mm³", "质量 g",
+                                           "面积 mm²"])
+            for i, r in enumerate(rows):
+                row = [r["name"], r["material_name"],
+                       f"{r['volume_mm3']:.2f}", f"{r['mass_g']:.3f}",
+                       f"{r['area_mm2']:.2f}"]
                 for j, txt in enumerate(row):
                     tab.setItem(i, j, QTableWidgetItem(txt))
             lay.addWidget(tab)
             dlg.resize(520, 320)
             dlg.exec_()
+
+        def _do_det_mat(self):
+            """P319: 选材料 - 质量 = 体积 x 密度（属性随 .scdm 往返）。"""
+            from scdm import materials as MAT
+            ses = self.session()
+            body = self._selected_kbody()
+            if body is None:
+                if len(ses.kdoc.bodies) != 1:
+                    self._set_status("材料：请先选择一个实体")
+                    return
+                body = ses.kdoc.bodies[0]
+            keys = sorted(MAT.MATERIALS)
+            labels = ["%s（%s, %g kg/m³）" % (k, MAT.MATERIALS[k]["name"],
+                                             MAT.MATERIALS[k]["density"])
+                      for k in keys]
+            cur = ses.kdoc.part_properties(body.id).material
+            picked = self._ask_choice("材料", labels, keys.index(cur)
+                                      if cur in keys else 0)
+            if picked is None:
+                return
+            key = keys[labels.index(picked)]
+            try:
+                p = ses.kdoc.set_material(body.id, key)
+                m = p.mass(body.shape)
+                ses.dirty = True
+                self._set_status("材料 %s：质量 %.3f g" % (p.name(), m * 1000.0))
+                self._commit("已设置材料 %s" % p.name())
+            except Exception as exc:
+                self._set_status(f"材料设置失败: {exc}")
 
         def _export_views_svg(self, views, suffix):
             """P7: shared SVG sheet writer for the drawing view commands."""
