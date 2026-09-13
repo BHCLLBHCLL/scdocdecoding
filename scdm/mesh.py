@@ -264,7 +264,8 @@ _CUBE_TETS = ((0, 1, 2, 6), (0, 2, 3, 6), (0, 3, 7, 6),
 
 
 def tet_fill(shape, cell: float, tol: float = 1e-9, boundary: str = "voxel",
-             keep_boundary_shapes: bool = False) -> Dict:
+             keep_boundary_shapes: bool = False,
+             deflection: Optional[float] = None) -> Dict:
     """P327/P335: 体网格——体素四面体填充；@@boundary="clip"@@ 时边界格按精确裁剪计入。
 
     voxel: a cell whose centre is inside is kept whole (6 tetrahedra) - the
@@ -284,6 +285,11 @@ def tet_fill(shape, cell: float, tol: float = 1e-9, boundary: str = "voxel",
     c = float(cell)
     if c <= 0:
         raise K.KernelError("体网格：格边长必须为正")
+    # the chord deflection for the boundary fan is tied to the CELL, so the
+    # fill's volume error scales with cell**2 (second order) instead of O(cell)
+    dfx = float(deflection) if deflection is not None else c * 0.02
+    if dfx <= 0:
+        raise K.KernelError("体网格：弦差必须为正")
     # a REAL bounding box (K.bounding_box): the vertex-based boxes only see
     # vertices, and a full sphere has just its two poles - the grid collapsed to
     # a 1x1xn line (4 cells for a 20 mm sphere at 5 mm cells)
@@ -292,8 +298,8 @@ def tet_fill(shape, cell: float, tol: float = 1e-9, boundary: str = "voxel",
     ny = max(1, int(math.ceil((hi[1] - lo[1]) / c - 1e-9)))
     nz = max(1, int(math.ceil((hi[2] - lo[2]) / c - 1e-9)))
     mode = str(boundary).lower()
-    if mode not in ("voxel", "clip"):
-        raise K.KernelError("体网格：boundary 只能是 voxel 或 clip")
+    if mode not in ("voxel", "clip", "tets"):
+        raise K.KernelError("体网格：boundary 只能是 voxel / clip / tets")
     clf = BRepClass3d_SolidClassifier(shape)
     verts: List[Tuple[float, float, float]] = []
     tets: List[Tuple[int, int, int, int]] = []
@@ -310,7 +316,7 @@ def tet_fill(shape, cell: float, tol: float = 1e-9, boundary: str = "voxel",
                 if clf.State() not in (TopAbs_IN, TopAbs_ON):
                     continue
                 inside.add((ix, iy, iz))
-                if mode == "clip":
+                if mode in ("clip", "tets"):
                     # sample the corners a hair INSIDE the cell: a point exactly
                     # on a face makes SolidClassifier answer OUT as often as ON,
                     # which mis-classified every cell of an axis-aligned box
@@ -341,8 +347,11 @@ def tet_fill(shape, cell: float, tol: float = 1e-9, boundary: str = "voxel",
         raise K.KernelError("体网格：没有格心落在实体内（格边长 %g 太大？）" % c)
     out = {"vertices": verts, "tets": tets, "cells": cells, "cell": c,
            "counts": (nx, ny, nz), "boundary": mode,
-           "boundary_cells": 0, "boundary_volume": 0.0}
-    if mode == "clip":
+           "boundary_cells": 0, "boundary_volume": 0.0,
+           "boundary_tets": 0, "boundary_tet_volume": 0.0,
+           "boundary_tet_degenerate": 0,
+           "deflection": dfx}
+    if mode in ("clip", "tets"):
         # the boundary band: outside cells touching a solid cell (26-neighbours),
         # plus the cells whose centre was inside but whose corners are not (an
         # inside centre does NOT make the whole cell inside: keeping such cells
@@ -366,11 +375,59 @@ def tet_fill(shape, cell: float, tol: float = 1e-9, boundary: str = "voxel",
                 continue
             out["boundary_cells"] += 1
             out["boundary_volume"] += v
+            if mode == "tets":
+                # P339: a real tetrahedralisation of the clipped piece - fan the
+                # boundary triangles to the piece centroid.  The piece's volume
+                # then comes from the CHORD boundary, so the fill's error is
+                # O(deflection**2) instead of the exact-boolean residual of the
+                # clip mode (which did not shrink with the cell).
+                fan = tetrahedralize_piece(piece, deflection=dfx)
+                out["boundary_tets"] += len(fan["tets"])
+                out["boundary_tet_volume"] += fan["volume"]
+                out["boundary_tet_degenerate"] += fan["degenerate"]
+                base_v = len(verts)
+                verts.extend(fan["vertices"])
+                tets.extend([(a + base_v, b + base_v, d + base_v, e + base_v)
+                             for (a, b, d, e) in fan["tets"]])
             if keep_boundary_shapes:
                 shapes.append(piece)
         if keep_boundary_shapes:
             out["boundary_shapes"] = shapes
     return out
+
+
+def tetrahedralize_piece(piece, deflection: float = 0.001,
+                         tol_volume: float = 1e-18) -> Dict:
+    """P339: fan a clipped piece's boundary triangles to its centroid.
+
+    One tetrahedron per boundary triangle, so the tet count is countable
+    (= triangle count) and the volume comes from the chord boundary - which is
+    exactly why the fill's error becomes second order in the deflection.
+    """
+    if piece is None or piece.IsNull():
+        raise K.KernelError("裁剪片四面体化：形状为空")
+    centre = K.cog(piece)
+    verts: List[Tuple[float, float, float]] = [centre]
+    tets: List[Tuple[int, int, int, int]] = []
+    degenerate = 0
+    faces = K.tessellate_faces(piece, deflection)
+    if not faces:
+        raise K.KernelError("裁剪片四面体化：没有可三角化的面")
+    for fd in faces:
+        fv = fd["vertices"]
+        for (i, j, k) in fd["triangles"]:
+            base = len(verts)
+            verts.extend([fv[i], fv[j], fv[k]])
+            v = tet_volume(centre, fv[i], fv[j], fv[k])
+            if v <= tol_volume:
+                degenerate += 1
+                continue
+            tets.append((0, base, base + 1, base + 2))
+    if not tets:
+        raise K.KernelError("裁剪片四面体化：全部退化")
+    return {"vertices": verts, "tets": tets, "degenerate": degenerate,
+            "volume": sum(tet_volume(verts[a], verts[b], verts[d], verts[e])
+                          for (a, b, d, e) in tets)}
 
 
 def tet_stats(fill: Dict, shape=None, tol_volume: float = 1e-18) -> Dict:
@@ -398,9 +455,16 @@ def tet_stats(fill: Dict, shape=None, tol_volume: float = 1e-18) -> Dict:
            "boundary": str(fill.get("boundary", "voxel")),
            "boundary_cells": int(fill.get("boundary_cells", 0)),
            "boundary_volume": bvol,
-           # P335: the boundary-conforming total (real tets + exact clipped
-           # boundary cells); equal to self["volume"] in voxel mode
-           "volume_clip": sum(vols) + bvol}
+           # P339: the boundary fan (one tetrahedron per boundary triangle)
+           "boundary_tets": int(fill.get("boundary_tets", 0)),
+           "boundary_tet_volume": float(fill.get("boundary_tet_volume", 0.0)),
+           "boundary_tet_degenerate": int(fill.get("boundary_tet_degenerate", 0)),
+           # P335/P339: "clip" adds the exact clipped piece volumes to the tet
+           # sum; "tets" already counted the pieces as tetrahedra, so adding
+           # them again would double count
+           "volume_clip": (sum(vols) + bvol
+                           if str(fill.get("boundary", "voxel")) == "clip"
+                           else sum(vols))}
     if shape is not None:
         ref = float(K.volume(shape))
         out["volume_ref"] = ref

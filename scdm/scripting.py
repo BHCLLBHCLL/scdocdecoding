@@ -596,9 +596,14 @@ def op_mesh_volume(kdoc, opts, scale):
     stats = ME.tet_stats(fill, shape=body.shape)
     kdoc.meshes.setdefault(body.id, {})["volume"] = stats
     if stats["boundary"] == "clip":
-        return body, ("体网格（贴体）：%d 实体格 / %d 边界格，体积误差 %.3g（体素版 %.3g）"
+        return body, ("体网格（贴体裁剪）：%d 实体格 / %d 边界格，体积误差 %.3g（体素版 %.3g）"
                       % (stats["cells"], stats["boundary_cells"],
                          stats["volume_clip_rel_error"], stats["volume_rel_error"]))
+    if stats["boundary"] == "tets":
+        return body, ("体网格（贴体四面体）：%d 实体格 / %d 边界格 / %d 四面体，"
+                      "体积误差 %.3g（体素版 %.3g）"
+                      % (stats["cells"], stats["boundary_cells"], stats["tets"],
+                         stats["volume_rel_error"], 0.0))
     return body, ("体网格：%d 单元 / %d 四面体，体积误差 %.3g"
                   % (stats["cells"], stats["tets"], stats["volume_rel_error"]))
 
