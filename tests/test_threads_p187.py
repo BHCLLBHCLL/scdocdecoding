@@ -22,6 +22,7 @@ def _top_face_index(shape):
     return best[0] if best else 0
 
 
+
 def test_p187_feature_label_carries_the_thread_spec():
     f = Feature(op="hole_tapped",
                 params={"nominal": 6.0, "pitch": 1.0})
