@@ -99,7 +99,11 @@ class Ent:
     bs_poles_2d: Optional[list] = None
     ratio: Optional[float] = None
     semangle: Optional[float] = None
+    sin_angle: Optional[float] = None
+    cos_angle: Optional[float] = None
     radius: Optional[float] = None
+    major: Optional[float] = None
+    minor: Optional[float] = None
     bsurf_uperiodic: bool = False
     bsurf_vperiodic: bool = False
     bsurf_u_knots: Optional[list] = None
@@ -277,80 +281,119 @@ class SabModel:
             e.lump = self._ptr(rec, 8)
         elif k == 'face':
             e.attribs = self._ptr(rec, 0)
-            e.sense = rec.tokens[9].kind if len(rec.tokens) > 9 else None
-            e.bbox_min = self._opt_v3(rec, 12)
-            e.bbox_max = self._opt_v3(rec, 13)
-            # standard SpaceClaim face layout: [.., -1, next, loop, shell, -1,
-            # surface, ..]; imported (Parasolid) faces re-arrange the early
-            # tokens, so only decode the topology pointers when token4 is a ptr.
-            if len(rec.tokens) > 8 and rec.tokens[4].kind == 'ptr':
+            # P37: decode topology pointers POSITIONALLY within the record's
+            # pointer run instead of at fixed token indices. Official files
+            # vary: layout A = P I I P P P P P P F F F V V F (6 ptrs in a row),
+            # samplemodel3 = P I I P I I P P P P P F F F V V F (two ints inside
+            # the run wound up shifting every topology pointer by +2, which
+            # silently produced faces with no loop/surface at all).
+            run = self._ptr_run(rec)
+            def _p(n):
+                return self._opt_ptr(rec, run[n]) if len(run) > n else None
+            if len(run) >= 6:
+                e.next, e.loop, e.shell, e.surface = _p(1), _p(2), _p(3), _p(5)
+            else:
                 e.next = self._opt_ptr(rec, 4)
                 e.loop = self._opt_ptr(rec, 5)
                 e.shell = self._opt_ptr(rec, 6)
                 e.surface = self._opt_ptr(rec, 8)
-            if (len(rec.tokens) >= 19
-                    and all(rec.tokens[i].kind == 'double' for i in range(15, 19))):
-                e.uv_range = [t.value for t in rec.tokens[15:19]]
+            e.sense = next((t.kind for t in rec.tokens
+                            if t.kind.startswith('flag')), None)
+            vecs = [i for i, t in enumerate(rec.tokens)
+                    if t.kind in ('vec3', 'vec3b')]
+            if len(vecs) >= 2 and vecs[1] == vecs[0] + 1:
+                e.bbox_min = self._opt_v3(rec, vecs[0])
+                e.bbox_max = self._opt_v3(rec, vecs[1])
+            else:
+                e.bbox_min = self._opt_v3(rec, 12)
+                e.bbox_max = self._opt_v3(rec, 13)
+            dbl = [i for i, t in enumerate(rec.tokens) if t.kind == 'double']
+            for i in range(len(dbl) - 3):
+                if dbl[i + 3] == dbl[i] + 3:
+                    e.uv_range = [rec.tokens[dbl[i] + j].value
+                                  for j in range(4)]
+                    break
         elif k == 'loop':
-            e.coedge = self._opt_ptr(rec, 5)
-            e.face = self._opt_ptr(rec, 6)
-            # optional: loop subtype (int15 at 10) then a trailing surface ptr
-            st = self._opt(rec, 10, 'int15', lambda t: t.value)
+            # P37: positional within the pointer run (variants interleave ints)
+            run = self._ptr_run(rec)
+            e.coedge = self._role(rec, 2, run)
+            e.face = self._role(rec, 3, run)
+            st = next((t.value for t in rec.tokens if t.kind == 'int15'), None)
             if st is not None:
-                e.surface = self._opt_ptr(rec, 11)
+                e.surface = self._role(rec, 4, run)
         elif k in ('coedge', 'tcoedge'):
-            e.next = self._opt_ptr(rec, 4)
-            e.prev = self._opt_ptr(rec, 5)
-            e.partner = self._opt_ptr(rec, 6)
-            e.edge = self._opt_ptr(rec, 7)
-            e.sense = rec.tokens[8].kind if len(rec.tokens) > 8 else None
-            e.loop = self._opt_ptr(rec, 9)
-            e.face = self._opt_ptr(rec, 10)
-            if k == 'tcoedge' and len(rec.tokens) > 12:
-                e.t_range = (self._opt_dbl(rec, 11), self._opt_dbl(rec, 12))
+            run = self._ptr_run(rec)
+            e.next = self._role(rec, 1, run)
+            e.prev = self._role(rec, 2, run)
+            e.partner = self._role(rec, 3, run)
+            e.edge = self._role(rec, 4, run)
+            e.loop = self._role(rec, 5, run)
+            e.face = self._role(rec, 6, run)
+            e.sense = next((t.kind for t in rec.tokens
+                            if t.kind.startswith('flag')), None)
+            if k == 'tcoedge':
+                dbl = self._doubles(rec)
+                if len(dbl) >= 2:
+                    e.t_range = (dbl[0], dbl[1])
         elif k == 'edge':
             e.attribs = self._ptr(rec, 0)
-            e.v1 = self._opt_ptr(rec, 4)
-            e.pstart = self._opt_dbl(rec, 5)
-            e.v2 = self._opt_ptr(rec, 6)
-            e.pend = self._opt_dbl(rec, 7)
-            e.coedge = self._opt_ptr(rec, 8)
-            e.curve = self._opt_ptr(rec, 9)
-            e.sense = rec.tokens[10].kind if len(rec.tokens) > 10 else None
-            e.bbox_min = self._opt_v3(rec, 13)
-            e.bbox_max = self._opt_v3(rec, 14)
+            self._decode_edge_fields(e, rec)
         elif k in ('vertex', 'tvertex'):
-            e.edge = self._opt_ptr(rec, 4)
-            e.point = self._opt_ptr(rec, 5)
+            run = self._ptr_run(rec)
+            e.edge = self._role(rec, 1, run)
+            e.point = self._role(rec, 2, run)
             if k == 'tvertex':
-                e.tolerance = self._opt_dbl(rec, 6)
+                dbl = self._doubles(rec)
+                if dbl:
+                    e.tolerance = dbl[0]
         elif k == 'tedge':
             # same layout as edge plus a trailing tolerance double
             e.attribs = self._ptr(rec, 0)
-            e.v1 = self._opt_ptr(rec, 4)
-            e.pstart = self._opt_dbl(rec, 5)
-            e.v2 = self._opt_ptr(rec, 6)
-            e.pend = self._opt_dbl(rec, 7)
-            e.coedge = self._opt_ptr(rec, 8)
-            e.curve = self._opt_ptr(rec, 9)
-            e.sense = rec.tokens[10].kind if len(rec.tokens) > 10 else None
-            e.bbox_min = self._opt_v3(rec, 13)
-            e.bbox_max = self._opt_v3(rec, 14)
-            e.tolerance = self._opt_dbl(rec, 15)
+            self._decode_edge_fields(e, rec)
+            dbl = self._doubles(rec)
+            if len(dbl) >= 3:
+                e.tolerance = dbl[2]
         elif k == 'point':
-            e.origin = self._opt_v3(rec, 4)
+            # P37: coordinates are the first vec3 token, not always index 4
+            vecs = [i for i, t in enumerate(rec.tokens)
+                    if t.kind in ('vec3', 'vec3b')]
+            e.origin = (self._opt_v3(rec, vecs[0]) if vecs
+                        else self._opt_v3(rec, 4))
         elif k in ('plane', 'cone', 'ellipse', 'spline', 'curve',
                    'torus', 'sphere'):
-            e.origin = self._opt_v3(rec, 4)
-            e.normal = self._opt_v3b(rec, 5)
-            e.xdir = self._opt_v3b(rec, 6)
+            # P37: origin/normal/xdir are the first three vec tokens
+            vecs = [i for i, t in enumerate(rec.tokens)
+                    if t.kind in ('vec3', 'vec3b')]
+            e.origin = (self._opt_v3(rec, vecs[0]) if len(vecs) > 0
+                        else self._opt_v3(rec, 4))
+            e.normal = (self._opt_v3b(rec, vecs[1]) if len(vecs) > 1
+                        else self._opt_v3b(rec, 5))
+            e.xdir = (self._opt_v3b(rec, vecs[2]) if len(vecs) > 2
+                      else self._opt_v3b(rec, 6))
             if k == 'ellipse':
                 e.ratio = self._opt_dbl(rec, 7)
             if k == 'cone':
-                # [.., ratio double, flags, semi-angle double, costheta
-                #  double, base-radius double, flags]
-                e.semangle = self._opt_dbl(rec, 10)
+                # [.., ratio double, flags, sin(semi-angle), cos(semi-angle),
+                #  base radius, flags] - P46: token 10 is the SINE and token 11
+                #  the COSINE (a zero-semi cylinder stores -0.0 / 1.0), so the
+                #  angle itself is atan2.  Reading token 10 as the angle made
+                #  every truncated cone look like a cylinder.
+                e.sin_angle = self._opt_dbl(rec, 10)
+                e.cos_angle = self._opt_dbl(rec, 11)
+                if e.sin_angle is not None and e.cos_angle is not None:
+                    e.semangle = math.atan2(e.sin_angle, e.cos_angle)
                 e.radius = self._opt_dbl(rec, 12)
+            if k == 'torus':
+                # [origin, axis, major double, minor double, xdir] - the two
+                # radii sit between the axis and the x direction, so the
+                # vec-based origin/normal/xdir decode above is already right.
+                dbl = self._doubles(rec)
+                if len(dbl) >= 2:
+                    e.major, e.minor = dbl[0], dbl[1]
+            if k == 'sphere':
+                dbl = self._doubles(rec)
+                if dbl:
+                    e.radius = dbl[0]
         elif k == 'both':
             # B-spline SURFACE payload (inside a spline-surface 0x0F scope):
             # [u_periodic int15][v_periodic int15][u_form int15][v_form int15]
@@ -455,14 +498,86 @@ class SabModel:
         # unknown kinds: keep the minimal Ent so record indexing stays valid
         return e
 
+    def _ptr_run(self, rec, skip_attribs: bool = True):
+        """Token indices of the record's pointer fields, in order.
+
+        P37: the first token is usually the attribs chain; topology pointers
+        follow it, possibly with ints interleaved (official layout variants).
+        """
+        out = []
+        for i, t in enumerate(rec.tokens):
+            if t.kind != 'ptr':
+                continue
+            if skip_attribs and i == 0:
+                continue
+            out.append(i)
+        return out
+
+    def _role(self, rec, n: int, run=None):
+        """The n-th pointer of a record's pointer run, or None (P37)."""
+        run = self._ptr_run(rec) if run is None else run
+        return self._opt_ptr(rec, run[n]) if len(run) > n else None
+
+    def _doubles(self, rec):
+        return [t.value for t in rec.tokens if t.kind == 'double']
+
+    def _decode_edge_fields(self, e, rec) -> None:
+        """Edge topology + parameter range, positionally (P37 variants)."""
+        run = self._ptr_run(rec)
+        e.v1 = self._role(rec, 1, run)
+        e.v2 = self._role(rec, 2, run)
+        e.coedge = self._role(rec, 3, run)
+        e.curve = self._role(rec, 4, run)
+        dbl = self._doubles(rec)
+        e.pstart = dbl[0] if len(dbl) > 0 else None
+        e.pend = dbl[1] if len(dbl) > 1 else None
+        e.sense = next((t.kind for t in rec.tokens
+                        if t.kind.startswith('flag')), None)
+        vecs = [i for i, t in enumerate(rec.tokens)
+                if t.kind in ('vec3', 'vec3b')]
+        if len(vecs) >= 2 and vecs[1] == vecs[0] + 1:
+            e.bbox_min = self._opt_v3(rec, vecs[0])
+            e.bbox_max = self._opt_v3(rec, vecs[1])
+        else:
+            e.bbox_min = self._opt_v3(rec, 13)
+            e.bbox_max = self._opt_v3(rec, 14)
+
     # -- accessors -----------------------------------------------------------
     def e(self, idx: int) -> Optional[Ent]:
+        """Entity by index; None-safe.
+
+        P29: optional pointers are routinely absent (None) in official streams;
+        a bare comparison crashed the whole import on the first such loop.
+        """
+        if idx is None:
+            return None
         if 0 <= idx < len(self.entities):
             return self.entities[idx]
         return None
 
     def of_kind(self, kind: str) -> List[Ent]:
         return [e for e in self.entities if e is not None and e.kind == kind]
+
+    def _by_pointer(self, cache_key: str, kind: str, attr: str):
+        """Index of entities grouped by one of their pointer fields.
+
+        P30: the P29 back-pointer fallbacks scanned every entity per call, which
+        turned the import into O(n^2) (68 s on samplemodel2). Built once, lazily.
+        """
+        cache = getattr(self, "_ptr_cache", None)
+        if cache is None:
+            cache = self._ptr_cache = {}
+        if cache_key not in cache:
+            buckets = {}
+            for e in self.entities:
+                if e is None or e.kind != kind:
+                    continue
+                ref = getattr(e, attr, None)
+                if ref is None or not isinstance(ref, int) or ref < 0:
+                    continue
+                buckets.setdefault(ref, []).append(e)
+            cache[cache_key] = buckets
+        return cache[cache_key]
 
     def doc_id_of(self, ent: Ent, prefix: str = 'ATTRIB_XACIS_NAME') -> Optional[str]:
         for a in self.attribs_by_owner.get(ent.idx, ()):
@@ -478,43 +593,86 @@ class SabModel:
 
     # -- traversal -----------------------------------------------------------
     def faces_of_shell(self, shell: Ent) -> List[Ent]:
+        """Faces of a shell.
+
+        Primary source is the shell's face -> next chain. P29: official files
+        sometimes omit that chain (samplemodel3 links only one face), so also
+        collect every face whose own shell pointer references this shell.
+        """
         out, seen = [], set()
         cur = self.e(shell.face)
         while cur is not None and cur.idx not in seen and cur.kind == 'face':
             seen.add(cur.idx)
             out.append(cur)
             cur = self.e(cur.next)
+        for f in self._by_pointer('faces_by_shell', 'face', 'shell').get(
+                shell.idx, ()):
+            if f.idx not in seen:
+                seen.add(f.idx)
+                out.append(f)
         return out
 
     def coedges_of_loop(self, loop: Ent) -> List[Ent]:
+        """Coedges of a loop (chain, plus pointer-backed stragglers).
+
+        P29: official streams may omit the coedge next-chain; every coedge that
+        points back at this loop (t9) belongs to it, so merge those in.
+        """
         out, seen = [], set()
         cur = self.e(loop.coedge)
         while cur is not None and cur.idx not in seen and cur.kind == 'coedge':
             seen.add(cur.idx)
             out.append(cur)
             cur = self.e(cur.next)
+        for ce in self._by_pointer('coedges_by_loop', 'coedge', 'loop').get(
+                loop.idx, ()):
+            if ce.idx not in seen:
+                seen.add(ce.idx)
+                out.append(ce)
         return out
 
     def loops_of_face(self, face: Ent) -> List[Ent]:
-        """All loops of the face.  Faces in box.scdoc carry a single loop;
-        additional loops (holes) would chain via the loop record's t4 ptr."""
+        """All loops of the face (outer + holes).
+
+        Chain: face.loop then loop-record t4. P29: official streams may omit
+        that chain, so also collect every loop whose own face pointer (t6)
+        references this face - otherwise faces with inner loops are lost.
+        """
         out, seen = [], set()
         cur = self.e(face.loop)
         while cur is not None and cur.kind == 'loop' and cur.idx not in seen:
             seen.add(cur.idx)
             out.append(cur)
-            nxt = cur.record.tokens[4]
+            try:
+                nxt = cur.record.tokens[4]
+            except Exception:
+                break
             cur = self.e(nxt.value) if nxt.kind == 'ptr' else None
+        for lp in self._by_pointer('loops_by_face', 'loop', 'face').get(
+                face.idx, ()):
+            if lp.idx not in seen:
+                seen.add(lp.idx)
+                out.append(lp)
         return out
 
     def body_faces(self, body: Ent) -> List[Ent]:
+        """Faces of a body.
+
+        P29: official streams are inconsistent here - samplemodel3 links only
+        12 of its 111 faces through shell/face chains. For a SINGLE-body model
+        every face belongs to that body by definition, so that is authoritative;
+        multi-body models keep the shell traversal.
+        """
+        bodies = self.of_kind('body')
+        if len(bodies) == 1:
+            return self.of_kind('face')
         lump = self.e(body.lump)
-        if lump is None:
-            return []
-        shell = self.e(lump.shell)
-        if shell is None:
-            return []
-        return self.faces_of_shell(shell)
+        shell = self.e(lump.shell) if lump is not None else None
+        if shell is not None:
+            faces = self.faces_of_shell(shell)
+            if faces:
+                return faces
+        return []
 
     # -- geometry ------------------------------------------------------------
     def point_of_vertex(self, vertex: Ent):
@@ -522,13 +680,54 @@ class SabModel:
         return p.origin if p is not None else None
 
     def edge_endpoints(self, edge: Ent):
-        """Endpoints from the underlying straight curve (authoritative)."""
-        c = self.e(edge.curve)
-        if c is None or c.kind != 'straight':
-            return None
-        a = vadd(c.origin, vscale(c.direction, c.t0))
-        b = vadd(c.origin, vscale(c.direction, c.t1))
-        return a, b
+        """Endpoints of an edge (P29/P37 precedence).
+
+        1. straight curve + the EDGE's trimmed range (pstart/pend) - the curve's
+           own t0/t1 can be a wild global range (observed -100/100 on official
+           files, which put endpoints 100 m away from the real geometry);
+        2. the edge's vertices (v1/v2 -> vertex.point), which official files
+           always carry even when the curve range is missing;
+        3. the curve's t0/t1 as a last resort.
+        Returns None only when nothing resolves (callers then skip the edge).
+        """
+        c = (self.e(edge.curve)
+             if getattr(edge, 'curve', None) is not None and edge.curve >= 0
+             else None)
+        straight = (c is not None and c.kind == 'straight'
+                    and c.origin is not None and c.direction is not None)
+        t0 = getattr(edge, 'pstart', None)
+        t1 = getattr(edge, 'pend', None)
+        v1 = self.e(edge.v1) if getattr(edge, 'v1', None) is not None else None
+        v2 = self.e(edge.v2) if getattr(edge, 'v2', None) is not None else None
+        p1 = self.point_of_vertex(v1) if v1 is not None else None
+        p2 = self.point_of_vertex(v2) if v2 is not None else None
+        cp = None
+        if straight and t0 is not None and t1 is not None:
+            cp = (vadd(c.origin, vscale(c.direction, t0)),
+                  vadd(c.origin, vscale(c.direction, t1)))
+        if cp is not None and p1 is not None and p2 is not None:
+            # P45 cross-validation: the vertex points come from the independent
+            # point table, while the parameter range depends on the curve being
+            # the one this edge was trimmed from.  On the official samples the
+            # two disagree for ~19% of straight edges (573/3013 in samplemodel2,
+            # 80/104 in samplemodel3) and every case where one of them lands
+            # outside the model bbox is the CURVE-derived pair (294 vs 0), so a
+            # gross disagreement means the range belongs to another trimming of
+            # the same line - trust the vertices then.
+            scale = max(1.0, vlen(vsub(cp[0], cp[1])),
+                        vlen(vsub(p1, p2)))
+            if (vlen(vsub(cp[0], p1)) > 1e-4 * scale
+                    or vlen(vsub(cp[1], p2)) > 1e-4 * scale):
+                return p1, p2
+            return cp
+        if cp is not None:
+            return cp
+        if p1 is not None and p2 is not None:
+            return p1, p2
+        if straight and c.t0 is not None and c.t1 is not None:
+            return (vadd(c.origin, vscale(c.direction, c.t0)),
+                    vadd(c.origin, vscale(c.direction, c.t1)))
+        return None
 
     def edge_length(self, edge: Ent) -> Optional[float]:
         ep = self.edge_endpoints(edge)
