@@ -1067,7 +1067,11 @@ def _edge_curve(model, edge_ent, face_ent=None):
             # except below, which is why 287 edges of samplemodel2 read as
             # "nubs without poles" even after the trailing-double fix.
             raw = list(nubs.bs_mults)
-            mults = ([raw[0] + 1] + raw[1:-1] + [raw[-1] + 1]) if len(raw) > 2 else raw
+            # R81: the adjustment must also apply to a TWO-knot record (a
+            # single cubic span, mults [3, 3]): the R78 guard `len(raw) > 2`
+            # skipped exactly those and OCCT then rejected them with "Poles
+            # and degree mismatch" - 5 ref-family edges never decoded.
+            mults = ([raw[0] + 1] + raw[1:-1] + [raw[-1] + 1]) if len(raw) >= 2 else raw
             nk = len(nubs.bs_knots)
             ku = TColStd_Array1OfReal(1, nk)
             mu = TColStd_Array1OfInteger(1, nk)

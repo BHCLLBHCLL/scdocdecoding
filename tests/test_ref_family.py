@@ -123,23 +123,23 @@ def test_ref_report_counts_both_sides(sm4):
     """R72: ref_faces is now split into built / unbuilt / no-boundary."""
     rep = sm4.kdoc.import_report
     assert (rep["ref_faces"], rep["ref_built"], rep["ref_unbuilt"],
-            rep["ref_no_boundary"]) == (52, 23, 29, 6)
+            rep["ref_no_boundary"]) == (52, 25, 27, 6)
     assert rep["ref_built"] + rep["ref_unbuilt"] == rep["ref_faces"]
     line = [w for w in sm4.kdoc.import_warnings if "ref 间接曲面" in w]
     assert line, sm4.kdoc.import_warnings
-    assert "52 个面" in line[0] and "23 个仍由边界曲线重建" in line[0]
-    assert "29 个未能重建（含 6 个无任何边界边）" in line[0]
+    assert "52 个面" in line[0] and "25 个仍由边界曲线重建" in line[0]
+    assert "27 个未能重建（含 6 个无任何边界边）" in line[0]
 
 
 def test_unbuilt_ref_surfaces_carry_only_the_ref_payload(sm4):
     """The 'no data to rebuild from' half of the R72 refusal."""
     unbuilt = [r for r in sm4.rec if r["path"] == "none" and r["ref"]]
-    assert len(unbuilt) == 29
+    assert len(unbuilt) == 27
     assert all(r["inner"] == "ref" for r in unbuilt), \
         sorted({r["inner"] for r in unbuilt})
     # ... and the rest of the family really is rebuilt from the boundary
     built = [r for r in sm4.rec if r["path"] != "none" and r["ref"]]
-    assert len(built) == 23
+    assert len(built) == 25
     assert all(r["faces"] == 1 for r in built)
     assert sum(1 for r in unbuilt if r["edges"] == 0) == 6
 
