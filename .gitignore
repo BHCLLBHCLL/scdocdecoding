@@ -26,3 +26,4 @@ _tmp/
 # reference geometry assets are committed (negate the scratch rules)
 !references/geometry/*.stp
 !references/geometry/*.x_t
+cyl_ref_sentinel.txt
