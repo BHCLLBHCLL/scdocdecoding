@@ -8,39 +8,39 @@
   "records": [
     {
       "label": "build.sheet+25holes",
-      "peak_mb": 149.51171875,
-      "per_call": 0.9664644666663662,
-      "python_peak_mb": 0.1162729263305664,
+      "peak_mb": 149.75,
+      "per_call": 0.9652414333322668,
+      "python_peak_mb": 0.11548137664794922,
       "repeat": 3,
       "result": "TopoDS_Compound",
-      "seconds": 2.8993933999990986
+      "seconds": 2.8957242999968003
     },
     {
       "label": "tessellate.sheet",
-      "peak_mb": 156.9375,
-      "per_call": 0.015390699999746479,
-      "python_peak_mb": 0.0015344619750976562,
+      "peak_mb": 157.125,
+      "per_call": 0.014800366666653039,
+      "python_peak_mb": 0.0014858245849609375,
       "repeat": 3,
       "result": "TopoDS_Compound",
-      "seconds": 0.046172099999239435
+      "seconds": 0.044401099999959115
     },
     {
       "label": "mesh.surface",
-      "peak_mb": 163.5625,
-      "per_call": 0.33834589999969467,
-      "python_peak_mb": 2.281557083129883,
+      "peak_mb": 163.5703125,
+      "per_call": 0.33472510000137845,
+      "python_peak_mb": 2.2811155319213867,
       "repeat": 2,
       "result": {
         "triangles": 2712,
         "vertices": 1308
       },
-      "seconds": 0.6766917999993893
+      "seconds": 0.6694502000027569
     },
     {
       "label": "bbox+props.sheet",
-      "peak_mb": 163.5625,
-      "per_call": 0.008947780000016791,
-      "python_peak_mb": 0.12384891510009766,
+      "peak_mb": 163.5703125,
+      "per_call": 0.008919539999624249,
+      "python_peak_mb": 0.12380599975585938,
       "repeat": 5,
       "result": [
         [
@@ -58,13 +58,13 @@
         7.607300918301275e-07,
         0.0010778097245096162
       ],
-      "seconds": 0.04473890000008396
+      "seconds": 0.04459769999812124
     },
     {
       "label": "load_scdoc.samplemodel3",
-      "peak_mb": 194.625,
-      "per_call": 1.5465324999968288,
-      "python_peak_mb": 16.45625114440918,
+      "peak_mb": 193.9375,
+      "per_call": 1.5264029999962077,
+      "python_peak_mb": 16.45642852783203,
       "repeat": 1,
       "result": {
         "doc": "DesignDocument",
@@ -131,7 +131,7 @@
         "render_path": "SpaceClaim/Graphics/renderlist.xml",
         "scale": 1000.0
       },
-      "seconds": 1.5465324999968288
+      "seconds": 1.5264029999962077
     }
   ]
 }
