@@ -1389,6 +1389,47 @@ else:
             except Exception as exc:
                 self._set_status(f"敲落参数非法：{exc}")
 
+        def _ask_choice(self, title, items, current=0):
+            """Modal single-choice dialog; returns the chosen string or None."""
+            from PyQt5.QtWidgets import QInputDialog
+            item, ok = QInputDialog.getItem(self, title, "截面轮廓",
+                                            [str(i) for i in items], current, False)
+            return item if ok else None
+
+        def _do_create_beam(self):
+            """P283: 梁 - 6 种截面轮廓，参数按所选轮廓取默认值。"""
+            from scdm import beams as BEAMS
+            keys = list(BEAMS.PROFILES)
+            labels = [BEAMS.LABELS[k] for k in keys]
+            picked = self._ask_choice("梁", labels, 3)
+            if picked is None:
+                return
+            key = keys[labels.index(picked)]
+            names = list(BEAMS.PARAMS[key])
+            fields = [("%s mm" % n, BEAMS.DEFAULTS[key][n]) for n in names]
+            fields.append(("长度 mm", 200.0))
+            vals = self._ask_numbers(BEAMS.LABELS[key], fields)
+            if not vals:
+                return
+            ses = self.session()
+            dims = {n: vals[i] for i, n in enumerate(names)}
+            length = vals[len(names)]
+            try:
+                solid = BEAMS.beam(key, length / ses.scale,
+                                   **{k: v / ses.scale for k, v in dims.items()})
+                spec = BEAMS.spec_label(key, **dims)
+                body = ses.kdoc.add_body(solid, name=spec)
+                ses.kdoc.record_feature(body.id, "beam", profile=key,
+                                        length=length, spec=spec, **dims)
+                self._record("create.beam", profile=key, length=length, **dims)
+                if self.scene is not None and hasattr(self.scene,
+                                                      "show_beam_axis"):
+                    self.scene.show_beam_axis((0.0, 0.0, 0.0), (0.0, 0.0, 1.0),
+                                              length / ses.scale)
+                self._commit("已创建%s（长 %g mm）" % (spec, length))
+            except Exception as exc:
+                self._set_status(f"梁参数非法：{exc}")
+
         def _do_create_hole_cbore(self):
             ses = self.session()
             body, face = self._selected_face()

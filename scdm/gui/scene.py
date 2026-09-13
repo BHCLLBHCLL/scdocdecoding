@@ -961,6 +961,39 @@ class Scene:
             self._form_actor = None
             self.render()
 
+    def show_beam_axis(self, origin, axis, length, color=(0.20, 0.55, 0.85)):
+        """P283: beam axis line - annotation only.
+
+        Double guard, same as the thread/form markers: the actor is unpickable
+        and excluded from the camera fit, so a beam never wins a selection nor
+        inflates the bounds because of its axis marker.
+        """
+        n = _norm3(axis)
+        if n is None or float(length) <= 0:
+            return None
+        self.clear_beam_axis()
+        end = [float(origin[i]) + n[i] * float(length) for i in range(3)]
+        act = _lines_actor([[list(origin), end]], color, 1.4)
+        if act is None:
+            return None
+        try:
+            act.SetPickable(0)
+        except Exception:
+            pass
+        _exclude_from_bounds(act)
+        self.renderer.AddActor(act)
+        self._beam_actor = act
+        self.render()
+        return act
+
+    def clear_beam_axis(self):
+        """P283: drop the beam axis annotation (a new beam mounts its own)."""
+        act = getattr(self, "_beam_actor", None)
+        if act is not None:
+            self.renderer.RemoveActor(act)
+            self._beam_actor = None
+            self.render()
+
     def clear_thread_annotation(self):
         """R37: drop the symbolic thread actor (annotation carries no geometry)."""
         act = getattr(self, "_thread_actor", None)

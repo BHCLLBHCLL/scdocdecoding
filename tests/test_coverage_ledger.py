@@ -78,6 +78,7 @@ EXEMPT = {
     "asm.light": "GUI lightweight-display toggle",
     # placeholders / host-bound
     "prep.small": "placeholder (not live; repair.small covers the feature)",
+    "weld.symbol": "placeholder (weld symbols are metadata; no kernel routine yet)",
     "wb.publish": "GUI file dialog + JSON payload (schema mirrored by params tests)",
     "ks.render": "HOST: KeyShot integration",
     # detailing dialogs

@@ -400,6 +400,46 @@ class LightweightModeTests(unittest.TestCase):
         v._do_create_hole()
         assert scene.calls[-1][0] == "clear"
 
+    def test_p283_beam_command_creates_the_solid_and_marks_the_axis(self):
+        """R51/P283: the beam command builds the section, records the feature
+        and mounts the axis annotation (unpickable, excluded from bounds)."""
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm import beams as BEAMS
+        from scdm.kdoc import KernelDoc
+
+        class FakeScene:
+            def __init__(self):
+                self.calls = []
+
+            def show_beam_axis(self, *a):
+                self.calls.append(("axis", a))
+
+            def clear_beam_axis(self):
+                self.calls.append(("clear", None))
+
+        v = self.gui.ScdmViewer(path=None)
+        scene = FakeScene()
+        v.scene = scene
+        kdoc = KernelDoc()
+        v.session().kdoc = kdoc
+        v._commit = lambda *a, **k: None
+        v._ask_choice = lambda *a, **k: BEAMS.LABELS["i"]
+        v._ask_numbers = lambda *a, **k: [100.0, 50.0, 5.0, 7.0, 200.0]
+        v._do_create_beam()
+        assert scene.calls and scene.calls[0][0] == "axis"
+        assert abs(scene.calls[0][1][2] - 0.2) < 1e-12     # 200 mm axis line
+        assert len(kdoc.bodies) == 1
+        body = kdoc.bodies[0]
+        cf = BEAMS.closed_form("i", h=0.1, b=0.05, tw=0.005, tf=0.007)
+        want = cf["area"] * 0.2
+        assert abs(K.volume(body.shape) - want) / want < 1e-9
+        assert "工字钢" in body.name
+        feats = kdoc.feature_stack(body.id).as_dict()
+        assert feats and feats[-1]["op"] == "beam"
+        assert feats[-1]["params"]["profile"] == "i"
+
     def test_tool_manager_reason_plumbing(self):
         from scdm.tools.base import ToolManager
         msgs = []

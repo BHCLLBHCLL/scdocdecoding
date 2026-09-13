@@ -263,6 +263,16 @@ Tab("detail", "详细", "Detailing", (
             C("det.bom", "BOM", "BOM", "M5", "list"),
         )),
     )),
+    Tab("beam", "梁/焊件", "Beam", (
+        Group("截面轮廓", "Profiles", (
+            C("create.beam", "梁", "Beam", "M4", "cyl", large=True,
+              note="6 种截面：扁钢/圆钢/圆管/工字钢/T 型钢/角钢"),
+        )),
+        Group("焊件", "Weldment", (
+            C("weld.symbol", "焊接符号", "Weld Symbol", "M5", "note",
+              note="占位：焊接符号是元数据，尚未建模"),
+        )),
+    )),
     Tab("safety", "安全", "Safety", (
         Group("附加页", "Add-in", (
             C("safety.tab", "安全模块", "Safety", "M5", "fix",
@@ -345,7 +355,7 @@ M4_LIVE = {
     "create.pattern", "create.mirror", "create.shell", "create.blend",
     "create.chamfer", "create.draft", "insert.helix",
     "create.hole", "create.hole_tapped", "create.dimple", "create.louver",
-    "create.knockout",
+    "create.knockout", "create.beam",
     "create.hole_cbore",
     "create.hole_csink", "create.boss",
     "repair.stitch", "repair.solidify", "repair.gaps", "repair.missing",

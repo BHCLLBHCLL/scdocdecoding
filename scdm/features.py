@@ -47,6 +47,7 @@ _FEATURE_LABELS = {
     "dimple": "凹坑 Ø{diameter:g}×{depth:g}",
     "louver": "百叶 {length:g}×{width:g}",
     "knockout": "敲落 Ø{diameter:g}×{web_count:g}筋",
+    "beam": "梁 {spec}",
     "hole_cbore": "沉头孔 Ø{diameter:g}",
     "hole_csink": "锥沉孔 Ø{diameter:g}",
     "boss": "凸台 Ø{diameter:g}×{height:g}",
@@ -173,6 +174,14 @@ def _apply_one(shape, feature: Feature, scale: float):
         return K.boss_round(shape, face,
                             float(p.get("diameter", 6.0)) / scale,
                             float(p.get("height", 4.0)) / scale)
+    if op == "beam":
+        # P283: body-creating feature - the section is rebuilt from the params
+        # (mm), so a stack rebuilds the same beam against any base shape
+        from scdm import beams as BEAMS
+        dims = {k: float(v) / scale for k, v in p.items()
+                if k in ("h", "b", "tw", "tf", "a", "t", "d")}
+        return BEAMS.beam(p.get("profile", "i"),
+                          float(p.get("length", 200.0)) / scale, **dims)
     if op == "pull":
         face = resolve_face(shape, p.get("selector", {}))
         if face is None:

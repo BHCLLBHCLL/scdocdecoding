@@ -1431,6 +1431,55 @@ def cog(shape) -> Vec3:
     return (c.X(), c.Y(), c.Z())
 
 
+def _gprops(shape, surface: bool = False):
+    """GProp_GProps for a shape (volume by default, surface for planar faces)."""
+    o = _occ()
+    props = o["gprop"].GProp_GProps()
+    try:
+        if surface:
+            o["brepgprop"].brepgprop.SurfaceProperties(shape, props)
+        else:
+            o["brepgprop"].brepgprop.VolumeProperties(shape, props)
+    except Exception:
+        from OCC.Core.BRepGProp import (brepgprop_SurfaceProperties,
+                                        brepgprop_VolumeProperties)
+        fn = brepgprop_SurfaceProperties if surface else brepgprop_VolumeProperties
+        fn(shape, props)
+    return props
+
+
+def section_props(face) -> dict:
+    """P283: area, centroid and centroidal second moments of a PLANAR face.
+
+    Returns {"area", "cx", "cy", "ix", "iy", "j"} with ix = integral(y**2 dA),
+    iy = integral(x**2 dA) and j = ix + iy (polar).  The face is expected to lie
+    in a plane parallel to XY - that is how scdm.beams builds every section, and
+    it is what makes the beam closed forms checkable.
+    """
+    props = _gprops(face, surface=True)
+    m = props.MatrixOfInertia()
+    c = props.CentreOfMass()
+    ix, iy = m.Value(1, 1), m.Value(2, 2)
+    return {"area": props.Mass(), "cx": c.X(), "cy": c.Y(),
+            "ix": ix, "iy": iy, "j": ix + iy}
+
+
+def inertia(shape) -> dict:
+    """P283: second moments of a SOLID about its own centre of mass.
+
+    Returns {"ixx", "iyy", "izz", "ixy", "ixz", "iyz", "cog"}.  For a prismatic
+    beam of length L with section area A and centroidal moments ix/iy:
+        ixx = L*ix + A*L**3/12, iyy = L*iy + A*L**3/12, izz = L*(ix + iy)
+    which is exactly what the beam tests assert against the closed form.
+    """
+    props = _gprops(shape)
+    m = props.MatrixOfInertia()
+    c = props.CentreOfMass()
+    return {"ixx": m.Value(1, 1), "iyy": m.Value(2, 2), "izz": m.Value(3, 3),
+            "ixy": m.Value(1, 2), "ixz": m.Value(1, 3), "iyz": m.Value(2, 3),
+            "cog": (c.X(), c.Y(), c.Z())}
+
+
 def interference_volume(a, b) -> float:
     inter = common(a, b)
     return abs(volume(inter))

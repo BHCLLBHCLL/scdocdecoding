@@ -447,6 +447,26 @@ def op_boss(kdoc, opts, scale):
     return body, f"凸台 d={opts.get('diameter', 6.0)}mm"
 
 
+def op_beam(kdoc, opts, scale):
+    """P283: 梁——6 种截面轮廓沿轴拉伸（新建实体）。"""
+    from scdm import beams as BEAMS
+    key = str(opts.get("profile", "i")).lower()
+    if key not in BEAMS.PROFILES:
+        raise ValueError("梁：未知截面 %s" % opts.get("profile"))
+    dims = {}
+    for name in BEAMS.PARAMS[key]:
+        if opts.get(name) is None:
+            raise ValueError("梁：截面 %s 缺少参数 %s" % (key, name))
+        dims[name] = opts[name] / scale
+    length = opts.get("length", 200.0) / scale
+    org = tuple(float(v) / scale for v in opts.get("origin", (0.0, 0.0, 0.0)))
+    axis = tuple(float(v) for v in opts.get("axis", (0.0, 0.0, 1.0)))
+    solid = BEAMS.beam(key, length, origin=org, axis=axis, **dims)
+    spec = BEAMS.spec_label(key, **{k: v * scale for k, v in dims.items()})
+    body = kdoc.add_body(solid, name=spec)
+    return body, ("已创建%s" % spec)
+
+
 def op_insert_box(kdoc, opts, scale):
     from scdm.kdoc import KBody
     w = opts.get("w", 10.0) / scale
@@ -591,6 +611,7 @@ OPS = {
     "create.dimple": op_dimple,
     "create.louver": op_louver,
     "create.knockout": op_knockout,
+    "create.beam": op_beam,
 }
 
 
