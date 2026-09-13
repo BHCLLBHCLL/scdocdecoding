@@ -182,6 +182,8 @@ else:
             self.left.tree.setContextMenuPolicy(Qt.CustomContextMenu)
             self.left.tree.customContextMenuRequested.connect(self._tree_menu)
             self.left.layer_toggled.connect(self._on_layer_toggled)
+            # R26/P151: official part groups from the tree checkboxes
+            self.left.group_toggled.connect(self.set_import_group_visible)
             self.left.layer_assign.connect(self._on_layer_assign)
             self.left.layer_remove.connect(self._on_layer_remove)
             self.left.group_save.connect(self._on_group_save)

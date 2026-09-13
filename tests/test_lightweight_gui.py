@@ -170,6 +170,36 @@ class LightweightModeTests(unittest.TestCase):
         hints = v.show_import_group_hints()
         assert hints["ref_faces"] == 3 and hints["parts"] == 2
 
+    def test_p151_tree_group_checkbox_emits_and_toggles(self):
+        """R26/P151: the tree checkbox is wired to the part visibility."""
+        from PyQt5.QtCore import Qt
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm.kdoc import KernelDoc
+
+        v = self.gui.ScdmViewer(path=None)
+        kdoc = KernelDoc()
+        a = kdoc.add_body(K.make_box(0.01, 0.01, 0.01), name="A")
+        kdoc.import_report = {"hierarchy": [{"name": "P1", "bodies": [a.id]}]}
+        v.session().kdoc = kdoc
+        v._import_groups()
+        v._populate_structure() if hasattr(v, "_populate_structure") else None
+        gl = v.left.group_list
+        gl.clear()
+        from PyQt5.QtWidgets import QListWidgetItem
+        it = QListWidgetItem("P1")
+        it.setData(Qt.UserRole, ("group", "P1"))
+        it.setFlags(it.flags() | Qt.ItemIsUserCheckable)
+        it.setCheckState(Qt.Checked)
+        gl.addItem(it)
+        # unchecking must reach the part body (geometry identity is proven in
+        # test_p133; here we only drive the tree -> viewer -> body path)
+        it.setCheckState(Qt.Unchecked)
+        assert a.visible is False
+        it.setCheckState(Qt.Checked)
+        assert a.visible is True
+
     def test_tool_manager_reason_plumbing(self):
         from scdm.tools.base import ToolManager
         msgs = []

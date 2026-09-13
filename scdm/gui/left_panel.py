@@ -27,6 +27,7 @@ class LeftPanel(QWidget):
     tree_clicked = pyqtSignal(object)  # QTreeWidgetItem
     tree_checked = pyqtSignal(object, int)
     layer_toggled = pyqtSignal(str, bool)
+    group_toggled = pyqtSignal(str, bool)   # R26/P151: official/part group shown or hidden
     layer_assign = pyqtSignal(str)   # create layer from current selection
     layer_remove = pyqtSignal(str)
     group_save = pyqtSignal()
@@ -81,6 +82,8 @@ class LeftPanel(QWidget):
         self.group_save_btn.clicked.connect(self.group_save.emit)
         gv.addWidget(self.group_save_btn)
         self.group_list = QListWidget()
+        self._block_group = False
+        self.group_list.itemChanged.connect(self._on_group_item)
         self.group_list.itemClicked.connect(
             lambda it: self.group_clicked.emit(it.text()))
         gv.addWidget(self.group_list)
@@ -431,8 +434,17 @@ class LeftPanel(QWidget):
         self._block_layer = False
 
         self.group_list.clear()
+        self._block_group = True
         for g in getattr(session.kdoc, "groups", []) if session.kdoc else []:
-            self.group_list.addItem(f"{g['name']}（{len(g['items'])}）")
+            it = QListWidgetItem(f"{g['name']}（{len(g['items'])}）")
+            it.setData(Qt.UserRole, ("group", g["name"]))
+            # R26/P151: official part groups carry a checkbox; the layer pattern
+            # is reused (block the signal while repopulating)
+            if g.get("imported"):
+                it.setFlags(it.flags() | Qt.ItemIsUserCheckable)
+                it.setCheckState(Qt.Checked)
+            self.group_list.addItem(it)
+        self._block_group = False
         if not self.group_list.count():
             self.group_list.addItem("（尚无群组）")
         self._populate_views(session)
@@ -443,6 +455,15 @@ class LeftPanel(QWidget):
             self.view_list.addItem(QListWidgetItem(label))
         for sv in getattr(session, "saved_views", []) or []:
             self.view_list.addItem(QListWidgetItem(sv["name"]))
+
+    def _on_group_item(self, item):
+        """R26/P151: a part-group checkbox toggled -> tell the viewer."""
+        if getattr(self, "_block_group", False):
+            return
+        data = item.data(Qt.UserRole)
+        if data and isinstance(data, tuple) and data[0] == "group":
+            self.group_toggled.emit(data[1],
+                                    item.checkState() == Qt.Checked)
 
     def _on_layer_item(self, item, col):
         if getattr(self, "_block_layer", False):
