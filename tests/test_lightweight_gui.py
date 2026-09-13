@@ -408,6 +408,48 @@ class LightweightModeTests(unittest.TestCase):
             shutil.rmtree(tmp, ignore_errors=True)
         assert '见明细' in body and 'class="note"' in body
 
+    def test_p303_junction_command_forms_and_marks(self):
+        """R56/P303: the junction command cuts the triangular release, records
+        the feature and mounts the rim marker."""
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm.kdoc import KernelDoc
+
+        class FakeScene:
+            def __init__(self):
+                self.calls = []
+
+            def show_form_marker(self, *a):
+                self.calls.append(("mark", a))
+
+            def clear_form_marker(self):
+                self.calls.append(("clear", None))
+
+        v = self.gui.ScdmViewer(path=None)
+        scene = FakeScene()
+        v.scene = scene
+        kdoc = KernelDoc()
+        box = K.make_box(0.02, 0.02, 0.002)
+        body = kdoc.add_body(box, name="B")
+        v.session().kdoc = kdoc
+        face = [f for f in K.explore(box, "face")
+                if K.face_normal_center(f)[0][2] > 0.99][0]
+        v._selected_face = lambda: (body, face)
+        v._commit = lambda *a, **k: None
+        v._ask_choice = lambda *a, **k: "释放（三角缺口）"
+        v._ask_numbers = lambda *a, **k: [4.0]
+
+        v0 = K.volume(body.shape)
+        v._do_sheet_junction()
+        assert scene.calls and scene.calls[0][0] == "mark"
+        got = v0 - K.volume(body.shape)
+        want = 0.004 ** 2 / 2.0 * 0.002
+        assert abs(got - want) / want < 1e-9
+        feats = kdoc.feature_stack(body.id).as_dict()
+        assert feats[-1]["op"] == "junction"
+        assert feats[-1]["params"]["mode"] == "release"
+
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""
         from scdm import kernel as K

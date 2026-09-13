@@ -51,6 +51,7 @@ _FEATURE_LABELS = {
     "beam_polyline": "折线梁 {spec} 段{index}/{count}",
     "gusset": "角撑 {length:g}×{height:g}×{thickness:g}",
     "tab": "舌片 {length:g}×{width:g}×{height:g}",
+    "junction": "接缝 {mode} {size:g}",
     "hole_cbore": "沉头孔 Ø{diameter:g}",
     "hole_csink": "锥沉孔 Ø{diameter:g}",
     "boss": "凸台 Ø{diameter:g}×{height:g}",
@@ -180,6 +181,15 @@ def _apply_one(shape, feature: Feature, scale: float):
                      float(p.get("length", 5.0)) / scale,
                      float(p.get("width", 3.0)) / scale,
                      float(p.get("height", 1.0)) / scale)
+    if op == "junction":
+        # P303: sheet-metal junction relief / bridge at a face corner
+        face = resolve_face(shape, p.get("selector", {}))
+        if face is None:
+            return shape
+        w = p.get("width")
+        return K.junction(shape, face, float(p.get("size", 4.0)) / scale,
+                          mode=p.get("mode", "release"),
+                          width=(None if w is None else float(w) / scale))
     if op == "dimple":
         # R40/P223: forming feature - same face flow, dimple validation
         face = resolve_face(shape, p.get("selector", {}))

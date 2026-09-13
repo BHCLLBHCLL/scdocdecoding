@@ -1251,6 +1251,75 @@ def tab(solid, face, length: float, width: float, height: float,
                              tuple(n[i] * height for i in range(3))))
 
 
+def junction(solid, face, size: float, mode: str = "release",
+             width: Optional[float] = None, origin: Optional[Vec3] = None):
+    """P303: 钣金接缝——两折弯相交处的释放（三角）/ 接缝（矩形）/ 连接（搭接加料）。
+
+    Geometry lives in the face plane (the (u, v) frame) at the face corner
+    (u_min, v_min) and acts through the sheet thickness t measured along the
+    face normal (as in louver/knockout):
+
+        release  cut a right triangle (legs size)      -> removed = size**2/2 * t
+        seam     cut a rectangle (size x width)       -> removed = size*width * t
+        connect  fuse a rectangle patch (size x width)-> added   = size*width * t
+
+    The face-frame route is used instead of the bbox-clamped rip heuristic
+    because it is what makes the removed/added volume exactly decidable.
+    """
+    key = str(mode).lower()
+    if key not in ("release", "seam", "connect"):
+        raise KernelError("接缝模式未知：%s（可选 release/seam/connect）" % mode)
+    size = float(size)
+    if size <= 0:
+        raise KernelError("接缝尺寸必须为正")
+    if key in ("seam", "connect"):
+        if width is None or float(width) <= 0:
+            raise KernelError("接缝宽度必须为正")
+        width = float(width)
+    n, base, u, v = _face_uv(face, origin)
+    lo_u, hi_u, lo_v, hi_v = _face_span(face, u, v)
+    # the junction sits at the face corner (u_min, v_min) - the spot where two
+    # bends meet.  It must stop short of the opposite edges: a tool face exactly
+    # on the far boundary makes the boolean degenerate (measured: half the
+    # triangle disappeared), so the bound is strict.
+    if size >= (hi_u - lo_u) - 1e-9:
+        raise KernelError("接缝尺寸必须小于面跨度（贴到对边会退化）")
+    need_v = size if key == "release" else width
+    if need_v >= (hi_v - lo_v) - 1e-9:
+        raise KernelError("接缝尺寸必须小于面跨度（贴到对边会退化）")
+    bu = sum(base[i] * u[i] for i in range(3))
+    bv = sum(base[i] * v[i] for i in range(3))
+    du0, dv0 = lo_u - bu, lo_v - bv          # base is the face centre: move to
+                                             # the corner before placing
+    def at(du, dv):
+        return tuple(base[i] + u[i] * (du0 + du) + v[i] * (dv0 + dv)
+                     for i in range(3))
+
+    if key == "release":
+        poly = [at(0.0, 0.0), at(size, 0.0), at(0.0, size)]
+    else:
+        poly = [at(0.0, 0.0), at(size, 0.0), at(size, width), at(0.0, width)]
+    lo, hi = _vertex_bbox(solid)
+    corners = [(x, y, z) for x in (lo[0], hi[0]) for y in (lo[1], hi[1])
+               for z in (lo[2], hi[2])]
+    d_pos = max(sum((c[i] - base[i]) * n[i] for i in range(3)) for c in corners)
+    d_neg = max(sum((base[i] - c[i]) * n[i] for i in range(3)) for c in corners)
+    if key == "connect":
+        # a patch of the SAME plate thickness sitting on the face (like the
+        # louver lip): it never overlaps the sheet, so the added volume is the
+        # plain closed form
+        plate = prism(face_from_polygon(poly),
+                      tuple(n[i] * (d_neg + d_pos) for i in range(3)))
+        return fuse(solid, plate)
+    # cut: the tool must clear both sheet faces
+    margin = 1e-6
+    tool_poly = [tuple(p[i] - n[i] * (d_neg + margin) for i in range(3))
+                 for p in poly]
+    tool = prism(face_from_polygon(tool_poly),
+                 tuple(n[i] * (d_neg + d_pos + 2.0 * margin) for i in range(3)))
+    return cut(solid, tool)
+
+
 def dimple_round(solid, face, diameter: float, depth: float,
                 origin: Optional[Vec3] = None):
     """P218: 圆形凹坑（成形族）。

@@ -1667,6 +1667,49 @@ else:
             vals = self._ask_numbers(title, fields)
             return vals
 
+        def _do_sheet_junction(self):
+            """P303: 钣金接缝 - 释放/接缝/连接（面角处，贯穿板厚）。"""
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("接缝：请先选择一个平面")
+                return
+            modes = ["release", "seam", "connect"]
+            labels = {"release": "释放（三角缺口）", "seam": "接缝（矩形缺口）",
+                      "connect": "连接（矩形搭接）"}
+            picked = self._ask_choice("接缝", [labels[m] for m in modes], 0)
+            if picked is None:
+                return
+            mode = modes[[labels[m] for m in modes].index(picked)]
+            fields = [("尺寸 mm", 4.0)]
+            if mode in ("seam", "connect"):
+                fields.append(("宽度 mm", 1.0))
+            vals = self._ask_numbers("接缝 %s" % labels[mode], fields)
+            if not vals:
+                return
+            try:
+                from scdm import features as FEAT
+                sel = FEAT.selector_for(body.shape, face)
+                width = vals[1] if len(vals) > 1 else None
+                body.shape = K.junction(body.shape, face, vals[0] / ses.scale,
+                                        mode=mode,
+                                        width=(None if width is None
+                                               else width / ses.scale))
+                ses.kdoc.record_feature(body.id, "junction", selector=sel,
+                                        mode=mode, size=vals[0], width=width)
+                self._record("sheet.junction", mode=mode, size=vals[0],
+                             width=width)
+                if self.scene is not None and hasattr(
+                        self.scene, "show_form_marker"):
+                    n3, c3 = K.face_normal_center(face)
+                    lo, hi = K._vertex_bbox(body.shape)
+                    self.scene.show_form_marker(tuple(c3),
+                                                (-n3[0], -n3[1], -n3[2]),
+                                                vals[0] / ses.scale, 0.0)
+                self._commit("已创建接缝 %s %g" % (mode, vals[0]))
+            except Exception as exc:
+                self._set_status(f"接缝参数非法：{exc}")
+
         def _do_sheet_bend(self):
             ses = self.session()
             vals = self._sheet_params("折弯（K 因子）", [

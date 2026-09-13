@@ -549,6 +549,23 @@ def op_insert_box(kdoc, opts, scale):
     return body, f"已创建盒体 {name}"
 
 
+def op_sheet_junction(kdoc, opts, scale):
+    """P303: 钣金接缝——释放（三角缺口）/ 接缝（矩形缺口）/ 连接（矩形搭接）。"""
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("接缝：实体不存在")
+    faces = K.explore(body.shape, "face")
+    fi = opts.get("face_i", 0)
+    if not (0 <= fi < len(faces)):
+        raise ValueError("接缝：面序号越界")
+    mode = str(opts.get("mode", "release"))
+    width = opts.get("width")
+    body.shape = K.junction(body.shape, faces[fi],
+                            opts.get("size", 4.0) / scale, mode=mode,
+                            width=(None if width is None else width / scale))
+    return body, ("接缝 %s %g" % (mode, opts.get("size", 4.0)))
+
+
 def op_sheet_bend(kdoc, opts, scale):
     from scdm import sheetmetal as SM
     import math
@@ -686,6 +703,7 @@ OPS = {
     "create.beam_polyline": op_beam_polyline,
     "create.gusset": op_gusset,
     "create.tab": op_tab,
+    "sheet.junction": op_sheet_junction,
 }
 
 

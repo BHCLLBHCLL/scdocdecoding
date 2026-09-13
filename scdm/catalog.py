@@ -250,6 +250,8 @@ TABS: Tuple[Tab, ...] = (
             C("sheet.jog", "折叠", "Jog", "M5", "jog"),
             C("sheet.hem", "卷边", "Hem", "M5", "bend"),
             C("sheet.bead", "加强筋", "Bead", "M5", "jog"),
+            C("sheet.junction", "接缝", "Junction", "M5", "corner",
+              note="释放（三角）/ 接缝（矩形）/ 连接（搭接）"),
             C("sheet.flat", "展开图", "Flat Pattern", "M5", "unfold"),
         )),
     )),
@@ -374,7 +376,7 @@ M4_LIVE = {
 
 M5_LIVE = {
     "sheet.bend", "sheet.unfold", "sheet.rip", "sheet.corner", "sheet.jog",
-    "sheet.hem", "sheet.bead", "sheet.flat",
+    "sheet.hem", "sheet.bead", "sheet.flat", "sheet.junction",
     "surface.thicken", "surface.offset", "surface.untrim", "surface.extend",
     "surface.patch", "surface.blend",
     "sim.load", "sim.support", "sim.contact", "sim.report",
