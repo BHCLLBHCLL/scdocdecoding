@@ -9,8 +9,8 @@
   "dropped": 0,
   "faces": 109,
   "faces_detail": [],
-  "free_edges": 36,
-  "free_loops": 4,
+  "free_edges": 0,
+  "free_loops": 0,
   "other_unbuilt": {},
   "paths": {
    "none": 0,
@@ -949,8 +949,8 @@
     "tried": ""
    }
   ],
-  "free_edges": 385,
-  "free_loops": 94,
+  "free_edges": 375,
+  "free_loops": 86,
   "other_unbuilt": {},
   "paths": {
    "none": 27,
@@ -1360,8 +1360,8 @@
     "tried": ""
    }
   ],
-  "free_edges": 1393,
-  "free_loops": 372,
+  "free_edges": 1272,
+  "free_loops": 359,
   "other_unbuilt": {},
   "paths": {
    "none": 1,
@@ -1536,7 +1536,7 @@
   "dropped": 0,
   "faces": 28,
   "faces_detail": [],
-  "free_edges": 2,
+  "free_edges": 3,
   "free_loops": 2,
   "other_unbuilt": {},
   "paths": {

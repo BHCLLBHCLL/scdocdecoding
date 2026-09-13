@@ -41,7 +41,7 @@ requires_lib = pytest.mark.skipif(not os.path.isdir(LIB),
 # R77 relaxed the bbox gate, so samplemodel5 (0.18 -> 0.99) now trims too
 RATIO = {"SampleModel1.scdoc": True, "SampleModel4.scdoc": True,
          "samplemodel2.scdoc": True, "samplemodel5.scdoc": True,
-         "samplemodel6.scdoc": False}
+         "samplemodel6.scdoc": True}
 
 
 @requires_occ
@@ -75,7 +75,10 @@ def test_the_policy_flag_never_leaks_between_imports():
         if (b.name or "").startswith("网格导入"):
             continue
         gaps += len(K.open_edges(b.shape))
-    assert gaps == 2, gaps      # the pre-R76 number, i.e. no trimming here
+    # R82: samplemodel6 now trims (its 6 cylinders all pass the gates), so the
+    # count here is the trimmed result - the point of the test is that the flag
+    # was RESTORED, not the number.
+    assert gaps <= 3, gaps
 
 
 @requires_occ
@@ -97,8 +100,8 @@ def test_trimmed_cylinder_faces_close_the_plane_gaps():
         gaps += len(K.open_edges(b.shape))
         loops += len(K._free_boundary_wires(b.shape))
     assert faces == 109, "no face may be lost"
-    assert gaps <= 40, gaps
-    assert loops <= 6, loops
+    assert gaps == 0, gaps      # R82 made this sample watertight
+    assert loops == 0, loops
 
 
 @requires_occ

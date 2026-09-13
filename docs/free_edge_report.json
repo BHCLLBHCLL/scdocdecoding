@@ -1,77 +1,67 @@
 [
  {
-  "curve": {
-   "ellipse": 32,
-   "line": 4
-  },
-  "edges": 36,
-  "ends": {
-   "chain": 4,
-   "half": 24,
-   "isolated": 8
-  },
-  "gaps": 36,
-  "len_max": 0.005591479790136051,
-  "len_median": 0.0034754250828501645,
+  "curve": {},
+  "edges": 0,
+  "ends": {},
+  "gaps": 0,
+  "len_max": 0.0,
+  "len_median": 0.0,
   "sample": "SampleModel1.scdoc",
   "seams": 0,
-  "surf": {
-   "cylinder": 24,
-   "plane": 12
-  },
+  "surf": {},
   "tiny": 0
  },
  {
   "curve": {
-   "bspline": 90,
-   "circle": 93,
-   "ellipse": 33,
-   "line": 187
+   "bspline": 91,
+   "circle": 87,
+   "ellipse": 30,
+   "line": 185
   },
-  "edges": 403,
+  "edges": 393,
   "ends": {
-   "chain": 373,
-   "half": 26,
+   "chain": 365,
+   "half": 24,
    "isolated": 4
   },
-  "gaps": 385,
+  "gaps": 375,
   "len_max": 0.3165344176003813,
-  "len_median": 0.0068031988710816746,
+  "len_median": 0.006801361596902171,
   "sample": "SampleModel4.scdoc",
   "seams": 18,
   "surf": {
    "bspline": 55,
    "cone": 5,
-   "cylinder": 50,
-   "plane": 204,
+   "cylinder": 44,
+   "plane": 200,
    "torus": 89
   },
   "tiny": 0
  },
  {
   "curve": {
-   "bspline": 119,
-   "circle": 355,
-   "ellipse": 564,
+   "bspline": 100,
+   "circle": 323,
+   "ellipse": 540,
    "hyperbola": 100,
-   "line": 289
+   "line": 243
   },
-  "edges": 1427,
+  "edges": 1306,
   "ends": {
-   "chain": 1227,
-   "half": 149,
+   "chain": 1104,
+   "half": 151,
    "isolated": 51
   },
-  "gaps": 1393,
+  "gaps": 1272,
   "len_max": 3.285123765844859,
-  "len_median": 0.06874663899254707,
+  "len_median": 0.0687466389921477,
   "sample": "samplemodel2.scdoc",
   "seams": 34,
   "surf": {
    "bspline": 4,
    "cone": 176,
-   "cylinder": 678,
-   "plane": 362,
+   "cylinder": 602,
+   "plane": 317,
    "sphere": 96,
    "torus": 111
   },
@@ -103,20 +93,19 @@
  },
  {
   "curve": {
-   "circle": 1,
-   "ellipse": 1
+   "ellipse": 3
   },
-  "edges": 2,
+  "edges": 3,
   "ends": {
-   "chain": 2
+   "chain": 3
   },
-  "gaps": 2,
+  "gaps": 3,
   "len_max": 0.3128689300804618,
-  "len_median": 0.3128689300804618,
+  "len_median": 0.15691819145569197,
   "sample": "samplemodel6.scdoc",
   "seams": 0,
   "surf": {
-   "cylinder": 1,
+   "cylinder": 2,
    "plane": 1
   },
   "tiny": 0

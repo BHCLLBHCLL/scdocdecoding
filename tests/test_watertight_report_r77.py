@@ -31,9 +31,9 @@ requires_lib = pytest.mark.skipif(not os.path.isdir(LIB),
 
 # sample -> (cylinders, trimmable at the relaxed gate)
 TRIMMABLE = {
-    "SampleModel1.scdoc": (38, 33),
-    "samplemodel5.scdoc": (132, 131),
-    "samplemodel6.scdoc": (6, 0),
+    "SampleModel1.scdoc": (38, 38),
+    "samplemodel5.scdoc": (132, 132),
+    "samplemodel6.scdoc": (6, 6),
 }
 
 
@@ -74,7 +74,8 @@ def test_watertightness_is_in_the_import_report():
     kdoc = import_sab.import_scdoc_bundle(
         load_scdoc(os.path.join(LIB, "SampleModel1.scdoc")))
     rep = kdoc.import_report
-    assert (rep["open_edges"], rep["seam_edges"], rep["free_loops"]) == (36, 0, 4)
+    # R82 repaired the last trims: SampleModel1 is now a CLOSED shell
+    assert (rep["open_edges"], rep["seam_edges"], rep["free_loops"]) == (0, 0, 0)
     assert rep["parts"] == 1                     # existing keys untouched
 
 

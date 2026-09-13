@@ -37,10 +37,10 @@ requires_lib = pytest.mark.skipif(not os.path.isdir(LIB),
 
 # free / seams / gaps - re-measured after R76's cylinder trim policy
 MEASURED = {
-    "SampleModel1.scdoc": (36, 0, 36),
-    "SampleModel4.scdoc": (403, 18, 385),
-    "samplemodel2.scdoc": (1427, 34, 1393),
-    "samplemodel6.scdoc": (2, 0, 2),
+    "SampleModel1.scdoc": (0, 0, 0),
+    "SampleModel4.scdoc": (393, 18, 375),
+    "samplemodel2.scdoc": (1306, 34, 1272),
+    "samplemodel6.scdoc": (3, 0, 3),
 }
 
 
@@ -108,5 +108,6 @@ def test_edge_face_counts_survive_the_call():
     body = [b for b in kdoc.bodies
             if not (b.name or "").startswith("网格导入")][0]
     hist = Counter(n for (_e, n, _f) in K.edge_face_counts(body.shape))
-    # R76 trimmed 20 of the 56 free edges away; a dangling view would give {}
-    assert hist == {1: 36, 2: 294}, hist
+    # R82 made SampleModel1 watertight: every edge is shared twice.  A dangling
+    # view (the R75 bug) would give an EMPTY counter, so the sum matters.
+    assert sum(hist.values()) == 306 and hist.get(1, 0) == 0, hist

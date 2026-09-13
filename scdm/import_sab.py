@@ -1266,6 +1266,45 @@ def _planar_face_from_wires(model, face_ent, plane_ent):
         return None
 
 
+def _trim_fix_candidates(face):
+    """Repair candidates for a freshly built trimmed face, in R82's measured
+    order of preference (least invasive first):
+
+      V2  ShapeFix_Face + FixOrientation + FixMissingSeam   (recovers 160/216)
+      V3  ShapeFix_Shape                                     (recovers 165/216)
+      V5  ShapeFix_Face at 1e-4 precision                    (recovers 16/16 on
+          SampleModel1 and 161/216 on samplemodel2)
+
+    Measured with _tmp/r82_probe1.py; the caller still applies the geometric
+    gates, so a candidate that only *looks* valid is rejected there.
+    """
+    from OCC.Core.ShapeFix import ShapeFix_Face, ShapeFix_Shape
+
+    try:
+        fix = ShapeFix_Face(face)
+        fix.SetPrecision(1e-6)
+        fix.FixOrientation()
+        fix.FixMissingSeam()
+        fix.Perform()
+        yield "V2", fix.Face()
+    except Exception:
+        pass
+    try:
+        sfs = ShapeFix_Shape(face)
+        sfs.SetPrecision(1e-6)
+        sfs.Perform()
+        yield "V3", sfs.Shape()
+    except Exception:
+        pass
+    try:
+        fix = ShapeFix_Face(face)
+        fix.SetPrecision(1e-4)
+        fix.FixOrientation()
+        fix.Perform()
+        yield "V5", fix.Face()
+    except Exception:
+        pass
+
 def _trimmed_face(model, face_ent, surf, box=None):
     """The surface trimmed by the face's OWN loop curves, or None (R76/P375).
 
@@ -1322,22 +1361,34 @@ def _trimmed_face(model, face_ent, surf, box=None):
             mf.Add(w)
         if not mf.IsDone():
             return None
-        fix = ShapeFix_Face(mf.Face())
-        fix.SetPrecision(tol)
-        fix.FixOrientation()
-        fix.Perform()
-        face = fix.Face()
+        built = mf.Face()
     except Exception:
         return None
+    # R82: try the measured repair candidates in order and take the first one
+    # that passes ALL the geometric gates below.
+    for _label, face in _trim_fix_candidates(built):
+        if _trim_gates_ok(face, face_ent, box):
+            return face
+    return None
+
+
+def _trim_gates_ok(face, face_ent, box=None) -> bool:
+    """valid + area > 0 + inside the model + no gross overshoot (R76/R82).
+
+    Gross overshoot = beyond the face's own point bbox by more than one full
+    diagonal; the bbox is chord based, so a curved patch legitimately bulges.
+    """
+    from OCC.Core.BRepCheck import BRepCheck_Analyzer
+
     if not BRepCheck_Analyzer(face).IsValid():
-        return None
+        return False
     try:
         if K.area(face) <= 0.0:
-            return None
+            return False
     except Exception:
-        return None
+        return False
     if box is not None and not _shape_within(face, box, 0.5):
-        return None
+        return False
     # Gross-overshoot gate, the same scale-free rule the arc branch uses (R74):
     # a face's point bbox is CHORD based, so a legitimately curved patch can
     # reach outside it - rejecting at 5% of the diagonal cost SampleModel1 two
@@ -1348,8 +1399,8 @@ def _trimmed_face(model, face_ent, surf, box=None):
         gap = _bbox_gap(face, fbox, accurate=False)
         diag = sum((fbox[1][i] - fbox[0][i]) ** 2 for i in range(3)) ** 0.5
         if gap is None or gap > diag + 1e-9:
-            return None
-    return face
+            return False
+    return True
 
 def _cylinder_surface(surf_ent):
     """Geom_CylindricalSurface for a cone record with a zero semi-angle (R76).
