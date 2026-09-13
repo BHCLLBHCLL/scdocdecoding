@@ -206,7 +206,7 @@ def test_ref_counters_are_per_import_not_per_process():
 
     first = import_sab.import_scdoc_bundle(
         load_scdoc(os.path.join(LIB, "SampleModel4.scdoc")))
-    assert first.import_report["ref_unbuilt"] == 33
+    assert first.import_report["ref_unbuilt"] == 31
     second = import_sab.import_scdoc_bundle(
         load_scdoc(os.path.join(LIB, "samplemodel6.scdoc")))
     assert second.import_report["ref_unbuilt"] == 0

@@ -462,6 +462,18 @@ class SabModel:
                                             for j in range(k, k + 3))
                                       for k in range(i, i + 3 * n3, 3)]
                         e.bs_deg = sum(mt) - n3 + 1
+                    elif rest % 3 == 1 and rest >= 4:
+                        # R78: some official 3D nubs carry a trailing double
+                        # after the poles - measured on samplemodel2 as 1e-05,
+                        # i.e. the fit tolerance.  The poles are the leading
+                        # rest-1 tokens; without this the record looks like
+                        # "nubs without poles" and 287 edges stay undecodable
+                        # (66 poles, sum(mults) 68 -> degree 3).
+                        n3 = (rest - 1) // 3
+                        e.bs_poles = [tuple(rec.tokens[j].value
+                                            for j in range(k, k + 3))
+                                      for k in range(i, i + 3 * n3, 3)]
+                        e.bs_deg = sum(mt) - n3 + 1
                     if rest % 2 == 0 and rest >= 2:
                         n2 = (rest - 2) // 2  # 2D carries a 2-double tail
                         if n2 > 0:

@@ -1032,16 +1032,27 @@ def _edge_curve(model, edge_ent, face_ent=None):
             pts = TColgp_Array1OfPnt(1, npoles)
             for i, p in enumerate(nubs.bs_poles):
                 pts.SetValue(i + 1, gp_Pnt(*p))
+            # R78: ACIS pre-decrements the END multiplicities (same convention
+            # as the surface 'both' payload, where the surface path already
+            # adds them back).  Handing the raw mults to OCCT makes the
+            # constructor throw "Poles and degree mismatch" - swallowed by the
+            # except below, which is why 287 edges of samplemodel2 read as
+            # "nubs without poles" even after the trailing-double fix.
+            raw = list(nubs.bs_mults)
+            mults = ([raw[0] + 1] + raw[1:-1] + [raw[-1] + 1]) if len(raw) > 2 else raw
             nk = len(nubs.bs_knots)
             ku = TColStd_Array1OfReal(1, nk)
             mu = TColStd_Array1OfInteger(1, nk)
-            for i, (k, m) in enumerate(zip(nubs.bs_knots, nubs.bs_mults)):
+            for i, (k, m) in enumerate(zip(nubs.bs_knots, mults)):
                 ku.SetValue(i + 1, k)
                 mu.SetValue(i + 1, m)
             bs = Geom_BSplineCurve(pts, ku, mu, deg)
+            # the recorded pstart/pend are in the same units as the knots
             lo, hi = bs.FirstParameter(), bs.LastParameter()
-            return Geom_TrimmedCurve(bs, min(t0, t1, lo, hi)
-                                     if False else lo, hi)
+            a0, a1 = sorted((max(lo, min(t0, t1)), min(hi, max(t0, t1))))
+            if a1 - a0 < 1e-12:
+                a0, a1 = lo, hi
+            return Geom_TrimmedCurve(bs, a0, a1)
     except Exception:
         return None
     return None

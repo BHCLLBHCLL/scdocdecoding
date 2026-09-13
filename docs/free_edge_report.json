@@ -23,55 +23,55 @@
  },
  {
   "curve": {
-   "bspline": 87,
+   "bspline": 88,
    "circle": 98,
    "ellipse": 32,
-   "line": 188
+   "line": 168
   },
-  "edges": 405,
+  "edges": 386,
   "ends": {
-   "chain": 384,
-   "half": 15,
-   "isolated": 6
+   "chain": 358,
+   "half": 23,
+   "isolated": 5
   },
-  "gaps": 387,
+  "gaps": 368,
   "len_max": 0.3165344176003813,
-  "len_median": 0.004398636330405752,
+  "len_median": 0.005768917366541152,
   "sample": "SampleModel4.scdoc",
   "seams": 18,
   "surf": {
-   "bspline": 56,
+   "bspline": 55,
    "cone": 5,
    "cylinder": 58,
-   "plane": 199,
+   "plane": 181,
    "torus": 87
   },
   "tiny": 0
  },
  {
   "curve": {
-   "bspline": 10,
-   "circle": 557,
-   "ellipse": 661,
+   "bspline": 111,
+   "circle": 373,
+   "ellipse": 570,
    "hyperbola": 100,
-   "line": 659
+   "line": 340
   },
-  "edges": 1987,
+  "edges": 1494,
   "ends": {
-   "chain": 1728,
-   "half": 203,
-   "isolated": 56
+   "chain": 1293,
+   "half": 149,
+   "isolated": 52
   },
-  "gaps": 1953,
+  "gaps": 1460,
   "len_max": 3.285123765844859,
-  "len_median": 0.0687466389921477,
+  "len_median": 0.06479185340220252,
   "sample": "samplemodel2.scdoc",
   "seams": 34,
   "surf": {
    "bspline": 4,
    "cone": 176,
-   "cylinder": 1016,
-   "plane": 584,
+   "cylinder": 709,
+   "plane": 398,
    "sphere": 96,
    "torus": 111
   },
