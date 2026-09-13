@@ -418,6 +418,49 @@ else:
             except Exception:
                 pass
 
+        def _import_groups(self):
+            """R25/P145: read-only official part groups of the current session."""
+            kdoc = getattr(self.session(), "kdoc", None)
+            if kdoc is None:
+                return []
+            from scdm.import_sab import import_hierarchy_groups
+            if not any(g.get("imported") for g in kdoc.groups):
+                kdoc.groups.extend(import_hierarchy_groups(kdoc))
+            return [g for g in kdoc.groups if g.get("imported")]
+
+        def set_import_group_visible(self, name, visible=True):
+            """R25/P145: tree checkbox handler - show/hide one official part."""
+            from scdm.import_sab import apply_group_visibility
+            ses = self.session()
+            for g in self._import_groups():
+                if g.get("name") == name:
+                    n = apply_group_visibility(ses.kdoc, g, visible)
+                    if self.scene:
+                        self.scene.apply_visibility(ses)
+                    self._set_status("%s %s（%d 个体）" % (name, "显示" if visible else "隐藏", n))
+                    return n
+            return 0
+
+        def isolate_import_group(self, name):
+            """R25/P145: show ONLY this official part (isolation)."""
+            from scdm.import_sab import isolate_group
+            ses = self.session()
+            for g in self._import_groups():
+                if g.get("name") == name:
+                    n = isolate_group(ses.kdoc, g)
+                    if self.scene:
+                        self.scene.apply_visibility(ses)
+                    self._set_status("隔离 %s（%d 个体）" % (name, n))
+                    return n
+            return 0
+
+        def show_import_group_hints(self):
+            """R25/P145: per-part degradation hints for the tree (ref faces etc)."""
+            report = dict(getattr(self.session().kdoc, "import_report", None) or {})
+            refs = report.get("ref_faces") or 0
+            unbuilt = report.get("unbuilt_faces") or 0
+            return {"ref_faces": refs, "unbuilt_faces": unbuilt,
+                    "parts": len(self._import_groups())}
         def _session_from_cad(self, path: str) -> Session:
             if not K.available():
                 raise RuntimeError("打开 STEP/SCDM 需要 pythonocc-core")

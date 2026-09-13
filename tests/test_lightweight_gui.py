@@ -146,6 +146,30 @@ class LightweightModeTests(unittest.TestCase):
         assert '尺寸' in msg or '请先选择' in msg, msg
         assert S.SheetCanvas is not None and S.SheetDialog is not None
 
+    def test_p145_official_parts_toggle_and_isolate(self):
+        """R25/P145: the viewer binds part groups to visibility + isolate."""
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm.kdoc import KernelDoc
+
+        v = self.gui.ScdmViewer(path=None)
+        kdoc = KernelDoc()
+        a = kdoc.add_body(K.make_box(0.01, 0.01, 0.01), name="A")
+        b = kdoc.add_body(K.make_box(0.01, 0.01, 0.01), name="B")
+        kdoc.import_report = {"hierarchy": [{"name": "P1", "bodies": [a.id]},
+                                            {"name": "P2", "bodies": [b.id]}],
+                              "ref_faces": 3, "unbuilt_faces": 1}
+        v.session().kdoc = kdoc
+
+        assert [g["name"] for g in v._import_groups()] == ["P1", "P2"]
+        assert v.set_import_group_visible("P1", False) == 1
+        assert a.visible is False and b.visible is True
+        assert v.isolate_import_group("P2") == 1
+        assert a.visible is False and b.visible is True
+        hints = v.show_import_group_hints()
+        assert hints["ref_faces"] == 3 and hints["parts"] == 2
+
     def test_tool_manager_reason_plumbing(self):
         from scdm.tools.base import ToolManager
         msgs = []
