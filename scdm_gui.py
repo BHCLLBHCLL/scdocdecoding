@@ -1240,6 +1240,33 @@ else:
             except Exception as exc:
                 self._set_status(f"孔失败: {exc}")
 
+        def _do_create_hole_tapped(self):
+            """P205/R35: 攻丝孔 - cut at the TAP DRILL, keep nominal/pitch."""
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("攻丝孔：请先选择一个平面")
+                return
+            vals = self._ask_numbers("攻丝孔", [("公称直径 mm", 6.0),
+                                               ("螺距 mm", 1.0),
+                                               ("深度 mm（0 = 通孔）", 0.0)])
+            if not vals:
+                return
+            try:
+                from scdm import features as FEAT
+                sel = FEAT.selector_for(body.shape, face)
+                depth = None if vals[2] <= 0 else vals[2] / ses.scale
+                body.shape = K.hole_tapped(body.shape, face,
+                                           vals[0] / ses.scale,
+                                           vals[1] / ses.scale, depth=depth)
+                ses.kdoc.record_feature(body.id, "hole_tapped", selector=sel,
+                                        nominal=vals[0], pitch=vals[1],
+                                        depth=vals[2])
+                self._record("create.hole_tapped", nominal=vals[0],
+                             pitch=vals[1], depth=vals[2])
+                self._commit("已创建攻丝孔 M%g×%g" % (vals[0], vals[1]))
+            except Exception as exc:
+                self._set_status(f"攻丝孔参数非法：{exc}")
         def _do_create_hole_cbore(self):
             ses = self.session()
             body, face = self._selected_face()

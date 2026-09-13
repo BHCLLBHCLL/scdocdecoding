@@ -223,6 +223,38 @@ class LightweightModeTests(unittest.TestCase):
         assert v.show_all_import_groups() == 2
         assert a.visible is True and b.visible is True
 
+    def test_p205_tapped_hole_command(self):
+        """R35/P205: the command cuts the tap drill and rejects bad threads."""
+        import math
+        from scdm import kernel as K
+        if not K.available():
+            self.skipTest("OCC not installed")
+        from scdm.kdoc import KernelDoc
+
+        v = self.gui.ScdmViewer(path=None)
+        kdoc = KernelDoc()
+        box = K.make_box(0.02, 0.02, 0.02)
+        body = kdoc.add_body(box, name="B")
+        v.session().kdoc = kdoc
+        face = [f for f in K.explore(box, "face")
+                if K.face_normal_center(f)[0][2] > 0.99][0]
+        v._selected_face = lambda: (body, face)
+        v._commit = lambda *a, **k: None
+
+        v._ask_numbers = lambda *a, **k: [6.0, 1.0, 0.0]
+        before = K.volume(body.shape)
+        v._do_create_hole_tapped()
+        removed = before - K.volume(body.shape)
+        expected = math.pi * 0.0025 ** 2 * 0.02
+        assert abs(removed - expected) < expected * 1e-3
+
+        # illegal pitch (>= nominal): explained, geometry untouched
+        keep = K.volume(body.shape)
+        v._ask_numbers = lambda *a, **k: [6.0, 6.0, 0.0]
+        v._do_create_hole_tapped()
+        assert abs(K.volume(body.shape) - keep) < 1e-15
+        assert "非法" in self._status(v) or "螺距" in self._status(v)
+
     def test_tool_manager_reason_plumbing(self):
         from scdm.tools.base import ToolManager
         msgs = []
