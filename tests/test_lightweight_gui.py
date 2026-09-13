@@ -76,6 +76,76 @@ class LightweightModeTests(unittest.TestCase):
         self.assertEqual(v.tools.active, "tool.pull")
         self.assertNotIn("未实现", self._status(v))
 
+    def test_import_report_reaches_the_status_bar(self):
+        """P47: opening a partly-rebuilt file must say so, not look empty."""
+        from types import SimpleNamespace
+
+        v = self.gui.ScdmViewer(path=None)
+        kdoc = SimpleNamespace(
+            import_warnings=["1/25 个部件无法重建为 B-rep（未生成网格兜底）"],
+            import_report={"parts": 25, "failed_parts": ["0:23"],
+                           "unbuilt_faces": 2, "dropped_faces": 4,
+                           "mesh_bodies": []})
+        v._report_import(SimpleNamespace(kdoc=kdoc, import_error=None))
+        msg = self._status(v)
+        self.assertIn("1/25 个部件未重建", msg)
+        self.assertIn("2 个面未重建", msg)
+        self.assertIn("0:23", msg)
+
+    def test_import_report_is_silent_when_clean(self):
+        from types import SimpleNamespace
+
+        v = self.gui.ScdmViewer(path=None)
+        v._set_status("初始")
+        clean = SimpleNamespace(import_warnings=[], import_report={})
+        v._report_import(SimpleNamespace(kdoc=clean, import_error=None))
+        self.assertEqual(self._status(v), "初始")
+        # a hard failure still reports
+        v._report_import(SimpleNamespace(kdoc=clean,
+                                         import_error="KernelError: x"))
+        self.assertIn("几何未导入", self._status(v))
+
+    def test_p48_sheet_canvas_drags_dimension_handles(self):
+        """P48: the sheet preview drags Dimension.offset, not the value."""
+        os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+        from scdm import drawing as D
+        from scdm import kernel as K
+        from scdm.gui.sheet import SheetCanvas
+
+        box = K.make_box(0.02, 0.02, 0.02)
+        view = D.projected_view(box, (0.0, 0.0, -1.0), label='前视')
+        dims = D.dimensions_for([view])
+        canvas = SheetCanvas([view], dims)
+        canvas.resize(600, 400)
+        assert canvas.pick(-999, -999) == -1
+
+        i = 0
+        hp = canvas.handle_px(i)
+        assert canvas.pick(hp.x(), hp.y()) == i, 'handle must be pickable'
+
+        value = dims[i].value_mm
+        before = dims[i].offset
+        canvas.drag_handle(i, hp.x(), hp.y() - 25)      # 25 px up
+        assert dims[i].offset != before
+        assert dims[i].value_mm == value, 'dragging must not re-measure'
+        # the handle follows the line it was dragged to
+        moved = canvas.handle_px(i)
+        assert abs(moved.y() - (hp.y() - 25)) < 1.5
+
+    def test_p48_det_dim_opens_the_sheet(self):
+        """det.dim gets a real handler (the sheet dialog), not a status stub."""
+        from scdm import kernel as K
+        from scdm.import_sab import import_scdoc_bundle  # noqa: F401
+        from scdm.gui import sheet as S
+
+        v = self.gui.ScdmViewer(path=None)
+        assert hasattr(v, '_do_det_dim')
+        # no selection -> it explains itself instead of raising
+        v._do_det_dim()
+        msg = self._status(v)
+        assert '尺寸' in msg or '请先选择' in msg, msg
+        assert S.SheetCanvas is not None and S.SheetDialog is not None
+
     def test_tool_manager_reason_plumbing(self):
         from scdm.tools.base import ToolManager
         msgs = []

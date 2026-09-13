@@ -81,9 +81,12 @@ else:
             self.snap_end.setChecked(sel.snap_end)
             self.snap_mid = QCheckBox("中点")
             self.snap_mid.setChecked(sel.snap_mid)
+            self.snap_coin = QCheckBox("重合（既有草图点）")
+            self.snap_coin.setChecked(sel.snap_coin)
             form.addRow("捕捉", self.snap_grid)
             form.addRow("", self.snap_end)
             form.addRow("", self.snap_mid)
+            form.addRow("", self.snap_coin)
             hint = QLabel("内核精度与撤销步数在 M2 接入 OCCT 后生效。")
             hint.setWordWrap(True)
             form.addRow(hint)
@@ -96,6 +99,7 @@ else:
             sel.snap_grid = self.snap_grid.isChecked()
             sel.snap_end = self.snap_end.isChecked()
             sel.snap_mid = self.snap_mid.isChecked()
+            sel.snap_coin = self.snap_coin.isChecked()
 
     class ScdmViewer(QMainWindow):
         def __init__(self, path: str = None):
@@ -370,6 +374,49 @@ else:
             self.stack.setCurrentIndex(0)
             self.ribbon.set_body_visible(True)
             self._activate_session()
+            self._report_import(ses)
+
+        def _report_import(self, ses):
+            """P47: tell the user what the importer could NOT rebuild.
+
+            The importer degrades quietly by design (a part that fails to sew
+            still opens the rest of the file), so without this the only symptom
+            is missing geometry.  Status line carries the summary, the dialog
+            carries the per-part detail.
+            """
+            from scdm.import_sab import import_summary
+
+            kdoc = getattr(ses, "kdoc", None)
+            warnings = list(getattr(kdoc, "import_warnings", None) or [])
+            report = dict(getattr(kdoc, "import_report", None) or {})
+            err = getattr(ses, "import_error", None)
+            if not warnings and not err:
+                return
+            summary = import_summary(report, warnings, err)
+            self._set_status("导入提示：" + summary)
+            # only a lost part (or a failed geometry build) is worth a dialog;
+            # losing a handful of faces stays a status-bar note
+            if not report.get("failed_parts") and not err:
+                return
+            if not self.isVisible():
+                # headless / not-yet-shown shell: the status line is the whole
+                # report (a QMessageBox here crashes the offscreen platform)
+                return
+            try:
+                box = QMessageBox(self)
+                box.setIcon(QMessageBox.Warning)
+                box.setWindowTitle("导入完成（有降级）")
+                box.setText("文件已打开，但部分几何未能精确重建：")
+                box.setInformativeText(summary)
+                detail = list(warnings)
+                if err:
+                    detail.append(err)
+                box.setDetailedText(chr(10).join("• " + w for w in detail))
+                box.setModal(False)
+                box.setAttribute(Qt.WA_DeleteOnClose, True)
+                box.show()
+            except Exception:
+                pass
 
         def _session_from_cad(self, path: str) -> Session:
             if not K.available():
@@ -902,8 +949,11 @@ else:
                     return
                 plane = {0: "yz", 1: "zx", 2: "xy"}[int(vals[0]) % 3]
             normal = {"yz": (1, 0, 0), "zx": (0, 1, 0), "xy": (0, 0, 1)}[plane]
+            slot = ses.kdoc.bodies.index(body)
             mir = K.mirror(body.shape, (0, 0, 0), normal)
             ses.kdoc.add_body(mir, name=body.name + " 镜像")
+            ses.kdoc.record_doc_feature("mirror", [slot],
+                                        origin=(0, 0, 0), normal=normal)
             self._record("create.mirror", plane=plane)
             self._commit(f"已镜像（{plane.upper()} 面）")
 
@@ -928,6 +978,19 @@ else:
                 verb = f"圆周阵列 ×{count}（{vals[1]:g}°）"
             for i, sh in enumerate(shapes, 2):
                 ses.kdoc.add_body(sh, name=f"{body.name} 阵列{i}")
+            # P22: whole-body pattern is a document-level feature
+            try:
+                slot = ses.kdoc.bodies.index(body)
+                if int(vals[0]) == 0:
+                    ses.kdoc.record_doc_feature(
+                        "pattern_linear", [slot],
+                        vec_mm=(vals[1], vals[2], vals[3]), count=count)
+                else:
+                    ses.kdoc.record_doc_feature(
+                        "pattern_circular", [slot], axis=(0, 0, 1),
+                        angle_deg=vals[1], count=count)
+            except ValueError:
+                pass
             self._record("create.pattern", step=vals[1], count=count,
                          circular=int(vals[0]) == 1)
             self._commit(verb)
@@ -944,7 +1007,11 @@ else:
             if not opening:
                 opening = [K.explore(body.shape, "face")[0]]
             try:
+                from scdm import features as FEAT
+                sel = [FEAT.selector_for(body.shape, f) for f in opening]
                 body.shape = K.shell_solid(body.shape, vals[0] / ses.scale, opening)
+                ses.kdoc.record_feature(body.id, "shell", selectors=sel,
+                                        thickness=vals[0])
                 self._record("create.shell", thickness=vals[0])
                 self._commit(f"已抽壳（壁厚 {vals[0]:g}mm）")
             except Exception as exc:
@@ -963,8 +1030,13 @@ else:
             if not faces:
                 faces = [K.explore(body.shape, "face")[0]]
             try:
+                from scdm import features as FEAT
+                sel = FEAT.selector_for(body.shape, faces[0])
                 body.shape = K.draft_face(body.shape, faces[0],
                                           math.radians(vals[0]), neutral)
+                ses = self.session()
+                ses.kdoc.record_feature(body.id, "draft", selector=sel,
+                                        angle=vals[0], neutral=neutral)
                 self._record("create.draft", angle=vals[0])
                 self._commit(f"拔模 {vals[0]:g}°")
             except Exception as exc:
@@ -1078,6 +1150,112 @@ else:
             except Exception as exc:
                 self._set_status(f"移除失败: {exc}")
 
+        def _do_create_hole(self):
+            """P4: 简单孔/通孔 - cut a cylinder normal to the picked planar face."""
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("孔：请先选择一个平面")
+                return
+            vals = self._ask_numbers("简单孔", [("直径 mm", 5.0),
+                                             ("深度 mm（0 = 通孔）", 0.0)])
+            if not vals:
+                return
+            if vals[0] <= 0:
+                self._set_status("孔：直径必须为正")
+                return
+            try:
+                from scdm import features as FEAT
+                sel = FEAT.selector_for(body.shape, face)
+                depth = None if vals[1] <= 0 else vals[1] / ses.scale
+                body.shape = K.hole_simple(body.shape, face,
+                                           vals[0] / ses.scale, depth=depth)
+                ses.kdoc.record_feature(body.id, "hole", selector=sel,
+                                        diameter=vals[0], depth=vals[1])
+                self._record("create.hole", diameter=vals[0], depth=vals[1])
+                self._commit("已创建孔")
+            except Exception as exc:
+                self._set_status(f"孔失败: {exc}")
+
+        def _do_create_hole_cbore(self):
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("沉头孔：请先选择一个平面")
+                return
+            vals = self._ask_numbers("沉头孔", [("孔径 mm", 5.0),
+                                             ("孔深 mm", 10.0),
+                                             ("沉孔直径 mm", 10.0),
+                                             ("沉孔深度 mm", 3.0)])
+            if not vals:
+                return
+            try:
+                from scdm import features as FEAT
+                sel = FEAT.selector_for(body.shape, face)
+                body.shape = K.hole_counterbore(
+                    body.shape, face, vals[0] / ses.scale, vals[1] / ses.scale,
+                    vals[2] / ses.scale, vals[3] / ses.scale)
+                ses.kdoc.record_feature(body.id, "hole_cbore", selector=sel,
+                                        diameter=vals[0], depth=vals[1],
+                                        cbore_diameter=vals[2],
+                                        cbore_depth=vals[3])
+                self._record("create.hole_cbore", diameter=vals[0],
+                             depth=vals[1], cbore_diameter=vals[2],
+                             cbore_depth=vals[3])
+                self._commit("已创建沉头孔")
+            except Exception as exc:
+                self._set_status(f"沉头孔失败: {exc}")
+
+        def _do_create_hole_csink(self):
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("锥沉孔：请先选择一个平面")
+                return
+            vals = self._ask_numbers("锥沉孔", [("孔径 mm", 5.0),
+                                             ("孔深 mm", 10.0),
+                                             ("锥口直径 mm", 10.0),
+                                             ("锥角 deg", 90.0)])
+            if not vals:
+                return
+            try:
+                from scdm import features as FEAT
+                sel = FEAT.selector_for(body.shape, face)
+                body.shape = K.hole_countersink(
+                    body.shape, face, vals[0] / ses.scale, vals[1] / ses.scale,
+                    vals[2] / ses.scale, angle_deg=vals[3])
+                ses.kdoc.record_feature(body.id, "hole_csink", selector=sel,
+                                        diameter=vals[0], depth=vals[1],
+                                        sink_diameter=vals[2], angle=vals[3])
+                self._record("create.hole_csink", diameter=vals[0],
+                             depth=vals[1], sink_diameter=vals[2],
+                             angle=vals[3])
+                self._commit("已创建锥沉孔")
+            except Exception as exc:
+                self._set_status(f"锥沉孔失败: {exc}")
+
+        def _do_create_boss(self):
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("凸台：请先选择一个平面")
+                return
+            vals = self._ask_numbers("凸台", [("直径 mm", 6.0), ("高度 mm", 4.0)])
+            if not vals:
+                return
+            try:
+                from scdm import features as FEAT
+                sel = FEAT.selector_for(body.shape, face)
+                body.shape = K.boss_round(body.shape, face,
+                                          vals[0] / ses.scale,
+                                          vals[1] / ses.scale)
+                ses.kdoc.record_feature(body.id, "boss", selector=sel,
+                                        diameter=vals[0], height=vals[1])
+                self._record("create.boss", diameter=vals[0], height=vals[1])
+                self._commit("已创建凸台")
+            except Exception as exc:
+                self._set_status(f"凸台失败: {exc}")
+
         def _do_repair_small(self):
             """Remove faces smaller than an area threshold (user-confirmed)."""
             body = self._selected_kbody()
@@ -1138,6 +1316,73 @@ else:
                 self._commit(f"已展开（K={vals[0]:g}）")
             except Exception as exc:
                 self._set_status(f"展开失败: {exc}")
+
+        def _do_sheet_hem(self):
+            """P6 卷边: flat + 180-degree roll-back flange (closed-hem tooling)."""
+            ses = self.session()
+            vals = self._sheet_params("卷边", [
+                ("宽度 mm", 20.0), ("厚度 mm", 1.0),
+                ("平板长 mm", 30.0), ("卷边长 mm", 5.0), ("内 R mm", 0.5),
+                ("闭口 0=开口 1=闭口", 0.0)])
+            if not vals:
+                return
+            from scdm import sheetmetal as SM
+            w, t, l1, hl, r = vals[:5]
+            closed = bool(int(vals[5])) if len(vals) > 5 else False
+            try:
+                solid = SM.hem(w / ses.scale, t / ses.scale, l1 / ses.scale,
+                               hl / ses.scale, r / ses.scale, closed=closed)
+                ses.kdoc.add_body(solid, name="卷边件")
+                self._commit("卷边件（%s，R=%gmm，卷边 %gmm）"
+                             % ("闭口" if closed else "开口", r, hl))
+            except Exception as exc:
+                self._set_status(f"卷边失败: {exc}")
+
+        def _do_sheet_flat(self):
+            """P18 展开图: write the developed blank of a bent sheet as DXF."""
+            ses = self.session()
+            body = self._selected_kbody()
+            if body is None:
+                self._set_status("展开图：请先选择一个折弯件")
+                return
+            vals = self._sheet_params("展开图", [("K 因子", 0.42)])
+            if not vals:
+                return
+            fn, _ = QFileDialog.getSaveFileName(
+                self, "导出展开图", ses.name + "_flat.dxf", "DXF (*.dxf)")
+            if not fn:
+                return
+            if not fn.lower().endswith(".dxf"):
+                fn += ".dxf"
+            from scdm import sheetmetal as SM
+            try:
+                SM.flat_pattern_dxf(body.shape, fn,
+                                    k=min(max(vals[0], 0.0), 1.0))
+                self._record("sheet.flat", k=vals[0])
+                self._set_status(f"展开图已导出 -> {fn}")
+            except Exception as exc:
+                self._set_status(f"展开图失败: {exc}")
+
+        def _do_sheet_bead(self):
+            """P6 加强筋: half-round stiffening groove along the picked face."""
+            ses = self.session()
+            body, face = self._selected_face()
+            if body is None:
+                self._set_status("加强筋：请先选择一个平面")
+                return
+            vals = self._ask_numbers("加强筋", [("半径 mm", 2.0),
+                                             ("长度 mm（0 = 通面）", 0.0)])
+            if not vals:
+                return
+            from scdm import sheetmetal as SM
+            try:
+                body.shape = SM.bead_groove(
+                    body.shape, face, vals[0] / ses.scale,
+                    length=None if vals[1] <= 0 else vals[1] / ses.scale)
+                self._record("sheet.bead", radius=vals[0], length=vals[1])
+                self._commit("已创建加强筋")
+            except Exception as exc:
+                self._set_status(f"加强筋失败: {exc}")
 
         def _do_sheet_rip(self):
             ses = self.session()
@@ -1609,6 +1854,77 @@ else:
             except Exception as exc:
                 self._set_status(f"配合失败: {exc}")
 
+        def _do_asm_instance(self):
+            """P8 实例: place a copy of the selected body as a linked instance."""
+            ses = self.session()
+            body = self._selected_kbody()
+            if body is None:
+                self._set_status("实例：请先选择一个实体作为零件定义")
+                return
+            vals = self._ask_numbers("实例偏移（相对零件定义）",
+                                     [("dX mm", 30.0), ("dY mm", 0.0),
+                                      ("dZ mm", 0.0)])
+            if not vals:
+                return
+            dx, dy, dz = (v / ses.scale for v in vals)
+            mat = ((1.0, 0.0, 0.0, dx), (0.0, 1.0, 0.0, dy),
+                   (0.0, 0.0, 1.0, dz), (0.0, 0.0, 0.0, 1.0))
+            inst = ses.kdoc.add_instance(body.id, transform=mat)
+            if inst is None:
+                self._set_status("实例：创建失败")
+                return
+            self._record("asm.instance", source=body.id,
+                         dx=vals[0], dy=vals[1], dz=vals[2])
+            self._commit(f"已创建实例（共 {len(ses.kdoc.instances_of(body.id))} 个）")
+
+        def _do_asm_config(self):
+            """P23: snapshot the current assembly state as a named configuration."""
+            ses = self.session()
+            from PyQt5.QtWidgets import QInputDialog
+            name, ok = QInputDialog.getText(self, "保存配置", "配置名称",
+                                            text="配置%d" % (
+                                                len(ses.kdoc.configurations) + 1))
+            if not ok:
+                return
+            cfg = ses.kdoc.capture_configuration(name.strip() or None)
+            self._record("asm.config", name=cfg.name)
+            self._commit("已保存配置 %s（隐藏组件 %d，抑制体 %d）"
+                         % (cfg.name, len(cfg.hidden_components),
+                            len(cfg.suppressed_bodies)))
+
+        def _do_asm_config_apply(self):
+            """P23: apply a saved configuration by name."""
+            ses = self.session()
+            cfgs = list(ses.kdoc.configurations)
+            if not cfgs:
+                self._set_status("应用配置：还没有保存的配置")
+                return
+            from PyQt5.QtWidgets import QInputDialog
+            names = [c.name for c in cfgs]
+            name, ok = QInputDialog.getItem(self, "应用配置", "配置", names, 0,
+                                            False)
+            if not ok:
+                return
+            n = ses.kdoc.apply_configuration(name)
+            self.left.populate_tree(ses)
+            self._rebuild("已应用配置 %s" % name)
+            self._record("asm.config_apply", name=name)
+            self._set_status("已应用配置 %s（%d 项变化）" % (name, n))
+
+        def _do_asm_sync(self):
+            """P8 同步实例: re-derive every instance from its part definition."""
+            ses = self.session()
+            body = self._selected_kbody()
+            if body is None:
+                self._set_status("同步实例：请先选择零件定义实体")
+                return
+            n = ses.kdoc.sync_instances(body.id)
+            if n == 0:
+                self._set_status("同步实例：该实体没有实例")
+                return
+            self._record("asm.sync", source=body.id)
+            self._commit(f"已同步 {n} 个实例")
+
         def _do_asm_explode(self):
             ses = self.session()
             if not ses.kdoc.components:
@@ -1869,6 +2185,37 @@ else:
             self.left.populate_tree(ses)
             self._set_status(f"已保存命名选择 [{name}]（{len(self.sel.items)} 项）")
 
+        def _do_det_dim(self):
+            """P48 尺寸: preview the view and drag dimension offsets.
+
+            Only offsets change; the same live Dimension objects are handed to
+            the SVG/DXF writers, so the export follows the drag.
+            """
+            body = self._selected_kbody()
+            if body is None:
+                self._set_status("尺寸：请先选择一个实体")
+                return
+            try:
+                from scdm import drawing as D
+                from scdm.gui.sheet import SheetDialog
+                view = D.projected_view(body.shape, (0.0, 0.0, -1.0),
+                                        label="前视")
+                dims = D.dimensions_for([view])
+                if not dims:
+                    self._set_status("尺寸：该视图没有可标注的区间")
+                    return
+                dlg = SheetDialog([view], dims, parent=self)
+                dlg.canvas.changed.connect(
+                    lambda: self._set_status(
+                        "尺寸：偏移 %.1f mm（标注值不变）"
+                        % (dims[0].offset * 1000.0)))
+                dlg.exec_()
+                if dlg.last_path:
+                    self._set_status(f"图纸已导出 -> {dlg.last_path}")
+                self._record("det.dim")
+            except Exception as exc:
+                self._set_status(f"尺寸预览失败: {exc}")
+
         def _do_det_bom(self):
             from PyQt5.QtWidgets import QDialog, QTableWidget, QTableWidgetItem, QVBoxLayout
             ses = self.session()
@@ -1891,6 +2238,81 @@ else:
             lay.addWidget(tab)
             dlg.resize(520, 320)
             dlg.exec_()
+
+        def _export_views_svg(self, views, suffix):
+            """P7: shared SVG sheet writer for the drawing view commands."""
+            fn, _ = QFileDialog.getSaveFileName(
+                self, "导出图纸", self.session().name + suffix + ".svg",
+                "SVG (*.svg)")
+            if not fn:
+                return
+            if not fn.lower().endswith(".svg"):
+                fn += ".svg"
+            try:
+                from scdm import drawing as D
+                D.svg_sheet(views, fn, title=self.session().name)
+                self._set_status(f"图纸已导出 -> {fn}")
+            except Exception as exc:
+                self._set_status(f"图纸导出失败: {exc}")
+
+        def _do_det_proj(self):
+            """P7 投影视图: HLR along an arbitrary direction, exported as SVG."""
+            body = self._selected_kbody()
+            if body is None:
+                self._set_status("投影视图：请先选择一个实体")
+                return
+            vals = self._ask_numbers("投影视图方向", [("X", 0.0), ("Y", 0.0),
+                                                  ("Z", -1.0)])
+            if not vals:
+                return
+            from scdm import drawing as D
+            try:
+                view = D.projected_view(body.shape, tuple(vals), label="投影")
+                self._export_views_svg([view], "_proj")
+                self._record("det.proj", x=vals[0], y=vals[1], z=vals[2])
+            except Exception as exc:
+                self._set_status(f"投影视图失败: {exc}")
+
+        def _do_det_section(self):
+            """P7 剖视图: cut at the body centre and project the section face-on."""
+            body = self._selected_kbody()
+            if body is None:
+                self._set_status("剖视图：请先选择一个实体")
+                return
+            vals = self._ask_numbers("剖切平面法向", [("X", 0.0), ("Y", 0.0),
+                                                    ("Z", 1.0)])
+            if not vals:
+                return
+            from scdm import drawing as D
+            try:
+                centre = K.cog(body.shape)
+                view = D.section_view(body.shape, centre, tuple(vals),
+                                      label="剖视")
+                self._export_views_svg([view], "_section")
+                self._record("det.section", x=vals[0], y=vals[1], z=vals[2])
+            except Exception as exc:
+                self._set_status(f"剖视图失败: {exc}")
+
+        def _do_det_dxf(self):
+            """P17: export the HLR views + dimension objects as an ASCII DXF."""
+            body = self._selected_kbody()
+            if body is None:
+                self._set_status("导出 DXF：请先选择一个实体")
+                return
+            fn, _ = QFileDialog.getSaveFileName(
+                self, "导出 DXF", self.session().name + ".dxf", "DXF (*.dxf)")
+            if not fn:
+                return
+            if not fn.lower().endswith(".dxf"):
+                fn += ".dxf"
+            try:
+                from scdm import drawing as D
+                views = D.three_views(body.shape)
+                D.write_dxf(views, fn)
+                self._record("det.dxf")
+                self._set_status(f"DXF 已导出 -> {fn}")
+            except Exception as exc:
+                self._set_status(f"DXF 导出失败: {exc}")
 
         def _do_det_dim(self):
             body = self._selected_kbody()
@@ -2219,6 +2641,27 @@ else:
         def _do_sketch_construction(self):
             self._sketch_arm("construction")
 
+        def _do_sketch_trim(self):
+            """P19 修剪: split at crossings and drop the piece nearest the pick."""
+            ses = self.session()
+            if not ses.kdoc.sketches:
+                self._set_status("修剪：请先进入草图并绘制")
+                return
+            from scdm import sketch as S
+            sk = ses.kdoc.sketches[-1]
+            recent = getattr(self, "_sketch_recent", [])
+            if recent:
+                pick = recent[0]
+            else:
+                pick = [0.0, 0.0]
+            keep, removed = S.trim_at(sk.curves, pick)
+            if removed == 0:
+                self._set_status("修剪：该位置附近没有可修剪的线段（先单击要删掉的段）")
+                return
+            sk.curves = list(keep)
+            self._record("sketch.trim", x=pick[0], y=pick[1])
+            self._rebuild(f"已修剪 {removed} 段")
+
         def _do_sketch_offset(self):
             from PyQt5.QtWidgets import QInputDialog
             ses = self.session()
@@ -2271,13 +2714,28 @@ else:
             sk = ses.kdoc.sketches[-1]
             from scdm import sketch as S
             uv = list(S.world_to_uv(axes, p3)) if axes else [p3[0], p3[1]]
+            # P2: consume the selection-model snap options (endpoint / midpoint /
+            # grid). Previously only the mode.sketch grid flag was read.
             try:
-                snap = self.left.is_checked("mode.sketch", 1)
+                grid_on = self.sel.snap_grid or self.left.is_checked("mode.sketch", 1)
             except Exception:
-                snap = True
-            if snap:
-                step = 0.001  # 1 mm world step
-                uv = [round(v / step) * step for v in uv]
+                grid_on = self.sel.snap_grid
+            pts0, segs0 = self._sketch_points(sk)
+            anchors = []
+            for c in sk.curves:
+                if c[0] == "circle":
+                    anchors.append([float(c[1][0]), float(c[1][1])])
+                elif c[0] == "point":
+                    anchors.append([float(c[1][0]), float(c[1][1])])
+            tol = 5.0 / (self.session().scale or 1000.0)   # 5 mm world tolerance
+            uv, snap_kind = S.snap_uv(uv, pts0, segs0, tol,
+                                      snap_end=self.sel.snap_end,
+                                      snap_mid=self.sel.snap_mid,
+                                      grid_step=0.001 if grid_on else None,
+                                      anchors=anchors,
+                                      snap_coincident=self.sel.snap_coin)
+            if snap_kind:
+                self._set_status(f"捕捉：{snap_kind}")
             tool = self._sketch_tool
             if tool is None:
                 return
@@ -2494,14 +2952,17 @@ else:
             body = self._selected_kbody()
             if body is None:
                 return
-            r = 1.0 / self.session().scale
+            ses = self.session()
+            r = 1.0 / ses.scale
             try:
                 if fillet:
                     body.shape = K.fillet_edges(body.shape, r)
+                    ses.kdoc.record_feature(body.id, "fillet", radius=1.0)
                     self._record("create.blend", radius=1.0)
                     self._commit("已倒圆 1mm")
                 else:
                     body.shape = K.chamfer_edges(body.shape, r)
+                    ses.kdoc.record_feature(body.id, "chamfer", distance=1.0)
                     self._record("create.chamfer", distance=1.0)
                     self._commit("已倒角 1mm")
             except Exception as exc:
@@ -2821,6 +3282,8 @@ else:
                     opts["distance"] = float(d)
                 # default move axis = X; replaced with a picked face normal when available
                 opts["axis"] = (1.0, 0.0, 0.0)
+            elif cmd == "tool.split_body":
+                opts["keep_both"] = chk(0)
             if cmd == "tool.combine":
                 opts["mode"] = self.left.combine_mode()
             return opts
@@ -3345,11 +3808,37 @@ else:
                     return
                 S.solve_constraints(pts, consts, segments=segs, iters=40)
                 self._write_sketch_points(sk, pts)
+                sk.constraints.extend(consts)          # P21: keep them
                 self.left.populate_tree(ses)
                 self._set_status(f"已解算约束 [{kind}]")
                 self._rebuild("约束已应用")
+                self._refresh_constraint_marks(sk)
             except Exception as exc:
                 self._set_status(f"约束失败: {exc}")
+
+        def _refresh_constraint_marks(self, sk):
+            """P21: draw the sketch's applied constraints as world labels."""
+            if not self.scene:
+                return
+            try:
+                from scdm import sketch as S
+                st = self._sketch_state or {}
+                axes = st.get("axes")
+                pts, segs = self._sketch_points(sk)
+                marks = []
+                for g in S.constraint_glyphs(getattr(sk, "constraints", []),
+                                             pts, segs):
+                    if axes:
+                        w = S.axes_to_world(axes, g["uv"][0], g["uv"][1])
+                    else:
+                        w = (g["uv"][0], g["uv"][1], 0.0)
+                    text = g["label"]
+                    if g["value_mm"] is not None:
+                        text = "%s%.1f" % (text, g["value_mm"])
+                    marks.append((w[0], w[1], w[2], text))
+                self.scene.show_constraint_marks(marks)
+            except Exception:
+                pass
 
         def _do_con_dim(self):
             self._apply_sketch_constraint("dim")
@@ -4160,11 +4649,25 @@ else:
             menu = QMenu(self)
             act_fit = menu.addAction("缩放到")
             act_hide = menu.addAction("隐藏")
+            # P32: feature nodes can be deleted and the model replayed
+            feature_ref = None
+            if item is not None:
+                data = item.data(0, Qt.UserRole)
+                if isinstance(data, (tuple, list)) and data:
+                    if data[0] == "doc_feature":
+                        feature_ref = ("doc", int(data[1]))
+                    elif data[0] == "feature":
+                        feature_ref = (str(data[1]), int(data[2]))
+            act_del = None
+            if feature_ref is not None:
+                act_del = menu.addAction("删除特征并重建")
             chosen = menu.exec_(self.left.tree.viewport().mapToGlobal(pos))
             if chosen is act_fit:
                 self._do_view_fit()
             elif chosen is act_hide and item:
                 item.setCheckState(0, Qt.Unchecked)
+            elif act_del is not None and chosen is act_del:
+                self._on_feature_delete(*feature_ref)
 
         def closeEvent(self, ev):
             # clean exit: drop autosave files so the next start won't offer recovery

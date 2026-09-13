@@ -78,6 +78,7 @@ class Session:
     kdoc: Any = None
     history: History = field(default_factory=History)
     clipboard: Optional[bytes] = None
+    import_error: Optional[str] = None   # P47: why kdoc could not be built
     saved_views: List[dict] = field(default_factory=list)  # {"name","pos","focal","up","scale"}
 
     @property
@@ -143,6 +144,10 @@ def session_from_scdoc(path: str) -> Session:
         if K.available():
             ses.kdoc = import_scdoc_bundle(data)
             ses.history.push(ses.kdoc.snapshot())
-    except Exception:
+        else:
+            # P47: do not let a missing kernel look like an empty file
+            ses.import_error = "内核不可用（pythonocc-core 缺失），仅解析了文档结构"
+    except Exception as exc:
         ses.kdoc = None
+        ses.import_error = "%s: %s" % (type(exc).__name__, exc)
     return ses
