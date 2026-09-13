@@ -38,8 +38,9 @@ requires_occ = pytest.mark.skipif(
 requires_lib = pytest.mark.skipif(not os.path.isdir(LIB),
                                   reason="SpaceClaim library absent")
 
+# R77 relaxed the bbox gate, so samplemodel5 (0.18 -> 0.99) now trims too
 RATIO = {"SampleModel1.scdoc": True, "SampleModel4.scdoc": True,
-         "samplemodel2.scdoc": True, "samplemodel5.scdoc": False,
+         "samplemodel2.scdoc": True, "samplemodel5.scdoc": True,
          "samplemodel6.scdoc": False}
 
 

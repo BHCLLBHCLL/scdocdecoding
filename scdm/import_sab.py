@@ -1291,11 +1291,16 @@ def _trimmed_face(model, face_ent, surf, box=None):
         return None
     if box is not None and not _shape_within(face, box, 0.5):
         return None
+    # Gross-overshoot gate, the same scale-free rule the arc branch uses (R74):
+    # a face's point bbox is CHORD based, so a legitimately curved patch can
+    # reach outside it - rejecting at 5% of the diagonal cost SampleModel1 two
+    # faces (and samplemodel2 twenty-six).  Only an overshoot beyond the whole
+    # diagonal means the patch is not this face.
     fbox = _face_bbox(face_ent)
     if fbox is not None:
         gap = _bbox_gap(face, fbox, accurate=False)
         diag = sum((fbox[1][i] - fbox[0][i]) ** 2 for i in range(3)) ** 0.5
-        if gap is None or gap > 0.05 * diag + 1e-9:
+        if gap is None or gap > diag + 1e-9:
             return None
     return face
 
@@ -1817,6 +1822,49 @@ def _facets_nodes_of_model(model, fac):
     return out
 
 
+def watertightness(kdoc) -> dict:
+    """Countable watertightness of the rebuilt bodies (R77/P380).
+
+    `open_edges` are the real gaps (a periodic face's seam is not a gap),
+    `seam_edges` is that excluded part and `free_loops` the closed boundary
+    loops of the shell.  Same kernel helpers the R75/R76 instruments use, so the
+    report and the tools cannot drift (rule 84).
+    """
+    from scdm import kernel as K
+
+    gaps = seams = loops = 0
+    for b in getattr(kdoc, "bodies", []) or []:
+        if (b.name or "").startswith("网格导入"):
+            continue
+        try:
+            free = len(K.free_edges(b.shape))
+            opened = len(K.open_edges(b.shape))
+            loops += len(K._free_boundary_wires(b.shape))
+        except Exception:
+            continue
+        gaps += opened
+        seams += free - opened
+    return {"open_edges": gaps, "seam_edges": seams, "free_loops": loops}
+
+
+def watertight_hint(report) -> str:
+    """Qt-free hint for the tree/status line (R77/P380)."""
+    report = report or {}
+    gaps = report.get("open_edges") or 0
+    if not gaps:
+        return ""
+    text = " · 未封闭 %d 处" % gaps
+    loops = report.get("free_loops") or 0
+    seams = report.get("seam_edges") or 0
+    if loops:
+        text += "（自由环 %d" % loops
+        if seams:
+            text += "，缝边 %d" % seams
+        text += "）"
+    elif seams:
+        text += "（缝边 %d）" % seams
+    return text
+
 def import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
     """Decode a bundle and rebuild it (R76: the trim policy is per import).
 
@@ -1829,9 +1877,14 @@ def import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
     models = (data.get("models") if data else None) or []
     try:
         _TRIM_PATCH = trim_patch_policy(models) if K.available() else False
-        return _import_scdoc_bundle(data, mesh_fallback=mesh_fallback)
+        doc = _import_scdoc_bundle(data, mesh_fallback=mesh_fallback)
     finally:
         _TRIM_PATCH = prev
+    # R77/P380: measurable watertightness, attached to the same report the GUI
+    # already shows (keys are additive, existing callers are unaffected).
+    if isinstance(getattr(doc, "import_report", None), dict):
+        doc.import_report.update(watertightness(doc))
+    return doc
 
 
 def _import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:

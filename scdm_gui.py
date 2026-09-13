@@ -485,6 +485,10 @@ else:
                     "ref_built": report.get("ref_built") or 0,
                     "ref_unbuilt": report.get("ref_unbuilt") or 0,
                     "ref_no_boundary": report.get("ref_no_boundary") or 0,
+                    # R77/P380: the rebuilt shell's own watertightness
+                    "open_edges": report.get("open_edges") or 0,
+                    "seam_edges": report.get("seam_edges") or 0,
+                    "free_loops": report.get("free_loops") or 0,
                     "parts": len(self._import_groups())}
         def _session_from_cad(self, path: str) -> Session:
             if not K.available():

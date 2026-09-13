@@ -39,7 +39,7 @@ requires_lib = pytest.mark.skipif(not os.path.isdir(LIB),
 MEASURED = {
     "SampleModel1.scdoc": (36, 0, 36),
     "SampleModel4.scdoc": (405, 18, 387),
-    "samplemodel2.scdoc": (2227, 82, 2145),
+    "samplemodel2.scdoc": (1987, 34, 1953),
     "samplemodel6.scdoc": (2, 0, 2),
 }
 
