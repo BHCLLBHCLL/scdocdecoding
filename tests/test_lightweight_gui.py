@@ -566,8 +566,15 @@ class LightweightModeTests(unittest.TestCase):
         assert stats["degenerate"] == 0
         assert abs(stats["area_rel_error"]) < 1e-15
         msg = self._status(v)
-        assert "12" in msg and "退化 0" in msg
+        assert "12" in msg and "退化 0" in msg and "门槛 通过" in msg
         assert hasattr(v, "_do_mesh_report")
+        # R62/P327: the volume command fills the body with tetrahedra
+        v._ask_numbers = lambda *a, **k: [5.0]
+        v._do_mesh_volume()
+        vol = kdoc.meshes[body.id]["volume"]
+        assert vol["cells"] == 64 and vol["tets"] == 384
+        assert abs(vol["volume_rel_error"]) < 1e-15
+        assert "体网格" in self._status(v)
 
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""

@@ -973,6 +973,28 @@ def _vertex_bbox(shape):
     return lo, hi
 
 
+def bounding_box(shape):
+    """True axis-aligned bbox (BRepBndLib), degrading to the vertex box.
+
+    A full sphere has only its two pole vertices, so a vertex-based box collapses
+    to a line - anything that grids or encloses a curved body needs the real box.
+    """
+    o = _occ()
+    try:
+        from OCC.Core.BRepBndLib import brepbndlib
+        from OCC.Core.Bnd import Bnd_Box
+        box = Bnd_Box()
+        try:
+            box.SetGap(0.0)          # Bnd_Box pads by default; keep it tight
+        except Exception:
+            pass
+        brepbndlib.Add(shape, box)
+        xmin, ymin, zmin, xmax, ymax, zmax = box.Get()
+        return (float(xmin), float(ymin), float(zmin)), (float(xmax), float(ymax), float(zmax))
+    except Exception:
+        return _vertex_bbox(shape)
+
+
 def _face_frame(face, origin=None):
     n, c = face_normal_center(face)
     n = tuple(float(v) for v in n)

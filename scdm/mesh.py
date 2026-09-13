@@ -194,3 +194,148 @@ def write_report(path: str, report: Dict, fmt: str = "json") -> str:
 def read_report(path: str) -> Dict:
     with open(path, encoding="utf-8") as f:
         return json.load(f)
+
+# ----------------------------------------------------------------------
+# P327: 质量门槛（可判定的验收）+ 体网格首批（体素四面体填充）
+# ----------------------------------------------------------------------
+DEFAULT_GATES = {"aspect_max": 24.0, "min_angle_min": 5.0, "jacobian_min": 0.03,
+                 "quality_min": 0.05, "degenerate_max": 0}
+
+
+def check_quality(mesh: Dict, gates: Optional[Dict] = None,
+                  tol_area: float = 1e-12) -> Dict:
+    """P327: 门槛判定——返回**超限清单**而不是布尔。
+
+    Each violation is countable on its own: which triangle, which metric, the
+    value, the limit and by how much it is over.  A gate is a decision, so the
+    caller must be able to see what failed instead of just hearing "no".
+    """
+    g = dict(DEFAULT_GATES)
+    g.update({k: float(v) for k, v in (gates or {}).items()})
+    verts = mesh.get("vertices") or []
+    tris = mesh.get("triangles") or []
+    if not verts or not tris:
+        raise K.KernelError("质量门槛：空网格")
+    violations: List[Dict] = []
+    degenerate = 0
+
+    def bump(idx: int, metric: str, value: float, limit: float,
+             kind: str = "max"):
+        excess = (value - limit) if kind == "max" else (limit - value)
+        if excess > 0:
+            violations.append({"index": idx, "metric": metric,
+                               "value": float(value), "limit": float(limit),
+                               "excess": float(excess)})
+
+    for idx, (i, j, k) in enumerate(tris):
+        m = triangle_metrics(verts[i], verts[j], verts[k])
+        if m["area"] <= tol_area or not math.isfinite(m["aspect"]):
+            degenerate += 1
+            continue
+        bump(idx, "aspect", m["aspect"], g["aspect_max"])
+        bump(idx, "min_angle_deg", m["min_angle_deg"], g["min_angle_min"],
+             kind="min")
+        bump(idx, "jacobian", m["jacobian"], g["jacobian_min"], kind="min")
+        bump(idx, "quality", m["quality"], g["quality_min"], kind="min")
+    if degenerate > g["degenerate_max"]:
+        violations.append({"index": -1, "metric": "degenerate",
+                           "value": float(degenerate),
+                           "limit": float(g["degenerate_max"]),
+                           "excess": float(degenerate - g["degenerate_max"])})
+    return {"ok": not violations, "count": len(violations),
+            "violations": violations, "triangles": len(tris),
+            "degenerate": degenerate, "gates": g}
+
+
+def tet_volume(p, q, r, s) -> float:
+    """Closed form: |det(q-p, r-p, s-p)| / 6."""
+    e1 = (q[0] - p[0], q[1] - p[1], q[2] - p[2])
+    e2 = (r[0] - p[0], r[1] - p[1], r[2] - p[2])
+    e3 = (s[0] - p[0], s[1] - p[1], s[2] - p[2])
+    det = (e1[0] * (e2[1] * e3[2] - e2[2] * e3[1])
+           - e1[1] * (e2[0] * e3[2] - e2[2] * e3[0])
+           + e1[2] * (e2[0] * e3[1] - e2[1] * e3[0]))
+    return abs(det) / 6.0
+
+
+# the standard 6-tetrahedron split of a cube around the diagonal 0-6
+_CUBE_TETS = ((0, 1, 2, 6), (0, 2, 3, 6), (0, 3, 7, 6),
+              (0, 7, 4, 6), (0, 4, 5, 6), (0, 5, 1, 6))
+
+
+def tet_fill(shape, cell: float, tol: float = 1e-9) -> Dict:
+    """P327: 体网格首批——体素四面体填充（格心在实体内则整格保留，每格 6 四面体）。
+
+    Hull-conforming (boundary-fitted) volume meshing is a later batch; this one
+    is honest about what it is: the volume sum is compared against
+    @@K.volume(shape)@@ and the RELATIVE gap is the discretization error, zero for
+    a grid-aligned solid and shrinking with the cell size for curved ones.
+    """
+    from OCC.Core.BRepClass3d import BRepClass3d_SolidClassifier
+    from OCC.Core.gp import gp_Pnt
+    from OCC.Core.TopAbs import TopAbs_IN, TopAbs_ON
+    if shape is None or shape.IsNull():
+        raise K.KernelError("体网格：形状为空")
+    c = float(cell)
+    if c <= 0:
+        raise K.KernelError("体网格：格边长必须为正")
+    # a REAL bounding box (K.bounding_box): the vertex-based boxes only see
+    # vertices, and a full sphere has just its two poles - the grid collapsed to
+    # a 1x1xn line (4 cells for a 20 mm sphere at 5 mm cells)
+    lo, hi = K.bounding_box(shape)
+    nx = max(1, int(math.ceil((hi[0] - lo[0]) / c - 1e-9)))
+    ny = max(1, int(math.ceil((hi[1] - lo[1]) / c - 1e-9)))
+    nz = max(1, int(math.ceil((hi[2] - lo[2]) / c - 1e-9)))
+    clf = BRepClass3d_SolidClassifier(shape)
+    verts: List[Tuple[float, float, float]] = []
+    tets: List[Tuple[int, int, int, int]] = []
+    cells = 0
+    for ix in range(nx):
+        x0 = lo[0] + ix * c
+        for iy in range(ny):
+            y0 = lo[1] + iy * c
+            for iz in range(nz):
+                z0 = lo[2] + iz * c
+                clf.Perform(gp_Pnt(x0 + c / 2.0, y0 + c / 2.0, z0 + c / 2.0), tol)
+                if clf.State() not in (TopAbs_IN, TopAbs_ON):
+                    continue
+                base = len(verts)
+                verts.extend([(x0, y0, z0), (x0 + c, y0, z0),
+                              (x0 + c, y0 + c, z0), (x0, y0 + c, z0),
+                              (x0, y0, z0 + c), (x0 + c, y0, z0 + c),
+                              (x0 + c, y0 + c, z0 + c), (x0, y0 + c, z0 + c)])
+                tets.extend([tuple(base + i for i in t) for t in _CUBE_TETS])
+                cells += 1
+    if not cells:
+        raise K.KernelError("体网格：没有格心落在实体内（格边长 %g 太大？）" % c)
+    return {"vertices": verts, "tets": tets, "cells": cells, "cell": c,
+            "counts": (nx, ny, nz)}
+
+
+def tet_stats(fill: Dict, shape=None, tol_volume: float = 1e-18) -> Dict:
+    """Volume sum + closed-form check against @@K.volume(shape)@@."""
+    verts = fill.get("vertices") or []
+    tets = fill.get("tets") or []
+    if not verts or not tets:
+        raise K.KernelError("体网格统计：空网格")
+    vols: List[float] = []
+    degenerate = 0
+    for (a, b, cc, d) in tets:
+        v = tet_volume(verts[a], verts[b], verts[cc], verts[d])
+        if v <= tol_volume:
+            degenerate += 1
+            continue
+        vols.append(v)
+    if not vols:
+        raise K.KernelError("体网格统计：全部四面体退化")
+    out = {"tets": len(tets), "vertices": len(verts),
+           "cells": int(fill.get("cells", 0)),
+           "degenerate": degenerate, "valid": len(vols),
+           "volume": sum(vols), "min_volume": min(vols),
+           "max_volume": max(vols), "cell": float(fill.get("cell", 0.0))}
+    if shape is not None:
+        ref = float(K.volume(shape))
+        out["volume_ref"] = ref
+        out["volume_rel_error"] = (abs(out["volume"] - ref) / ref) if ref > 0 else 0.0
+    return out
+

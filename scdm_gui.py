@@ -2726,14 +2726,43 @@ else:
             try:
                 mesh = ME.mesh_shape(body.shape, deflection=vals[0] / ses.scale)
                 stats = ME.mesh_stats(mesh, shape=body.shape)
-                ses.kdoc.meshes[body.id] = {"stats": stats}
+                verdict = ME.check_quality(mesh)
+                entry = ses.kdoc.meshes.setdefault(body.id, {})
+                entry["stats"] = stats
+                entry["gates"] = verdict
                 self._set_status(
-                    "网格：%d 三角形 / %d 顶点，退化 %d，面积误差 %.3g"
+                    "网格：%d 三角形 / %d 顶点，退化 %d，面积误差 %.3g，门槛 %s"
                     % (stats["triangles"], stats["vertices"],
-                       stats["degenerate"], stats["area_rel_error"]))
+                       stats["degenerate"], stats["area_rel_error"],
+                       "通过" if verdict["ok"]
+                       else "超限 %d 项" % verdict["count"]))
                 self._commit("已生成面网格")
             except Exception as exc:
                 self._set_status(f"网格失败: {exc}")
+
+        def _do_mesh_volume(self):
+            """P327: 体网格 - 体素四面体填充（体积和 vs 实体体积）。"""
+            ses = self.session()
+            body = self._selected_kbody()
+            if body is None and len(ses.kdoc.bodies) == 1:
+                body = ses.kdoc.bodies[0]
+            if body is None:
+                self._set_status("体网格：请先选择一个实体")
+                return
+            vals = self._ask_numbers("体网格", [("格边长 mm", 2.0)])
+            if not vals:
+                return
+            from scdm import mesh as ME
+            try:
+                fill = ME.tet_fill(body.shape, vals[0] / ses.scale)
+                stats = ME.tet_stats(fill, shape=body.shape)
+                ses.kdoc.meshes.setdefault(body.id, {})["volume"] = stats
+                self._set_status("体网格：%d 单元 / %d 四面体，体积误差 %.3g"
+                                 % (stats["cells"], stats["tets"],
+                                    stats["volume_rel_error"]))
+                self._commit("已生成体网格")
+            except Exception as exc:
+                self._set_status(f"体网格失败: {exc}")
 
         def _do_mesh_report(self):
             """P324: 网格质量报告导出（JSON/CSV）。"""

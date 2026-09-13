@@ -574,10 +574,28 @@ def op_mesh_surface(kdoc, opts, scale):
         raise ValueError("网格：实体不存在")
     mesh = ME.mesh_shape(body.shape, deflection=opts.get("deflection", 1.0) / scale)
     stats = ME.mesh_stats(mesh, shape=body.shape)
-    kdoc.meshes[body.id] = {"stats": stats}
-    return body, ("网格：%d 三角形 / %d 顶点，退化 %d，面积误差 %.3g"
+    verdict = ME.check_quality(mesh, opts.get("gates"))
+    entry = kdoc.meshes.setdefault(body.id, {})
+    entry["stats"] = stats
+    entry["gates"] = verdict
+    return body, ("网格：%d 三角形 / %d 顶点，退化 %d，面积误差 %.3g，门槛 %s"
                   % (stats["triangles"], stats["vertices"], stats["degenerate"],
-                     stats["area_rel_error"]))
+                     stats["area_rel_error"],
+                     "通过" if verdict["ok"]
+                     else "超限 %d 项" % verdict["count"]))
+
+
+def op_mesh_volume(kdoc, opts, scale):
+    """P327: 体网格——体素四面体填充（体积和 vs 实体体积 = 离散误差）。"""
+    from scdm import mesh as ME
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("体网格：实体不存在")
+    fill = ME.tet_fill(body.shape, opts.get("cell", 2.0) / scale)
+    stats = ME.tet_stats(fill, shape=body.shape)
+    kdoc.meshes.setdefault(body.id, {})["volume"] = stats
+    return body, ("体网格：%d 单元 / %d 四面体，体积误差 %.3g"
+                  % (stats["cells"], stats["tets"], stats["volume_rel_error"]))
 
 
 def op_mesh_report(kdoc, opts, scale):
@@ -764,6 +782,7 @@ OPS = {
     "sheet.conical": op_sheet_conical,
     "sheet.axial": op_sheet_axial,
     "mesh.surface": op_mesh_surface,
+    "mesh.volume": op_mesh_volume,
     "mesh.report": op_mesh_report,
 }
 
