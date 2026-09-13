@@ -38,6 +38,7 @@ HANDLE_HOT = QColor(255, 196, 40)
 HANDLE_SEL = QColor(0, 132, 96)
 BAND = QColor(0, 110, 180, 60)
 SNAP_MARK = QColor(0, 110, 180)
+NOTE_GDT = QColor(0, 130, 70)
 
 
 class SheetCanvas(QWidget):
@@ -46,10 +47,11 @@ class SheetCanvas(QWidget):
     changed = pyqtSignal()
 
     def __init__(self, views, dims, parent=None, grid: float = 0.0,
-                 snap_tol_px: float = 8.0):
+                 snap_tol_px: float = 8.0, annotations=None):
         super().__init__(parent)
         self.views = list(views or [])
         self.dims = list(dims or [])
+        self.notes = list(annotations or [])   # P299: leader / GD&T annotations
         self.scale = 1000.0        # px per metre
         self.ox = 20.0
         self.oy = 20.0
@@ -60,6 +62,7 @@ class SheetCanvas(QWidget):
         self.snap_tol_px = float(snap_tol_px)
         self.last_snap = ""                    # kind of the last snap ("", end, ...)
         self.undo = HISTORY.History(limit=100)
+        self.hot_note = -1                     # annotation under the cursor
         self._band = None                      # rubber band in pixels
         self._drag_from = None
         self._undo_pushed = False
@@ -207,8 +210,8 @@ class SheetCanvas(QWidget):
 
     def end_drag(self) -> None:
         """Close a drag: push the resulting state (one undo step per drag)."""
-        if self.undo.current() != self.offsets():
-            self.undo.push(self.offsets())
+        if self.undo.current() != self.state():
+            self.undo.push(self.state())
         self._undo_pushed = False
         self._drag_from = None
 
@@ -223,8 +226,8 @@ class SheetCanvas(QWidget):
         if index not in self.selected:
             self.selected = [index]
         if not self._undo_pushed:
-            if self.undo.current() != self.offsets():
-                self.undo.push(self.offsets())
+            if self.undo.current() != self.state():
+                self.undo.push(self.state())
             self._undo_pushed = True
         (vx, vy) = self.to_view(px, py)
         dim = self.dims[index]
@@ -244,7 +247,48 @@ class SheetCanvas(QWidget):
         self.changed.emit()
         return dim.offset
 
-    # -- undo / redo (offset snapshots - exact, no geometry involved) ------
+    # -- annotations (P299: free 2D anchors, unlike the 1-DOF dimensions) --
+    def pick_annotation(self, px, py, tol: float = 12.0) -> int:
+        """Index of the annotation anchor within tol pixels, else -1."""
+        best, best_d = -1, tol
+        for i, a in enumerate(self.notes):
+            p = self.to_px(*a.anchor)
+            d = ((p.x() - px) ** 2 + (p.y() - py) ** 2) ** 0.5
+            if d <= best_d:
+                best, best_d = i, d
+        return best
+
+    def snap_free_point(self, vx, vy):
+        """Snap a FREE 2D point: an annotation anchor has both degrees of
+        freedom, so it snaps to the nearest target point (a dimension only has
+        the scalar offset along its normal - rule 69)."""
+        if not self.snap_enabled:
+            return (vx, vy), ""
+        return self.snap.snap((vx, vy), self.snap_tol_px / max(self.scale, 1e-9))
+
+    def begin_annotation_drag(self, index: int, px, py) -> None:
+        self.hot_note = index
+        self._drag_from = (px, py)
+        self._undo_pushed = False
+
+    def drag_annotation(self, index: int, px, py):
+        """Move an annotation anchor to the (snapped) pixel point."""
+        if not (0 <= index < len(self.notes)):
+            return None
+        if not self._undo_pushed:
+            if self.undo.current() != self.state():
+                self.undo.push(self.state())
+            self._undo_pushed = True
+        (vx, vy) = self.to_view(px, py)
+        (sx, sy), kind = self.snap_free_point(vx, vy)
+        self.notes[index].move_to((sx, sy))
+        self.last_snap = kind
+        self.hot_note = index
+        self.update()
+        self.changed.emit()
+        return self.notes[index].anchor
+
+    # -- undo / redo (offset + annotation snapshots - exact, no geometry) --
     def offsets(self) -> List[float]:
         return [float(d.offset) for d in self.dims]
 
@@ -254,18 +298,33 @@ class SheetCanvas(QWidget):
         self.update()
         self.changed.emit()
 
+    def state(self):
+        """Everything a drag can change: dimension offsets + annotations."""
+        return {"offsets": self.offsets(),
+                "notes": [a.to_dict() for a in self.notes]}
+
+    def set_state(self, state) -> None:
+        from scdm.annotation import from_dict
+        if isinstance(state, dict):
+            self.set_offsets(state.get("offsets") or [])
+            self.notes = [from_dict(d) for d in (state.get("notes") or [])]
+        else:                       # a bare offset list (pre-P299 snapshot)
+            self.set_offsets(state)
+        self.update()
+        self.changed.emit()
+
     def undo_last(self) -> bool:
         snap = self.undo.undo()
         if snap is None:
             return False
-        self.set_offsets(snap)
+        self.set_state(snap)
         return True
 
     def redo_last(self) -> bool:
         snap = self.undo.redo()
         if snap is None:
             return False
-        self.set_offsets(snap)
+        self.set_state(snap)
         return True
 
     def rebuild_targets(self) -> None:
@@ -283,6 +342,11 @@ class SheetCanvas(QWidget):
             self.begin_drag(i, ev.x(), ev.y())
             self.update()
             return
+        j = self.pick_annotation(ev.x(), ev.y())
+        if j >= 0:
+            self.begin_annotation_drag(j, ev.x(), ev.y())
+            self.update()
+            return
         self._band = (ev.x(), ev.y(), ev.x(), ev.y())
         self.update()
 
@@ -294,9 +358,13 @@ class SheetCanvas(QWidget):
         if self.hot >= 0 and (ev.buttons() & Qt.LeftButton):
             self.drag_handle(self.hot, ev.x(), ev.y())
             return
+        if self.hot_note >= 0 and (ev.buttons() & Qt.LeftButton):
+            self.drag_annotation(self.hot_note, ev.x(), ev.y())
+            return
         i = self.pick(ev.x(), ev.y())
-        if i != self.hot:
-            self.hot = i
+        j = self.pick_annotation(ev.x(), ev.y()) if i < 0 else -1
+        if i != self.hot or j != self.hot_note:
+            self.hot, self.hot_note = i, j
             self.update()
 
     def mouseReleaseEvent(self, ev):
@@ -353,6 +421,17 @@ class SheetCanvas(QWidget):
                 p.setBrush(HANDLE_HOT if i == self.hot else HANDLE)
             p.setPen(QPen(QColor(120, 84, 0), 1.0))
             p.drawEllipse(hp, 5.0, 5.0)
+        for i, a in enumerate(self.notes):
+            from scdm.annotation import annotation_geometry, annotation_layer
+            segs, text, at = annotation_geometry(a)
+            colour = SNAP_MARK if annotation_layer(a) == "NOTE" else NOTE_GDT
+            if i == self.hot_note:
+                colour = HANDLE_HOT
+            p.setPen(QPen(colour, 1.3))
+            for q1, q2 in segs:
+                p.drawLine(self.to_px(*q1), self.to_px(*q2))
+            p.setFont(QFont('', 8))
+            p.drawText(self.to_px(*at), text)
         if self._band is not None:
             (x0, y0, x1, y1) = self._band
             p.setBrush(BAND)
@@ -365,19 +444,24 @@ class SheetCanvas(QWidget):
 class SheetDialog(QDialog):
     """P48/P287: preview a view with its dimensions and export the dragged state."""
 
-    def __init__(self, views, dims, title='图纸尺寸', parent=None, grid: float = 0.001):
+    def __init__(self, views, dims, title='图纸尺寸', parent=None,
+                 grid: float = 0.001, annotations=None):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.views = list(views or [])
-        self.canvas = SheetCanvas(self.views, dims, self, grid=grid)
+        self.canvas = SheetCanvas(self.views, dims, self, grid=grid,
+                                  annotations=annotations)
         self.hint = QLabel('拖动黄色手柄移动尺寸线（只改偏移，不改标注值）；'
                            'Ctrl 追加选择 / 框选成组移动；'
-                           '端点·中点·交点·1 mm 网格自动吸附；Ctrl+Z 撤销、Ctrl+Y 重做')
+                           '端点·中点·交点·1 mm 网格自动吸附；'
+                           '引线/公差框可拖动（标注不入几何）；Ctrl+Z 撤销、Ctrl+Y 重做')
         self.hint.setStyleSheet('color:#555')
         lay = QVBoxLayout(self)
         lay.addWidget(self.hint)
         lay.addWidget(self.canvas, 1)
         row = QHBoxLayout()
+        self.btn_note = QPushButton('加引线')
+        row.addWidget(self.btn_note)
         self.btn_undo = QPushButton('撤销')
         self.btn_redo = QPushButton('重做')
         self.btn_svg = QPushButton('导出 SVG')
@@ -387,12 +471,40 @@ class SheetDialog(QDialog):
                   self.btn_close):
             row.addWidget(b)
         lay.addLayout(row)
+        self.btn_note.clicked.connect(self.prompt_leader)
         self.btn_undo.clicked.connect(self.canvas.undo_last)
         self.btn_redo.clicked.connect(self.canvas.redo_last)
         self.btn_svg.clicked.connect(self.export_svg)
         self.btn_dxf.clicked.connect(self.export_dxf)
         self.btn_close.clicked.connect(self.reject)
         self.last_path: Optional[str] = None
+
+    def add_leader(self, text: str, anchor=None, view=None):
+        """P299: mount a leader annotation; the anchor snaps to a real target."""
+        from scdm.annotation import Leader
+        if not str(text or '').strip():
+            raise ValueError("引线标注必须有文字")
+        view = view or (self.canvas.views[0][0] if self.canvas.views else "")
+        if anchor is None:
+            anchor = (self.canvas.snap.targets[0][0], self.canvas.snap.targets[0][1]) \
+                if self.canvas.snap.targets else (0.0, 0.0)
+        note = Leader(view=view, anchor=tuple(anchor), text=str(text))
+        self.canvas.undo.push(self.canvas.state())
+        self.canvas.notes.append(note)
+        self.canvas.update()
+        self.canvas.changed.emit()
+        return note
+
+    def prompt_leader(self):
+        """Button path: ask for the text, then add_leader()."""
+        from PyQt5.QtWidgets import QInputDialog
+        text, ok = QInputDialog.getText(self, '引线标注', '文字')
+        if not ok:
+            return None
+        try:
+            return self.add_leader(text)
+        except ValueError:
+            return None
 
     def export_svg(self) -> Optional[str]:
         fn, _ = QFileDialog.getSaveFileName(self, '导出图纸', 'sheet.svg',
@@ -402,7 +514,8 @@ class SheetDialog(QDialog):
         if not fn.lower().endswith('.svg'):
             fn += '.svg'
         from scdm import drawing as D
-        D.svg_sheet(self.views, fn, dimensions=self.canvas.dims)
+        D.svg_sheet(self.views, fn, dimensions=self.canvas.dims,
+                    annotations=self.canvas.notes)
         self.last_path = fn
         return fn
 
@@ -414,6 +527,7 @@ class SheetDialog(QDialog):
         if not fn.lower().endswith('.dxf'):
             fn += '.dxf'
         from scdm import drawing as D
-        D.write_dxf(self.views, fn, dimensions=self.canvas.dims)
+        D.write_dxf(self.views, fn, dimensions=self.canvas.dims,
+                    annotations=self.canvas.notes)
         self.last_path = fn
         return fn

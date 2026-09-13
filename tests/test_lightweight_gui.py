@@ -346,6 +346,68 @@ class LightweightModeTests(unittest.TestCase):
         v._do_create_hole()
         assert scene.calls[-1][0] == "clear"
 
+    def test_p299_annotation_drag_snaps_in_2d_and_undoes(self):
+        """R55/P299: an annotation has both degrees of freedom, so its anchor
+        snaps to the nearest target POINT (a dimension only snaps its offset)."""
+        os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+        from scdm import drawing as D
+        from scdm.annotation import Leader
+        from scdm.gui.sheet import SheetCanvas
+
+        views = [('前视', [[(0.0, 0.0), (0.02, 0.0), (0.02, 0.02), (0.0, 0.02),
+                            (0.0, 0.0)]])]
+        dims = [D.Dimension('前视', 'h', 20.0, (0.0, 0.0), (0.02, 0.0), 0.01)]
+        lead = Leader(view='前视', anchor=(0.005, 0.005), text='注')
+        canvas = SheetCanvas(views, dims, annotations=[lead])
+        canvas.resize(600, 400)
+        tol_m = canvas.snap_tol_px / canvas.scale
+
+        assert canvas.pick_annotation(*[canvas.to_px(0.005, 0.005).x(),
+                                        canvas.to_px(0.005, 0.005).y()]) == 0
+        aim = canvas.to_px(0.02 + 0.4 * tol_m, 0.0 + 0.4 * tol_m)
+        canvas.begin_annotation_drag(0, *[canvas.handle_px(0).x(),
+                                          canvas.handle_px(0).y()])
+        canvas.drag_annotation(0, aim.x(), aim.y())
+        canvas.end_drag()
+        assert canvas.last_snap == 'end'
+        assert lead.anchor == (0.02, 0.0)          # exact corner
+        # undo restores the anchor exactly (annotations ride in the snapshot)
+        assert canvas.undo_last() is True
+        assert canvas.notes[0].anchor == (0.005, 0.005)
+        assert canvas.redo_last() is True
+        assert canvas.notes[0].anchor == (0.02, 0.0)
+
+    def test_p299_sheet_dialog_adds_a_leader_on_a_real_target(self):
+        """R55/P299: the dialog button path mounts a leader whose anchor is a
+        genuine snap target, and the export carries it."""
+        os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
+        import tempfile
+        from scdm import drawing as D
+        from scdm.gui.sheet import SheetDialog
+
+        views = [('前视', [[(0.0, 0.0), (0.02, 0.0), (0.02, 0.02), (0.0, 0.02),
+                            (0.0, 0.0)]])]
+        dims = D.dimensions_for(views)
+        dlg = SheetDialog(views, dims)
+        dlg.canvas.resize(600, 400)
+        note = dlg.add_leader('见明细')
+        assert note is not None and len(dlg.canvas.notes) == 1
+        anchor = note.anchor
+        assert any(abs(anchor[0] - x) < 1e-15 and abs(anchor[1] - y) < 1e-15
+                   for (x, y, _k) in dlg.canvas.snap.targets)
+        with self.assertRaises(ValueError):
+            dlg.add_leader('   ')
+        tmp = tempfile.mkdtemp(prefix='p299gui_')
+        try:
+            fn = os.path.join(tmp, 'sheet.svg')
+            D.svg_sheet(dlg.views, fn, dimensions=dlg.canvas.dims,
+                        annotations=dlg.canvas.notes)
+            body = open(fn, encoding='utf-8').read()
+        finally:
+            import shutil
+            shutil.rmtree(tmp, ignore_errors=True)
+        assert '见明细' in body and 'class="note"' in body
+
     def test_p48_det_dim_opens_the_sheet(self):
         """det.dim gets a real handler (the sheet dialog), not a status stub."""
         from scdm import kernel as K
