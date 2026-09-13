@@ -27,6 +27,28 @@ def test_p247_louver_slot_removes_length_times_width_times_thickness():
     assert removed == pytest.approx(0.01 * 0.003 * 0.002, rel=1e-3)
 
 
+def test_p253_bottom_face_louver_uses_the_oriented_prism():
+    """R45/P253: the prism route handles either normal direction."""
+    box = K.make_box(0.02, 0.02, 0.002)
+    bottom = None
+    for f in K.explore(box, "face"):
+        n, _c = K.face_normal_center(f)
+        if n[2] < -0.99:
+            bottom = f
+    assert bottom is not None
+    out = K.louver(box, bottom, 0.008, 0.002)
+    removed = K.volume(box) - K.volume(out)
+    assert removed == pytest.approx(0.008 * 0.002 * 0.002, rel=1e-3)
+
+
+def test_p253_prism_volume_matches_the_swept_area():
+    """The cutter is prism(profile, vec): volume = area x swept length."""
+    square = K.face_from_polygon([(0.0, 0.0, 0.0), (0.01, 0.0, 0.0),
+                                  (0.01, 0.01, 0.0), (0.0, 0.01, 0.0)])
+    solid = K.prism(square, (0.0, 0.0, 0.004))
+    assert K.volume(solid) == pytest.approx(0.01 * 0.01 * 0.004, rel=1e-6)
+
+
 def test_p247_louver_rejects_illegal_parameters():
     box = K.make_box(0.02, 0.02, 0.002)
     face = _top_face(box)

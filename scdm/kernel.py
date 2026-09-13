@@ -1043,24 +1043,28 @@ def louver(solid, face, length: float, width: float, height: float = 0.0,
     if height < 0:
         raise KernelError("百叶唇高不能为负")
     n, base = _face_frame(face, origin)
-    axis = max(range(3), key=lambda i: abs(n[i]))
-    if abs(abs(n[axis]) - 1.0) > 1e-6:
-        raise KernelError("百叶：当前仅支持轴对齐平面")
     lo, hi = _vertex_bbox(solid)
     corners = [(x, y, z) for x in (lo[0], hi[0]) for y in (lo[1], hi[1])
                for z in (lo[2], hi[2])]
     d_pos = max(sum((c[i] - base[i]) * n[i] for i in range(3)) for c in corners)
     d_neg = max(sum((base[i] - c[i]) * n[i] for i in range(3)) for c in corners)
     margin = 1e-6
-    span = d_neg + d_pos + 2.0 * margin
+    # P253/R45: an ORIENTED prism cutter built in the face frame - this lifts
+    # the old axis-aligned limitation (the rectangle lives on the face plane
+    # and is pushed along the normal through the sheet)
+    ref = [1.0, 0.0, 0.0] if abs(n[0]) < 0.9 else [0.0, 1.0, 0.0]
+    u = [ref[i] - sum(ref[j] * n[j] for j in range(3)) * n[i] for i in range(3)]
+    ul = sum(v * v for v in u) ** 0.5 or 1.0
+    u = [v / ul for v in u]
+    v = [n[1] * u[2] - n[2] * u[1], n[2] * u[0] - n[0] * u[2],
+         n[0] * u[1] - n[1] * u[0]]
+    hl, hw = length / 2.0, width / 2.0
     start = tuple(base[i] - n[i] * (d_neg + margin) for i in range(3))
-    size = [0.0, 0.0, 0.0]
-    other = [i for i in range(3) if i != axis]
-    size[axis] = span
-    size[other[0]] = length
-    size[other[1]] = width
-    org = [start[i] - (size[i] / 2.0 if i != axis else 0.0) for i in range(3)]
-    return cut(solid, make_box(size[0], size[1], size[2], origin=tuple(org)))
+    pts = [tuple(start[i] + u[i] * su * hl + v[i] * sv * hw for i in range(3))
+           for (su, sv) in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+    profile = face_from_polygon(pts)
+    span = d_neg + d_pos + 2.0 * margin
+    return cut(solid, prism(profile, tuple(n[i] * span for i in range(3))))
 
 
 def dimple_round(solid, face, diameter: float, depth: float,
