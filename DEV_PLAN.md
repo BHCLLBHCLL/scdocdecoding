@@ -875,14 +875,14 @@ T_RECORD "surface" [id]
 | 层 | 实测状态 |
 | --- | --- |
 | UI 命令面 | 18 ribbon 页签（+1 backstage）/ 164 命令 / **29 live（内核不可用）** / **177 live（内核可用）**；占位 safety.tab |
-| 测试 | 680 条（def test_ 扫描）；命令级测试提及 126/178（其余逐条在 tests/test_coverage_ledger.py 声明理由） |
+| 测试 | 689 条（def test_ 扫描）；命令级测试提及 128/178（其余逐条在 tests/test_coverage_ledger.py 声明理由） |
 <!-- SNAPSHOT:END -->
 
 | 层 | 实测状态（手写补充） |
 | --- | --- |
-| 内核（kernel.py **106** 函数，R101 实测见 `tools/state_inventory.py`） | 基本体×4、拉伸/旋转/螺旋/棱柱、布尔、圆角/倒角/抽壳/拔模/偏移、阵列（线性/圆周/路径/填充）、镜像、分割、修复组（缝隙/缺失面/实体化/缝合）、中面/共享拓扑、干涉/体积/面积/重心、孔族（简单/沉头/锥沉）、凸台、STEP/STL/BREP 读写、离散 |
+| 内核（kernel.py 公开函数数量以 `tools/state_inventory.py` 的 `kernel_public_functions` 为准，不再手写数字） | 基本体×4、拉伸/旋转/螺旋/棱柱、布尔、圆角/倒角/抽壳/拔模/偏移、阵列（线性/圆周/路径/填充）、镜像、分割、修复组（缝隙/缺失面/实体化/缝合）、中面/共享拓扑、干涉/体积/面积/重心、孔族（简单/沉头/锥沉）、凸台、STEP/STL/BREP 读写、离散 |
 | scdoc 数据层 | **读取**：22 类 SAB 记录全解码（含 B 样条深度解码/容忍拓扑）、facets、document.xml；**写入**：FIFO 遍历 + 平面/圆柱/球/环/B 样条体官方 bodies=1；SAT 备用通路；模板打包 |
-| 脚本 | 录制/回放 **52** ops（含 P4 孔族 / P6 卷边·加强筋；R101 复核） |
+| 脚本 | 录制/回放 op 数量以 `tools/state_inventory.py` 的 `script_ops` 为准（含 P4 孔族 / P6 卷边·加强筋 / R102 特征参数编辑 `det.params`） |
 
 > **P3 刷新（2026-09-12）**：本表由 `tools/gen_devplan_snapshot.py` 自动生成，脚本此前在
 > cp1252 控制台因中文标签抛 `UnicodeEncodeError`（故 195/71 等旧数长期未更新），已修复并新增

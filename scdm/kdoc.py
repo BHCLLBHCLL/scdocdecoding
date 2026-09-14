@@ -5,9 +5,17 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 from scdm import kernel as K
-from scdm.features import FeatureHistory, FeatureStack
+from scdm.features import FeatureHistory, FeatureStack, replay_mismatch
 
 Vec3 = Tuple[float, float, float]
+
+
+def _safe_volume(shape) -> Optional[float]:
+    """Volume in kernel units, or None when the shape has no volume (R102)."""
+    try:
+        return float(K.volume(shape))
+    except Exception:
+        return None
 
 
 @dataclass
@@ -18,6 +26,12 @@ class KBody:
     color: Vec3 = (0.62, 0.66, 0.70)
     visible: bool = True
     layer: str = "默认"
+    # R102/P0-1: the un-featured shape that a feature stack replays onto,
+    # captured when the body enters the document. None means "unknown" and makes
+    # a parameter edit refuse instead of guessing (e.g. a legacy project file
+    # that stored the history but not the base, or a body changed after the last
+    # recorded feature).
+    base_shape: Any = None
 
 
 @dataclass
@@ -147,6 +161,120 @@ class KernelDoc:
 
     def clear_features(self, body_id: str) -> None:
         self.features.pop(body_id, None)
+
+
+    # ---- R102/P0-1: feature parameter edits ------------------------------
+    def _stack_len(self, body_id: str) -> int:
+        stack = self.features.get(body_id)
+        return len(stack) if stack is not None else 0
+
+    def _base_shape(self, body, scale: float = 1000.0):
+        """The shape a replay must start from.
+
+        A parametric body replays from its *builder* (that is the live
+        definition, and it is what `rebuild_parametric` already does); every
+        other body replays from the base captured when it entered the document.
+        """
+        for p in self.parametrics:
+            if getattr(p, "body_id", None) == body.id:
+                try:
+                    return p.build(scale)
+                except Exception:
+                    return None
+        return body.base_shape
+
+    def can_replay(self, body_id: str, scale: float = 1000.0):
+        """(ok, reason): can this body's feature history drive a parameter edit?
+
+        The recorded stack must reproduce the body that is actually in the
+        document; a body changed after its last recorded feature (boolean,
+        import, an unrecorded tool) fails here and the edit is refused with the
+        measured difference instead of silently rebuilding a different body.
+        """
+        body = self.body_by_id(body_id)
+        if body is None:
+            return False, "未知实体：%s" % body_id
+        stack = self.feature_stack(body_id)
+        if not len(stack):
+            return False, "该实体没有特征历史"
+        base = self._base_shape(body, scale)
+        if base is None:
+            return False, "缺少基准形状（未记录特征前的形状）"
+        try:
+            rebuilt = stack.apply(base, scale)
+        except Exception as exc:
+            return False, "重放失败：%s" % exc
+        if rebuilt is None:
+            return False, "重放失败：内核返回空形状"
+        why = replay_mismatch(rebuilt, body.shape)
+        if why:
+            return False, "实体与特征历史不一致（%s）" % why
+        return True, ""
+
+    def replay_body(self, body_id: str, scale: float = 1000.0):
+        """Rebuild a body from its base shape + feature stack."""
+        body = self.body_by_id(body_id)
+        if body is None:
+            return False, "未知实体：%s" % body_id
+        stack = self.feature_stack(body_id)
+        if not len(stack):
+            return False, "该实体没有特征历史"
+        base = self._base_shape(body, scale)
+        if base is None:
+            return False, "缺少基准形状（未记录特征前的形状）"
+        try:
+            shape = stack.apply(base, scale)
+        except Exception as exc:
+            return False, "重放失败：%s" % exc
+        if shape is None:
+            return False, "重放失败：内核返回空形状"
+        body.shape = shape
+        return True, ""
+
+    def edit_feature(self, body_id: str, index: int, param: str, value,
+                     scale: float = 1000.0) -> dict:
+        """Change one recorded feature parameter and replay the body.
+
+        Atomic: either the parameter *and* the geometry move together, or
+        neither does (a failed replay restores both).  The report carries the
+        volume before/after so a caller can check it against a closed form.
+        """
+        rep = {"ok": False, "body": body_id, "index": index, "param": param,
+               "value": value, "old": None, "op": None, "label": "",
+               "reason": "", "volume_before": None, "volume_after": None}
+        body = self.body_by_id(body_id)
+        if body is None:
+            rep["reason"] = "未知实体：%s" % body_id
+            return rep
+        stack = self.feature_stack(body_id)
+        if not (0 <= index < len(stack)):
+            rep["reason"] = "特征序号越界：%s" % index
+            return rep
+        feature = stack.features[index]
+        rep["op"] = feature.op
+        rep["label"] = feature.label()
+        ok, why = self.can_replay(body_id, scale)
+        if not ok:
+            rep["reason"] = why
+            return rep
+        rep["volume_before"] = _safe_volume(body.shape)
+        saved_shape = body.shape
+        saved_params = dict(feature.params)
+        old, err = stack.set_param(index, param, value)
+        if err:
+            rep["reason"] = err
+            return rep
+        rep["old"] = old
+        ok, why = self.replay_body(body_id, scale)
+        if not ok:
+            feature.params.clear()
+            feature.params.update(saved_params)
+            body.shape = saved_shape
+            rep["reason"] = why
+            return rep
+        rep["ok"] = True
+        rep["volume_after"] = _safe_volume(body.shape)
+        return rep
 
     # ---- P23: assembly configurations -----------------------------------
     def add_configuration(self, name: Optional[str] = None,
@@ -396,7 +524,8 @@ class KernelDoc:
     def add_body(self, shape, name: Optional[str] = None, color: Vec3 = (0.62, 0.66, 0.70)) -> KBody:
         bid = f"B{self._n}"
         self._n += 1
-        body = KBody(id=bid, name=name or f"实体 {self._n - 1}", shape=shape, color=color)
+        body = KBody(id=bid, name=name or f"实体 {self._n - 1}", shape=shape,
+                     color=color, base_shape=shape)
         self.bodies.append(body)
         return body
 
@@ -461,25 +590,48 @@ class KernelDoc:
             n += 1
         return n
 
-    def snapshot(self) -> List[tuple]:
-        if not K.available():
-            return []
-        return [
-            (b.id, b.name, K.dumps_brep(b.shape), b.color, b.visible)
-            for b in self.bodies
-        ]
 
-    def restore(self, snap: List[tuple]) -> None:
+    def snapshot(self):
+        """Undo/redo state: body shapes *and* the modelling history (R102).
+
+        Callers treat this as an opaque token.  The dict form exists because
+        undoing a *parameter* edit must restore the recorded parameters together
+        with the geometry: a stack that describes the old shape while the body
+        shows the new one would be a lie (and would make the next edit refuse).
+        A legacy list of 5-tuples is still accepted by `restore`.
+        """
+        if not K.available():
+            return {"bodies": [], "features": {}, "bases": {}}
+        return {
+            "bodies": [(b.id, b.name, K.dumps_brep(b.shape), b.color, b.visible)
+                       for b in self.bodies],
+            "features": {bid: st.as_dict()
+                         for bid, st in self.features.items() if len(st)},
+            "bases": {b.id: K.dumps_brep(b.base_shape) for b in self.bodies
+                      if b.base_shape is not None and self._stack_len(b.id)},
+        }
+
+    def restore(self, snap) -> None:
+        if isinstance(snap, dict):
+            rows = snap.get("bodies") or []
+            feats = snap.get("features") or {}
+            bases = snap.get("bases") or {}
+        else:                      # legacy: [(id, name, brep, color, visible)]
+            rows, feats, bases = list(snap or []), {}, {}
         self.bodies = []
         max_n = 1
-        for bid, name, blob, color, vis in snap:
+        for bid, name, blob, color, vis in rows:
             sh = K.loads_brep(blob)
-            self.bodies.append(KBody(id=bid, name=name, shape=sh, color=color, visible=vis))
+            base = K.loads_brep(bases[bid]) if bid in bases else None
+            self.bodies.append(KBody(id=bid, name=name, shape=sh, color=color,
+                                     visible=vis, base_shape=base))
             try:
                 max_n = max(max_n, int(bid[1:]) + 1)
             except Exception:
                 pass
         self._n = max_n
+        self.features = {bid: FeatureStack.from_dict(data)
+                         for bid, data in feats.items()}
 
     def compound(self):
         if not self.bodies:

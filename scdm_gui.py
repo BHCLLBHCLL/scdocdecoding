@@ -2245,7 +2245,7 @@ else:
             text, ok = QInputDialog.getText(self, title, label)
             return text.strip() if ok and text.strip() else None
 
-        # -- H7: parameter editor ---------------------------------------
+        # -- H7: parameter editor (R102: also feature parameters) ---------
         def _do_det_params(self):
             ses = self.session()
             if ses.kdoc.param_table is None:
@@ -2258,6 +2258,25 @@ else:
                                        for k, v in sorted(defs.items()))
             else:
                 initial = "width = 20" + chr(10) + "height = width * 2"
+            from scdm import features as FEAT
+            body_ids = [b.id for b in ses.kdoc.bodies]
+            # R102/P0-1: one editable row per recorded feature parameter. A body
+            # whose history cannot reproduce its current shape is listed as a
+            # comment with the measured reason instead of being replayed blind.
+            feat_lines = []
+            for b in ses.kdoc.bodies:
+                stack = ses.kdoc.features.get(b.id)
+                if stack is None or not len(stack):
+                    continue
+                feat_lines.append("# %s %s：" % (b.id, b.name)
+                                  + " + ".join(stack.ops()))
+                ok, why = ses.kdoc.can_replay(b.id, ses.scale)
+                if not ok:
+                    feat_lines.append("#   不可重放 — %s" % why)
+                    continue
+                for row in stack.editable():
+                    feat_lines.append("%s %d %s = %g" % (
+                        b.id, row["index"], row["param"], row["value"]))
             from PyQt5.QtWidgets import (QDialog, QDialogButtonBox,
                                          QPlainTextEdit, QVBoxLayout, QLabel)
             dlg = QDialog(self)
@@ -2266,8 +2285,13 @@ else:
             lay.addWidget(QLabel("每行一个参数：名称 = 数值或表达式"))
             edit = QPlainTextEdit()
             edit.setPlainText(initial)
-            edit.setMinimumSize(420, 240)
+            edit.setMinimumSize(420, 170)
             lay.addWidget(edit)
+            lay.addWidget(QLabel("特征参数（每行：实体 特征序号 参数 = 值，例如 B1 0 diameter = 8）"))
+            fedit = QPlainTextEdit()
+            fedit.setPlainText(chr(10).join(feat_lines))
+            fedit.setMinimumSize(420, 170)
+            lay.addWidget(fedit)
             btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
             btns.accepted.connect(dlg.accept)
             btns.rejected.connect(dlg.reject)
@@ -2288,12 +2312,32 @@ else:
             except Exception as exc:
                 QMessageBox.critical(self, "参数", f"参数无效：{exc}")
                 return
+            edits, errs = FEAT.parse_edit_lines(fedit.toPlainText(), body_ids)
+            if errs:
+                QMessageBox.critical(self, "特征参数", chr(10).join(errs))
+                return
             ses.kdoc.param_table = new_table
             # drive parametric bodies whose params reference the table
             for p in ses.kdoc.parametrics:
                 p.table = new_table
                 ses.kdoc.rebuild_parametric(p, ses.scale)
-            self._commit(f"参数已更新（{len(new_table.names())} 个）并重建")
+            reports = FEAT.apply_edits(ses.kdoc, edits, ses.scale)
+            for e, r in zip(edits, reports):
+                if not r["ok"]:
+                    continue
+                idx = next((i for i, b in enumerate(ses.kdoc.bodies)
+                            if b.id == e["body"]), 0)
+                self._record("det.params", target="body", index=idx,
+                             feature=e["index"], param=e["param"],
+                             value=r["value"])
+            done = [r for r in reports if r["ok"]]
+            failed = [r for r in reports if not r["ok"]]
+            self._commit("参数已更新：%d 个表达式 + %d 个特征参数"
+                         % (len(new_table.names()), len(done)))
+            if failed:
+                QMessageBox.warning(self, "特征参数", chr(10).join(
+                    "%s #%s %s：%s" % (r["body"], r["index"], r["param"],
+                                       r["reason"]) for r in failed))
 
         def _do_repair_check(self):
             """H4 检查几何：全项检出 + 一键修复向导（R83 起含未封闭度）。"""

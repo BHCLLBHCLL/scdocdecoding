@@ -82,7 +82,7 @@ EXEMPT = {
     "ks.render": "HOST: KeyShot integration",
     # detailing dialogs
     "det.note": "GUI note dialog",
-    "det.params": "GUI parameter editor dialog (ParamTable covered)",
+    "det.params": "GUI parameter editor dialog (ParamTable + feature-parameter edit covered by test_feature_edit_r102)",
     "det.bom": "GUI BOM dialog",
     # tools dialogs
     "tools.script": "GUI script editor (scdm.scripting covered)",

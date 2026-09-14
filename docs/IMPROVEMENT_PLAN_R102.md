@@ -11,7 +11,12 @@
 
 ## P0 一致性闭环（1–2 天，先做）
 
-### P0-1 特征编辑闭环：GUI 参数 → 特征参数 → 重放
+### ✅ P0-1 特征编辑闭环：GUI 参数 → 特征参数 → 重放（**R102 已交付**）
+
+> 交付见 [ROUND_R102_20260912.md](ROUND_R102_20260912.md)：可编辑参数白名单（19 个 op）、
+> `can_replay/replay_body/edit_feature`（原子、带体积前后）、基准形状随工程持久化、
+> `det.params` 脚本步、对话框特征参数区；闭式验收 3.80365045915e-06 → 3.49734517543e-06，
+> 撤销与失败回滚各有测试。遗留边界见 [IMPROVEMENT_PLAN_R103.md](IMPROVEMENT_PLAN_R103.md)。
 - **现状证据**：`features.py` `FeatureStack`（每体）+ `FeatureHistory`（文档级）+ `KernelDoc.replay_document()`
   已存在，录制点 20+（`scdm_gui.py` 1085/1110/1252/1278/1320/1352/1385/1431/1494/1528/1560/1594/1623/1648/1751/1791/
   3691/3696`、`scdm/tools/direct.py` 102/202、`scdm/scripting.py` 618）；但 GUI 的参数表只驱动

@@ -17,13 +17,33 @@ from scdm.features import FeatureHistory, FeatureStack
 from scdm.kdoc import Component, KernelDoc
 
 
+def _has_history(kdoc, bid: str) -> bool:
+    stack = getattr(kdoc, "features", {}).get(bid)
+    return bool(stack) and len(stack) > 0
+
+
+def _body_manifest(b, kdoc) -> dict:
+    """One manifest body row.  R102: featured bodies also carry their base.
+
+    Without the base a reloaded project could only replay from the *featured*
+    shape it stored, which rebuilds a different body; so the base travels with
+    the file, and a body whose base is missing is left unknown so that a
+    parameter edit refuses instead of guessing.
+    """
+    row = {"id": b.id, "name": b.name, "color": list(b.color),
+           "visible": b.visible,
+           "layer": getattr(b, "layer", "默认") or "默认",
+           "file": f"bodies/{b.id}.brep"}
+    if _has_history(kdoc, b.id) and getattr(b, "base_shape", None) is not None:
+        row["base"] = f"bodies/{b.id}.base.brep"
+    return row
+
+
 def save_scdm(path: str, kdoc: KernelDoc) -> None:
     manifest = {
         "format": "scdm-session",
         "version": 5,
-        "bodies": [{"id": b.id, "name": b.name, "color": list(b.color), "visible": b.visible,
-                    "layer": getattr(b, "layer", "默认") or "默认",
-                    "file": f"bodies/{b.id}.brep"} for b in kdoc.bodies],
+        "bodies": [_body_manifest(b, kdoc) for b in kdoc.bodies],
         "notes": [{"pos": list(n.get("pos") or (0, 0, 0)), "text": n.get("text", "")}
                   for n in getattr(kdoc, "notes", [])],
         "named": [{"name": n.get("name", ""),
@@ -69,6 +89,8 @@ def save_scdm(path: str, kdoc: KernelDoc) -> None:
         z.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
         for b in kdoc.bodies:
             z.writestr(f"bodies/{b.id}.brep", K.dumps_brep(b.shape))
+            if _has_history(kdoc, b.id) and b.base_shape is not None:
+                z.writestr(f"bodies/{b.id}.base.brep", K.dumps_brep(b.base_shape))
 
 
 def load_scdm(path: str) -> KernelDoc:
@@ -83,6 +105,15 @@ def load_scdm(path: str) -> KernelDoc:
             body.id = item["id"]
             body.visible = bool(item.get("visible", True))
             body.layer = item.get("layer") or "默认"
+            # R102: the feature base travels with the file; a featured body
+            # without one keeps base_shape = None so replay refuses.
+            if item.get("base"):
+                try:
+                    body.base_shape = K.loads_brep(z.read(item["base"]))
+                except Exception:
+                    body.base_shape = None
+            elif (man.get("features") or {}).get(body.id):
+                body.base_shape = None
             try:
                 max_n = max(max_n, int(str(body.id)[1:]) + 1)
             except Exception:

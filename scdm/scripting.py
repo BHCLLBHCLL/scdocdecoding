@@ -75,10 +75,15 @@ def op_pull(kdoc, opts, scale):
     faces = K.explore(body.shape, "face")
     fi = opts.get("face_i", 0)
     d = opts.get("distance", 5.0) / scale
+    from scdm import features as FEAT
+    sel = FEAT.selector_for(body.shape, faces[fi])
     if opts.get("symmetric"):
         body.shape = K.pull_face_symmetric(body.shape, faces[fi], d)
     else:
         body.shape = K.pull_face(body.shape, faces[fi], d)
+    kdoc.record_feature(body.id, "pull", selector=sel,
+                        distance=opts.get("distance", 5.0),
+                        symmetric=bool(opts.get("symmetric")))
     return body, f"拉动 {opts.get('distance', 5.0)}mm"
 
 
@@ -129,7 +134,9 @@ def op_blend(kdoc, opts, scale):
     body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
     if body is None:
         raise ValueError("倒圆：实体不存在")
-    body.shape = K.fillet_edges(body.shape, opts.get("radius", 1.0) / scale)
+    radius = opts.get("radius", 1.0)
+    body.shape = K.fillet_edges(body.shape, radius / scale)
+    kdoc.record_feature(body.id, "fillet", radius=radius)
     return body, "已倒圆"
 
 
@@ -137,7 +144,9 @@ def op_chamfer(kdoc, opts, scale):
     body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
     if body is None:
         raise ValueError("倒角：实体不存在")
-    body.shape = K.chamfer_edges(body.shape, opts.get("distance", 1.0) / scale)
+    distance = opts.get("distance", 1.0)
+    body.shape = K.chamfer_edges(body.shape, distance / scale)
+    kdoc.record_feature(body.id, "chamfer", distance=distance)
     return body, "已倒角"
 
 
@@ -256,7 +265,11 @@ def op_shell(kdoc, opts, scale):
     if body is None:
         raise ValueError("抽壳：实体不存在")
     faces = K.explore(body.shape, "face")
-    body.shape = K.shell_solid(body.shape, opts.get("thickness", 1.0) / scale, [faces[0]])
+    from scdm import features as FEAT
+    sel = FEAT.selector_for(body.shape, faces[0])
+    thickness = opts.get("thickness", 1.0)
+    body.shape = K.shell_solid(body.shape, thickness / scale, [faces[0]])
+    kdoc.record_feature(body.id, "shell", selectors=[sel], thickness=thickness)
     return body, "已抽壳"
 
 
@@ -362,28 +375,44 @@ def _op_hole(kdoc, opts, scale, kind):
     face = faces[fi]
     d = opts.get("diameter", 5.0) / scale
     depth = opts.get("depth", 0.0)
+    # R102/P0-1: the scripted hole populates the same feature history the GUI
+    # writes, so a later parameter edit (or a replayed journal) can rebuild it.
+    from scdm import features as FEAT
+    sel = FEAT.selector_for(body.shape, face)
     if kind == "simple":
         body.shape = K.hole_simple(
             body.shape, face, d, depth=None if depth <= 0 else depth / scale)
+        kdoc.record_feature(body.id, "hole", selector=sel,
+                            diameter=opts.get("diameter", 5.0), depth=depth)
         return body, f"孔 d={opts.get('diameter', 5.0)}mm"
     if kind == "tapped":
         # R32/P187: same op surface as the other holes, plus nominal/pitch
+        nominal = opts.get("nominal", 6.0)
+        pitch = opts.get("pitch", 1.0)
         body.shape = K.hole_tapped(
-            body.shape, face, opts.get("nominal", 6.0) / scale,
-            opts.get("pitch", 1.0) / scale,
+            body.shape, face, nominal / scale, pitch / scale,
             depth=None if depth <= 0 else depth / scale)
-        return body, ("攻丝孔 M%g×%g" % (opts.get("nominal", 6.0),
-                                         opts.get("pitch", 1.0)))
+        kdoc.record_feature(body.id, "hole_tapped", selector=sel,
+                            nominal=nominal, pitch=pitch, depth=depth)
+        return body, ("攻丝孔 M%g×%g" % (nominal, pitch))
     if kind == "cbore":
         body.shape = K.hole_counterbore(
             body.shape, face, d, depth / scale,
             opts.get("cbore_diameter", 10.0) / scale,
             opts.get("cbore_depth", 3.0) / scale)
+        kdoc.record_feature(body.id, "hole_cbore", selector=sel,
+                            diameter=opts.get("diameter", 5.0), depth=depth,
+                            cbore_diameter=opts.get("cbore_diameter", 10.0),
+                            cbore_depth=opts.get("cbore_depth", 3.0))
         return body, f"沉头孔 d={opts.get('diameter', 5.0)}mm"
     body.shape = K.hole_countersink(
         body.shape, face, d, depth / scale,
         opts.get("sink_diameter", 10.0) / scale,
         angle_deg=opts.get("angle", 90.0))
+    kdoc.record_feature(body.id, "hole_csink", selector=sel,
+                        diameter=opts.get("diameter", 5.0), depth=depth,
+                        sink_diameter=opts.get("sink_diameter", 10.0),
+                        angle=opts.get("angle", 90.0))
     return body, f"锥沉孔 d={opts.get('diameter', 5.0)}mm"
 
 
@@ -862,6 +891,23 @@ def op_surface_untrim(kdoc, opts, scale):
     return body, "已去修剪"
 
 
+def op_param_edit(kdoc, opts, scale):
+    """R102/P0-1: change a recorded feature parameter and replay the body.
+
+    The step id is `det.params` (the parameter command itself), so a recorded
+    journal reproduces the same edit on a fresh document: the body is rebuilt
+    from its base shape + feature stack, exactly like the GUI dialog does.
+    """
+    body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if body is None:
+        raise ValueError("参数编辑：实体不存在")
+    rep = kdoc.edit_feature(body.id, int(opts.get("feature", 0)),
+                            str(opts.get("param", "")), opts.get("value"), scale)
+    if not rep.get("ok"):
+        raise ValueError("参数编辑失败：%s" % rep.get("reason"))
+    return body, "参数 %s：%s → %s" % (rep["param"], rep["old"], rep["value"])
+
+
 OPS = {
     "insert.cyl": op_insert_cyl,
     "insert.sphere": op_insert_sphere,
@@ -916,6 +962,7 @@ OPS = {
     "mesh.surface": op_mesh_surface,
     "mesh.volume": op_mesh_volume,
     "mesh.report": op_mesh_report,
+    "det.params": op_param_edit,        # R102/P0-1: feature parameter edit
 }
 
 
