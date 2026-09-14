@@ -520,6 +520,26 @@ class SheetDialog(QDialog):
         self._chain_text = DC.describe(verdict)
         return total
 
+    def add_chain_labels(self, gap_mm: float = 8.0):
+        """R90/P422: 极值/统计两条总尺寸并列 + 一条链线（同一链）。
+
+        Returns the dict from dimchain.chain_annotations, or None when the run
+        is not a chain; the verdict text still reaches the status bar.
+        """
+        from scdm import dimchain as DC
+        try:
+            verdict = DC.check_chain(self.canvas.dims)
+            made = DC.chain_annotations(self.canvas.dims, gap_mm=gap_mm)
+        except ValueError:
+            return None
+        self.canvas.undo.push(self.canvas.state())
+        self.canvas.dims.extend([made["worst"], made["rss"]])
+        self.canvas.notes.append(made["line"])
+        self.canvas.update()
+        self.canvas.changed.emit()
+        self._chain_text = DC.describe(verdict)
+        return made
+
     def chain_text(self) -> str:
         """The last chain verdict, one line (rule 84: same wording everywhere)."""
         return getattr(self, "_chain_text", "")

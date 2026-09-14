@@ -125,6 +125,59 @@ def chain_dimension(dims: Sequence[Dimension], tol_gap: float = 1e-6,
     return total
 
 
+def chain_annotations(dims: Sequence[Dimension], tol_gap: float = 1e-6,
+                      gap_mm: float = 8.0,
+                      modes: Sequence[str] = ("worst", "rss")) -> Dict[str, Any]:
+    """一侧链、两条并列总尺寸 + 一条链线（R90/P422）。
+
+    同一段尺寸链给出**两种叠加口径**的总尺寸：极值（worst，|tol| 之和）与统计（rss，平方和开方）。
+    两条标注共用同一个链和，但各自的 `tol` 不同，因此 `dim_text()` 渲染出的文字不同——
+    文字只有一处实现（纪律 84），画布/SVG/DXF 都不会漏掉公差。
+
+    链线是一条**引线标注**（`scdm.annotation.Leader`）：它在注记层（layer=NOTE），
+    不参与几何、不进包围盒、不可拾取；两条标注按 `gap_mm` 上下错开，互不压字。
+
+    Returns:
+        {"worst": Dimension, "rss": Dimension, "line": Leader,
+         "texts": [str, str], "span_mm": float, "count": int}
+    """
+    from scdm.annotation import Leader
+    from scdm.drawing import dim_text
+
+    items = list(dims or ())
+    verdict = check_chain(items, tol_gap=tol_gap)
+    if not verdict["ok"]:
+        raise ValueError("尺寸链不成立：断口 %d 处、方向违规 %d 处"
+                         % (len(verdict["breaks"]), len(verdict["violations"])))
+    modes = tuple(modes)
+    if len(modes) != 2:
+        raise ValueError("尺寸链标注：需要两个叠加口径（如 worst/rss）")
+    first = items[verdict["order"][0]]
+    last = items[verdict["order"][-1]]
+    made = []
+    for i, mode in enumerate(modes):
+        total = chain_dimension(items, tol_gap=tol_gap, mode=mode)
+        total.offset = float(first.offset) + (i * float(gap_mm) / MM)
+        made.append(total)
+    worst, rss = made
+    # the chain line: from the first start to the last end, one gap further out
+    axis = AXIS_INDEX.get(verdict["axis"], 0)
+    lo = _start(first)
+    hi = _end(last)
+    off = worst.offset + float(gap_mm) / MM
+    if axis == 0:                       # horizontal chain: line runs in x
+        a = (lo, first.a[1] + off)
+        b = (hi, first.a[1] + off)
+    else:
+        a = (first.a[0] + off, lo)
+        b = (first.a[0] + off, hi)
+    line = Leader(view=first.view, anchor=a, elbow=b,
+                  text="尺寸链 %d 段" % verdict["count"], arrow="none",
+                  text_height=0.0025)
+    return {"worst": worst, "rss": rss, "line": line,
+            "texts": [dim_text(worst), dim_text(rss)],
+            "span_mm": abs(hi - lo) * MM, "count": verdict["count"]}
+
 def describe(verdict: Dict[str, Any]) -> str:
     """One line for a status bar (single source for the wording, rule 84)."""
     if verdict.get("ok"):
