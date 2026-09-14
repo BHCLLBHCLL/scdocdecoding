@@ -97,8 +97,10 @@ TABS: Tuple[Tab, ...] = (
             C("con.coin", "重合", "Coincident", "M3", "coin"),
             C("con.tan", "相切", "Tangent", "M3", "tan"),
             C("con.eq", "相等", "Equal", "M3", "eq"),
-            C("con.par", "平行垂直", "Par/Perp", "M3", "par"),
-            C("con.fix", "中点固定", "Mid/Fix", "M3", "fix"),
+            C("con.par", "平行", "Parallel", "M3", "par"),
+            C("con.perp", "垂直", "Perpendicular", "M3", "perp"),
+            C("con.mid", "中点", "Midpoint", "M3", "mid"),
+            C("con.fix", "固定", "Fix", "M3", "fix"),
         )),
         Group("特征", "Features", (
             C("create.hole", "孔", "Hole", "M4", "circle", large=True,

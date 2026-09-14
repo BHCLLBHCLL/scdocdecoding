@@ -71,3 +71,29 @@ def test_repo_snapshot_block_is_wellformed():
     block = text.split(mod.BEGIN, 1)[1].split(mod.END, 1)[0]
     assert block.count("|") >= 8
     assert "test_coverage_ledger.py" in block
+
+def test_live_unavailable_cell_is_interpreter_independent(monkeypatch):
+    """R101 D1: the 内核不可用 cell answers about the kernel, not the runner.
+
+    Before the fix the cell was len(live_commands()) - so it read 177 whenever
+    the tool ran under the OCC env and `--check` then failed under any
+    interpreter without OCC. The unavailable live set is M1_LIVE by
+    construction, which this test measures both ways.
+    """
+    import scdm.kernel as kernel
+    from scdm.catalog import M1_LIVE
+    monkeypatch.setattr(kernel, "available", lambda: False)
+    assert live_commands() == set(M1_LIVE)
+    before = mod.live_counts()[0]
+    monkeypatch.setattr(kernel, "available", lambda: True)
+    assert mod.live_counts()[0] == before == len(set(M1_LIVE))
+
+
+def test_live_cells_disagree_and_both_are_recorded():
+    """The two cells must be two measurements, not one repeated twice."""
+    unavailable, available = mod.live_counts()
+    assert 0 < unavailable < available
+    assert available == len(live_commands())   # kernel-available 口径
+    rows = "\n".join(mod.snapshot_rows())
+    assert "{} live（内核不可用）".format(unavailable) in rows
+    assert "{} live（内核可用）".format(available) in rows

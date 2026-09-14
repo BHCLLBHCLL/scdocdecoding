@@ -503,6 +503,25 @@ def _draw(p: QPainter, r: QRectF, key: str, size: int):
         p.drawLine(QPointF(L + rw * 0.18, B - 2), QPointF(L + rw * 0.42, T + 2))
         p.drawLine(QPointF(L + rw * 0.56, B - 2), QPointF(L + rw * 0.80, T + 2))
 
+    elif key == "perp":
+        # R101: right angle + square marker. Parallel and Perpendicular are two
+        # buttons now; the old merged "Par/Perp" glyph advertised both while the
+        # handler only did Parallel.
+        p.setPen(_pen("#2e7d32", w * 1.15))
+        p.drawLine(QPointF(L + rw * 0.22, T + 1), QPointF(L + rw * 0.22, B - rh * 0.22))
+        p.drawLine(QPointF(L + rw * 0.22, B - rh * 0.22), QPointF(Rgt - 1, B - rh * 0.22))
+        p.setPen(_pen("#1565c0", w * 0.8))
+        p.setBrush(Qt.NoBrush)
+        p.drawRect(QRectF(L + rw * 0.22, B - rh * 0.40, rw * 0.18, rh * 0.18))
+
+    elif key == "mid":
+        # R101: segment with its midpoint pinned (separate from Fix).
+        p.setPen(_pen("#2e7d32", w * 1.15))
+        p.drawLine(QPointF(L + 1, B - rh * 0.28), QPointF(Rgt - 1, B - rh * 0.28))
+        p.setPen(_pen("#1565c0", w * 0.7))
+        p.drawLine(QPointF(cx, T + rh * 0.18), QPointF(cx, B - rh * 0.28))
+        _node(p, cx, B - rh * 0.28, max(2.0, size * 0.07))
+
     elif key == "fix":
         p.setPen(_pen("#1565c0", w))
         p.setBrush(QBrush(QColor("#42a5f5")))

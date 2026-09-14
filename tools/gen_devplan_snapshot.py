@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from scdm.catalog import TABS, all_commands, live_commands  # noqa: E402
+from scdm.catalog import TABS, all_commands  # noqa: E402
 
 BEGIN = "<!-- SNAPSHOT:BEGIN -->"
 END = "<!-- SNAPSHOT:END -->"
@@ -54,10 +54,30 @@ def _command_test_coverage() -> tuple:
     return sum(1 for i in ids if i in text), len(ids)
 
 
+def live_counts() -> tuple:
+    """(kernel-unavailable, kernel-available) live command counts.
+
+    R101: the first cell used to be `len(live_commands())` — an answer about
+    *the interpreter running this tool*, not about the kernel-unavailable case.
+    Both cells read 177 in the committed block because the update had been run
+    from the OCC env, and `--check` then failed under any interpreter without
+    OCC (repro in docs/CODE_STATE_R101_ANALYSIS.md §5 D1). The unavailable live
+    set is exactly M1_LIVE by construction (`live_commands()` unions M2..M5 only
+    when `available()`), pinned by tests/test_snapshot_tool.py, so measuring it
+    from the list makes the gate interpreter-independent.
+    """
+    from scdm import catalog  # noqa: E402
+    unavailable = set(catalog.M1_LIVE)
+    full = set(unavailable)
+    for n in ("M2_LIVE", "M3_LIVE", "M4_LIVE", "M5_LIVE"):
+        full |= getattr(catalog, n, set())
+    return len(unavailable), len(full)
+
+
 def snapshot_rows() -> list:
     ribbon = [t for t in TABS if t.kind == "ribbon"]
     cmds = [c for t in ribbon for g in t.groups for c in g.commands]
-    live = live_commands()
+    live_ok, live_full = live_counts()
     from scdm import catalog  # noqa: E402
     full = set(catalog.M1_LIVE)
     for n in ("M2_LIVE", "M3_LIVE", "M4_LIVE", "M5_LIVE"):
@@ -69,8 +89,8 @@ def snapshot_rows() -> list:
         "| --- | --- |",
         "| UI 命令面 | {tabs} ribbon 页签（+1 backstage）/ {cmds} 命令 / "
         "**{live_ok} live（内核不可用）** / **{live_full} live（内核可用）**；占位 {ph} |"
-        .format(tabs=len(ribbon), cmds=len(cmds), live_ok=len(live),
-                live_full=len(full),
+        .format(tabs=len(ribbon), cmds=len(cmds), live_ok=live_ok,
+                live_full=live_full,
                 ph="、".join(c.id for c in placeholder)),
         "| 测试 | {n} 条（def test_ 扫描）；命令级测试提及 {c}/{t}"
         "（其余逐条在 tests/test_coverage_ledger.py 声明理由） |"

@@ -48,3 +48,17 @@ def test_placeholder_commands_stay_out_of_live():
     for c in all_commands():
         if not _dispatchable(c.id):
             assert c.id not in _full_live(), c.id
+
+
+def test_every_live_id_has_a_command_entry():
+    """R101: live *and* dispatchable is not enough - the id must be reachable.
+
+    The reverse direction of the guards above.  con.perp / con.mid were in
+    M3_LIVE and had real _do_con_* handlers, but no catalog entry, so no
+    ribbon button existed and all_commands() never listed them: implemented,
+    tested, unreachable (found by the R101 review, fixed by splitting the
+    merged "Par/Perp" and "Mid/Fix" buttons into four).
+    """
+    known = {c.id for c in all_commands()}
+    orphan = sorted(_full_live() - known)
+    assert not orphan, "live but not in the command face: " + ", ".join(orphan)
