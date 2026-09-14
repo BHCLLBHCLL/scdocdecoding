@@ -540,6 +540,13 @@ def op_asm_explode(kdoc, opts, scale):
         centres, mode=mode, distance=distance, axis=axis, pivot=pivot,
         anchored=[c.id for c in comps if getattr(c, "anchored", False)],
         order=[c.id for c in comps])
+    # R99/P440: an optional frame interpolates the offsets (frame 0 = home,
+    # frame frames-1 = full explosion); the geometry is the same list of
+    # translations, so a frame is as countable as the final state.
+    frames = int(opts.get("frames", 0) or 0)
+    frame = int(opts.get("frame", frames - 1 if frames >= 2 else 0) or 0)
+    if frames >= 2:
+        offsets = ASM.frame_offsets(offsets, frame, frames)
     moved = ASM.apply_explode(kdoc, offsets, K.translate)
     total = ASM.total_displacement(offsets)
     label = ASM.MODE_LABELS.get(mode, mode)
@@ -547,6 +554,8 @@ def op_asm_explode(kdoc, opts, scale):
         return None, "爆炸图：还原（%d 个组件回到原位）" % len(comps)
     detail = ("倍率 %g" % distance if mode == "scale"
               else "间距 %gmm" % (distance * scale))
+    if frames >= 2:
+        detail += "，帧 %d/%d" % (frame, frames - 1)
     return None, ("爆炸图（%s，%s）：%d/%d 个组件，总位移 %.3gmm"
                   % (label, detail, moved, len(comps), total * scale))
 

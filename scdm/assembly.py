@@ -84,6 +84,29 @@ def explode_offsets(centres: Dict[str, Sequence[float]], mode: str = "axis",
     return out
 
 
+def frame_offsets(offsets: Dict[str, Sequence[float]], frame: int,
+                  frames: int) -> Dict[str, Vec3]:
+    """一帧的位移：`offset * t`，`t = frame / (frames - 1)`（R99/P440）。
+
+    `frame=0` 是原位（全零向量）、`frame=frames-1` 是完整爆炸；帧位移是**闭式**的，
+    所以"动画"不需要保存任何中间状态——这也是它能被回放/被测试的原因。
+    """
+    n = int(frames)
+    i = int(frame)
+    if n < 2:
+        raise ValueError("爆炸动画：帧数至少为 2")
+    if not 0 <= i <= n - 1:
+        raise ValueError("爆炸动画：帧号必须在 0..%d" % (n - 1))
+    t = float(i) / float(n - 1)
+    return {cid: (float(v[0]) * t, float(v[1]) * t, float(v[2]) * t)
+            for cid, v in offsets.items()}
+
+
+def explode_frames(offsets: Dict[str, Sequence[float]], frames: int,
+                   ) -> List[Dict[str, Vec3]]:
+    """整个动画的每帧位移（R99/P440）。"""
+    return [frame_offsets(offsets, i, frames) for i in range(int(frames))]
+
 def total_displacement(offsets: Dict[str, Sequence[float]]) -> float:
     """L1 总位移（可数指标，调用方单位）。"""
     return sum(math.sqrt(sum(float(c) * float(c) for c in v))
