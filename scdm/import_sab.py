@@ -1365,6 +1365,25 @@ def _trim_surface_allowed(surf) -> bool:
     return t in (GeomAbs_Cylinder, GeomAbs_Sphere, GeomAbs_Torus)
 
 def _trimmed_face(model, face_ent, surf, box=None, strict_bbox=True):
+    """Cached entry point for the trim (R97).
+
+    The SAME face is trimmed twice per import - once by the policy probe and once
+    by the real build (measured 79 attempts on 41 faces for SampleModel1, 38 of
+    them wasted).  One verdict per (model, face, strictness) per import halves
+    the work AND makes the probe and the build agree by construction.  The guard
+    (R86: a cone trim crashes the process) sits in front of the cache.
+    """
+    if not _trim_surface_allowed(surf):
+        return None
+    key = (id(model), face_ent.idx, bool(strict_bbox))
+    if key not in _TRIM_CACHE:
+        _TRIM_CACHE[key] = _trimmed_face_uncached(model, face_ent, surf, box,
+                                                 strict_bbox)
+    return _TRIM_CACHE[key]
+
+
+def _trimmed_face_uncached(model, face_ent, surf, box=None, strict_bbox=True):
+
     """The surface trimmed by the face's OWN loop curves, or None (R76/P375).
 
     R73/R74 made the boundary curves exact (arcs and straight edges now end on
@@ -1388,9 +1407,6 @@ def _trimmed_face(model, face_ent, surf, box=None, strict_bbox=True):
     from OCC.Core.TopLoc import TopLoc_Location
     import OCC.Core.GeomProjLib as _GPL
 
-    # R86: the guard is FIRST - a cone trim crashes the process natively.
-    if not _trim_surface_allowed(surf):
-        return None
     tol = 1e-6
     wires = []
     for lp in model.loops_of_face(face_ent):
@@ -1504,6 +1520,12 @@ def _cylinder_surface(surf_ent):
 
 
 _TRIM_PATCH = False          # per-import policy (R76), set by the wrapper
+# R97: the SAME face is trimmed twice per import - once by the policy probe and
+# once by the real build (measured 79 attempts on 41 faces for SampleModel1,
+# 38 wasted).  The cache makes the probe and the build share one verdict AND
+# halves the work; it is cleared at the start of every import, like the loss
+# counters (that reset discipline has been forgotten twice already).
+_TRIM_CACHE: dict = {}
 _TRIM_RATIO_MIN = 0.5        # measured ratios: 0.87 / 0.58 / 0.57 / 0.18 / 0.00
 # R79: the probe used to look at 12 faces, which put SampleModel4 exactly ON
 # the 0.5 threshold - its decision flipped between runs of the same build
@@ -2058,6 +2080,10 @@ def import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
     global _TRIM_PATCH
     prev = _TRIM_PATCH
     models = (data.get("models") if data else None) or []
+    # R97: the cache must be cleared BEFORE the policy probe - clearing it inside
+    # _import_scdoc_bundle wipes the probe's verdicts and every face is trimmed
+    # twice again (measured: that is exactly what the first version did).
+    _TRIM_CACHE.clear()
     try:
         _TRIM_PATCH = trim_patch_policy(models) if K.available() else False
         doc = _import_scdoc_bundle(data, mesh_fallback=mesh_fallback)
