@@ -2297,6 +2297,14 @@ else:
 
         def _do_repair_check(self):
             """H4 检查几何：全项检出 + 一键修复向导（R83 起含未封闭度）。"""
+            return self._run_geometry_check("检查几何")
+
+        def _do_prep_small(self):
+            """R91/P423: 小特征（Defeaturing）走**同一套**几何检查/修复。"""
+            return self._run_geometry_check("小特征")
+
+        def _run_geometry_check(self, prefix):
+            """One implementation behind repair.check / prep.small (R91)."""
             body = self._selected_kbody()
             if body is None:
                 return
@@ -2314,7 +2322,7 @@ else:
             # R83/P402: gaps vs seams vs free loops, from the same kernel call
             wt = K.watertight_report(body.shape)
             if total == 0:
-                self._set_status("检查几何：未发现问题 ✓；" + K.watertight_text(wt))
+                self._set_status("%s：未发现问题 ✓；%s" % (prefix, K.watertight_text(wt)))
                 self._mark_open_edges(body, wt)
                 return
             names = {"small_faces": "小面", "short_edges": "短边",
@@ -2327,9 +2335,10 @@ else:
                 body.shape = fixed
                 fixedn = sum(v for v in rep.values() if isinstance(v, int))
                 wt = K.watertight_report(body.shape)
-                self._record("repair.check", counts=counts, fixed=rep)
-                self._commit("检查几何：%s — 已修复 %d 项；%s"
-                             % (detail, fixedn, K.watertight_text(wt)))
+                self._record(prefix == "小特征" and "prep.small" or "repair.check",
+                             counts=counts, fixed=rep)
+                self._commit("%s：%s — 已修复 %d 项；%s"
+                             % (prefix, detail, fixedn, K.watertight_text(wt)))
                 self._mark_open_edges(body, wt)
             except Exception as exc:
                 self._set_status(f"检查到 {detail}；自动修复失败: {exc}")

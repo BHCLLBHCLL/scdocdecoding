@@ -383,6 +383,7 @@ M4_LIVE = {
     "create.hole_csink", "create.boss",
     "repair.stitch", "repair.solidify", "repair.gaps", "repair.missing",
     "repair.extra", "repair.small", "repair.check",
+    "prep.small",                       # R91/P423: routed to the check wizard
     "measure.interfere",
     "asm.insert", "asm.create", "asm.move", "asm.anchor", "asm.mate",
     "asm.explode", "asm.light", "asm.instance", "asm.sync",

@@ -315,9 +315,23 @@ def op_repair_solidify(kdoc, opts, scale):
 
 def op_repair_check(kdoc, opts, scale):
     """H4 检查几何：全项检出 + 自动修复。"""
+    return _geometry_check(kdoc, opts, scale, "检查几何")
+
+
+def op_prep_small(kdoc, opts, scale):
+    """R91/P423: 小特征（Defeaturing）走**同一套**几何检查/修复。
+
+    小面检出与修复早已由 @@repair.check@@ 的全项检查覆盖，所以这里不另写实现：
+    两个命令入口、一处实现与一处文案（纪律 84），占位命令因此减一。
+    """
+    return _geometry_check(kdoc, opts, scale, "小特征")
+
+
+def _geometry_check(kdoc, opts, scale, prefix):
+    """Shared H4 check + auto-repair body (used by repair.check / prep.small)."""
     body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
     if body is None:
-        raise ValueError("检查几何：实体不存在")
+        raise ValueError("%s：实体不存在" % prefix)
     min_area = opts.get("min_area_mm2", 1.0) / (scale ** 2)
     min_edge = opts.get("min_edge_mm", 0.1) / scale
     fnd = K.check_geometry(body.shape, min_area=min_area, min_edge=min_edge)
@@ -328,12 +342,12 @@ def op_repair_check(kdoc, opts, scale):
     wt = K.watertight_report(body.shape)
     tail = "；" + K.watertight_text(wt)
     if total == 0:
-        return body, "检查几何：未发现问题" + tail
+        return body, "%s：未发现问题%s" % (prefix, tail)
     fixed, rep = K.repair_geometry(body.shape, fnd)
     body.shape = fixed
     fixedn = sum(v for v in rep.values() if isinstance(v, int))
     wt = K.watertight_report(body.shape)
-    return body, (f"检查几何：{total} 项问题，已修复 {fixedn}"
+    return body, ("%s：%d 项问题，已修复 %d" % (prefix, total, fixedn)
                   + "；" + K.watertight_text(wt))
 
 
@@ -863,6 +877,7 @@ OPS = {
     "create.draft_neutral": op_draft_neutral,
     "tool.pull_auto": op_pull_auto,
     "repair.check": op_repair_check,
+    "prep.small": op_prep_small,        # R91/P423: same implementation
     "insert.box": op_insert_box,
     "sheet.bend": op_sheet_bend,
     "sheet.unfold": op_sheet_unfold,

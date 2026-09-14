@@ -37,7 +37,7 @@ def test_p347_the_command_is_live_and_the_placeholder_is_retired():
     cmds = [c for t in TABS if t.kind == "ribbon"
             for g in t.groups for c in g.commands]
     placeholders = sorted(c.id for c in cmds if c.id not in full)
-    assert placeholders == ["prep.small", "safety.tab"]      # was 3, now 2
+    assert placeholders == ["safety.tab"]      # was 3, then 2 (prep.small, R91: routed)
 
 
 def test_p347_symbol_rides_the_weldment_and_the_project():
