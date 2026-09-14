@@ -2089,6 +2089,10 @@ def import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
         doc = _import_scdoc_bundle(data, mesh_fallback=mesh_fallback)
     finally:
         _TRIM_PATCH = prev
+        # R98: the cache is only needed DURING the import; keeping it alive
+        # retains every accepted candidate face (and the rejected ones for the
+        # faces that were later dropped), so it is released here.
+        _TRIM_CACHE.clear()
     # R77/P380: measurable watertightness, attached to the same report the GUI
     # already shows (keys are additive, existing callers are unaffected).
     if isinstance(getattr(doc, "import_report", None), dict):

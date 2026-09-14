@@ -62,6 +62,44 @@ def peak_memory_mb() -> float:
     return 0.0
 
 
+def current_memory_mb() -> float:
+    """Process CURRENT working set in MB (Windows), 0.0 when unavailable (R98).
+
+    peak_memory_mb() answers "how big did this get"; this one answers "how big is
+    it now", which is what a RELEASE has to move.  Same ctypes contract, same
+    field (WorkingSetSize instead of PeakWorkingSetSize).
+    """
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class PROCESS_MEMORY_COUNTERS(ctypes.Structure):
+            _fields_ = [("cb", wintypes.DWORD),
+                        ("PageFaultCount", wintypes.DWORD),
+                        ("PeakWorkingSetSize", ctypes.c_size_t),
+                        ("WorkingSetSize", ctypes.c_size_t),
+                        ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                        ("PagefileUsage", ctypes.c_size_t),
+                        ("PeakPagefileUsage", ctypes.c_size_t)]
+
+        counters = PROCESS_MEMORY_COUNTERS()
+        counters.cb = ctypes.sizeof(counters)
+        kernel32 = ctypes.windll.kernel32
+        kernel32.GetCurrentProcess.restype = ctypes.c_void_p
+        handle = kernel32.GetCurrentProcess()
+        fn = kernel32.K32GetProcessMemoryInfo
+        fn.argtypes = [ctypes.c_void_p,
+                       ctypes.POINTER(PROCESS_MEMORY_COUNTERS), wintypes.DWORD]
+        fn.restype = wintypes.BOOL
+        if fn(handle, ctypes.byref(counters), counters.cb):
+            return float(counters.WorkingSetSize) / (1024.0 * 1024.0)
+    except Exception:
+        pass
+    return 0.0
+
 def python_peak_mb() -> float:
     """Python-only allocation peak while tracing is ACTIVE, else 0.0.
 

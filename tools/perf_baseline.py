@@ -42,11 +42,51 @@ def workload_sheet():
     return solid
 
 
+def import_phase_memory(path: str) -> dict:
+    """Parse / build memory split for one sample (R98/P438).
+
+    Peak memory is monotonic, so the increments are the marginal cost of each
+    phase: measured for samplemodel2 as parse +240.9 MB, build +153.7 MB.
+    """
+    from scdm import import_sab
+    from scdm.document import load_scdoc
+
+    m0 = P.peak_memory_mb()
+    data = load_scdoc(path)
+    m1 = P.peak_memory_mb()
+    # R98: the probe below sets the module flag DIRECTLY (import_model does not
+    # own it), so it must be restored - otherwise the next import in the same
+    # process inherits it (measured: it broke tests/test_sphere_trim_r85).
+    prev = import_sab._TRIM_PATCH
+    import_sab._TRIM_CACHE.clear()
+    try:
+        import_sab._TRIM_PATCH = import_sab.trim_patch_policy(data["models"])
+        docs = [import_sab.import_model(m) for m in data["models"]]
+        m2 = P.peak_memory_mb()
+    finally:
+        import_sab._TRIM_PATCH = prev
+        import_sab._TRIM_CACHE.clear()
+    return {"parse_mb": m1 - m0, "build_mb": m2 - m1,
+            "peak_after_parse_mb": m1, "peak_mb": m2,
+            "bodies": sum(len(d.bodies) for d in docs)}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--write", action="store_true",
                     help="write docs/PERF_BASELINE.json")
+    ap.add_argument("--import-phases", action="store_true",
+                    help="report the parse/build memory split (R98)")
     args = ap.parse_args(argv)
+    if args.import_phases:
+        if not os.path.isdir(LIB):
+            print("official library absent" % ())
+            return 1
+        for name in ("SampleModel1.scdoc", "samplemodel2.scdoc"):
+            path = os.path.join(LIB, name)
+            if os.path.exists(path):
+                print("%-20s %s" % (name, import_phase_memory(path)))
+        return 0
 
     records = []
     sheet = workload_sheet()
