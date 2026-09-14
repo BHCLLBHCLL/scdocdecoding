@@ -8,6 +8,7 @@ survives the rebuild when the body's dimensions change.
 """
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -180,6 +181,25 @@ class Feature:
 @dataclass
 class FeatureStack:
     features: List[Feature] = field(default_factory=list)
+    # R103: memo of the last replay verdict.  The structure tree asks whether a
+    # body's history still reproduces its shape on *every* rebuild, and a replay
+    # costs ~35 ms for three features (R103 measurement) - the memo keeps the
+    # tree cheap while recomputing whenever the shape or a parameter changed.
+    _verdict: dict = field(default_factory=dict, compare=False, repr=False)
+
+    def signature(self) -> str:
+        """Stable text of the parameter set (cache key ingredient)."""
+        return json.dumps(self.as_dict(), sort_keys=True, default=str)
+
+    def cached_verdict(self, shape, scale: float, compute):
+        """Return compute() unless (shape identity, parameters, scale) is unchanged."""
+        sig = (float(scale), self.signature())
+        cache = self._verdict
+        if cache.get("shape") is shape and cache.get("sig") == sig:
+            return cache["value"]
+        value = compute()
+        self._verdict = {"shape": shape, "sig": sig, "value": value}
+        return value
 
     def add(self, op: str, **params) -> "Feature":
         f = Feature(op, dict(params))
@@ -405,6 +425,29 @@ def _apply_one(shape, feature: Feature, scale: float):
         return K.fillet_edges(shape, float(p.get("radius", 1.0)) / scale)
     if op == "chamfer":
         return K.chamfer_edges(shape, float(p.get("distance", 1.0)) / scale)
+
+def apply_pose(shape, pose):
+    """Apply a rigid pose (R103/A-1) to a shape, in list order.
+
+    Entries: `("translate", (x, y, z))`, `("rotate", origin, axis, angle_rad)`,
+    `("mirror", origin, normal)`.  A body's base shape carries the same pose as
+    the body itself, so `base + stack` keeps reproducing the live shape after a
+    move/rotate — the invariant the feature edit loop needs.
+    """
+    for op in pose or ():
+        if not op:
+            continue
+        kind = op[0]
+        if kind == "translate":
+            shape = K.translate(shape, tuple(float(v) for v in op[1]))
+        elif kind == "rotate":
+            shape = K.rotate(shape, tuple(float(v) for v in op[1]),
+                             tuple(float(v) for v in op[2]), float(op[3]))
+        elif kind == "mirror":
+            shape = K.mirror(shape, tuple(float(v) for v in op[1]),
+                             tuple(float(v) for v in op[2]))
+    return shape
+
 
 def replay_mismatch(rebuilt, current) -> Optional[str]:
     """Why `rebuilt` differs from `current` (None = they agree).

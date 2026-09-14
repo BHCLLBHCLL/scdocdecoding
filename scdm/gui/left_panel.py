@@ -25,6 +25,7 @@ def _section(title: str, widget: QWidget) -> QWidget:
 
 class LeftPanel(QWidget):
     tree_clicked = pyqtSignal(object)  # QTreeWidgetItem
+    tree_double_clicked = pyqtSignal(object)   # R103/A-4: edit a feature parameter
     tree_checked = pyqtSignal(object, int)
     layer_toggled = pyqtSignal(str, bool)
     group_toggled = pyqtSignal(str, bool)   # R26/P151: official/part group shown or hidden
@@ -60,6 +61,8 @@ class LeftPanel(QWidget):
         self.tree.setUniformRowHeights(True)
         self.tree.setIconSize(QSize(18, 18))
         self.tree.itemClicked.connect(self.tree_clicked.emit)
+        self.tree.itemDoubleClicked.connect(
+            lambda item, _col: self.tree_double_clicked.emit(item))
         self.tree.itemChanged.connect(self._on_item_changed)
         self.nav.addTab(self.tree, "结构")
 
@@ -320,15 +323,37 @@ class LeftPanel(QWidget):
             root.addChild(it)
 
         def add_features(node, body_id):
-            """P16: list a body's feature history under its tree node."""
+            """P16/R103: a body's feature history, with editable parameters.
+
+            A body whose recorded history no longer reproduces its shape gets a
+            tooltip with the measured reason and **no** editable rows - the tree
+            never offers an edit that the replay would refuse.
+            """
             stack = getattr(session.kdoc, "features", {}).get(body_id)
-            if stack is None:
+            if stack is None or not len(stack):
                 return
+            ok, why = ((False, "内核不可用") if not hasattr(session.kdoc, "can_replay")
+                       else session.kdoc.can_replay(body_id, session.scale))
             for fi, feat in enumerate(stack.features):
                 fnode = QTreeWidgetItem([feat.label()])
                 fnode.setData(0, Qt.UserRole, ("feature", body_id, fi))
                 fnode.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+                if not ok:
+                    fnode.setToolTip(0, "不可重放：%s" % why)
                 node.addChild(fnode)
+                if not ok:
+                    continue
+                for row in stack.editable():
+                    if row["index"] != fi:
+                        continue
+                    unit = (" " + row["unit"]) if row["unit"] else ""
+                    pnode = QTreeWidgetItem(["%s = %g%s" % (row["label"],
+                                                            row["value"], unit)])
+                    pnode.setData(0, Qt.UserRole,
+                                  ("feature_param", body_id, fi, row["param"]))
+                    pnode.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+                    pnode.setToolTip(0, "双击修改 %s（重放特征历史）" % row["label"])
+                    fnode.addChild(pnode)
 
         doc = session.design_doc
         # P27: read-only view of the loaded official document structure

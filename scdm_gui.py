@@ -178,6 +178,7 @@ else:
 
             self.left = LeftPanel()
             self.left.tree_clicked.connect(self._on_tree_click)
+            self.left.tree_double_clicked.connect(self._on_tree_double_click)
             self.left.tree_checked.connect(self._on_tree_checked)
             self.left.tree.setContextMenuPolicy(Qt.CustomContextMenu)
             self.left.tree.customContextMenuRequested.connect(self._tree_menu)
@@ -2245,84 +2246,28 @@ else:
             text, ok = QInputDialog.getText(self, title, label)
             return text.strip() if ok and text.strip() else None
 
-        # -- H7: parameter editor (R102: also feature parameters) ---------
+        # -- H7: parameter editor (R102 feature parameters, R103/A-3 split) --
         def _do_det_params(self):
             ses = self.session()
             if ses.kdoc.param_table is None:
                 from scdm.params import ParamTable
                 ses.kdoc.param_table = ParamTable()
-            table = ses.kdoc.param_table
-            defs = table.defs()
-            if defs:
-                initial = chr(10).join(f"{k} = {v}"
-                                       for k, v in sorted(defs.items()))
-            else:
-                initial = "width = 20" + chr(10) + "height = width * 2"
-            from scdm import features as FEAT
-            body_ids = [b.id for b in ses.kdoc.bodies]
-            # R102/P0-1: one editable row per recorded feature parameter. A body
-            # whose history cannot reproduce its current shape is listed as a
-            # comment with the measured reason instead of being replayed blind.
-            feat_lines = []
-            for b in ses.kdoc.bodies:
-                stack = ses.kdoc.features.get(b.id)
-                if stack is None or not len(stack):
-                    continue
-                feat_lines.append("# %s %s：" % (b.id, b.name)
-                                  + " + ".join(stack.ops()))
-                ok, why = ses.kdoc.can_replay(b.id, ses.scale)
-                if not ok:
-                    feat_lines.append("#   不可重放 — %s" % why)
-                    continue
-                for row in stack.editable():
-                    feat_lines.append("%s %d %s = %g" % (
-                        b.id, row["index"], row["param"], row["value"]))
-            from PyQt5.QtWidgets import (QDialog, QDialogButtonBox,
-                                         QPlainTextEdit, QVBoxLayout, QLabel)
-            dlg = QDialog(self)
-            dlg.setWindowTitle("参数（表达式支持：height = width * 2）")
-            lay = QVBoxLayout(dlg)
-            lay.addWidget(QLabel("每行一个参数：名称 = 数值或表达式"))
-            edit = QPlainTextEdit()
-            edit.setPlainText(initial)
-            edit.setMinimumSize(420, 170)
-            lay.addWidget(edit)
-            lay.addWidget(QLabel("特征参数（每行：实体 特征序号 参数 = 值，例如 B1 0 diameter = 8）"))
-            fedit = QPlainTextEdit()
-            fedit.setPlainText(chr(10).join(feat_lines))
-            fedit.setMinimumSize(420, 170)
-            lay.addWidget(fedit)
-            btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-            btns.accepted.connect(dlg.accept)
-            btns.rejected.connect(dlg.reject)
-            lay.addWidget(btns)
-            if dlg.exec_() != QDialog.Accepted:
+            from scdm.gui import params as PG
+            defs = ses.kdoc.param_table.defs()
+            initial = (chr(10).join("%s = %s" % (k, v)
+                                    for k, v in sorted(defs.items()))
+                       if defs else PG.DEFAULT_TABLE_TEXT)
+            dlg = PG.ParamDialog(self, initial,
+                                 PG.feature_lines(ses.kdoc, ses.scale))
+            if dlg.exec_() != dlg.Accepted:
                 return
-            new_table = type(table)()
-            try:
-                for ln in edit.toPlainText().splitlines():
-                    ln = ln.strip()
-                    if not ln or ln.startswith("#"):
-                        continue
-                    if "=" not in ln:
-                        raise ValueError(f"缺 '='：{ln}")
-                    name, expr = ln.split("=", 1)
-                    new_table.set(name.strip(), expr.strip())
-                new_table.resolve()          # validate before commit
-            except Exception as exc:
-                QMessageBox.critical(self, "参数", f"参数无效：{exc}")
+            table_text, feat_text = dlg.texts()
+            rep = PG.apply_param_text(ses.kdoc, table_text, feat_text,
+                                      ses.scale)
+            if rep["errors"]:
+                QMessageBox.critical(self, "参数", chr(10).join(rep["errors"]))
                 return
-            edits, errs = FEAT.parse_edit_lines(fedit.toPlainText(), body_ids)
-            if errs:
-                QMessageBox.critical(self, "特征参数", chr(10).join(errs))
-                return
-            ses.kdoc.param_table = new_table
-            # drive parametric bodies whose params reference the table
-            for p in ses.kdoc.parametrics:
-                p.table = new_table
-                ses.kdoc.rebuild_parametric(p, ses.scale)
-            reports = FEAT.apply_edits(ses.kdoc, edits, ses.scale)
-            for e, r in zip(edits, reports):
+            for e, r in zip(rep["edits"], rep["reports"]):
                 if not r["ok"]:
                     continue
                 idx = next((i for i, b in enumerate(ses.kdoc.bodies)
@@ -2330,14 +2275,13 @@ else:
                 self._record("det.params", target="body", index=idx,
                              feature=e["index"], param=e["param"],
                              value=r["value"])
-            done = [r for r in reports if r["ok"]]
-            failed = [r for r in reports if not r["ok"]]
+            n_expr = len(rep["table"].names()) if rep["table"] else 0
             self._commit("参数已更新：%d 个表达式 + %d 个特征参数"
-                         % (len(new_table.names()), len(done)))
-            if failed:
+                         % (n_expr, len(rep["done"])))
+            if rep["failed"]:
                 QMessageBox.warning(self, "特征参数", chr(10).join(
                     "%s #%s %s：%s" % (r["body"], r["index"], r["param"],
-                                       r["reason"]) for r in failed))
+                                       r["reason"]) for r in rep["failed"]))
 
         def _do_repair_check(self):
             """H4 检查几何：全项检出 + 一键修复向导（R83 起含未封闭度）。"""
@@ -2444,7 +2388,7 @@ else:
             for b in ses.kdoc.bodies_of_component(comp.id):
                 if comp.anchored:
                     continue
-                b.shape = K.translate(b.shape, vec)
+                ses.kdoc.translate_body(b.id, vec)      # R103/A-1: base follows
                 n += 1
             self._commit(f"移动组件 ×{n}（{vals[0]:g}, {vals[1]:g}, {vals[2]:g} mm）")
 
@@ -4428,7 +4372,8 @@ else:
                 self._commit(f"拉动 {mm:.1f}mm")
             else:
                 vec = tuple(d["normal"][k] * d["dist"] for k in range(3))
-                body.shape = K.translate(d["orig"], vec)
+                ses = self.session()
+                ses.kdoc.translate_body(body.id, vec)   # R103/A-1: base follows
                 self._commit(f"移动 {mm:.1f}mm")
 
         def _apply_replace(self, actor):
@@ -5269,6 +5214,42 @@ else:
                     [n for n in nodes if n in self.scene._face_actors])
             self.left.set_selection_list([f"{k}:{s}" for k, s in ns["items"]])
             self._set_status(f"命名选择 [{name}]：{len(ns['items'])} 项")
+
+
+        def _on_tree_double_click(self, item):
+            """R103/A-4: double-click a feature parameter row to edit it.
+
+            The row payload is ("feature_param", body_id, feature_index, param);
+            the value is asked with the same numeric dialog the other commands
+            use, and the edit goes through the atomic `edit_feature` replay.
+            """
+            data = item.data(0, Qt.UserRole) if item is not None else None
+            if not data or data[0] != "feature_param":
+                return
+            _, bid, index, param = data
+            ses = self.session()
+            body = ses.kdoc.body_by_id(bid)
+            stack = ses.kdoc.feature_stack(bid)
+            row = next((r for r in stack.editable()
+                        if r["index"] == index and r["param"] == param), None)
+            if body is None or row is None:
+                return
+            from scdm.gui import params as PG
+            vals = self._ask_numbers("特征参数 %s" % row["label"],
+                                     [("%s（%s）" % (row["label"], row["unit"] or "-"),
+                                       float(row["value"]))])
+            if not vals:
+                return
+            rep = PG.apply_single_edit(ses.kdoc, bid, index, param, vals[0],
+                                       ses.scale)
+            if not rep.get("ok"):
+                QMessageBox.warning(self, "特征参数", rep.get("reason", "编辑失败"))
+                return
+            idx = next((i for i, b in enumerate(ses.kdoc.bodies) if b.id == bid), 0)
+            self._record("det.params", target="body", index=idx, feature=index,
+                         param=param, value=vals[0])
+            self._commit("%s = %g（重放 %s）" % (row["label"], vals[0],
+                                                rep.get("label") or ""))
 
         def _on_tree_click(self, item):
             data = item.data(0, Qt.UserRole)

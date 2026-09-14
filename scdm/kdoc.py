@@ -5,7 +5,8 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 from scdm import kernel as K
-from scdm.features import FeatureHistory, FeatureStack, replay_mismatch
+from scdm.features import (FeatureHistory, FeatureStack, apply_pose,
+                            replay_mismatch)
 
 Vec3 = Tuple[float, float, float]
 
@@ -32,6 +33,10 @@ class KBody:
     # that stored the history but not the base, or a body changed after the last
     # recorded feature).
     base_shape: Any = None
+    # R103/A-1: rigid transforms applied to the body since the base was captured.
+    # The base gets the same pose at replay time, so moving a body does not break
+    # the feature-edit invariant.
+    base_pose: List[tuple] = field(default_factory=list)
 
 
 @dataclass
@@ -175,13 +180,50 @@ class KernelDoc:
         definition, and it is what `rebuild_parametric` already does); every
         other body replays from the base captured when it entered the document.
         """
+        base = None
         for p in self.parametrics:
             if getattr(p, "body_id", None) == body.id:
                 try:
-                    return p.build(scale)
+                    base = p.build(scale)
                 except Exception:
                     return None
-        return body.base_shape
+                break
+        if base is None:
+            base = body.base_shape
+        if base is None:
+            return None
+        pose = getattr(body, "base_pose", None)
+        return apply_pose(base, pose) if pose else base
+
+    # ---- R103/A-1: rigid transforms keep the replay invariant ------------
+    def _transform_body(self, body_id: str, op: tuple):
+        """Apply one rigid op to the body *and* remember it for the base."""
+        body = self.body_by_id(body_id)
+        if body is None:
+            return None
+        body.shape = apply_pose(body.shape, [op])
+        poses = getattr(body, "base_pose", None)
+        if poses is None:
+            body.base_pose = poses = []
+        poses.append(op)
+        return body
+
+    def translate_body(self, body_id: str, vec):
+        """Move a body by a vector, keeping its feature history replayable."""
+        return self._transform_body(
+            body_id, ("translate", tuple(float(v) for v in vec)))
+
+    def rotate_body(self, body_id: str, origin, axis, angle_rad: float):
+        """Rotate a body about an axis, keeping its history replayable."""
+        return self._transform_body(
+            body_id, ("rotate", tuple(float(v) for v in origin),
+                      tuple(float(v) for v in axis), float(angle_rad)))
+
+    def mirror_body(self, body_id: str, origin, normal):
+        """Mirror a body in place, keeping its history replayable."""
+        return self._transform_body(
+            body_id, ("mirror", tuple(float(v) for v in origin),
+                      tuple(float(v) for v in normal)))
 
     def can_replay(self, body_id: str, scale: float = 1000.0):
         """(ok, reason): can this body's feature history drive a parameter edit?
@@ -200,16 +242,21 @@ class KernelDoc:
         base = self._base_shape(body, scale)
         if base is None:
             return False, "缺少基准形状（未记录特征前的形状）"
-        try:
-            rebuilt = stack.apply(base, scale)
-        except Exception as exc:
-            return False, "重放失败：%s" % exc
-        if rebuilt is None:
-            return False, "重放失败：内核返回空形状"
-        why = replay_mismatch(rebuilt, body.shape)
-        if why:
-            return False, "实体与特征历史不一致（%s）" % why
-        return True, ""
+
+        def _verdict():
+            try:
+                rebuilt = stack.apply(base, scale)
+            except Exception as exc:
+                return False, "重放失败：%s" % exc
+            if rebuilt is None:
+                return False, "重放失败：内核返回空形状"
+            why = replay_mismatch(rebuilt, body.shape)
+            if why:
+                return False, "实体与特征历史不一致（%s）" % why
+            return True, ""
+
+        # R103: memoised - the tree asks for this on every rebuild
+        return stack.cached_verdict(body.shape, scale, _verdict)
 
     def replay_body(self, body_id: str, scale: float = 1000.0):
         """Rebuild a body from its base shape + feature stack."""
@@ -601,7 +648,7 @@ class KernelDoc:
         A legacy list of 5-tuples is still accepted by `restore`.
         """
         if not K.available():
-            return {"bodies": [], "features": {}, "bases": {}}
+            return {"bodies": [], "features": {}, "bases": {}, "poses": {}}
         return {
             "bodies": [(b.id, b.name, K.dumps_brep(b.shape), b.color, b.visible)
                        for b in self.bodies],
@@ -609,6 +656,8 @@ class KernelDoc:
                          for bid, st in self.features.items() if len(st)},
             "bases": {b.id: K.dumps_brep(b.base_shape) for b in self.bodies
                       if b.base_shape is not None and self._stack_len(b.id)},
+            "poses": {b.id: [list(op) for op in b.base_pose] for b in self.bodies
+                      if getattr(b, "base_pose", None) and self._stack_len(b.id)},
         }
 
     def restore(self, snap) -> None:
@@ -616,15 +665,17 @@ class KernelDoc:
             rows = snap.get("bodies") or []
             feats = snap.get("features") or {}
             bases = snap.get("bases") or {}
+            poses = snap.get("poses") or {}
         else:                      # legacy: [(id, name, brep, color, visible)]
-            rows, feats, bases = list(snap or []), {}, {}
+            rows, feats, bases, poses = list(snap or []), {}, {}, {}
         self.bodies = []
         max_n = 1
         for bid, name, blob, color, vis in rows:
             sh = K.loads_brep(blob)
             base = K.loads_brep(bases[bid]) if bid in bases else None
             self.bodies.append(KBody(id=bid, name=name, shape=sh, color=color,
-                                     visible=vis, base_shape=base))
+                                     visible=vis, base_shape=base,
+                                     base_pose=[tuple(op) for op in poses.get(bid, [])]))
             try:
                 max_n = max(max_n, int(bid[1:]) + 1)
             except Exception:

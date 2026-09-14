@@ -150,7 +150,8 @@ class MoveTool(DirectTool):
             ses.kdoc.add_body(K.translate(body.shape, vec),
                               name=body.name + " 副本")
             return f"复制 + 移动（{how}）"
-        body.shape = K.translate(body.shape, vec)
+        # R103/A-1: through KernelDoc so the feature base follows the move
+        ses.kdoc.translate_body(body.id, vec)
         return f"移动（{how}）"
 
 

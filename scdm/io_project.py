@@ -36,6 +36,9 @@ def _body_manifest(b, kdoc) -> dict:
            "file": f"bodies/{b.id}.brep"}
     if _has_history(kdoc, b.id) and getattr(b, "base_shape", None) is not None:
         row["base"] = f"bodies/{b.id}.base.brep"
+    pose = getattr(b, "base_pose", None)
+    if _has_history(kdoc, b.id) and pose:
+        row["base_pose"] = [list(op) for op in pose]
     return row
 
 
@@ -114,6 +117,7 @@ def load_scdm(path: str) -> KernelDoc:
                     body.base_shape = None
             elif (man.get("features") or {}).get(body.id):
                 body.base_shape = None
+            body.base_pose = [tuple(op) for op in (item.get("base_pose") or [])]
             try:
                 max_n = max(max_n, int(str(body.id)[1:]) + 1)
             except Exception:

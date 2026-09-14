@@ -97,7 +97,7 @@ def op_move(kdoc, opts, scale):
     if opts.get("copy"):
         kdoc.add_body(K.translate(body.shape, vec), name=body.name + " 副本")
     else:
-        body.shape = K.translate(body.shape, vec)
+        kdoc.translate_body(body.id, vec)      # R103/A-1: base follows
     return body, f"移动 {opts.get('distance', 10.0)}mm"
 
 
@@ -364,6 +364,16 @@ def _geometry_check(kdoc, opts, scale, prefix):
                   + "；" + K.watertight_text(wt))
 
 
+def _sel_of(body, face):
+    """Pre-op face selector for a recorded feature (R103/A-2).
+
+    Must be called BEFORE the shape is modified: the selector is resolved
+    against the shape the feature is applied to.
+    """
+    from scdm import features as FEAT
+    return FEAT.selector_for(body.shape, face)
+
+
 def _op_hole(kdoc, opts, scale, kind):
     body = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
     if body is None:
@@ -433,10 +443,15 @@ def op_louver(kdoc, opts, scale):
     fi = opts.get("face_i", 0)
     if not (0 <= fi < len(faces)):
         raise ValueError("百叶：面序号越界")
+    sel = _sel_of(body, faces[fi])              # R103/A-2: recorded feature
     body.shape = K.louver(body.shape, faces[fi],
                           opts.get("length", 10.0) / scale,
                           opts.get("width", 3.0) / scale,
                           height=opts.get("height", 0.0) / scale)
+    kdoc.record_feature(body.id, "louver", selector=sel,
+                        length=opts.get("length", 10.0),
+                        width=opts.get("width", 3.0),
+                        height=opts.get("height", 0.0))
     return body, ("百叶 %g×%g" % (opts.get("length", 10.0),
                                    opts.get("width", 3.0)))
 
@@ -453,8 +468,11 @@ def op_knockout(kdoc, opts, scale):
     d = opts.get("diameter", 10.0)
     web = opts.get("web", 1.0)
     count = int(opts.get("web_count", 4))
+    sel = _sel_of(body, faces[fi])              # R103/A-2: recorded feature
     body.shape = K.knockout(body.shape, faces[fi], d / scale, web / scale,
                             count)
+    kdoc.record_feature(body.id, "knockout", selector=sel, diameter=d,
+                        web=web, web_count=count)
     return body, ("敲落 Ø%g×%d筋" % (d, count))
 
 
@@ -467,10 +485,15 @@ def op_gusset(kdoc, opts, scale):
     fi = opts.get("face_i", 0)
     if not (0 <= fi < len(faces)):
         raise ValueError("角撑：面序号越界")
+    sel = _sel_of(body, faces[fi])              # R103/A-2: recorded feature
     body.shape = K.gusset(body.shape, faces[fi],
                           opts.get("length", 5.0) / scale,
                           opts.get("height", 3.0) / scale,
                           opts.get("thickness", 1.0) / scale)
+    kdoc.record_feature(body.id, "gusset", selector=sel,
+                        length=opts.get("length", 5.0),
+                        height=opts.get("height", 3.0),
+                        thickness=opts.get("thickness", 1.0))
     return body, ("角撑 %g×%g×%g" % (opts.get("length", 5.0),
                                      opts.get("height", 3.0),
                                      opts.get("thickness", 1.0)))
@@ -485,10 +508,15 @@ def op_tab(kdoc, opts, scale):
     fi = opts.get("face_i", 0)
     if not (0 <= fi < len(faces)):
         raise ValueError("舌片：面序号越界")
+    sel = _sel_of(body, faces[fi])              # R103/A-2: recorded feature
     body.shape = K.tab(body.shape, faces[fi],
                        opts.get("length", 5.0) / scale,
                        opts.get("width", 3.0) / scale,
                        opts.get("height", 1.0) / scale)
+    kdoc.record_feature(body.id, "tab", selector=sel,
+                        length=opts.get("length", 5.0),
+                        width=opts.get("width", 3.0),
+                        height=opts.get("height", 1.0))
     return body, ("舌片 %g×%g×%g" % (opts.get("length", 5.0),
                                      opts.get("width", 3.0),
                                      opts.get("height", 1.0)))
@@ -503,9 +531,13 @@ def op_dimple(kdoc, opts, scale):
     fi = opts.get("face_i", 0)
     if not (0 <= fi < len(faces)):
         raise ValueError("凹坑：面序号越界")
+    sel = _sel_of(body, faces[fi])              # R103/A-2: recorded feature
     body.shape = K.dimple_round(body.shape, faces[fi],
                                 opts.get("diameter", 8.0) / scale,
                                 opts.get("depth", 2.0) / scale)
+    kdoc.record_feature(body.id, "dimple", selector=sel,
+                        diameter=opts.get("diameter", 8.0),
+                        depth=opts.get("depth", 2.0))
     return body, ("圆形凹坑 Ø%g×%g" % (opts.get("diameter", 8.0),
                                         opts.get("depth", 2.0)))
 
@@ -526,9 +558,13 @@ def op_boss(kdoc, opts, scale):
     fi = opts.get("face_i", 0)
     if not (0 <= fi < len(faces)):
         raise ValueError("凸台：面序号越界")
+    sel = _sel_of(body, faces[fi])              # R103/A-2: recorded feature
     body.shape = K.boss_round(body.shape, faces[fi],
                               opts.get("diameter", 6.0) / scale,
                               opts.get("height", 4.0) / scale)
+    kdoc.record_feature(body.id, "boss", selector=sel,
+                        diameter=opts.get("diameter", 6.0),
+                        height=opts.get("height", 4.0))
     return body, f"凸台 d={opts.get('diameter', 6.0)}mm"
 
 
@@ -674,11 +710,16 @@ def op_sheet_cross_break(kdoc, opts, scale):
     if not (0 <= fi < len(faces)):
         raise ValueError("压筋：面序号越界")
     kind = str(opts.get("kind", "v"))
+    sel = _sel_of(body, faces[fi])              # R103/A-2: recorded feature
     body.shape = K.cross_break(body.shape, faces[fi],
                                opts.get("length", 10.0) / scale,
                                opts.get("width", 2.0) / scale,
                                opts.get("depth", 0.3) / scale,
                                kind=kind)
+    kdoc.record_feature(body.id, "cross_break", selector=sel, kind=kind,
+                        length=opts.get("length", 10.0),
+                        width=opts.get("width", 2.0),
+                        depth=opts.get("depth", 0.3))
     return body, ("压筋 %s %g×%g×%g" % (kind, opts.get("length", 10.0),
                                         opts.get("width", 2.0),
                                         opts.get("depth", 0.3)))
@@ -695,9 +736,12 @@ def op_sheet_junction(kdoc, opts, scale):
         raise ValueError("接缝：面序号越界")
     mode = str(opts.get("mode", "release"))
     width = opts.get("width")
+    sel = _sel_of(body, faces[fi])              # R103/A-2: recorded feature
     body.shape = K.junction(body.shape, faces[fi],
                             opts.get("size", 4.0) / scale, mode=mode,
                             width=(None if width is None else width / scale))
+    kdoc.record_feature(body.id, "junction", selector=sel, mode=mode,
+                        size=opts.get("size", 4.0), width=width)
     return body, ("接缝 %s %g" % (mode, opts.get("size", 4.0)))
 
 

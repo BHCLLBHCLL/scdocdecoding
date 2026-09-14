@@ -132,8 +132,13 @@ class ScriptSession:
 
     def MoveBody(self, body: DesignBody, dx: float, dy: float, dz: float):
         s = self.scale
-        body._kb.shape = K.translate(
-            body._kb.shape, (dx / s, dy / s, dz / s))
+        # R103/A-1: route through KernelDoc so a recorded feature history stays
+        # replayable after the move (the base shape carries the same pose).
+        if hasattr(self.kdoc, "translate_body"):
+            self.kdoc.translate_body(body._kb.id, (dx / s, dy / s, dz / s))
+        else:
+            body._kb.shape = K.translate(
+                body._kb.shape, (dx / s, dy / s, dz / s))
         return body
 
     def FilletEdges(self, body: DesignBody, radius_mm: float,
