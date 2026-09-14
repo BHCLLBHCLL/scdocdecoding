@@ -582,6 +582,25 @@ def _trace_face(model, face, kind, path, faces=0, dropped=0, tried=""):
                    "polys": points, "sampled": sampled, "tried": tried,
                    "surf": surf, "ref": ref, "inner": inner})
 
+def _face_curves_ok(model, face_ent) -> bool:
+    """True when EVERY loop edge of the face has a decodable curve (R95).
+
+    Used only for the ref-family report: an unbuilt ref face whose boundary is
+    complete would be a reconstruction candidate (there are none in the official
+    library - measured 0 of 27 on SampleModel4), while one with missing curves
+    is blocked by data, not by our code.
+    """
+    any_edge = False
+    for lp in model.loops_of_face(face_ent):
+        for ce in model.coedges_of_loop(lp):
+            ee = model.e(ce.edge) if ce.edge >= 0 else None
+            if ee is None:
+                continue
+            any_edge = True
+            if _edge_curve(model, ee, face_ent) is None:
+                return False
+    return any_edge
+
 def _faces_from_model(model, body, box=None) -> List[Any]:
     face_ents = model.body_faces(body) if body is not None else model.of_kind("face")
     occ_faces = []
@@ -628,6 +647,13 @@ def _faces_from_model(model, body, box=None) -> List[Any]:
                     and face.surface in ref_surface_owners(model)):
                 _faces_from_model.unbuilt_ref = getattr(
                     _faces_from_model, "unbuilt_ref", 0) + 1
+                # R95: split the loss by DATA (missing curves) vs BOUNDARY
+                # (no edges at all); the report then has
+                # ref_no_boundary + ref_no_curve == ref_unbuilt.
+                if (_face_has_boundary(model, face)
+                        and not _face_curves_ok(model, face)):
+                    _faces_from_model.unbuilt_ref_no_curve = getattr(
+                        _faces_from_model, "unbuilt_ref_no_curve", 0) + 1
             _trace_face(model, face, kind, "none", tried=path)
             continue
         kept = 0
@@ -2077,6 +2103,10 @@ def _import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
     _faces_from_model.skipped = 0
     _faces_from_model.unbuilt = 0
     _faces_from_model.unbuilt_ref = 0
+    # R95: the same trap as R73 - a module-level counter that is not reset here
+    # leaks into the NEXT import in the same process (the report then shows
+    # more "missing curves" than unbuilt faces).
+    _faces_from_model.unbuilt_ref_no_curve = 0
     hierarchy = []
     for i, mdl in enumerate(models, 1):
         part_doc = import_model(mdl, color=color)
@@ -2115,6 +2145,7 @@ def _import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
     # referencing faces still build from their boundary curves, and how many
     # carry no boundary at all (nothing left to build them from).
     ref_unbuilt = getattr(_faces_from_model, "unbuilt_ref", 0)
+    ref_no_curve = getattr(_faces_from_model, "unbuilt_ref_no_curve", 0)
     ref_built = ref_faces - ref_unbuilt
     if ref_faces:
         # wording matters: these faces REFERENCE a ref-间接 surface; some of them
@@ -2122,8 +2153,10 @@ def _import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
         # all missing - the unbuilt count below is the authoritative number.
         doc.import_warnings.append(
             "%d 个面引用 ACIS ref 间接曲面（该类曲面的数据不在本 part）："
-            "其中 %d 个仍由边界曲线重建，%d 个未能重建（含 %d 个无任何边界边）"
-            % (ref_faces, ref_built, ref_unbuilt, ref_no_boundary))
+            "其中 %d 个仍由边界曲线重建，%d 个未能重建"
+            "（含 %d 个无任何边界边、%d 个边界曲线不全）"
+            % (ref_faces, ref_built, ref_unbuilt, ref_no_boundary,
+               ref_no_curve))
     if dropped or unbuilt:
         doc.import_warnings.append(
             "SAB 重建：%d 个面未能重建，%d 个面因超出包围盒被丢弃"
@@ -2159,6 +2192,7 @@ def _import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
             "ref_built": ref_built,
             "ref_unbuilt": ref_unbuilt,
             "ref_no_boundary": ref_no_boundary,
+            "ref_no_curve": ref_no_curve,
             "mesh_bodies": list(mesh_bodies),
             "hierarchy": hierarchy,  # R22/P127: part -> body ids (read-only)
         }
@@ -2198,6 +2232,7 @@ def _import_scdoc_bundle(data: dict, mesh_fallback: str = "auto") -> KernelDoc:
         "ref_built": ref_built,
         "ref_unbuilt": ref_unbuilt,
         "ref_no_boundary": ref_no_boundary,
+        "ref_no_curve": ref_no_curve,
         "mesh_bodies": [b.name for b in doc.bodies
                         if (b.name or "").startswith("网格导入")],
     }

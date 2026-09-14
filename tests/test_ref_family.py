@@ -128,7 +128,7 @@ def test_ref_report_counts_both_sides(sm4):
     line = [w for w in sm4.kdoc.import_warnings if "ref 间接曲面" in w]
     assert line, sm4.kdoc.import_warnings
     assert "52 个面" in line[0] and "25 个仍由边界曲线重建" in line[0]
-    assert "27 个未能重建（含 6 个无任何边界边）" in line[0]
+    assert "27 个未能重建（含 6 个无任何边界边、21 个边界曲线不全）" in line[0]
 
 
 def test_unbuilt_ref_surfaces_carry_only_the_ref_payload(sm4):
