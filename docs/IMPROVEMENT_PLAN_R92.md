@@ -11,7 +11,7 @@
 | 真缺口 / 自由环 | SampleModel1 **0/0**、SampleModel4 347/76、samplemodel2 **1002/212**、samplemodel3 0/0、samplemodel5 0/0、samplemodel6 3/2 |
 | 图面 | 尺寸链并列标注 + 链线（R90） |
 | 型材库 | 12 条标准规格（R87） |
-| 测试 | 全量 CI 口径全绿（648 条 `def test_`） |
+| 测试 | 全量 CI 口径全绿（**671 passed**，652 条 `def test_`） |
 
 ## 2. R92 工作项（择优取一）
 
