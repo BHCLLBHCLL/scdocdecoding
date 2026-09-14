@@ -2533,22 +2533,28 @@ else:
             self._commit(f"已同步 {n} 个实例")
 
         def _do_asm_explode(self):
+            """R88/P415: three modes, countable offsets, restorable."""
+            from scdm import assembly as ASM
             ses = self.session()
             if not ses.kdoc.components:
                 self._set_status("爆炸图：没有组件")
                 return
-            vals = self._ask_numbers("爆炸图", [("每组件间距 mm", 20.0)])
+            from PyQt5.QtWidgets import QInputDialog
+            names = [ASM.MODE_LABELS[k] for k in ASM.MODES]
+            pick, ok = QInputDialog.getItem(self, "爆炸图", "模式", names, 0, False)
+            if not ok:
+                return
+            mode = ASM.MODES[names.index(pick)]
+            label = "倍率" if mode == "scale" else "每组件间距 mm"
+            vals = self._ask_numbers("爆炸图（%s）" % pick,
+                                     [(label, 0.2 if mode == "scale" else 20.0)])
             if not vals:
                 return
-            step = vals[0] / ses.scale
-            for i, comp in enumerate(ses.kdoc.components, 1):
-                if comp.anchored:
-                    continue
-                vec = (step * i, 0, 0)
-                for b in ses.kdoc.bodies_of_component(comp.id):
-                    b.shape = K.translate(b.shape, vec)
-                comp.explosion = vec
-            self._commit(f"已爆炸组件（间距 {vals[0]:g}mm，已记录方向）")
+            from scdm.scripting import OPS
+            _out, msg = OPS["asm.explode"](
+                ses.kdoc, {"mode": mode, "distance_mm": vals[0]}, ses.scale)
+            self._record("asm.explode", mode=mode, distance_mm=vals[0])
+            self._commit(msg)
 
         def _do_asm_light(self):
             comp = self._selected_component()

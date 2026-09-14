@@ -489,6 +489,53 @@ def op_boss(kdoc, opts, scale):
     return body, f"凸台 d={opts.get('diameter', 6.0)}mm"
 
 
+def op_asm_explode(kdoc, opts, scale):
+    """R88/P415: 爆炸图——沿轴/径向/等比三种模式，位移可数、可还原。
+
+    opts: mode=axis|radial|scale、distance_mm（等比模式下是倍率）、axis（沿轴方向）、
+    restore=True 等价于把位移清零（先还原已记录的位移再加新的）。
+    """
+    from scdm import additive as A
+    from scdm import assembly as ASM
+
+    comps = list(getattr(kdoc, "components", []) or [])
+    if not comps:
+        raise ValueError("爆炸图：没有组件")
+    centres = {}
+    for comp in comps:
+        pts = []
+        for b in kdoc.bodies_of_component(comp.id):
+            try:
+                lo, hi = A.shape_bbox(b.shape)
+            except Exception:
+                continue
+            pts.append(tuple((lo[i] + hi[i]) / 2.0 for i in range(3)))
+        c = ASM.centroid(pts)
+        if c is not None:
+            centres[comp.id] = c
+    mode = str(opts.get("mode", "axis")).lower()
+    if opts.get("restore"):
+        distance = 0.0
+    elif mode == "scale":
+        distance = float(opts.get("distance_mm", 0.2))
+    else:
+        distance = float(opts.get("distance_mm", 20.0)) / scale
+    pivot = ASM.centroid([centres[c.id] for c in comps if c.id in centres])
+    axis = tuple(float(v) for v in opts.get("axis", (1.0, 0.0, 0.0)))
+    offsets = ASM.explode_offsets(
+        centres, mode=mode, distance=distance, axis=axis, pivot=pivot,
+        anchored=[c.id for c in comps if getattr(c, "anchored", False)],
+        order=[c.id for c in comps])
+    moved = ASM.apply_explode(kdoc, offsets, K.translate)
+    total = ASM.total_displacement(offsets)
+    label = ASM.MODE_LABELS.get(mode, mode)
+    if not moved:
+        return None, "爆炸图：还原（%d 个组件回到原位）" % len(comps)
+    detail = ("倍率 %g" % distance if mode == "scale"
+              else "间距 %gmm" % (distance * scale))
+    return None, ("爆炸图（%s，%s）：%d/%d 个组件，总位移 %.3gmm"
+                  % (label, detail, moved, len(comps), total * scale))
+
 def op_beam(kdoc, opts, scale):
     """P283/R87: 梁——6 种截面轮廓沿轴拉伸；可用标准规格名（R87）。"""
     from scdm import beams as BEAMS
@@ -833,6 +880,7 @@ OPS = {
     "create.louver": op_louver,
     "create.knockout": op_knockout,
     "create.beam": op_beam,
+    "asm.explode": op_asm_explode,      # R88/P415
     "create.beam_polyline": op_beam_polyline,
     "create.gusset": op_gusset,
     "create.tab": op_tab,
