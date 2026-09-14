@@ -39,7 +39,7 @@ from scdm import kernel as K
 
 Vec3 = Tuple[float, float, float]
 
-PROFILES = ("flat", "rod", "pipe", "i", "t", "l")
+PROFILES = ("flat", "rod", "pipe", "i", "t", "l", "c")
 
 LABELS = {
     "flat": "扁钢",
@@ -48,6 +48,7 @@ LABELS = {
     "i": "工字钢",
     "t": "T 型钢",
     "l": "角钢",
+    "c": "槽钢",
 }
 
 PARAMS = {
@@ -57,6 +58,7 @@ PARAMS = {
     "i": ("h", "b", "tw", "tf"),
     "t": ("h", "b", "tw", "tf"),
     "l": ("a", "b", "t"),
+    "c": ("h", "b", "tw", "tf"),      # R92: 槽钢（C 形）
 }
 
 # GUI/op defaults in mm (the op layer divides by 1000)
@@ -67,6 +69,7 @@ DEFAULTS = {
     "i": {"h": 100.0, "b": 50.0, "tw": 5.0, "tf": 7.0},
     "t": {"h": 100.0, "b": 100.0, "tw": 6.0, "tf": 8.0},
     "l": {"a": 50.0, "b": 50.0, "t": 5.0},
+    "c": {"h": 100.0, "b": 48.0, "tw": 5.3, "tf": 8.5},
 }
 
 
@@ -96,10 +99,15 @@ SPECS: Dict[str, Dict[str, Tuple[float, ...]]] = {
         "FB40x10": (40.0, 10.0),
         "FB50x12": (50.0, 12.0),
     },
+    "c": {                     # 槽钢（R92）: h, b, tw, tf
+        "[10": (100.0, 48.0, 5.3, 8.5),
+        "[12.6": (126.0, 53.0, 5.5, 9.0),
+        "[16": (160.0, 63.0, 6.5, 10.0),
+    },
 }
 
 SPEC_STANDARDS = {"i": "GB/T 706", "l": "GB/T 706", "pipe": "GB/T 3091",
-                  "flat": "GB/T 704"}
+                  "flat": "GB/T 704", "c": "GB/T 706"}
 
 
 def spec_names(profile: Optional[str] = None) -> List[str]:
@@ -157,11 +165,13 @@ def _validate(profile, dims) -> Tuple[str, Dict[str, float]]:
     # modelling error, not a beam: refuse it instead of building a sliver
     if key == "pipe" and 2.0 * out["t"] >= out["d"]:
         raise K.KernelError("圆管壁厚必须小于半径（2×t < d）")
-    if key in ("i", "t"):
+    if key in ("i", "t", "c"):
         if out["tf"] >= out["h"]:
             raise K.KernelError("翼缘厚度必须小于截面高度")
         if key == "i" and 2.0 * out["tf"] >= out["h"]:
             raise K.KernelError("工字钢上下翼缘会相接：2×tf 必须小于高度")
+        if key == "c" and 2.0 * out["tf"] >= out["h"]:
+            raise K.KernelError("槽钢上下翼缘会相接：2×tf 必须小于高度")
         if out["tw"] >= out["b"]:
             raise K.KernelError("腹板厚度必须小于翼缘宽度")
     if key == "l" and out["t"] >= min(out["a"], out["b"]):
@@ -202,6 +212,21 @@ def closed_form(profile, **dims) -> Dict[str, float]:
         ix = (b * tf ** 3 / 12.0 + a1 * (y1 - cy) ** 2
               + tw * (h - tf) ** 3 / 12.0 + a2 * (y2 - cy) ** 2)
         iy = tf * b ** 3 / 12.0 + (h - tf) * tw ** 3 / 12.0
+    elif key == "c":
+        # R92 槽钢（C 形）：腹板贴左（x 0..tw），上下翼缘向右伸出（x tw..b）
+        h, b, tw, tf = d["h"], d["b"], d["tw"], d["tf"]
+        a1, x1, y1 = tw * h, tw / 2.0, h / 2.0                 # web
+        a2, x2, y2 = (b - tw) * tf, (b + tw) / 2.0, h - tf / 2.0   # top flange
+        a3, x3, y3 = (b - tw) * tf, (b + tw) / 2.0, tf / 2.0       # bottom flange
+        area = a1 + a2 + a3
+        cx = (a1 * x1 + a2 * x2 + a3 * x3) / area
+        cy = (a1 * y1 + a2 * y2 + a3 * y3) / area
+        ix = (tw * h ** 3 / 12.0 + a1 * (y1 - cy) ** 2
+              + (b - tw) * tf ** 3 / 12.0 + a2 * (y2 - cy) ** 2
+              + (b - tw) * tf ** 3 / 12.0 + a3 * (y3 - cy) ** 2)
+        iy = (h * tw ** 3 / 12.0 + a1 * (x1 - cx) ** 2
+              + tf * (b - tw) ** 3 / 12.0 + a2 * (x2 - cx) ** 2
+              + tf * (b - tw) ** 3 / 12.0 + a3 * (x3 - cx) ** 2)
     else:  # l
         a, b, t = d["a"], d["b"], d["t"]
         a1, x1, y1 = t * a, t / 2.0, a / 2.0                # vertical leg
@@ -237,6 +262,11 @@ def outline(profile, **dims) -> List[Vec3]:
     elif key == "l":
         a, b, t = d["a"], d["b"], d["t"]
         pts = [(0.0, 0.0), (b, 0.0), (b, t), (t, t), (t, a), (0.0, a)]
+    elif key == "c":
+        h, b, tw, tf = d["h"], d["b"], d["tw"], d["tf"]
+        # counter-clockwise: bottom flange -> web -> top flange
+        pts = [(0.0, 0.0), (b, 0.0), (b, tf), (tw, tf), (tw, h - tf),
+               (b, h - tf), (b, h), (0.0, h)]
     else:
         raise K.KernelError("圆截面（rod/pipe）没有多边形轮廓：请用 section_face")
     return [(float(x), float(y), 0.0) for x, y in pts]
@@ -347,6 +377,8 @@ def spec_label(profile, **dims) -> str:
         return "工字钢 I %g×%g×%g×%g" % (d["h"], d["b"], d["tw"], d["tf"])
     if key == "t":
         return "T 型钢 %g×%g×%g×%g" % (d["h"], d["b"], d["tw"], d["tf"])
+    if key == "c":
+        return "槽钢 [ %g×%g×%g×%g" % (d["h"], d["b"], d["tw"], d["tf"])
     return "角钢 %g×%g×%g" % (d["a"], d["b"], d["t"])
 
 # ----------------------------------------------------------------------
