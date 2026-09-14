@@ -1313,6 +1313,27 @@ def _trim_fix_candidates(face):
     except Exception:
         pass
 
+def _trim_surface_allowed(surf) -> bool:
+    """Only CYLINDERS and SPHERES may be trimmed (R86/P411).
+
+    Measured on samplemodel2:
+      * torus trim   0.54 s per face for 16/36 builds (the gates - BndLib plus
+        GProp on a trimmed torus - dominate): 36 faces = 19.4 s and the import
+        went 6.8 s -> 25 s, so tori keep the recorded-window path;
+      * cone trim    makes the PROCESS DIE inside OpenCASCADE on face 270
+        (semi = -30 deg, r = 0.246): the surface builds, then the trim crashes
+        natively - no try/except can catch that, so it must not be attempted.
+
+    The guard turns a potential native crash into a clean None."""
+    from OCC.Core.GeomAdaptor import GeomAdaptor_Surface
+    from OCC.Core.GeomAbs import GeomAbs_Cylinder, GeomAbs_Sphere
+
+    try:
+        t = GeomAdaptor_Surface(surf).GetType()
+    except Exception:
+        return False
+    return t in (GeomAbs_Cylinder, GeomAbs_Sphere)
+
 def _trimmed_face(model, face_ent, surf, box=None, strict_bbox=True):
     """The surface trimmed by the face's OWN loop curves, or None (R76/P375).
 
@@ -1337,6 +1358,9 @@ def _trimmed_face(model, face_ent, surf, box=None, strict_bbox=True):
     from OCC.Core.TopLoc import TopLoc_Location
     import OCC.Core.GeomProjLib as _GPL
 
+    # R86: the guard is FIRST - a cone trim crashes the process natively.
+    if not _trim_surface_allowed(surf):
+        return None
     tol = 1e-6
     wires = []
     for lp in model.loops_of_face(face_ent):
