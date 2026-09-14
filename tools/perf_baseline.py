@@ -63,11 +63,26 @@ def main(argv=None) -> int:
         if os.path.exists(sample):
             records.append(P.measure("load_scdoc.samplemodel3",
                                      lambda: load_scdoc(sample), repeat=1))
+        # R96/P433: the IMPORT path (decode + rebuild + sew) changed a lot after
+        # R71 (trim policies, sphere/torus trimming, the 1e-5 sewing tolerance),
+        # and none of it was covered by the lines above - these two records are
+        # what lets a later round catch an import regression.
+        from scdm import import_sab
+        for name, label in (("SampleModel1.scdoc", "import.SampleModel1"),
+                            ("samplemodel2.scdoc", "import.samplemodel2")):
+            path = os.path.join(LIB, name)
+            if os.path.exists(path):
+                records.append(P.measure(
+                    label,
+                    lambda p=path: import_sab.import_scdoc_bundle(load_scdoc(p)),
+                    repeat=1,
+                    summary=lambda k: {"bodies": len(k.bodies)}))
     print(P.table(records))
     if args.write:
         path = ROOT / "docs" / "PERF_BASELINE.json"
         P.write_baseline(str(path), records,
-                         note="P354/R71 baseline: interactive path, records only")
+                         note="P354/R71 baseline + R96 import records: interactive"
+                              " path, records only")
         print("written", path)
     return 0
 

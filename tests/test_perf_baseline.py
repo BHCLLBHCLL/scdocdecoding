@@ -3,6 +3,11 @@
 Records, not thresholds (the plan says so): the numbers live in
 docs/PERF_BASELINE.json and the assertions here are generous regression guards.
 Two ctypes details were measured while building it - see scdm/perf.py.
+
+R96 added two import records to the tool's workload.  They run AFTER the sheet
+and mesh work, so they are loaded numbers: measured 3.3 s (SampleModel1) and
+40.3 s (samplemodel2) in that context against 1.5 s / 7.5 s standalone - the
+record is honest about which one it is, and the file says so.
 """
 from __future__ import annotations
 
@@ -58,6 +63,13 @@ def test_p354_baseline_file_carries_the_interactive_paths():
     assert data["machine"]["python"]
     for r in data["records"]:
         assert r["per_call"] > 0.0
+    # R96: the IMPORT path is recorded too (it changed a lot after R71).  The
+    # records are taken AFTER the sheet/mesh workload, so they are deliberately
+    # "under load" numbers (measured: 3.3 s / 40.3 s there against 1.5 s /
+    # 7.5 s standalone) - see docs/ROUND_R96 for the comparison.
+    if os.path.isdir(r"C:\Program Files\ANSYS Inc\v195\scdm\Library\SrModels"):
+        assert "import.SampleModel1" in labels
+        assert "import.samplemodel2" in labels
 
 
 def test_p354_interactive_path_stays_within_a_generous_budget():

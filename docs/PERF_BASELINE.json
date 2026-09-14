@@ -4,43 +4,43 @@
     "processor": "Intel64 Family 6 Model 158 Stepping 12, GenuineIntel",
     "python": "3.12.14"
   },
-  "note": "P354/R71 baseline: interactive path, records only",
+  "note": "P354/R71 baseline + R96 import records: interactive path, records only",
   "records": [
     {
       "label": "build.sheet+25holes",
-      "peak_mb": 149.75,
-      "per_call": 0.9652414333322668,
-      "python_peak_mb": 0.11548137664794922,
+      "peak_mb": 150.015625,
+      "per_call": 0.9685239333339268,
+      "python_peak_mb": 0.11818599700927734,
       "repeat": 3,
       "result": "TopoDS_Compound",
-      "seconds": 2.8957242999968003
+      "seconds": 2.9055718000017805
     },
     {
       "label": "tessellate.sheet",
-      "peak_mb": 157.125,
-      "per_call": 0.014800366666653039,
-      "python_peak_mb": 0.0014858245849609375,
+      "peak_mb": 157.59375,
+      "per_call": 0.014450233332657566,
+      "python_peak_mb": 0.0015363693237304688,
       "repeat": 3,
       "result": "TopoDS_Compound",
-      "seconds": 0.044401099999959115
+      "seconds": 0.0433506999979727
     },
     {
       "label": "mesh.surface",
-      "peak_mb": 163.5703125,
-      "per_call": 0.33472510000137845,
-      "python_peak_mb": 2.2811155319213867,
+      "peak_mb": 163.80078125,
+      "per_call": 0.3293852499991772,
+      "python_peak_mb": 2.280074119567871,
       "repeat": 2,
       "result": {
         "triangles": 2712,
         "vertices": 1308
       },
-      "seconds": 0.6694502000027569
+      "seconds": 0.6587704999983544
     },
     {
       "label": "bbox+props.sheet",
-      "peak_mb": 163.5703125,
-      "per_call": 0.008919539999624249,
-      "python_peak_mb": 0.12380599975585938,
+      "peak_mb": 163.80078125,
+      "per_call": 0.00888381999975536,
+      "python_peak_mb": 0.12379074096679688,
       "repeat": 5,
       "result": [
         [
@@ -58,13 +58,13 @@
         7.607300918301275e-07,
         0.0010778097245096162
       ],
-      "seconds": 0.04459769999812124
+      "seconds": 0.0444190999987768
     },
     {
       "label": "load_scdoc.samplemodel3",
-      "peak_mb": 193.9375,
-      "per_call": 1.5264029999962077,
-      "python_peak_mb": 16.45642852783203,
+      "peak_mb": 194.41015625,
+      "per_call": 1.5176513000042178,
+      "python_peak_mb": 16.456427574157715,
       "repeat": 1,
       "result": {
         "doc": "DesignDocument",
@@ -131,7 +131,29 @@
         "render_path": "SpaceClaim/Graphics/renderlist.xml",
         "scale": 1000.0
       },
-      "seconds": 1.5264029999962077
+      "seconds": 1.5176513000042178
+    },
+    {
+      "label": "import.SampleModel1",
+      "peak_mb": 232.6640625,
+      "per_call": 3.335205600000336,
+      "python_peak_mb": 28.63275146484375,
+      "repeat": 1,
+      "result": {
+        "bodies": 1
+      },
+      "seconds": 3.335205600000336
+    },
+    {
+      "label": "import.samplemodel2",
+      "peak_mb": 768.24609375,
+      "per_call": 40.25818760000402,
+      "python_peak_mb": 224.21949100494385,
+      "repeat": 1,
+      "result": {
+        "bodies": 37
+      },
+      "seconds": 40.25818760000402
     }
   ]
 }
