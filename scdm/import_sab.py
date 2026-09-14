@@ -1314,12 +1314,15 @@ def _trim_fix_candidates(face):
         pass
 
 def _trim_surface_allowed(surf) -> bool:
-    """Only CYLINDERS and SPHERES may be trimmed (R86/P411).
+    """Only CYLINDERS and SPHERES may be trimmed (R86, re-measured in R89).
 
     Measured on samplemodel2:
-      * torus trim   0.54 s per face for 16/36 builds (the gates - BndLib plus
-        GProp on a trimmed torus - dominate): 36 faces = 19.4 s and the import
-        went 6.8 s -> 25 s, so tori keep the recorded-window path;
+      * torus trim   re-measured in R89: the trim itself is ~0.18 s per face,
+        but a torus carries TWO candidate surfaces (major/minor and the swap)
+        and every failing one then runs the torus-only SAMPLED window check, so
+        the round cost is 0.54 s per face = 19.5 s for the 36 faces of
+        samplemodel2, which took the import 6.8 s -> 25 s - for just 12 fewer
+        gaps (1002 -> 990).  Refused on cost/benefit, not on principle;
       * cone trim    makes the PROCESS DIE inside OpenCASCADE on face 270
         (semi = -30 deg, r = 0.246): the surface builds, then the trim crashes
         natively - no try/except can catch that, so it must not be attempted.
@@ -1412,12 +1415,10 @@ def _trim_gates_ok(face, face_ent, box=None, strict_bbox=True) -> bool:
     """
     from OCC.Core.BRepCheck import BRepCheck_Analyzer
 
+    # R89: cost order matters - measured per torus face, BRepCheck is 0.003 s,
+    # the model-bbox test ~0.000 s and GProp (K.area) 0.049 s.  The area test
+    # therefore runs LAST, once a candidate has passed everything cheap.
     if not BRepCheck_Analyzer(face).IsValid():
-        return False
-    try:
-        if K.area(face) <= 0.0:
-            return False
-    except Exception:
         return False
     if box is not None and not _shape_within(face, box, 0.5):
         return False
@@ -1426,18 +1427,22 @@ def _trim_gates_ok(face, face_ent, box=None, strict_bbox=True) -> bool:
     # reach outside it - rejecting at 5% of the diagonal cost SampleModel1 two
     # faces (and samplemodel2 twenty-six).  Only an overshoot beyond the whole
     # diagonal means the patch is not this face.
-    if not strict_bbox:
-        # R85: a SPHERE patch's point bbox (a few vertices) is far smaller than
-        # the patch itself - measured overshoot 11x the diagonal for all 48
-        # sphere faces of samplemodel2.  The model-bbox gate above still
-        # catches a misread surface (the R74 complement arc fails there).
-        return True
-    fbox = _face_bbox(face_ent)
-    if fbox is not None:
-        gap = _bbox_gap(face, fbox, accurate=False)
-        diag = sum((fbox[1][i] - fbox[0][i]) ** 2 for i in range(3)) ** 0.5
-        if gap is None or gap > diag + 1e-9:
+    if strict_bbox:
+        fbox = _face_bbox(face_ent)
+        if fbox is not None:
+            gap = _bbox_gap(face, fbox, accurate=False)
+            diag = sum((fbox[1][i] - fbox[0][i]) ** 2 for i in range(3)) ** 0.5
+            if gap is None or gap > diag + 1e-9:
+                return False
+    # R85: a SPHERE patch's point bbox (a few vertices) is far smaller than the
+    # patch itself - measured overshoot 11x the diagonal for all 48 sphere
+    # faces of samplemodel2, which is why strict_bbox=False skips that test.
+    # The model-bbox test above still catches a misread surface.
+    try:
+        if K.area(face) <= 0.0:        # R89: the expensive gate, hence last
             return False
+    except Exception:
+        return False
     return True
 
 def _cylinder_surface(surf_ent):
