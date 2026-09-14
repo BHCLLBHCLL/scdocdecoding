@@ -2,14 +2,14 @@
 
 The dialog edits two kinds of parameters:
 
-* the expression table (@@ParamTable@@) that drives the parametric bodies;
+* the expression table (`ParamTable`) that drives the parametric bodies;
 * the recorded **feature** parameters of every body (R102) - one line per
   (body, feature index, parameter); a body whose history no longer reproduces
   its shape is listed as a comment carrying the measured reason, never as an
   editable row.
 
-@@feature_lines@@ / @@parse_table_lines@@ / @@apply_param_text@@ / @@apply_single_edit@@
-are Qt-free and unit-tested; @@ParamDialog@@ is the Qt shell around them.
+`feature_lines` / `parse_table_lines` / `apply_param_text` / `apply_single_edit`
+are Qt-free and unit-tested; `ParamDialog` is the Qt shell around them.
 """
 from __future__ import annotations
 

@@ -117,6 +117,28 @@ def test_a_failed_replay_rolls_back_both_the_parameter_and_the_shape():
     assert K.volume(body.shape) == pytest.approx(v_before, rel=1e-12)
 
 
+def test_an_unrecorded_move_is_detected_as_inconsistent():
+    """R104: volume and face count are translation-invariant, so the bounding box
+    must be part of the verdict - otherwise the next edit would silently move the
+    body back home."""
+    doc = KernelDoc()
+    body, v0, t_m = _box_with_hole(doc)
+    assert doc.can_replay(body.id)[0] is True
+
+    body.shape = K.translate(body.shape, (0.005, 0.0, 0.0))   # no pose recorded
+    ok, why = doc.can_replay(body.id)
+    assert ok is False and "包围盒" in why, why
+    moved = K.cog(body.shape)
+    rep = doc.edit_feature(body.id, 0, "diameter", 8.0)
+    assert rep["ok"] is False and "包围盒" in rep["reason"]
+    assert K.cog(body.shape) == pytest.approx(moved, abs=1e-15)   # no silent jump
+
+    # the recorded path is unchanged: a proper move stays replayable
+    doc2 = KernelDoc()
+    body2, _v0, _t = _box_with_hole(doc2)
+    doc2.translate_body(body2.id, (0.005, 0.0, 0.0))
+    assert doc2.can_replay(body2.id)[0] is True
+
 def test_undo_snapshot_carries_the_parameters_and_the_base():
     doc = KernelDoc()
     body, v0, t_m = _box_with_hole(doc, 5.0)

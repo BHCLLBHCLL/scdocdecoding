@@ -98,33 +98,24 @@ def _rot_axis_to(b: Vec3, a: Vec3):
 
 
 def _mat4_from_axis_angle(axis: Vec3, angle: float, pivot: Vec3) -> Mat4:
-    """Row-major 4x4: rotation about (pivot, axis): M = T(pivot) R T(-pivot)."""
-    x, y, z = axis
-    c, s = math.cos(angle), math.sin(angle)
-    t = 1.0 - c
-    r = ((t * x * x + c, t * x * y - s * z, t * x * z + s * y),
-         (t * x * y + s * z, t * y * y + c, t * y * z - s * x),
-         (t * x * z - s * y, t * y * z + s * x, t * z * z + c))
-    px, py, pz = pivot
-    out = []
-    for i in range(3):
-        tx = -(r[i][0] * px + r[i][1] * py + r[i][2] * pz)
-        out.append((r[i][0], r[i][1], r[i][2],
-                    r[i][0] * px + r[i][1] * py + r[i][2] * pz + tx))
-    out.append((0.0, 0.0, 0.0, 1.0))
-    return tuple(out)
+    """Rotation about (pivot, axis).
+
+    R104: one implementation only - `scdm.kernel._m4_rot` (the kernel needs the
+    same matrix for the replayable align poses, and two copies of the Rodrigues
+    formula would be one too many, rule 84).
+    """
+    from scdm import kernel as K
+    return K._m4_rot(pivot, axis, angle)
 
 
 def _mat4_mul(a: Mat4, b: Mat4) -> Mat4:
-    return tuple(
-        tuple(sum(a[i][k] * b[k][j] for k in range(4)) for j in range(4))
-        for i in range(4))
+    from scdm import kernel as K
+    return K._m4_mul(a, b)
 
 
 def _mat4_translate(v: Vec3) -> Mat4:
-    return ((1, 0, 0, v[0]), (0, 1, 0, v[1]), (0, 0, 1, v[2]),
-            (0.0, 0.0, 0.0, 1.0))
-
+    from scdm import kernel as K
+    return K._m4_translate(v)
 
 def _apply(m: Mat4, p: Vec3) -> Vec3:
     return (m[0][0] * p[0] + m[0][1] * p[1] + m[0][2] * p[2] + m[0][3],

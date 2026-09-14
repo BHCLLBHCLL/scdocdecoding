@@ -166,6 +166,11 @@ EDIT_SCHEMA: Dict[str, tuple] = {
 class Feature:
     op: str
     params: Dict[str, Any] = field(default_factory=dict)
+    # R104/A-1: the rigid pose that was in effect when this feature was created.
+    # A selector is resolved in the body's current frame, so a feature recorded
+    # *after* a move/mate must be replayed on the posed base - otherwise a
+    # rotation would send the selector to the wrong face.
+    pose: List[tuple] = field(default_factory=list)
 
     def label(self) -> str:
         """Human-readable name for the feature tree (P16)."""
@@ -222,15 +227,25 @@ class FeatureStack:
         featured shape would run e.g. shell twice and fail.
         """
         for f in self.features:
+            if f.pose:
+                shape = apply_pose(shape, f.pose)   # R104/A-1
             shape = _apply_one(shape, f, scale)
         return shape
 
     def as_dict(self) -> List[dict]:
-        return [{"op": f.op, "params": dict(f.params)} for f in self.features]
+        out = []
+        for f in self.features:
+            d = {"op": f.op, "params": dict(f.params)}
+            if f.pose:
+                d["pose"] = [list(op) for op in f.pose]
+            out.append(d)
+        return out
 
     @classmethod
     def from_dict(cls, data) -> "FeatureStack":
-        return cls([Feature(d["op"], dict(d.get("params", {}))) for d in data or []])
+        return cls([Feature(d["op"], dict(d.get("params", {})),
+                            [tuple(op) for op in (d.get("pose") or [])])
+                    for d in data or []])
 
     def editable(self) -> List[dict]:
         """The (feature, parameter) pairs a user may change after the fact."""
@@ -446,6 +461,9 @@ def apply_pose(shape, pose):
         elif kind == "mirror":
             shape = K.mirror(shape, tuple(float(v) for v in op[1]),
                              tuple(float(v) for v in op[2]))
+        elif kind == "matrix":
+            # R104/A-1: a mate or an alignment computed a rigid transform
+            shape = K.apply_mat4(shape, op[1])
     return shape
 
 
@@ -473,14 +491,19 @@ def replay_mismatch(rebuilt, current) -> Optional[str]:
         ref = max(abs(va), abs(vb), 1e-18)
         if abs(va - vb) / ref > 1e-6:
             return "体积 %.9g != %.9g" % (va, vb)
-        return None
+    # R104: the bounding box is checked even for solids.  Volume and face count
+    # are both translation-invariant, so without this an unrecorded *move* would
+    # look consistent - and the next parameter edit would silently jump the body
+    # home.  Tolerance: 1 nm + 1 ppm of the model size.
     try:
         la, ha = K._vertex_bbox(rebuilt)
         lb, hb = K._vertex_bbox(current)
     except Exception:
         return None
+    span = max(max(abs(float(v)) for v in (la + ha + lb + hb)), 1e-12)
+    tol = 1e-9 + 1e-6 * span
     for i in range(3):
-        if abs(la[i] - lb[i]) > 1e-9 or abs(ha[i] - hb[i]) > 1e-9:
+        if abs(la[i] - lb[i]) > tol or abs(ha[i] - hb[i]) > tol:
             return "包围盒不一致"
     return None
 

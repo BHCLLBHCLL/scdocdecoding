@@ -273,9 +273,56 @@ def _cyl_axis(face) -> Optional[Tuple[Vec3, Vec3]]:
         return None
 
 
-def align_axes(moving, moving_face, target_face):
-    """Coaxial mate: rotate+translate `moving` so its cylinder axis matches the
-    target cylinder axis (any point along the axis line is acceptable)."""
+# ----------------------------------------------------------------------
+# R104/A-1: rigid transforms as explicit 4x4 matrices
+#
+# A mate or an alignment is a rigid transform that has to be *replayable*: the
+# shape changes, so `KBody.base_pose` must carry the same transform or the
+# feature history stops reproducing the body (see scdm.features.apply_pose).
+# Row-major, translation in column 3 - the same layout as scdm.mates.Mat4.
+# ----------------------------------------------------------------------
+Mat4 = Tuple[Tuple[float, float, float, float], ...]
+
+
+def _m4_identity() -> Mat4:
+    return ((1.0, 0.0, 0.0, 0.0), (0.0, 1.0, 0.0, 0.0),
+            (0.0, 0.0, 1.0, 0.0), (0.0, 0.0, 0.0, 1.0))
+
+
+def _m4_mul(a: Mat4, b: Mat4) -> Mat4:
+    """a ∘ b - b is applied first."""
+    return tuple(tuple(sum(a[i][k] * b[k][j] for k in range(4))
+                       for j in range(4)) for i in range(4))
+
+
+def _m4_translate(vec) -> Mat4:
+    v = tuple(float(c) for c in vec)
+    return ((1.0, 0.0, 0.0, v[0]), (0.0, 1.0, 0.0, v[1]),
+            (0.0, 0.0, 1.0, v[2]), (0.0, 0.0, 0.0, 1.0))
+
+
+def _m4_rot(origin, axis, angle_rad: float) -> Mat4:
+    """Rotation about `axis` through `origin` (Rodrigues, no OCCT needed)."""
+    x, y, z = (float(c) for c in axis)
+    n = math.sqrt(x * x + y * y + z * z)
+    if n < 1e-15:
+        return _m4_identity()
+    x, y, z = x / n, y / n, z / n
+    c, s = math.cos(angle_rad), math.sin(angle_rad)
+    C = 1.0 - c
+    r = ((c + x * x * C, x * y * C - z * s, x * z * C + y * s),
+         (y * x * C + z * s, c + y * y * C, y * z * C - x * s),
+         (z * x * C - y * s, z * y * C + x * s, c + z * z * C))
+    o = tuple(float(v) for v in origin)
+    t = tuple(o[i] - sum(r[i][j] * o[j] for j in range(3)) for i in range(3))
+    return ((r[0][0], r[0][1], r[0][2], t[0]),
+            (r[1][0], r[1][1], r[1][2], t[1]),
+            (r[2][0], r[2][1], r[2][2], t[2]),
+            (0.0, 0.0, 0.0, 1.0))
+
+
+def align_axes_matrix(moving_face, target_face) -> Mat4:
+    """The rigid transform `align_axes` applies (R104/A-1: replayable pose)."""
     a1 = _cyl_axis(moving_face)
     a2 = _cyl_axis(target_face)
     if a1 is None or a2 is None:
@@ -293,14 +340,25 @@ def align_axes(moving, moving_face, target_face):
     else:
         axis = (cross[0] / L, cross[1] / L, cross[2] / L)
         angle = math.acos(dot)
-    moved = rotate(moving, p1, axis, angle) if angle > 1e-12 else moving
-    # after rotation the axis passes p1 with direction d2; shift perpendicular offset
+    m = _m4_rot(p1, axis, angle) if angle > 1e-12 else _m4_identity()
+    # after the rotation the axis passes p1 with direction d2; shift the
+    # perpendicular part of the p1->p2 offset
     off = (p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2])
     along = off[0] * d2[0] + off[1] * d2[1] + off[2] * d2[2]
     off = (off[0] - along * d2[0], off[1] - along * d2[1], off[2] - along * d2[2])
     if off[0] * off[0] + off[1] * off[1] + off[2] * off[2] > 1e-24:
-        moved = translate(moved, off)
-    return moved
+        m = _m4_mul(_m4_translate(off), m)
+    return m
+
+
+def align_axes(moving, moving_face, target_face):
+    """Coaxial mate: rotate+translate `moving` so its cylinder axis matches the
+    target cylinder axis (any point along the axis line is acceptable).
+
+    R104/A-1: built from `align_axes_matrix` so the very same transform can be
+    recorded as a replayable pose instead of being applied and forgotten.
+    """
+    return apply_mat4(moving, align_axes_matrix(moving_face, target_face))
 
 
 def edge_face_counts(shape):
@@ -715,18 +773,13 @@ def replace_face(solid, src_face, dst_face):
     return fuse(solid, extrude)
 
 
-def align_faces(moving, moving_face, target_face):
-    """Assembly Mate: transform the moving shape so its face coincides with the target.
-
-    Rotates the moving shape so its face normal opposes the target normal, then
-    translates so the face centres coincide. Returns the transformed shape.
-    """
-    o = _occ()
+def align_faces_matrix(moving_face, target_face) -> Mat4:
+    """The rigid transform `align_faces` applies (R104/A-1: replayable pose)."""
     n1, c1 = face_normal_center(moving_face)
     n2, c2 = face_normal_center(target_face)
     desired = (-n2[0], -n2[1], -n2[2])
-    tr = o["gp"].gp_Trsf()
     dot = n1[0] * desired[0] + n1[1] * desired[1] + n1[2] * desired[2]
+    m = _m4_identity()
     if dot < 1.0 - 1e-12:
         axis = (
             n1[1] * desired[2] - n1[2] * desired[1],
@@ -736,14 +789,22 @@ def align_faces(moving, moving_face, target_face):
         mag = math.sqrt(axis[0] ** 2 + axis[1] ** 2 + axis[2] ** 2)
         if mag > 1e-12:
             ang = math.acos(max(-1.0, min(1.0, dot)))
-            ax = o["gp"].gp_Ax1(o["gp"].gp_Pnt(*c1),
-                                o["gp"].gp_Dir(axis[0] / mag, axis[1] / mag, axis[2] / mag))
-            tr.SetRotation(ax, ang)
-    shifted = o["bapi"].BRepBuilderAPI_Transform(moving, tr, True).Shape()
+            m = _m4_rot(c1, (axis[0] / mag, axis[1] / mag, axis[2] / mag), ang)
     # NOTE: the rotation is about c1, so the moving face centre stays at c1;
     # translate by the centre delta to land on the target centre.
     vec = (c2[0] - c1[0], c2[1] - c1[1], c2[2] - c1[2])
-    return translate(shifted, vec)
+    return _m4_mul(_m4_translate(vec), m)
+
+
+def align_faces(moving, moving_face, target_face):
+    """Assembly Mate: transform the moving shape so its face coincides with the
+    target.
+
+    Rotates the moving shape so its face normal opposes the target normal, then
+    translates so the face centres coincide.  R104/A-1: the transform comes from
+    `align_faces_matrix`, so a caller can record it as a replayable pose.
+    """
+    return apply_mat4(moving, align_faces_matrix(moving_face, target_face))
 
 
 def fill_faces(solid, faces: Sequence):

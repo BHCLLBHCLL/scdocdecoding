@@ -2401,15 +2401,26 @@ else:
             self._rebuild(f"组件{'已锚定' if comp.anchored else '已解除锚定'}")
 
         def _do_asm_mate(self):
+            """R104/A-1 + P1-1: kinematic mates and alignments, both replayable.
+
+            Types 0..6 go through `mates.solve_transform` and report the
+            remaining degrees of freedom from `mates.DOFS`; 7/8 are the
+            face-flush / axis-align paths.  Either way the transform is stored
+            as a pose, so a body stays feature-editable after the mate, and an
+            over-constrained pair is refused with the numbers instead of
+            silently letting the last mate win.
+            """
             ses = self.session()
             faces = [sid for k, sid in self.sel.items if k == "face"]
             if len(faces) < 2:
                 self._set_status("配合需要两个面（先选移动体上的面，再选目标面）")
                 return
             vals = self._ask_numbers(
-                "配合类型",
+                "配合",
                 [("0=刚性 1=旋转 2=圆柱 3=平面 4=球 5=螺旋 6=距离 7=面贴合 8=轴对齐", 0.0),
-                 ("值（距离/螺距 mm）", 0.0)])
+                 ("值（距离/螺距 mm）", 0.0),
+                 ("驱动角（度，旋转/螺旋/平面）", 0.0),
+                 ("滑移（mm，圆柱/平面）", 0.0)])
             if not vals:
                 return
             mtype = int(vals[0]) % 9
@@ -2424,35 +2435,49 @@ else:
                 f1 = K.explore(b1.shape, "face")
                 f2 = K.explore(b2.shape, "face")
                 mf, tf = f1[int(fi1)], f2[int(fi2)]
-                if mtype in (7, 8):     # legacy face-flush / axis-align
-                    if mtype == 8:
-                        b1.shape = K.align_axes(b1.shape, mf, tf)
-                        self._commit("已配合（轴对齐）")
-                        return
-                    b1.shape = K.align_faces(b1.shape, mf, tf)
+            except Exception as exc:
+                self._set_status(f"配合失败: {exc}")
+                return
+            from scdm import mates as M
+            names = {0: M.RIGID, 1: M.REVOLUTE, 2: M.CYLINDRICAL,
+                     3: M.PLANAR, 4: M.BALL, 5: M.SCREW, 6: M.DISTANCE}
+            try:
+                if mtype in (7, 8):     # face-flush / axis-align (recorded pose)
+                    kind = "axes" if mtype == 8 else "faces"
+                    ses.kdoc.align_body(b1.id, kind, mf, tf)
                     if mtype == 7 and vals[1]:
                         n2, _c = K.face_normal_center(tf)
                         d = vals[1] / ses.scale
-                        b1.shape = K.translate(b1.shape,
-                                               (n2[0] * d, n2[1] * d, n2[2] * d))
-                    verb = "已配合（面重合）" if not vals[1] else f"已配合（距离 {vals[1]:g}mm）"
+                        ses.kdoc.pose_body(b1.id, [("translate",
+                                                    (n2[0] * d, n2[1] * d,
+                                                     n2[2] * d))])
+                    verb = ("已配合（轴对齐）" if mtype == 8 else
+                            ("已配合（面重合）" if not vals[1] else
+                             f"已配合（距离 {vals[1]:g}mm）"))
+                    idx = next((i for i, b in enumerate(ses.kdoc.bodies)
+                                if b.id == b1.id), 0)
+                    self._record("asm.mate", target="body", index=idx,
+                                 type=kind)
                     self._commit(verb)
+                    self._set_status(verb + "；特征参数仍可编辑")
                     return
-                # kinematic mates via the solver
-                from scdm import mates as M
-                names = {0: M.RIGID, 1: M.REVOLUTE, 2: M.CYLINDRICAL,
-                         3: M.PLANAR, 4: M.BALL, 5: M.SCREW, 6: M.DISTANCE}
                 mname = names[mtype]
-                fr_a = M.frame_of(tf)   # target reference (fixed)
-                fr_b = M.frame_of(mf)   # moving reference
-                mat = M.Mate(mname, fr_a, fr_b,
-                             value=vals[1] / ses.scale)
-                m4 = M.solve_transform(mat)
-                b1.shape = K.apply_mat4(b1.shape, m4)
-                ses.kdoc.mates.append({
-                    "type": mname, "a": b2.id, "b": b1.id,
-                    "value": vals[1] / ses.scale, "angle": 0.0, "slide": 0.0})
-                self._commit(f"已配合（{mname}）")
+                rep = ses.kdoc.mate_bodies(mname, b2, tf, b1, mf,
+                                           value=vals[1] / ses.scale,
+                                           angle=math.radians(vals[2]),
+                                           slide=vals[3] / ses.scale,
+                                           scale=ses.scale)
+                if not rep["ok"]:
+                    QMessageBox.warning(self, "配合", rep["reason"])
+                    self._set_status("配合未执行：" + rep["reason"])
+                    return
+                idx = next((i for i, b in enumerate(ses.kdoc.bodies)
+                            if b.id == b1.id), 0)
+                self._record("asm.mate", target="body", index=idx, type=mname,
+                             value=vals[1], angle=vals[2], slide=vals[3])
+                verb = "已配合（%s，剩余自由度 %d/6）" % (mname, rep["dof"])
+                self._commit(verb)
+                self._set_status(verb + "；特征参数仍可编辑")
             except Exception as exc:
                 self._set_status(f"配合失败: {exc}")
 

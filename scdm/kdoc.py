@@ -84,6 +84,18 @@ class Configuration:
     quantities: Dict[str, int] = field(default_factory=dict)
 
 
+def _replay_shape(doc, body, base, stack, scale):
+    """base -> features -> trailing pose (R104/A-1 order).
+
+    Features carry the pose they were recorded under, so the sequence is exactly
+    the sequence of operations the user performed: transform, feature,
+    transform, feature, ..., final transform.
+    """
+    shape = stack.apply(base, scale)
+    pose = getattr(body, "base_pose", None)
+    return apply_pose(shape, pose) if pose else shape
+
+
 class KernelDoc:
     def __init__(self):
         self.bodies: List[KBody] = []
@@ -133,6 +145,9 @@ class KernelDoc:
         stack = self.features.get(body.id)
         if stack is not None and len(stack):
             shape = stack.apply(shape, scale)   # P5: replay the feature history
+        pose = getattr(body, "base_pose", None)
+        if pose:                                # R104/A-1: trailing pose last
+            shape = apply_pose(shape, pose)
         body.shape = shape
         return body
 
@@ -161,8 +176,17 @@ class KernelDoc:
         return p
 
     def record_feature(self, body_id: str, op: str, **params) -> None:
-        """Append a replayable feature to a body's history."""
-        self.feature_stack(body_id).add(op, **params)
+        """Append a replayable feature to a body's history.
+
+        R104/A-1: the pose that is in effect *now* belongs to this feature (its
+        selector was resolved in the posed frame), so it is moved from the body
+        onto the feature and the body's trailing pose starts empty again.
+        """
+        feature = self.feature_stack(body_id).add(op, **params)
+        body = self.body_by_id(body_id)
+        if body is not None and getattr(body, "base_pose", None):
+            feature.pose = [tuple(op) for op in body.base_pose]
+            body.base_pose = []
 
     def clear_features(self, body_id: str) -> None:
         self.features.pop(body_id, None)
@@ -190,10 +214,11 @@ class KernelDoc:
                 break
         if base is None:
             base = body.base_shape
-        if base is None:
-            return None
-        pose = getattr(body, "base_pose", None)
-        return apply_pose(base, pose) if pose else base
+        return base
+    # NOTE (R104/A-1): the *trailing* pose is applied AFTER the feature stack
+    # (see replay_body), because a feature's selector lives in the frame it was
+    # recorded in - applying a rotation to the base first would move the
+    # selector to another face.
 
     # ---- R103/A-1: rigid transforms keep the replay invariant ------------
     def _transform_body(self, body_id: str, op: tuple):
@@ -225,6 +250,115 @@ class KernelDoc:
             body_id, ("mirror", tuple(float(v) for v in origin),
                       tuple(float(v) for v in normal)))
 
+    # ---- R104/A-1 + P1-1: mates and alignments as replayable poses -------
+    def _component_of(self, body_id: str) -> str:
+        """The component that owns a body, or the body id when it is loose."""
+        for c in self.components:
+            if body_id in c.body_ids:
+                return c.id
+        return body_id
+
+    def pose_body(self, body_id: str, ops):
+        """Apply a rigid pose (a list of apply_pose ops) and remember it."""
+        body = self.body_by_id(body_id)
+        if body is None:
+            return None
+        body.shape = apply_pose(body.shape, ops)
+        poses = getattr(body, "base_pose", None)
+        if poses is None:
+            body.base_pose = poses = []
+        poses.extend(ops)
+        return body
+
+    def align_body(self, body_id: str, kind: str, moving_face, target_face):
+        """Face-flush / axis-align a body and record the transform (A-1).
+
+        The transform itself comes from the kernel (`align_faces_matrix` /
+        `align_axes_matrix`), so the pose that is remembered is the *same*
+        matrix the shape got - a replay reproduces the aligned body.
+        """
+        if kind == "axes":
+            m = K.align_axes_matrix(moving_face, target_face)
+        elif kind == "faces":
+            m = K.align_faces_matrix(moving_face, target_face)
+        else:
+            raise ValueError("未知对齐类型：%s" % kind)
+        return self.pose_body(body_id, [("matrix", m)])
+
+    def pair_dof_used(self, a: str, b: str) -> int:
+        """Degrees of freedom already fixed by the mates of this pair (P1-1).
+
+        Counted from `mates.DOFS` (the single source): a mate that leaves D
+        degrees of freedom fixes 6 - D.
+        """
+        from scdm import mates as MATES
+        key = {a, b}
+        used = 0
+        for m in self.mates:
+            if {m.get("a"), m.get("b")} == key:
+                used += 6 - int(MATES.DOFS.get(m.get("type"), 6))
+        return used
+
+    def add_mate(self, mtype, a, b, value=0.0, angle=0.0, slide=0.0):
+        """Register a mate; refuses over-constraint with the numbers (P1-1).
+
+        Conservative on purpose: the solver applies one mate at a time, so two
+        mates that jointly fix more than six degrees would silently let the
+        last one win - that is refused instead.
+        """
+        from scdm import mates as MATES
+        if mtype not in MATES.DOFS:
+            return None, "未知配合类型：%s" % mtype
+        removes = 6 - int(MATES.DOFS[mtype])
+        used = self.pair_dof_used(a, b)
+        if used + removes > 6:
+            return None, ("过约束：体对 %s/%s 已固定 %d 个自由度，再加 %s（%d 个）超过 6"
+                          % (a, b, used, mtype, removes))
+        mate = {"type": mtype, "a": a, "b": b, "value": float(value),
+                "angle": float(angle), "slide": float(slide)}
+        self.mates.append(mate)
+        return mate, ""
+
+    def mate_bodies(self, mtype, body_a, face_a, body_b, face_b,
+                    value=0.0, angle=0.0, slide=0.0, scale: float = 1000.0) -> dict:
+        """Solve one mate between two faces and move `body_b` (P1-1).
+
+        `body_a` / `face_a` is the target, `body_b` / `face_b` the moving side
+        (the solver positions B's frame onto A's).  Returns
+        {"ok","reason","dof","removes","matrix","mate"}; nothing moves and no
+        mate is recorded when the pair would be over-constrained.
+        """
+        from scdm import mates as MATES
+        rep = {"ok": False, "reason": "", "dof": None, "removes": None,
+               "matrix": None, "mate": None, "type": mtype}
+        if body_a is None or body_b is None or body_a is body_b:
+            rep["reason"] = "配合需要不同实体上的两个面"
+            return rep
+        if mtype not in MATES.DOFS:
+            rep["reason"] = "未知配合类型：%s" % mtype
+            return rep
+        comp_a = self._component_of(body_a.id)
+        comp_b = self._component_of(body_b.id)
+        mate, why = self.add_mate(mtype, comp_a, comp_b, value=value,
+                                  angle=angle, slide=slide)
+        if mate is None:
+            rep["reason"] = why
+            return rep
+        try:
+            frame_a = MATES.frame_of(face_a)
+            frame_b = MATES.frame_of(face_b)
+            m = MATES.solve_transform(MATES.Mate(mtype, frame_a, frame_b,
+                                                 value=value, angle=angle,
+                                                 slide=slide))
+        except Exception as exc:
+            self.mates.remove(mate)
+            rep["reason"] = "求解失败：%s" % exc
+            return rep
+        self.pose_body(body_b.id, [("matrix", m)])
+        rep.update(ok=True, dof=int(MATES.DOFS[mtype]),
+                   removes=6 - int(MATES.DOFS[mtype]), matrix=m, mate=mate)
+        return rep
+
     def can_replay(self, body_id: str, scale: float = 1000.0):
         """(ok, reason): can this body's feature history drive a parameter edit?
 
@@ -245,7 +379,7 @@ class KernelDoc:
 
         def _verdict():
             try:
-                rebuilt = stack.apply(base, scale)
+                rebuilt = _replay_shape(self, body, base, stack, scale)
             except Exception as exc:
                 return False, "重放失败：%s" % exc
             if rebuilt is None:
@@ -270,7 +404,7 @@ class KernelDoc:
         if base is None:
             return False, "缺少基准形状（未记录特征前的形状）"
         try:
-            shape = stack.apply(base, scale)
+            shape = _replay_shape(self, body, base, stack, scale)
         except Exception as exc:
             return False, "重放失败：%s" % exc
         if shape is None:
@@ -648,7 +782,8 @@ class KernelDoc:
         A legacy list of 5-tuples is still accepted by `restore`.
         """
         if not K.available():
-            return {"bodies": [], "features": {}, "bases": {}, "poses": {}}
+            return {"bodies": [], "features": {}, "bases": {}, "poses": {},
+                    "mates": []}
         return {
             "bodies": [(b.id, b.name, K.dumps_brep(b.shape), b.color, b.visible)
                        for b in self.bodies],
@@ -658,6 +793,9 @@ class KernelDoc:
                       if b.base_shape is not None and self._stack_len(b.id)},
             "poses": {b.id: [list(op) for op in b.base_pose] for b in self.bodies
                       if getattr(b, "base_pose", None) and self._stack_len(b.id)},
+            # R104/P1-1: the mate list is the DOF budget bookkeeping, so an undo
+            # has to take it back together with the geometry
+            "mates": [dict(m) for m in self.mates],
         }
 
     def restore(self, snap) -> None:
@@ -666,8 +804,10 @@ class KernelDoc:
             feats = snap.get("features") or {}
             bases = snap.get("bases") or {}
             poses = snap.get("poses") or {}
+            mates = snap.get("mates") or []
         else:                      # legacy: [(id, name, brep, color, visible)]
             rows, feats, bases, poses = list(snap or []), {}, {}, {}
+            mates = []
         self.bodies = []
         max_n = 1
         for bid, name, blob, color, vis in rows:
@@ -683,6 +823,8 @@ class KernelDoc:
         self._n = max_n
         self.features = {bid: FeatureStack.from_dict(data)
                          for bid, data in feats.items()}
+        if isinstance(snap, dict):
+            self.mates = [dict(m) for m in mates]
 
     def compound(self):
         if not self.bodies:

@@ -334,7 +334,7 @@ def op_repair_check(kdoc, opts, scale):
 def op_prep_small(kdoc, opts, scale):
     """R91/P423: 小特征（Defeaturing）走**同一套**几何检查/修复。
 
-    小面检出与修复早已由 @@repair.check@@ 的全项检查覆盖，所以这里不另写实现：
+    小面检出与修复早已由 `repair.check` 的全项检查覆盖，所以这里不另写实现：
     两个命令入口、一处实现与一处文案（纪律 84），占位命令因此减一。
     """
     return _geometry_check(kdoc, opts, scale, "小特征")
@@ -952,6 +952,36 @@ def op_param_edit(kdoc, opts, scale):
     return body, "参数 %s：%s → %s" % (rep["param"], rep["old"], rep["value"])
 
 
+def op_asm_mate(kdoc, opts, scale):
+    """R104/A-1 + P1-1: a mate or an alignment as a replayable step.
+
+    opts: type = rigid|revolute|cylindrical|planar|ball|screw|distance (the
+    kinematic pairs) or faces|axes (the alignment paths); target/target2 plus
+    index/index2 pick the two bodies, face_a/face_b the faces.
+    """
+    b1 = _resolve(kdoc, opts.get("target2", "first"), opts.get("index2", 0))
+    b2 = _resolve(kdoc, opts.get("target", "last"), opts.get("index", 0))
+    if b1 is None or b2 is None or b1 is b2:
+        raise ValueError("配合：需要两个实体")
+    f1 = K.explore(b1.shape, "face")
+    f2 = K.explore(b2.shape, "face")
+    i1 = int(opts.get("face_a", 0))
+    i2 = int(opts.get("face_b", 0))
+    if not (0 <= i1 < len(f1)) or not (0 <= i2 < len(f2)):
+        raise ValueError("配合：面序号越界")
+    mtype = str(opts.get("type", "rigid"))
+    if mtype in ("faces", "axes"):          # R104/A-1 alignment paths
+        kdoc.align_body(b2.id, mtype, f2[i2], f1[i1])
+        return b2, "已对齐（%s）" % mtype
+    rep = kdoc.mate_bodies(mtype, b1, f1[i1], b2, f2[i2],
+                           value=opts.get("value", 0.0),
+                           angle=opts.get("angle", 0.0),
+                           slide=opts.get("slide", 0.0), scale=scale)
+    if not rep["ok"]:
+        raise ValueError("配合失败：%s" % rep["reason"])
+    return b2, "配合 %s（剩余自由度 %d/6）" % (mtype, rep["dof"])
+
+
 OPS = {
     "insert.cyl": op_insert_cyl,
     "insert.sphere": op_insert_sphere,
@@ -1007,6 +1037,7 @@ OPS = {
     "mesh.volume": op_mesh_volume,
     "mesh.report": op_mesh_report,
     "det.params": op_param_edit,        # R102/P0-1: feature parameter edit
+    "asm.mate": op_asm_mate,            # R104/A-1+P1-1: mate / alignment
 }
 
 
