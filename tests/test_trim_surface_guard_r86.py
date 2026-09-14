@@ -41,7 +41,8 @@ def test_only_cylinders_and_spheres_may_be_trimmed():
     assert _trim_surface_allowed(Geom_CylindricalSurface(ax, 0.01))
     assert _trim_surface_allowed(Geom_SphericalSurface(ax, 0.01))
     assert not _trim_surface_allowed(Geom_ConicalSurface(ax, 0.5, 0.01))
-    assert not _trim_surface_allowed(Geom_ToroidalSurface(ax, 0.02, 0.005))
+    # R93: tori became cheap enough to allow (single candidate + cheap fallback)
+    assert _trim_surface_allowed(Geom_ToroidalSurface(ax, 0.02, 0.005))
 
 
 @requires_occ

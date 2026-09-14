@@ -31,8 +31,8 @@ requires_lib = pytest.mark.skipif(not os.path.isdir(LIB),
 # sample -> (gaps, loops) at the import tolerance
 MEASURED = {
     "SampleModel1.scdoc": (0, 0),
-    "SampleModel4.scdoc": (347, 76),
-    "samplemodel2.scdoc": (1002, 212),
+    "SampleModel4.scdoc": (335, 72),
+    "samplemodel2.scdoc": (990, 195),
     "samplemodel6.scdoc": (3, 2),
 }
 

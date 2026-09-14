@@ -81,5 +81,5 @@ def test_sphere_trimming_closes_the_worst_gap_class():
         gaps += rep["open_edges"]
         loops += rep["free_loops"]
     assert faces == 1813, faces
-    assert (gaps, loops) == (1002, 212), (gaps, loops)
+    assert (gaps, loops) == (990, 195), (gaps, loops)     # R93 also trims tori
     assert import_sab._TRIM_PATCH is False      # flag restored after the import

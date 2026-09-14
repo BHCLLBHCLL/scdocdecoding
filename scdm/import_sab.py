@@ -1314,7 +1314,7 @@ def _trim_fix_candidates(face):
         pass
 
 def _trim_surface_allowed(surf) -> bool:
-    """Only CYLINDERS and SPHERES may be trimmed (R86, re-measured in R89).
+    """CYLINDERS, SPHERES and TORI may be trimmed (R93 enabled tori again).
 
     Measured on samplemodel2:
       * torus trim   re-measured in R89: the trim itself is ~0.18 s per face,
@@ -1329,13 +1329,14 @@ def _trim_surface_allowed(surf) -> bool:
 
     The guard turns a potential native crash into a clean None."""
     from OCC.Core.GeomAdaptor import GeomAdaptor_Surface
-    from OCC.Core.GeomAbs import GeomAbs_Cylinder, GeomAbs_Sphere
+    from OCC.Core.GeomAbs import (GeomAbs_Cylinder, GeomAbs_Sphere,
+                                  GeomAbs_Torus)
 
     try:
         t = GeomAdaptor_Surface(surf).GetType()
     except Exception:
         return False
-    return t in (GeomAbs_Cylinder, GeomAbs_Sphere)
+    return t in (GeomAbs_Cylinder, GeomAbs_Sphere, GeomAbs_Torus)
 
 def _trimmed_face(model, face_ent, surf, box=None, strict_bbox=True):
     """The surface trimmed by the face's OWN loop curves, or None (R76/P375).
@@ -1762,32 +1763,29 @@ def _rebuild_face(model, face_ent, box=None):
                                                   surf_ent.minor))
                 cands.append(Geom_ToroidalSurface(ax, surf_ent.minor,
                                                   surf_ent.major))
-            # R85: SPHERES only.  Measured per face: sphere trim 0.007 s and
-            # 48/48 build; torus trim 0.54 s and 16/36 build (the gates - BndLib
-            # plus GProp on a trimmed torus - are the cost), which took the
-            # samplemodel2 import from 6.8 s to 25 s.  Spheres pay off, tori do
-            # not, so tori keep the recorded-window path.
-            if _TRIM_PATCH and kind == "sphere":
-                for surf in cands:
+            # R85 measured sphere trim 0.007 s/face (48/48 build) against torus
+            # 0.54 s/face; R89 showed the torus cost is the DOUBLE candidate
+            # (major/minor and the swap) plus the sampled window fallback, not
+            # the gates.  R93 therefore trims tori with the FIRST candidate and
+            # tries the cheap window before the sampled one.
+            if _TRIM_PATCH:
+                for surf in cands[:1]:
                     trimmed = _trimmed_face(model, face_ent, surf, box,
                                             strict_bbox=False)
                     if trimmed is not None:
                         return [trimmed]
-            for surf in cands:
-                # only TORUS uses the sampled gap: spheres keep the cheap path so
-                # the spline/sphere faces of the other samples cannot regress
-                # limit 5% for the sampled comparison: the UV grid itself
-                # discretises the patch, so the sampled bbox misses the extreme
-                # by up to half a step (measured 0.012 on a quarter ring of
-                # radius 0.74 = 3.1% of the face).  Wrong readings miss by 45%
-                # or more, so the margin still separates them cleanly.
-                f = _face_from_window(surf, face_ent,
-                                      limit=0.05 if kind == "torus" else 0.02,
-                                      accurate=(kind == "torus"))
-                # a window reading that lands outside the model is a misread of
-                # the recorded range - prefer the boolean cut then
-                if f is not None and _shape_within(f, box, 0.5):
-                    return [f]
+            # R93: cheap window first (accurate=False), sampled only as the
+            # fallback - the sampled UV grid was the expensive half of the
+            # torus path and only TORUS needs it (spheres keep the cheap path).
+            for accurate in ((False, True) if kind == "torus" else (False,)):
+                for surf in cands:
+                    f = _face_from_window(surf, face_ent,
+                                          limit=0.05 if accurate else 0.02,
+                                          accurate=accurate)
+                    # a window reading that lands outside the model is a misread
+                    # of the recorded range - prefer the boolean cut then
+                    if f is not None and _shape_within(f, box, 0.5):
+                        return [f]
             for surf in cands:
                 try:
                     mk = BRepBuilderAPI_MakeFace(
