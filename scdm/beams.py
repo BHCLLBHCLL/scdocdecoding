@@ -70,6 +70,72 @@ DEFAULTS = {
 }
 
 
+# ----------------------------------------------------------------------
+# R87/P416: 标准型材规格表（GB/T 706 等公称尺寸，单位 mm）
+# ----------------------------------------------------------------------
+# 只登记**公称尺寸**：本模块的截面是精确多边形（无圆角），所以闭式值与
+# 手册里"含圆角"的数值有 1% 量级的系统差（圆角补料）。规格名即常用叫法。
+SPECS: Dict[str, Dict[str, Tuple[float, ...]]] = {
+    "i": {                     # 工字钢: h, b, tw, tf
+        "I10": (100.0, 68.0, 4.5, 7.6),
+        "I12.6": (126.0, 74.0, 5.0, 8.4),
+        "I16": (160.0, 88.0, 6.0, 9.9),
+        "I20a": (200.0, 100.0, 7.0, 11.4),
+    },
+    "l": {                     # 等边角钢: a, b, t
+        "L50x5": (50.0, 50.0, 5.0),
+        "L63x6": (63.0, 63.0, 6.0),
+        "L75x8": (75.0, 75.0, 8.0),
+    },
+    "pipe": {                  # 圆管: d, t
+        "D60x3": (60.0, 3.0),
+        "D76x4": (76.0, 4.0),
+        "D89x4": (89.0, 4.0),
+    },
+    "flat": {                  # 扁钢: b, h
+        "FB40x10": (40.0, 10.0),
+        "FB50x12": (50.0, 12.0),
+    },
+}
+
+SPEC_STANDARDS = {"i": "GB/T 706", "l": "GB/T 706", "pipe": "GB/T 3091",
+                  "flat": "GB/T 704"}
+
+
+def spec_names(profile: Optional[str] = None) -> List[str]:
+    """Names in the standard table, optionally of one profile (R87)."""
+    if profile is None:
+        return sorted(n for group in SPECS.values() for n in group)
+    key = str(profile).lower()
+    if key not in SPECS:
+        raise K.KernelError("规格表里没有该截面：%s（可选 %s）"
+                            % (profile, "/".join(sorted(SPECS))))
+    return sorted(SPECS[key])
+
+
+def spec_dims(name: str) -> Tuple[str, Dict[str, float]]:
+    """(profile, dims in mm) for a standard spec name (R87).
+
+    Raises K.KernelError for an unknown name: the table is the only source, so
+    a typo cannot silently become a made-up section.
+    """
+    want = str(name).strip().lower()
+    for profile, group in SPECS.items():
+        for spec, values in group.items():
+            if spec.lower() == want:
+                return profile, dict(zip(PARAMS[profile], values))
+    raise K.KernelError("未知型材规格：%s（可选 %s）"
+                        % (name, "/".join(spec_names())))
+
+
+def named_spec_label(spec: str) -> str:
+    """'工字钢 I 160×88×6×9.9（I16，GB/T 706）' (R87)."""
+    profile, dims = spec_dims(spec)
+    label = spec_label(profile, **dims)
+    name = next(n for n in SPECS[profile] if n.lower() == str(spec).strip().lower())
+    stand = SPEC_STANDARDS.get(profile)
+    return "%s（%s%s）" % (label, name, ("，" + stand) if stand else "")
+
 def _validate(profile, dims) -> Tuple[str, Dict[str, float]]:
     """Coerce + bound-check the profile parameters (raises K.KernelError)."""
     key = str(profile).lower()
