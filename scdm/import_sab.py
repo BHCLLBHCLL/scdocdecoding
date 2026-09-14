@@ -1313,7 +1313,7 @@ def _trim_fix_candidates(face):
     except Exception:
         pass
 
-def _trimmed_face(model, face_ent, surf, box=None):
+def _trimmed_face(model, face_ent, surf, box=None, strict_bbox=True):
     """The surface trimmed by the face's OWN loop curves, or None (R76/P375).
 
     R73/R74 made the boundary curves exact (arcs and straight edges now end on
@@ -1375,12 +1375,12 @@ def _trimmed_face(model, face_ent, surf, box=None):
     # R82: try the measured repair candidates in order and take the first one
     # that passes ALL the geometric gates below.
     for _label, face in _trim_fix_candidates(built):
-        if _trim_gates_ok(face, face_ent, box):
+        if _trim_gates_ok(face, face_ent, box, strict_bbox=strict_bbox):
             return face
     return None
 
 
-def _trim_gates_ok(face, face_ent, box=None) -> bool:
+def _trim_gates_ok(face, face_ent, box=None, strict_bbox=True) -> bool:
     """valid + area > 0 + inside the model + no gross overshoot (R76/R82).
 
     Gross overshoot = beyond the face's own point bbox by more than one full
@@ -1402,6 +1402,12 @@ def _trim_gates_ok(face, face_ent, box=None) -> bool:
     # reach outside it - rejecting at 5% of the diagonal cost SampleModel1 two
     # faces (and samplemodel2 twenty-six).  Only an overshoot beyond the whole
     # diagonal means the patch is not this face.
+    if not strict_bbox:
+        # R85: a SPHERE patch's point bbox (a few vertices) is far smaller than
+        # the patch itself - measured overshoot 11x the diagonal for all 48
+        # sphere faces of samplemodel2.  The model-bbox gate above still
+        # catches a misread surface (the R74 complement arc fails there).
+        return True
     fbox = _face_bbox(face_ent)
     if fbox is not None:
         gap = _bbox_gap(face, fbox, accurate=False)
@@ -1702,6 +1708,9 @@ def _rebuild_face(model, face_ent, box=None):
         # P46: the recorded uv window is the exact patch - a torus patch cannot
         # be recovered from its bbox alone (the bbox of a fillet ring is a thin
         # slab the surface crosses twice).
+        # R85/P407: when the import trims patches anyway, try the face's OWN
+        # boundary first (same infrastructure as the cylinder path); measured
+        # 48/48 spheres and 16/36 tori of samplemodel2 build this way.
         if (surf_ent.origin is None or surf_ent.normal is None
                 or surf_ent.xdir is None):
             return []
@@ -1724,6 +1733,17 @@ def _rebuild_face(model, face_ent, box=None):
                                                   surf_ent.minor))
                 cands.append(Geom_ToroidalSurface(ax, surf_ent.minor,
                                                   surf_ent.major))
+            # R85: SPHERES only.  Measured per face: sphere trim 0.007 s and
+            # 48/48 build; torus trim 0.54 s and 16/36 build (the gates - BndLib
+            # plus GProp on a trimmed torus - are the cost), which took the
+            # samplemodel2 import from 6.8 s to 25 s.  Spheres pay off, tori do
+            # not, so tori keep the recorded-window path.
+            if _TRIM_PATCH and kind == "sphere":
+                for surf in cands:
+                    trimmed = _trimmed_face(model, face_ent, surf, box,
+                                            strict_bbox=False)
+                    if trimmed is not None:
+                        return [trimmed]
             for surf in cands:
                 # only TORUS uses the sampled gap: spheres keep the cheap path so
                 # the spline/sphere faces of the other samples cannot regress

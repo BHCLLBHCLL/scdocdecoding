@@ -56,7 +56,7 @@ spec.loader.exec_module(diff)
 FREE_CEILING = {
     "SampleModel1.scdoc": (0, 0),
     "SampleModel4.scdoc": (350, 80),
-    "samplemodel2.scdoc": (1250, 360),
+    "samplemodel2.scdoc": (1010, 220),
     "samplemodel3.scdoc": (0, 0),
     "samplemodel5.scdoc": (0, 0),
     "samplemodel6.scdoc": (3, 2),

@@ -41,31 +41,32 @@
  {
   "curve": {
    "bspline": 100,
-   "circle": 318,
-   "ellipse": 536,
+   "circle": 222,
+   "ellipse": 392,
    "hyperbola": 100,
-   "line": 221
+   "line": 221,
+   "other": 48
   },
-  "edges": 1275,
+  "edges": 1083,
   "ends": {
-   "chain": 1027,
+   "chain": 835,
    "half": 179,
    "isolated": 69
   },
-  "gaps": 1242,
+  "gaps": 1002,
   "len_max": 3.285123765844859,
   "len_median": 0.06874663899294124,
   "sample": "samplemodel2.scdoc",
-  "seams": 33,
+  "seams": 81,
   "surf": {
    "bspline": 4,
    "cone": 176,
-   "cylinder": 589,
+   "cylinder": 445,
    "plane": 300,
-   "sphere": 96,
+   "sphere": 48,
    "torus": 110
   },
-  "tiny": 0
+  "tiny": 48
  },
  {
   "curve": {},

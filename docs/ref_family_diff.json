@@ -1360,8 +1360,8 @@
     "tried": ""
    }
   ],
-  "free_edges": 1242,
-  "free_loops": 356,
+  "free_edges": 1002,
+  "free_loops": 212,
   "other_unbuilt": {},
   "paths": {
    "none": 1,
@@ -1409,7 +1409,7 @@
   },
   "sab_faces": 1813,
   "sample": "samplemodel2.scdoc",
-  "seam_edges": 33,
+  "seam_edges": 81,
   "unbuilt": 1,
   "warnings": [
    "20 个面引用 ACIS ref 间接曲面（该类曲面的数据不在本 part）：其中 19 个仍由边界曲线重建，1 个未能重建（含 0 个无任何边界边）",
