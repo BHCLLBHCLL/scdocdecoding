@@ -58,6 +58,16 @@ def save_scdm(path: str, kdoc: KernelDoc) -> None:
         "features": {bid: stack.as_dict()
                      for bid, stack in getattr(kdoc, "features", {}).items()
                      if len(stack)},
+        # R106/B-1: sketches are first-class now - a sketch body's live link
+        # (sync_sketch_bodies) has to survive a reload.  The feature also carries
+        # the curves, so replay works even for a file from before this change.
+        "sketches": [{"id": s.id, "name": s.name, "plane": s.plane,
+                      "origin": list(s.origin), "normal": list(s.normal),
+                      "xdir": list(s.xdir),
+                      "curves": [list(c) for c in s.curves],
+                      "construction": [list(c) for c in s.construction],
+                      "constraints": [list(c) for c in s.constraints]}
+                     for s in getattr(kdoc, "sketches", [])],
         "document_features": getattr(kdoc, "document_features",
                                      FeatureHistory()).as_dict(),
         "instances": [dict(i) for i in getattr(kdoc, "instances", [])],
@@ -130,6 +140,24 @@ def load_scdm(path: str) -> KernelDoc:
     doc.groups = [{"name": n.get("name", ""),
                    "items": [tuple(it) for it in n.get("items", [])]}
                   for n in man.get("groups", [])]
+    # R106/B-1: sketches (plane / curves / constraints) - a sketch body's live
+    # link is only useful when the sketch itself comes back
+    doc.sketches = []
+    max_sk = 1
+    for s in man.get("sketches", []) or []:
+        sk = doc.add_sketch(s.get("plane") or "xy", name=s.get("name"))
+        sk.id = s.get("id") or sk.id
+        sk.origin = tuple(s.get("origin") or (0.0, 0.0, 0.0))
+        sk.normal = tuple(s.get("normal") or (0.0, 0.0, 1.0))
+        sk.xdir = tuple(s.get("xdir") or (1.0, 0.0, 0.0))
+        sk.curves = [tuple(c) for c in (s.get("curves") or [])]
+        sk.construction = [tuple(c) for c in (s.get("construction") or [])]
+        sk.constraints = [tuple(c) for c in (s.get("constraints") or [])]
+        try:
+            max_sk = max(max_sk, int(str(sk.id)[1:]) + 1)
+        except Exception:
+            pass
+    doc._sk = max_sk
     # P22: modelling history + assembly state
     doc.features = {bid: FeatureStack.from_dict(data)
                     for bid, data in (man.get("features") or {}).items()}

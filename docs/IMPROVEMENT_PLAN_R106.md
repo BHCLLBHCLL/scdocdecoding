@@ -17,7 +17,10 @@
 | A-5 | **handler 端到端（QTimer）** | 模态 `exec_` 循环只由冒烟测试覆盖 | 驱动 `det.params` / 树双击 / `asm.mate` 三个 handler，各断言一次闭式结果 |
 | A-6 | **爆炸图走可回放平移** | `asm.explode` 用 `K.translate` 直接改形状 → 爆炸后带历史的实体被拒编辑 | 爆炸后 `can_replay` 真；还原后包围盒回原位；回调改 `translate_body` 并同步 3 处调用点/2 个测试 |
 
-## B. R105 新暴露的候选
+## B. R105 新暴露的候选——**B-1 已交付（R106）**
+
+> B-1（草图特征化）见 [ROUND_R106_20260912.md](ROUND_R106_20260912.md)：改轮廓/改高度都重建实体，定义随特征持久化，
+> 同步失败回滚。B-2..B-5 与 A 组顺延项一并转 [IMPROVEMENT_PLAN_R107.md](IMPROVEMENT_PLAN_R107.md)。
 
 | # | 项 | 现状证据 | 验收（可复算） |
 | --- | --- | --- | --- |

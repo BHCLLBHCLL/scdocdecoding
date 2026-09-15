@@ -136,6 +136,61 @@ class SketchSession:
         return "草图所在平面已改变（原面被移动或删除）"
 
 
+def sketch_params(sk, height_mm: float) -> Dict[str, Any]:
+    """The feature payload of a sketch body (R106/B-1).
+
+    The curves travel with the feature (a reloaded project replays the same body
+    without needing the sketch list), and @sketch_id@ keeps the *live* link so an
+    edited sketch can rebuild its bodies.
+    """
+    return {
+        "sketch_id": sk.id,
+        "plane": sk.plane,
+        "origin": list(sk.origin),
+        "normal": list(sk.normal),
+        "xdir": list(sk.xdir),
+        "curves": [list(c) for c in sk.curves],
+        "height": float(height_mm),
+    }
+
+
+def sync_sketch_bodies(kdoc, sketch_id: Optional[str] = None,
+                       scale: float = 1000.0) -> Dict[str, Any]:
+    """Re-derive every sketch body from its (possibly edited) sketch.
+
+    This is what makes the sketch a real feature: editing the outline and calling
+    this rebuilds the solids, instead of leaving them as orphans of the old
+    curves.  Returns {"ok", "reason", "updated", "failed"}.
+    """
+    out: Dict[str, Any] = {"ok": True, "reason": "", "updated": [], "failed": []}
+    for bid, stack in list(getattr(kdoc, "features", {}).items()):
+        for f in list(stack.features):
+            if f.op != "sketch":
+                continue
+            sid = f.params.get("sketch_id")
+            if sketch_id is not None and sid != sketch_id:
+                continue
+            sk = find_sketch(kdoc, sid or "")
+            if sk is None:
+                out["failed"].append((bid, "草图已不存在：%s" % sid))
+                continue
+            # the new definition is committed only if the replay succeeds -
+            # otherwise the feature would describe a body that is not there
+            old_params = dict(f.params)
+            f.params.update(sketch_params(sk, f.params.get("height", 10.0)))
+            ok, why = kdoc.replay_body(bid, scale)
+            if ok:
+                out["updated"].append(bid)
+            else:
+                f.params.clear()
+                f.params.update(old_params)
+                out["failed"].append((bid, why))
+    if out["failed"]:
+        out["ok"] = False
+        out["reason"] = "；".join("%s：%s" % (b, r) for b, r in out["failed"])
+    return out
+
+
 def extrude_active(kdoc, height_mm: float, scale: float = 1000.0,
                    session: Optional[SketchSession] = None,
                    name: str = "拉伸") -> Dict[str, Any]:
@@ -167,9 +222,15 @@ def extrude_active(kdoc, height_mm: float, scale: float = 1000.0,
         return out
     axes = S.sketch_axes(sk.plane, sk.origin, sk.normal, sk.xdir)
     made = []
+    recorded = False
     try:
         solid = S.extrude_sketch(sk.curves, h, axes=axes)
-        made.append(kdoc.add_body(solid, name=name))
+        body = kdoc.add_body(solid, name=name)
+        # R106/B-1: the sketch becomes the body's feature, so an edited sketch
+        # (sync_sketch_bodies) or an edited height (edit_feature) rebuilds it
+        kdoc.record_feature(body.id, "sketch", **sketch_params(sk, height_mm))
+        made.append(body)
+        recorded = True
     except Exception as exc:
         # circles -> cylinders along the sketch normal (the old inline fallback)
         for c in sk.curves:
@@ -182,6 +243,6 @@ def extrude_active(kdoc, height_mm: float, scale: float = 1000.0,
         if not made:
             out["reason"] = "草图无闭环：%s" % exc
             return out
-    out.update(ok=True, bodies=made, sketch=sk,
+    out.update(ok=True, bodies=made, sketch=sk, feature=recorded,
                volume=sum(K.volume(b.shape) for b in made))
     return out

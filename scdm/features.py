@@ -63,6 +63,7 @@ _FEATURE_LABELS = {
     "pull": "拉动 {distance:g}mm",
     "offset": "偏移面 {distance:g}mm",
     "draft": "拔模 {angle:g}°",
+    "sketch": "草图拉伸 {height:g}mm",          # R106/B-1: the sketch *is* the feature
 }
 
 
@@ -159,6 +160,9 @@ EDIT_SCHEMA: Dict[str, tuple] = {
     "shell": (_f("thickness", "厚度", lo=0.0, lo_open=True),),
     "fillet": (_f("radius", "半径", lo=0.0, lo_open=True),),
     "chamfer": (_f("distance", "距离", lo=0.0, lo_open=True),),
+    # R106/B-1: a sketch body is rebuilt from its sketch, so the height is the
+    # one number worth editing here (the curves come from the sketch itself)
+    "sketch": (_f("height", "拉伸高度", lo=0.0, lo_open=True),),
 }
 
 
@@ -288,9 +292,41 @@ class FeatureStack:
             return None, None
 
 
+def _sketch_curves(raw):
+    """Normalise stored sketch curves (JSON turns tuples into lists)."""
+    out = []
+    for c in raw or []:
+        if not c:
+            continue
+        kind = c[0]
+        if kind in ("rect",):
+            out.append((kind, tuple(c[1]), tuple(c[2])))
+        elif kind in ("circle",):
+            out.append((kind, tuple(c[1]), float(c[2])))
+        elif kind == "line":
+            out.append((kind, tuple(c[1]), tuple(c[2])))
+        elif kind == "poly":
+            out.append((kind, [tuple(p) for p in c[1]]))
+        else:
+            out.append(tuple(c))
+    return out
+
+
 def _apply_one(shape, feature: Feature, scale: float):
     op = feature.op
     p = feature.params
+    if op == "sketch":
+        # R106/B-1: a sketch body has no meaningful base - the sketch *is* the
+        # feature.  The curves travel with the feature (so a reloaded project
+        # replays the same body) and sketch_id keeps the live link for edits.
+        from scdm import sketch as S
+        axes = S.sketch_axes(p.get("plane", "xy"), tuple(p.get("origin") or (0, 0, 0)),
+                             tuple(p.get("normal") or (0, 0, 1)),
+                             tuple(p.get("xdir") or (1, 0, 0)))
+        h = float(p.get("height", 10.0)) / scale
+        if h <= 0:
+            raise ValueError("草图拉伸高度必须大于 0")
+        return S.extrude_sketch(_sketch_curves(p.get("curves")), h, axes=axes)
     if op in ("hole", "hole_tapped", "hole_cbore", "hole_csink"):
         face = resolve_face(shape, p.get("selector", {}))
         if face is None:

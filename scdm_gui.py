@@ -3430,7 +3430,9 @@ else:
                 return
             sk.curves = list(keep)
             self._record("sketch.trim", x=pick[0], y=pick[1])
-            self._rebuild(f"已修剪 {removed} 段")
+            n = self._sync_sketch_bodies(sk.id)          # R106/B-1
+            self._rebuild(f"已修剪 {removed} 段（重建 {n} 个实体）" if n
+                          else f"已修剪 {removed} 段")
 
         def _do_sketch_offset(self):
             from PyQt5.QtWidgets import QInputDialog
@@ -3452,7 +3454,9 @@ else:
                 return
             out = S.offset_polygon(outline, d / ses.scale)
             sk.curves.append(("poly", out))
-            self._rebuild("已偏移闭环轮廓")
+            n = self._sync_sketch_bodies(sk.id)          # R106/B-1
+            self._rebuild("已偏移闭环轮廓（重建 %d 个实体）" % n if n
+                          else "已偏移闭环轮廓")
 
         def _do_sketch_layout(self):
             ses = self.session()
@@ -3522,7 +3526,8 @@ else:
                 self._sketch_second = None
                 self._sketch_chain = []
                 self.left.populate_tree(ses)
-                self._rebuild("")
+                n = self._sync_sketch_bodies(sk.id)      # R106/B-1: live link
+                self._rebuild("草图已更新 → 重建 %d 个实体" % n if n else "")
 
             if tool == "point":
                 put("point", (uv[0], uv[1], 0.0))
@@ -3670,7 +3675,8 @@ else:
             self._sketch_tool = None
             self._sketch_start = None
             self._sketch_chain = []
-            self._rebuild("样条完成")
+            n = self._sync_sketch_bodies(sk.id)          # R106/B-1
+            self._rebuild("样条完成（重建 %d 个实体）" % n if n else "样条完成")
 
         def _do_sketch_grid(self):
             ses = self.session()
@@ -3857,6 +3863,9 @@ else:
             Returns whether we actually were in sketch mode.
             """
             was = self._mode() == SKM.MODE_SKETCH
+            if was and self._sketch_session is not None:
+                # R106/B-1: the sketch may have been edited while in the mode
+                self._sync_sketch_bodies(self._sketch_session.sketch_id)
             self._sketch_state = None
             self._sketch_session = None
             self._sketch_tool = None
@@ -3888,6 +3897,20 @@ else:
             plane = (("custom", sk.origin, sk.normal, sk.xdir)
                      if sk.plane == "custom" else sk.plane)
             self._begin_sketch(plane, reuse=sk)
+
+        def _sync_sketch_bodies(self, sketch_id=None) -> int:
+            """R106/B-1: rebuild the bodies that were extruded from this sketch.
+
+            Returns how many bodies were rebuilt (0 when nothing depends on it),
+            so a caller can fold that into its own status message.
+            """
+            ses = self.session()
+            if not getattr(ses.kdoc, "features", None):
+                return 0
+            rep = SKM.sync_sketch_bodies(ses.kdoc, sketch_id, ses.scale)
+            if rep["failed"]:
+                self._set_status("草图同步失败：%s" % rep["reason"])
+            return len(rep["updated"])
 
         def _sketch_source(self, plane):
             """(source, body_id, point, normal) for the plane we are about to use."""
@@ -4695,7 +4718,8 @@ else:
                 sk.constraints.extend(consts)          # P21: keep them
                 self.left.populate_tree(ses)
                 self._set_status(f"已解算约束 [{kind}]")
-                self._rebuild("约束已应用")
+                n = self._sync_sketch_bodies(sk.id)      # R106/B-1
+                self._rebuild("约束已应用（重建 %d 个实体）" % n if n else "约束已应用")
                 self._refresh_constraint_marks(sk)
             except Exception as exc:
                 self._set_status(f"约束失败: {exc}")
