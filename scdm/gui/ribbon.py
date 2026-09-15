@@ -214,6 +214,8 @@ class RibbonBar(QWidget):
         design_idx = self._tab_ids.index("design")
         self.tabs.setCurrentIndex(design_idx)
         self._show_tab("design")
+        # R105: the Edit Sketch tab is part of the mode boundary - hidden in 3D
+        self.set_tab_visible("sketchmode", False)
 
     def _on_tab(self, idx: int):
         if 0 <= idx < len(self._tab_ids):
@@ -237,6 +239,29 @@ class RibbonBar(QWidget):
     def select_tab(self, tid: str):
         if tid in self._tab_ids:
             self.tabs.setCurrentIndex(self._tab_ids.index(tid))
+
+    # ---- R105: the sketch-mode boundary tab -----------------------------
+    def set_tab_visible(self, tid: str, on: bool):
+        """Show/hide a ribbon tab (the Edit Sketch tab only exists in sketch mode)."""
+        if tid not in self._tab_ids:
+            return
+        idx = self._tab_ids.index(tid)
+        if hasattr(self.tabs, "setTabVisible"):
+            self.tabs.setTabVisible(idx, bool(on))
+        else:                        # Qt < 5.15 fallback
+            self.tabs.setTabEnabled(idx, bool(on))
+        if on:
+            self.select_tab(tid)
+        elif self.tabs.currentIndex() == idx:
+            self.restore_design()
+
+    def is_tab_visible(self, tid: str) -> bool:
+        if tid not in self._tab_ids:
+            return False
+        idx = self._tab_ids.index(tid)
+        if hasattr(self.tabs, "isTabVisible"):
+            return bool(self.tabs.isTabVisible(idx))
+        return bool(self.tabs.isTabEnabled(idx))
 
     def set_body_visible(self, on: bool):
         self._scroll.setVisible(on)

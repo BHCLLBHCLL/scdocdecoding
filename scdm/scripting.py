@@ -982,6 +982,28 @@ def op_asm_mate(kdoc, opts, scale):
     return b2, "配合 %s（剩余自由度 %d/6）" % (mtype, rep["dof"])
 
 
+def op_sketch_pull(kdoc, opts, scale):
+    """R105: the sketch -> solid bridge (Pull on a sketch, scripted).
+
+    opts: distance (mm, default 10); sketch = index of the sketch to use when
+    there is no GUI session (a script has no active-sketch state).
+    """
+    from scdm import sketchmode as SKM
+    h = float(opts.get("distance", 10.0))
+    session = None
+    idx = opts.get("sketch")
+    if idx is not None:
+        sks = list(getattr(kdoc, "sketches", []) or [])
+        if not (0 <= int(idx) < len(sks)):
+            raise ValueError("草图拉伸：草图序号越界")
+        sk = sks[int(idx)]
+        session = SKM.SketchSession(sketch_id=sk.id, plane=sk.plane)
+    rep = SKM.extrude_active(kdoc, h, scale, session)
+    if not rep["ok"]:
+        raise ValueError("草图拉伸失败：%s" % rep["reason"])
+    return rep["bodies"][-1], "草图拉伸 ×%d（%gmm）" % (len(rep["bodies"]), h)
+
+
 OPS = {
     "insert.cyl": op_insert_cyl,
     "insert.sphere": op_insert_sphere,
@@ -1038,6 +1060,7 @@ OPS = {
     "mesh.report": op_mesh_report,
     "det.params": op_param_edit,        # R102/P0-1: feature parameter edit
     "asm.mate": op_asm_mate,            # R104/A-1+P1-1: mate / alignment
+    "sketch.pull": op_sketch_pull,      # R105: sketch -> solid bridge
 }
 
 

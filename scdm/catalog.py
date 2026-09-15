@@ -135,6 +135,46 @@ TABS: Tuple[Tab, ...] = (
             C("insert.component", "组件", "Component", "M4", "comp"),
         )),
     )),
+    Tab("sketchmode", "草图模式", "Edit Sketch", (
+        Group("图元", "Draw", (
+            C("sketch.line", "直线", "Line", "M3", "line"),
+            C("sketch.rect", "矩形", "Rectangle", "M3", "rect"),
+            C("sketch.rect3", "三点矩形", "3-Pt Rect", "M3", "rect3"),
+            C("sketch.circle", "圆", "Circle", "M3", "circle"),
+            C("sketch.circle3", "三点圆", "3-Pt Circle", "M3", "circle3"),
+            C("sketch.ellipse", "椭圆", "Ellipse", "M3", "ellipse"),
+            C("sketch.spline", "样条", "Spline", "M3", "spline"),
+            C("sketch.point", "点", "Point", "M3", "point"),
+        )),
+        Group("修改", "Modify", (
+            C("sketch.trim", "修剪", "Trim", "M3", "cut"),
+            C("sketch.offset", "偏移", "Offset", "M3", "offset"),
+            C("sketch.tangent", "切线", "Tangent", "M3", "tangent"),
+            C("sketch.construction", "构造线", "Construction", "M3", "const"),
+            C("create.project", "投影", "Project", "M3", "project"),
+        )),
+        Group("约束", "Constrain", (
+            C("con.dim", "尺寸", "Dimension", "M3", "dim"),
+            C("con.hv", "水平竖直", "H/V", "M3", "hv"),
+            C("con.coin", "重合", "Coincident", "M3", "coin"),
+            C("con.par", "平行", "Parallel", "M3", "par"),
+            C("con.perp", "垂直", "Perpendicular", "M3", "perp"),
+            C("con.tan", "相切", "Tangent", "M3", "tan"),
+            C("con.eq", "相等", "Equal", "M3", "eq"),
+            C("con.mid", "中点", "Midpoint", "M3", "mid"),
+            C("con.fix", "固定", "Fix", "M3", "fix"),
+        )),
+        Group("辅助", "Aids", (
+            C("sketch.layout", "布局", "Layout", "M3", "layout"),
+            C("sketch.grid", "网格", "Grid", "M3", "grid", checkable=True),
+        )),
+        Group("完成", "Close", (
+            C("sketch.finish", "完成草图", "Finish", "M3", "done", large=True,
+              note="回到三维（等同 Esc；三维命令也会自动退出草图模式）"),
+            C("sketch.pull", "拉伸草图", "Pull Sketch", "M3", "pull", large=True,
+              note="按选项距离把当前草图拉成实体并退出草图模式"),
+        )),
+    )),
     Tab("display", "显示", "Display", (
         Group("显示", "Show", (
             C("show.faces", "面", "Faces", "M1", "face", checkable=True),
@@ -370,6 +410,7 @@ M3_LIVE = {
     "sketch.tangent", "sketch.rect3", "sketch.circle3", "sketch.ellipse",
     "sketch.spline", "sketch.construction", "sketch.offset", "sketch.layout",
     "sketch.grid", "sketch.trim", "create.project",
+    "sketch.finish", "sketch.pull",      # R105: sketch-mode boundary commands
     "con.dim", "con.hv", "con.coin", "con.perp",
     "con.eq", "con.par", "con.tan", "con.mid", "con.fix",
 }

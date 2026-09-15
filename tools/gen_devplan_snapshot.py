@@ -74,9 +74,28 @@ def live_counts() -> tuple:
     return len(unavailable), len(full)
 
 
+def ribbon_commands() -> list:
+    """Distinct commands on the ribbon tabs.
+
+    R105: a command may sit on two tabs (the sketch tools appear on Design *and*
+    on the Edit Sketch tab, the way SpaceClaim repeats them), so the command face
+    is counted by id - one command is one command, however many buttons it has.
+    """
+    seen, out = set(), []
+    for t in TABS:
+        if t.kind != "ribbon":
+            continue
+        for g in t.groups:
+            for c in g.commands:
+                if c.id not in seen:
+                    seen.add(c.id)
+                    out.append(c)
+    return out
+
+
 def snapshot_rows() -> list:
     ribbon = [t for t in TABS if t.kind == "ribbon"]
-    cmds = [c for t in ribbon for g in t.groups for c in g.commands]
+    cmds = ribbon_commands()
     live_ok, live_full = live_counts()
     from scdm import catalog  # noqa: E402
     full = set(catalog.M1_LIVE)
@@ -87,7 +106,7 @@ def snapshot_rows() -> list:
     return [
         "| 层 | 实测状态 |",
         "| --- | --- |",
-        "| UI 命令面 | {tabs} ribbon 页签（+1 backstage）/ {cmds} 命令 / "
+        "| UI 命令面 | {tabs} ribbon 页签（+1 backstage）/ {cmds} 命令（去重）/ "
         "**{live_ok} live（内核不可用）** / **{live_full} live（内核可用）**；占位 {ph} |"
         .format(tabs=len(ribbon), cmds=len(cmds), live_ok=live_ok,
                 live_full=live_full,

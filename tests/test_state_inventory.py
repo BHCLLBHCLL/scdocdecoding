@@ -29,12 +29,16 @@ INTENTIONAL = {"safety.tab"}
 def test_command_face_matches_the_catalog():
     face = mod.command_face()
     ribbon = [t for t in TABS if t.kind == "ribbon"]
-    cmds = [c for t in ribbon for g in t.groups for c in g.commands]
+    entries = [c for t in ribbon for g in t.groups for c in g.commands]
+    distinct = {c.id for c in entries}
     assert face["ribbon_tabs"] == len(ribbon)
     assert face["backstage_tabs"] == len([t for t in TABS if t.kind == "backstage"])
-    assert face["ribbon_commands"] == len(cmds)
+    # R105: a command may appear on two tabs (Design + Edit Sketch)
+    assert face["ribbon_commands"] == len(distinct)
+    assert face["ribbon_entries"] == len(entries) >= face["ribbon_commands"]
     assert face["all_commands"] == len(all_commands())
-    assert sum(face["per_tab"].values()) == face["ribbon_commands"]
+    # per_tab counts the buttons on each tab, so it sums to the entry count
+    assert sum(face["per_tab"].values()) == face["ribbon_entries"]
 
 
 def test_live_cells_are_two_different_measurements():

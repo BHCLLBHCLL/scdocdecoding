@@ -42,6 +42,7 @@ from scdm import kernel as K
 from scdm.kdoc import KernelDoc
 from scdm.history import History
 from scdm.selection import SelectionModel
+from scdm import sketchmode as SKM
 from scdm.tools.base import ToolManager
 
 
@@ -118,6 +119,7 @@ else:
             self._cam_prev = None
             self._nav_mode = None  # spin|pan|zoom or None
             self._sketch_state = None      # {"plane": "xy|zx|yz"} while in sketch mode
+            self._sketch_session = None    # R105: active sketch + its plane source
             self._sketch_tool = None       # armed sketch drawing tool
             self._sketch_start = None
             self._sketch_second = None
@@ -251,6 +253,15 @@ else:
             self.setStatusBar(sb)
             self._prompt = StatusPrompt()
             sb.addWidget(self._prompt, 1)
+            # R105: the sketch/solid boundary is visible at a glance, not just
+            # implied by the grid
+            self._mode_chip = QLabel("")
+            self._mode_chip.setStyleSheet(
+                "padding: 1px 8px; margin: 0 4px; border-radius: 2px;"
+                " background: #cde4f7; border: 1px solid #0078d7;"
+                " color: #111; font-size: 12px;")
+            self._mode_chip.setVisible(False)
+            sb.addWidget(self._mode_chip)
             self._filters = FilterBar()
             self._filters.filter_changed.connect(self._on_filter)
             self._filters.view_cmd.connect(self.on_command)
@@ -303,6 +314,10 @@ else:
 
         # -- sessions --------------------------------------------------------
         def _new_session(self, activate=True):
+            # R105: a new document starts in 3D - the sketch mode state (grid,
+            # locked camera, ribbon tab, active sketch) belongs to the window,
+            # not to the document
+            self._exit_sketch("已退出草图模式（新建文档）")
             n = len(self.sessions) + 1
             ses = new_session(n)
             self.sessions.append(ses)
@@ -367,6 +382,8 @@ else:
             except Exception as exc:
                 QMessageBox.critical(self, "打开", f"无法解析:\n{path}\n{exc}")
                 return
+            # R105: opening a document also ends sketch mode (see _new_session)
+            self._exit_sketch("已退出草图模式（打开文档）")
             if self.cur >= 0 and self.session().data is None and not self.session().dirty:
                 self.sessions[self.cur] = ses
                 self.doc_tabs.setTabText(self.cur, ses.name)
@@ -545,6 +562,16 @@ else:
                 return
             cmd = command_by_id(cmd_id)
             live = cmd_id in live_commands()
+            # R105: the sketch / solid boundary.  A solid command issued while
+            # sketching leaves the mode *and then runs* - one click, no dead
+            # state; the reason is shown so the switch is never silent.
+            act = SKM.plan(cmd_id, self._mode())
+            if act.kind == "refuse":
+                self._set_status(act.reason)
+                return
+            if act.exits:
+                name = cmd.name if cmd else cmd_id
+                self._exit_sketch("已退出草图模式 → %s（%s）" % (name, cmd_id))
             if cmd_id.startswith("tool.") or cmd_id in (
                 "measure.dist", "mode.sketch", "mode.section", "mode.3d",
             ):
@@ -580,10 +607,9 @@ else:
                             self.scene.clear_measure()
                         self._set_status(hud)
                     elif cmd_id == "mode.3d":
-                        self._set_sketch_grid(False)
-                        if self.scene:
-                            self.scene.preserve_camera = False
-                            self.scene.fit()
+                        # R105: one place crosses the boundary (grid, camera,
+                        # ribbon tab, chip, drawing tool, session)
+                        self._exit_sketch("已退出草图模式（三维模式）")
                     return
                 if cmd_id in ("tool.pull", "tool.move", "tool.fill", "tool.replace",
                               "tool.combine", "tool.split_body", "tool.split_faces",
@@ -3801,6 +3827,78 @@ else:
             if self.scene:
                 self.scene.update_grid(ses)
 
+        # ---- R105: the sketch / solid boundary ---------------------------
+        def _mode(self) -> str:
+            tools = getattr(self, "tools", None)
+            return (SKM.MODE_SKETCH
+                    if getattr(tools, "mode", "") == "mode.sketch"
+                    else SKM.MODE_SOLID)
+
+        def _set_mode_chip(self, text: str = ""):
+            """The status-bar chip that makes the boundary visible."""
+            chip = getattr(self, "_mode_chip", None)
+            if chip is None:
+                return
+            chip.setText(text)
+            chip.setVisible(bool(text))
+
+        def _show_sketch_tab(self, on: bool):
+            if self.ribbon is None:
+                return
+            self.ribbon.set_tab_visible("sketchmode", bool(on))
+            if not on:
+                self.ribbon.restore_design()
+
+        def _exit_sketch(self, reason: str = "") -> bool:
+            """Leave sketch mode - the single place that crosses the boundary.
+
+            Everything the mode owns is released here: the drawing tool, the
+            session, the grid, the locked camera, the ribbon tab and the chip.
+            Returns whether we actually were in sketch mode.
+            """
+            was = self._mode() == SKM.MODE_SKETCH
+            self._sketch_state = None
+            self._sketch_session = None
+            self._sketch_tool = None
+            self._sketch_start = None
+            self._sketch_second = None
+            self._sketch_chain = []
+            if not was:
+                return False
+            self._set_sketch_grid(False)
+            if self.scene:
+                self.scene.preserve_camera = False
+            self.tools.set_mode("mode.3d", "M1", True)
+            self.ribbon.set_checked("mode.sketch", False)
+            self.ribbon.set_checked("mode.3d", True)
+            self.left.show_options("tool.select")
+            self._set_drag_hooks("tool.select")
+            self._show_sketch_tab(False)
+            self._set_mode_chip("")
+            self._rebuild(reason or "已退出草图模式（三维模式）")
+            return True
+
+        def _edit_sketch(self, sketch_id: str):
+            """R105: (re)enter an existing sketch from the structure tree."""
+            ses = self.session()
+            sk = SKM.find_sketch(ses.kdoc, sketch_id)
+            if sk is None:
+                self._set_status("草图不存在：%s" % sketch_id)
+                return
+            plane = (("custom", sk.origin, sk.normal, sk.xdir)
+                     if sk.plane == "custom" else sk.plane)
+            self._begin_sketch(plane, reuse=sk)
+
+        def _sketch_source(self, plane):
+            """(source, body_id, point, normal) for the plane we are about to use."""
+            if not isinstance(plane, tuple):
+                return "datum", None, None, None
+            _tag, org, nrm, _xd = plane
+            for kind, sid in reversed(self.sel.items):
+                if kind == "face" and ":" in sid:
+                    return "face", sid.split(":", 1)[0], org, nrm
+            return "custom", None, org, nrm
+
         def _sketch_plane_from_selection(self):
             for kind, sid in reversed(self.sel.items):
                 if kind == "plane" and sid in ("xy", "zx", "yz"):
@@ -3835,7 +3933,13 @@ else:
                     return {0: "yz", 1: "zx", 2: "xy"}[ax]
             return "xy"
 
-        def _begin_sketch(self, plane=None):
+        def _begin_sketch(self, plane=None, reuse=None):
+            """Enter sketch mode (R105: the boundary, with a visible state).
+
+            @reuse@ re-opens an existing sketch from the structure tree instead of
+            creating one; otherwise an empty sketch is recycled so clicking Sketch
+            twice does not leave a trail of empty sketches.
+            """
             if not self._need_kernel():
                 return
             from scdm import sketch as S
@@ -3843,8 +3947,18 @@ else:
             if plane is None:
                 plane = self._sketch_plane_from_selection()
             sks = ses.kdoc.sketches
-            empty = sks[-1] if sks and not sks[-1].curves and not sks[-1].construction else None
-            if isinstance(plane, tuple):
+            empty = (sks[-1] if sks and not sks[-1].curves
+                     and not sks[-1].construction else None)
+            if reuse is not None:
+                sk = reuse
+                if sk.plane == "custom":
+                    axes = S.sketch_axes("custom", sk.origin, sk.normal, sk.xdir)
+                    view = ("normal", sk.origin, sk.normal, axes[2])
+                else:
+                    axes = S.sketch_axes(sk.plane)
+                    view = ("plane_view",
+                            {"xy": "z", "zx": "y", "yz": "x"}[sk.plane])
+            elif isinstance(plane, tuple):
                 _tag, org, nrm, xd = plane
                 if empty is not None:
                     empty.plane, empty.origin = "custom", org
@@ -3863,7 +3977,13 @@ else:
                     sk = ses.kdoc.add_sketch(plane)
                 axes = S.sketch_axes(plane)
                 view = ("plane_view", {"xy": "z", "zx": "y", "yz": "x"}[plane])
+            source, src_body, src_pt, src_nrm = self._sketch_source(plane)
+            if reuse is not None and sk.plane == "custom":
+                source, src_pt, src_nrm = "custom", sk.origin, sk.normal
             self._sketch_state = {"plane": sk.plane, "axes": axes}
+            self._sketch_session = SKM.SketchSession(
+                sketch_id=sk.id, plane=sk.plane, axes=axes, source=source,
+                source_body=src_body, source_normal=src_nrm, source_point=src_pt)
             if self.scene:
                 self.scene.preserve_camera = True
             self._sketch_tool = None
@@ -3877,8 +3997,19 @@ else:
                 else:
                     self.scene.plane_view(view[1], ses.scale)
             self.left.populate_tree(ses)
-            label = "自定义平面" if sk.plane == "custom" else sk.plane.upper()
-            self._set_status(f"草图模式（{label}）：选择草图工具开始绘制；Esc 退出")
+            self.tools.set_mode("mode.sketch", "M3", True)
+            self.ribbon.set_checked("mode.sketch", True)
+            self._show_sketch_tab(True)
+            self._set_mode_chip("草图模式 · %s" % self._sketch_session.label())
+            stale = self._sketch_session.stale(ses.kdoc)
+            label = self._sketch_session.label()
+            if stale:
+                self._set_status("草图模式（%s）：%s；请在三维模式修复后重进"
+                                 % (label, stale))
+            else:
+                self._set_status(
+                    "草图模式（%s）：选择草图工具开始绘制；「完成草图」/Esc 回三维"
+                    "（点三维命令会自动退出草图模式）" % label)
 
         _SKETCH_HINTS = {
             "line": "直线：单击起点、终点",
@@ -3944,6 +4075,9 @@ else:
             sk.origin, sk.normal = o, n
             sk.curves.extend(curves)
             self._sketch_state = {"plane": "custom", "axes": axes}
+            self._sketch_session = SKM.SketchSession(     # R105: same boundary
+                sketch_id=sk.id, plane="custom", axes=axes, source="section",
+                source_normal=tuple(n), source_point=tuple(o))
             self._sketch_tool = None
             self._sketch_start = None
             self._sketch_second = None
@@ -3952,7 +4086,12 @@ else:
             if self.scene:
                 self.scene.normal_view(o, n, axes[2], ses.scale)
             self.left.populate_tree(ses)
-            self._set_status("截面草图：剖交线已转为草图曲线；选「拉动」挤出")
+            self.tools.set_mode("mode.sketch", "M3", True)
+            self.ribbon.set_checked("mode.sketch", True)
+            self._show_sketch_tab(True)
+            self._set_mode_chip("草图模式 · 截面")
+            self._set_status("截面草图：剖交线已转为草图曲线；"
+                             "「拉伸草图」挤出（自动回到三维）")
             return True
 
         def _toggle_section(self):
@@ -4436,33 +4575,33 @@ else:
                 self._set_status(f"替换失败: {exc}")
 
         def _pull_sketch(self):
+            """R105: the bridge - the active sketch becomes a body, then 3D.
+
+            The height comes from the Pull options (default 10mm), the sketch is
+            the *active* one (not simply the last), and a successful pull leaves
+            sketch mode - which is what makes sketch -> solid one action.
+            """
             ses = self.session()
-            if not ses.kdoc.sketches:
-                self._set_status("没有草图")
+            opts = self._opts_for("tool.pull")
+            h = float(opts.get("distance") or 10.0)
+            rep = SKM.extrude_active(ses.kdoc, h, ses.scale, self._sketch_session)
+            if not rep["ok"]:
+                self._set_status("草图拉伸失败：%s" % rep["reason"])
                 return
-            sk = ses.kdoc.sketches[-1]
-            h = 10 / ses.scale
-            from scdm import sketch as S
-            axes = S.sketch_axes(sk.plane, sk.origin, sk.normal, sk.xdir)
-            made = 0
-            try:
-                solid = S.extrude_sketch(sk.curves, h, axes=axes)
-                ses.kdoc.add_body(solid, name="拉伸")
-                made += 1
-            except (ValueError, Exception) as exc:
-                # fall back to circles -> cylinders along the sketch plane normal
-                for c in sk.curves:
-                    if c[0] == "circle":
-                        center, r = c[1], c[2]
-                        origin = S.axes_to_world(axes, center[0], center[1])
-                        ses.kdoc.add_body(
-                            K.make_cylinder(r, h, origin=origin, axis=axes[3]),
-                            name="拉伸圆")
-                        made += 1
-                if not made:
-                    self._set_status(f"草图无闭环：{exc}")
-                    return
-            self._commit(f"草图拉动 ×{made}")
+            self._record("sketch.pull", distance=h)
+            self._exit_sketch("草图已拉伸 ×%d（%.1fmm）"
+                              % (len(rep["bodies"]), h))
+
+        def _do_sketch_finish(self):
+            """R105: 完成草图 - the explicit way out (same as Esc / mode.3d)."""
+            if self._mode() != SKM.MODE_SKETCH:
+                self._set_status("当前不在草图模式")
+                return
+            self._exit_sketch("已退出草图模式（完成草图）")
+
+        def _do_sketch_pull(self):
+            """R105: 拉伸草图 - extrude the active sketch and return to 3D."""
+            self._pull_sketch()
 
         def _apply_sketch_constraint(self, kind: str):
             """Resolve a constraint against the active sketch using scdm.sketch.
@@ -5249,7 +5388,13 @@ else:
             use, and the edit goes through the atomic `edit_feature` replay.
             """
             data = item.data(0, Qt.UserRole) if item is not None else None
-            if not data or data[0] != "feature_param":
+            if not data:
+                return
+            if data[0] == "sketch" and data[1] != "all":
+                # R105: double-click a sketch in the tree re-opens it for editing
+                self._edit_sketch(data[1])
+                return
+            if data[0] != "feature_param":
                 return
             _, bid, index, param = data
             ses = self.session()

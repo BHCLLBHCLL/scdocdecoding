@@ -60,7 +60,7 @@ def test_repo_snapshot_command_face_matches_live_catalog():
     assert mod.BEGIN in text and mod.END in text
     rows = "\n".join(mod.snapshot_rows())
     ribbon = [t for t in TABS if t.kind == "ribbon"]
-    cmds = [c for t in ribbon for g in t.groups for c in g.commands]
+    cmds = mod.ribbon_commands()          # R105: distinct ids, one source
     assert "{} ribbon 页签".format(len(ribbon)) in rows
     assert "{} 命令".format(len(cmds)) in rows
     assert "{} live".format(len(live_commands())) in rows

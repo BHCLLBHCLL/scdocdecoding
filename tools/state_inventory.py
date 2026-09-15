@@ -87,12 +87,23 @@ def code_face() -> dict:
 
 def command_face() -> dict:
     ribbon = [t for t in catalog.TABS if t.kind == "ribbon"]
-    cmds = [c for t in ribbon for g in t.groups for c in g.commands]
+    # R105: a command can sit on two tabs (sketch tools on Design *and* on the
+    # Edit Sketch tab), so the command face counts distinct ids and the button
+    # count is reported separately.
+    cmds, seen = [], set()
+    for t in ribbon:
+        for g in t.groups:
+            for c in g.commands:
+                if c.id not in seen:
+                    seen.add(c.id)
+                    cmds.append(c)
+    entries = sum(len(g.commands) for t in ribbon for g in t.groups)
     union = _live_union()
     return {
         "ribbon_tabs": len(ribbon),
         "backstage_tabs": len([t for t in catalog.TABS if t.kind == "backstage"]),
         "ribbon_commands": len(cmds),
+        "ribbon_entries": entries,
         "backstage_commands": len(catalog.BACKSTAGE),
         "qat_commands": len(catalog.QAT),
         "all_commands": len(catalog.all_commands()),
@@ -166,10 +177,11 @@ def rows(data: dict) -> list:
             c["scdm_public_functions"]),
         "| kernel.py / scripting.py | 公开函数 {} 个 / 脚本 op {} 条 |".format(
             c["kernel_public_functions"], c["script_ops"]),
-        "| 命令面 | {} ribbon 页签 + {} backstage；ribbon 命令 {}、"
-        "目录全集 {}（含 backstage {} + QAT {}，去重 3） |".format(
+        "| 命令面 | {} ribbon 页签 + {} backstage；ribbon 命令 {}（去重，按钮 {} 个）、"
+        "目录全集 {}（含 backstage {} + QAT {}） |".format(
             cmd["ribbon_tabs"], cmd["backstage_tabs"], cmd["ribbon_commands"],
-            cmd["all_commands"], cmd["backstage_commands"], cmd["qat_commands"]),
+            cmd["ribbon_entries"], cmd["all_commands"],
+            cmd["backstage_commands"], cmd["qat_commands"]),
         "| live | 内核不可用 {} / 内核可用 {}；占位 {} |".format(
             cmd["live_kernel_unavailable"], cmd["live_kernel_available"],
             "、".join(cmd["placeholders"])),
