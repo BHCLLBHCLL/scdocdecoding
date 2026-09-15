@@ -189,6 +189,140 @@ def _near(a: Point2, b: Point2, tol: float = 1e-9) -> bool:
     return abs(a[0] - b[0]) < tol and abs(a[1] - b[1]) < tol
 
 
+def sketch_loops(curves: Sequence[tuple]) -> List[tuple]:
+    """Every closed loop of a sketch, in curve order (R107/A-1).
+
+    Each entry is `("circle", centre, r)` or `("poly", [pts...])`.  A
+    rectangle is a polygon loop, a polyline is a polygon loop, free lines are
+    chained into loops, and *disjoint* loops stay separate - which is what lets
+    one sketch produce several bodies.
+
+    Unlike `sketch_outline()` (the single outer loop the old extrude used) this
+    keeps the loop's own geometry, so a circle stays a circle.
+    """
+    loops: List[tuple] = []
+    pending: List[tuple] = []
+    for c in curves:
+        if not c:
+            continue
+        if c[0] == "rect":
+            p1 = [float(c[1][0]), float(c[1][1])]
+            p2 = [float(c[2][0]), float(c[2][1])]
+            loops.append(("poly", [p1, [p2[0], p1[1]], p2, [p1[0], p2[1]]]))
+        elif c[0] == "circle":
+            loops.append(("circle", [float(c[1][0]), float(c[1][1])],
+                          float(c[2])))
+        elif c[0] == "poly":
+            pts = [[float(p[0]), float(p[1])] for p in c[1]]
+            if len(pts) > 2 and _near(pts[0], pts[-1]):
+                pts = pts[:-1]
+            if len(pts) >= 3:
+                loops.append(("poly", pts))
+        elif c[0] == "line":
+            pending.append(([float(c[1][0]), float(c[1][1])],
+                            [float(c[2][0]), float(c[2][1])]))
+    used = [False] * len(pending)
+    for i, (a, b) in enumerate(pending):
+        if used[i]:
+            continue
+        used[i] = True
+        loop = [a, b]
+        while True:
+            tip = loop[-1]
+            if len(loop) >= 4 and _near(tip, loop[0]):
+                loops.append(("poly", loop[:-1]))
+                break
+            nxt = None
+            for k, (p, q) in enumerate(pending):
+                if used[k]:
+                    continue
+                if _near(p, tip):
+                    nxt = (k, q)
+                    break
+                if _near(q, tip):
+                    nxt = (k, p)
+                    break
+            if nxt is None:
+                break
+            used[nxt[0]] = True
+            loop.append(nxt[1])
+    return loops
+
+
+def extrude_loops(curves: Sequence[tuple], thickness: float, plane: str = "xy",
+                  axes: Optional[Axes] = None) -> List[Any]:
+    """One solid per closed loop (R107/A-1 + A-2).
+
+    A circle loop becomes a real cylinder (`K.make_cylinder`), so
+    `extrude of a circle` is exact instead of a polygon approximation; polygon
+    loops go through the same face+prism path as `extrude_sketch@.
+    """
+    from scdm import kernel as K
+    ax = axes if axes is not None else sketch_axes(plane)
+    n = ax[3]
+    out = []
+    for loop in sketch_loops(curves):
+        if loop[0] == "circle":
+            c, r = loop[1], loop[2]
+            out.append(K.make_cylinder(r, thickness,
+                                       origin=axes_to_world(ax, c[0], c[1]),
+                                       axis=n))
+        else:
+            pts = [axes_to_world(ax, u, v) for (u, v) in loop[1]]
+            face = K.face_from_polygon(pts)
+            out.append(K.prism(face, (n[0] * thickness, n[1] * thickness,
+                                      n[2] * thickness)))
+    if not out:
+        raise ValueError("草图没有闭环（画矩形、圆或闭合线段）")
+    return out
+
+
+def read_points(sk):
+    """(points, segments) of a sketch in solver variables (R107/A-3).
+
+    One implementation for the solver, the GUI and the dimension editor: a
+    line/rect contributes its two corner variables, a circle its centre and a
+    radius handle, a polyline its vertices.
+    """
+    pts: List[list] = []
+    segments: List[tuple] = []
+    for c in sk.curves:
+        if c[0] in ("line", "rect"):
+            base = len(pts)
+            for p in (c[1], c[2]):
+                pts.append([float(p[0]), float(p[1]), float(p[2])])
+            segments.append((base, base + 1))
+        elif c[0] == "circle":
+            pts.append([float(c[1][0]), float(c[1][1]), float(c[1][2])])
+            pts.append([float(c[1][0] + c[2]), float(c[1][1]), float(c[1][2])])
+        elif c[0] == "poly":
+            base = len(pts)
+            for p in c[1]:
+                pts.append([float(p[0]), float(p[1]), 0.0])
+            for k in range(len(c[1]) - 1):
+                segments.append((base + k, base + k + 1))
+    return pts, segments
+
+
+def write_points(sk, pts) -> None:
+    """Write solved variables back into the sketch curves (R107/A-3)."""
+    idx = 0
+    for i, c in enumerate(sk.curves):
+        if c[0] in ("line", "rect"):
+            p1 = tuple(pts[idx])
+            p2 = tuple(pts[idx + 1]) if idx + 1 < len(pts) else c[2]
+            sk.curves[i] = (c[0], p1, p2)
+            idx += 2
+        elif c[0] == "circle":
+            sk.curves[i] = (c[0], tuple(pts[idx])[:2] + (c[1][2],), c[2])
+            idx += 2
+        elif c[0] == "poly":
+            n = len(c[1])
+            new_pts = [[pts[idx + k][0], pts[idx + k][1]] for k in range(n)]
+            sk.curves[i] = (c[0], new_pts)
+            idx += n
+
+
 def extrude_sketch(curves: Sequence[tuple], thickness: float, plane: str = "xy",
                    axes: Optional[Axes] = None):
     """Build a solid by extruding the sketch's closed loop by thickness.

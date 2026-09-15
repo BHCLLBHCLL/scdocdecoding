@@ -405,7 +405,22 @@ class LeftPanel(QWidget):
                 it = QTreeWidgetItem([sk.name])
                 it.setData(0, Qt.UserRole, ("sketch", sk.id))
                 it.setCheckState(0, Qt.Checked)
+                it.setToolTip(0, "双击进入该草图编辑")
                 root.addChild(it)
+                # R107/A-3: the drivable dimensions, so a sketch can be changed
+                # by its numbers instead of by redrawing
+                try:
+                    from scdm import sketchmode as _SKM
+                    dims = _SKM.dimensions(session.kdoc, sk.id, session.scale)
+                except Exception:
+                    dims = []
+                for d in dims:
+                    dn = QTreeWidgetItem(["%s（双击修改）" % d["label"]])
+                    dn.setData(0, Qt.UserRole,
+                               ("sketch_dim", sk.id, d["index"]))
+                    dn.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+                    dn.setToolTip(0, "驱动尺寸：改值后重新求解草图并重建实体")
+                    it.addChild(dn)
             doc_feats = getattr(getattr(session.kdoc, "document_features",
                                         None), "features", [])
             if doc_feats:

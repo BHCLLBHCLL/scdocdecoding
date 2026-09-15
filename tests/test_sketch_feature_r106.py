@@ -130,7 +130,9 @@ def test_an_open_outline_is_refused_atomically():
     # the feature was not half-updated: it still describes the body that exists
     f = doc.feature_stack(body.id).features[0]
     assert f.params["height"] == 5.0
-    assert f.params["curves"][0][0] == "rect"
+    # R107 stores the loop's canonical form, so the rectangle is a 4-point poly
+    assert f.params["curves"][0][0] == "poly"
+    assert len(f.params["curves"][0][1]) == 4
     assert doc.can_replay(body.id)[0] is True
 
 

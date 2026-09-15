@@ -3898,6 +3898,32 @@ else:
                      if sk.plane == "custom" else sk.plane)
             self._begin_sketch(plane, reuse=sk)
 
+        def _edit_sketch_dimension(self, sketch_id, index):
+            """R107/A-3: drive a sketch dimension from the structure tree.
+
+            The value is asked in mm, the sketch is re-solved with the LM solver,
+            and the bodies built from that sketch are rebuilt - so a number in the
+            tree moves geometry, which is the whole point of a driven dimension.
+            """
+            ses = self.session()
+            dims = SKM.dimensions(ses.kdoc, sketch_id, ses.scale)
+            row = next((d for d in dims if d["index"] == index), None)
+            if row is None:
+                self._set_status("该尺寸不可驱动（或草图已不存在）")
+                return
+            vals = self._ask_numbers("驱动尺寸", [("尺寸 mm", row["value_mm"])])
+            if not vals:
+                return
+            rep = SKM.set_dimension(ses.kdoc, sketch_id, index, vals[0], ses.scale)
+            if not rep["ok"]:
+                QMessageBox.warning(self, "驱动尺寸", rep["reason"])
+                self._set_status("尺寸未改动：%s" % rep["reason"])
+                return
+            n = self._sync_sketch_bodies(sketch_id)
+            self._record("sketch.drive", index=index, value_mm=vals[0])
+            self._commit("尺寸 %gmm（剩余自由度 %s，重建 %d 个实体）"
+                         % (vals[0], rep["dof"], n))
+
         def _sync_sketch_bodies(self, sketch_id=None) -> int:
             """R106/B-1: rebuild the bodies that were extruded from this sketch.
 
@@ -3959,7 +3985,7 @@ else:
         def _begin_sketch(self, plane=None, reuse=None):
             """Enter sketch mode (R105: the boundary, with a visible state).
 
-            @reuse@ re-opens an existing sketch from the structure tree instead of
+            `reuse` re-opens an existing sketch from the structure tree instead of
             creating one; otherwise an empty sketch is recycled so clicking Sketch
             twice does not leave a trail of empty sketches.
             """
@@ -4776,40 +4802,14 @@ else:
             self._apply_sketch_constraint("fix")
 
         def _sketch_points(self, sk):
-            pts = []
-            segments = []
-            for c in sk.curves:
-                if c[0] in ("line", "rect"):
-                    base = len(pts)
-                    for p in (c[1], c[2]):
-                        pts.append([float(p[0]), float(p[1]), float(p[2])])
-                    segments.append((base, base + 1))
-                elif c[0] == "circle":
-                    pts.append([float(c[1][0]), float(c[1][1]), float(c[1][2])])
-                    pts.append([float(c[1][0] + c[2]), float(c[1][1]), float(c[1][2])])
-                elif c[0] == "poly":
-                    base = len(pts)
-                    for p in c[1]:
-                        pts.append([float(p[0]), float(p[1]), 0.0])
-                    for k in range(len(c[1]) - 1):
-                        segments.append((base + k, base + k + 1))
-            return pts, segments
+            """Solver variables of a sketch (R107/A-3: one implementation)."""
+            from scdm import sketch as S
+            return S.read_points(sk)
 
         def _write_sketch_points(self, sk, pts):
-            idx = 0
-            for c in sk.curves:
-                if c[0] in ("line", "rect"):
-                    p1 = tuple(pts[idx]); p2 = tuple(pts[idx + 1]) if idx + 1 < len(pts) else c[2]
-                    sk.curves[sk.curves.index(c)] = (c[0], p1, p2)
-                    idx += 2
-                elif c[0] == "circle":
-                    sk.curves[sk.curves.index(c)] = (c[0], tuple(pts[idx])[:2] + (c[1][2],), c[2])
-                    idx += 2
-                elif c[0] == "poly":
-                    n = len(c[1])
-                    new_pts = [[pts[idx + k][0], pts[idx + k][1]] for k in range(n)]
-                    sk.curves[sk.curves.index(c)] = (c[0], new_pts)
-                    idx += n
+            """Write solved variables back (R107/A-3: one implementation)."""
+            from scdm import sketch as S
+            S.write_points(sk, pts)
 
         def _do_view_fit(self):
             if self.scene:
@@ -5417,6 +5417,10 @@ else:
             if data[0] == "sketch" and data[1] != "all":
                 # R105: double-click a sketch in the tree re-opens it for editing
                 self._edit_sketch(data[1])
+                return
+            if data[0] == "sketch_dim":
+                # R107/A-3: double-click a dimension to drive the sketch by number
+                self._edit_sketch_dimension(data[1], data[2])
                 return
             if data[0] != "feature_param":
                 return

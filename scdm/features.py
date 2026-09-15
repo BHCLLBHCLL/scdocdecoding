@@ -319,14 +319,21 @@ def _apply_one(shape, feature: Feature, scale: float):
         # R106/B-1: a sketch body has no meaningful base - the sketch *is* the
         # feature.  The curves travel with the feature (so a reloaded project
         # replays the same body) and sketch_id keeps the live link for edits.
+        # R107/A-2: the replay goes through the *exact* loop extrusion, so a
+        # circle feature rebuilds a real cylinder, not a polygon approximation.
         from scdm import sketch as S
-        axes = S.sketch_axes(p.get("plane", "xy"), tuple(p.get("origin") or (0, 0, 0)),
+        axes = S.sketch_axes(p.get("plane", "xy"),
+                             tuple(p.get("origin") or (0, 0, 0)),
                              tuple(p.get("normal") or (0, 0, 1)),
                              tuple(p.get("xdir") or (1, 0, 0)))
         h = float(p.get("height", 10.0)) / scale
         if h <= 0:
             raise ValueError("草图拉伸高度必须大于 0")
-        return S.extrude_sketch(_sketch_curves(p.get("curves")), h, axes=axes)
+        solids = S.extrude_loops(_sketch_curves(p.get("curves")), h, axes=axes)
+        idx = int(p.get("loop", 0) or 0)
+        # a feature stores its own single loop, so the index is only meaningful
+        # for the live link; fall back to the first solid when it is out of range
+        return solids[idx] if 0 <= idx < len(solids) else solids[0]
     if op in ("hole", "hole_tapped", "hole_cbore", "hole_csink"):
         face = resolve_face(shape, p.get("selector", {}))
         if face is None:

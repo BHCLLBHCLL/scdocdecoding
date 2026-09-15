@@ -1004,6 +1004,26 @@ def op_sketch_pull(kdoc, opts, scale):
     return rep["bodies"][-1], "草图拉伸 ×%d（%gmm）" % (len(rep["bodies"]), h)
 
 
+def op_sketch_drive(kdoc, opts, scale):
+    """R107/A-3: drive one sketch dimension by number (script step).
+
+    opts: sketch = sketch index, index = constraint index, value_mm = new value.
+    """
+    from scdm import sketchmode as SKM
+    sks = list(getattr(kdoc, "sketches", []) or [])
+    idx_sk = int(opts.get("sketch", 0))
+    if not (0 <= idx_sk < len(sks)):
+        raise ValueError("驱动尺寸：草图序号越界")
+    sk = sks[idx_sk]
+    rep = SKM.set_dimension(kdoc, sk.id, int(opts.get("index", 0)),
+                            float(opts.get("value_mm", 0.0)), scale)
+    if not rep["ok"]:
+        raise ValueError("驱动尺寸失败：%s" % rep["reason"])
+    syn = SKM.sync_sketch_bodies(kdoc, sk.id, scale)
+    return None, "尺寸 %gmm（重建 %d 个实体）" % (rep["value_mm"],
+                                                len(syn["updated"]))
+
+
 OPS = {
     "insert.cyl": op_insert_cyl,
     "insert.sphere": op_insert_sphere,
@@ -1061,6 +1081,7 @@ OPS = {
     "det.params": op_param_edit,        # R102/P0-1: feature parameter edit
     "asm.mate": op_asm_mate,            # R104/A-1+P1-1: mate / alignment
     "sketch.pull": op_sketch_pull,      # R105: sketch -> solid bridge
+    "sketch.drive": op_sketch_drive,    # R107/A-3: drive a dimension
 }
 
 
