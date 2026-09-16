@@ -3972,6 +3972,27 @@ else:
                      if sk.plane == "custom" else sk.plane)
             self._begin_sketch(plane, reuse=sk)
 
+        def _refresh_sketch_dof(self):
+            """R111/A-6: show the sketch's remaining degrees of freedom.
+
+            dof_report() solves a *copy* of the points, so asking for the number
+            never moves the sketch (rule 85).
+            """
+            ses = self.session()
+            sid = self._sketch_session.sketch_id if self._sketch_session else None
+            if sid is None:
+                return
+            info = SKM.dof_report(ses.kdoc, sid, ses.scale)
+            if not info["ok"]:
+                return
+            text = "草图模式 · %s · 自由度 %d" % (self._sketch_session.label(),
+                                                  info["dof"])
+            if info["redundant"]:
+                text += " · 冗余 %d" % info["redundant"]
+            if info["conflicting"]:
+                text += " · 冲突"
+            self._set_mode_chip(text)
+
         def _edit_sketch_dimension(self, sketch_id, index):
             """R107/A-3: drive a sketch dimension from the structure tree.
 
@@ -4142,6 +4163,7 @@ else:
                 self._set_status(
                     "草图模式（%s）：选择草图工具开始绘制；「完成草图」/Esc 回三维"
                     "（点三维命令会自动退出草图模式）" % label)
+            self._refresh_sketch_dof()   # R111/A-6: remaining DOF in the chip
             self._push_undo()            # R109/A-6: entering the mode is a step
 
         _SKETCH_HINTS = {
@@ -4303,6 +4325,21 @@ else:
             if cmd == "tool.combine":
                 opts["mode"] = self.left.combine_mode()
             return opts
+
+        def _selected_occt_face(self, exclude=None):
+            """The first selected face as an OCCT face (R111/A-2)."""
+            ses = self.session()
+            for kind, sid in self.sel.items:
+                if kind != "face" or ":" not in sid or sid == exclude:
+                    continue
+                body = ses.kdoc.body_by_id(sid.split(":", 1)[0])
+                if body is None:
+                    continue
+                faces = K.explore(body.shape, "face")
+                fi = int(sid.split(":", 1)[1])
+                if 0 <= fi < len(faces):
+                    return faces[fi]
+            return None
 
         def _pull_to_face_target(self, exclude_id):
             """Normal/centre of a previously selected face (pull 'to face' target)."""
@@ -4719,18 +4756,11 @@ else:
             opts = self._opts_for("tool.pull")
             h = float(opts.get("distance") or 10.0)
             mode = "symmetric" if opts.get("symmetric") else "one"
-            if opts.get("to_face") and self.scene:
-                tgt = self._pull_to_face_target(None)
-                sk_now = SKM.resolve_active(ses.kdoc, self._sketch_session)[0]
-                if tgt is not None and sk_now is not None:
-                    n, org = tuple(sk_now.normal), tuple(sk_now.origin)
-                    c = tgt["center"]
-                    d = sum((c[i] - org[i]) * n[i] for i in range(3))
-                    if abs(d) > 1e-9:          # a face on the sketch plane: no-op
-                        h = abs(d) * ses.scale
-                        mode = "reverse" if d < 0 else "one"
+            # R111/A-2: "to face" hands the *face* to the library, which measures
+            # the plane distance and picks the direction (one implementation)
+            to_face = self._selected_occt_face() if opts.get("to_face") else None
             rep = SKM.extrude_active(ses.kdoc, h, ses.scale, self._sketch_session,
-                                     mode=mode)
+                                     mode=mode, to_face=to_face)
             if not rep["ok"]:
                 self._set_status("草图拉伸失败：%s" % rep["reason"])
                 return
@@ -4843,6 +4873,7 @@ else:
                 self.left.populate_tree(ses)
                 self._set_status(f"已解算约束 [{kind}]")
                 n = self._sync_sketch_bodies(sk.id)      # R106/B-1
+                self._refresh_sketch_dof()               # R111/A-6
                 self._rebuild("约束已应用（重建 %d 个实体）" % n if n else "约束已应用")
                 self._refresh_constraint_marks(sk)
             except Exception as exc:

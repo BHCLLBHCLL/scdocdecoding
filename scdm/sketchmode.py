@@ -176,19 +176,124 @@ def _dim_value_index(c) -> int:
     return 2 if (c and c[0] == "radius") else 3
 
 
-def _resolve_value_mm(kdoc, raw, scale: float):
+def _expr_reason(cons, raw, exc) -> str:
+    """Why an expression failed, naming the indices that *can* be referenced.
+
+    R111/A-1: ``dimN`` binds to the **constraint index**, and only a ``dist`` or
+    ``radius`` row carries a value.  A user who names a geometric row (or a
+    stale index) needs that mapping - "unknown parameter" alone is not fixable.
+    """
+    import re
+    named = sorted({int(m.group(1)) for m in re.finditer(r"\bdim(\d+)\b", str(raw))})
+    available = [i for i, c in enumerate(cons) if c and c[0] in DIM_KINDS]
+    outside = [n for n in named if not (0 <= n < len(cons))]
+    not_dim = [n for n in named
+               if 0 <= n < len(cons) and (cons[n] or [""])[0] not in DIM_KINDS]
+    head = str(exc)
+    if not_dim:
+        head = "%s 不是尺寸（约束 #%s 是 %s）" % (
+            "、".join("dim%d" % n for n in not_dim),
+            "、#".join(str(n) for n in not_dim),
+            "、".join(str((cons[n] or ["?"])[0]) for n in not_dim))
+    elif outside:
+        head = "尺寸序号越界：%s（本草图共 %d 条约束）" % (
+            "、".join("dim%d" % n for n in outside), len(cons))
+    tail = "；可引用的尺寸：%s" % ("、".join("dim%d" % i for i in available)
+                                  if available else "无")
+    return head + tail
+
+
+def _dim_value_mm(kdoc, sk, index: int, scale: float, seen=None):
+    """(value_mm, reason) of one dimension, resolving dimension references.
+
+    R111/A-1: an expression may name another dimension as ``dimN`` (N = the
+    constraint index of a ``dist``/``radius`` row).  Chains are resolved
+    recursively and a cycle is refused with the two indices, instead of quietly
+    evaluating to something.
+    """
+    import re
+    from scdm.params import eval_expr
+    cons = list(getattr(sk, "constraints", []) or [])
+    if not (0 <= index < len(cons)):
+        return None, "尺寸序号越界：%s" % index
+    c = cons[index]
+    if not c or c[0] not in DIM_KINDS:
+        return None, "dim%s 不是尺寸" % index
+    vi = _dim_value_index(c)
+    if len(c) <= vi:
+        return None, "dim%s 缺少数值" % index
+    raw = c[vi]
+    if not isinstance(raw, str):
+        try:
+            return float(raw) * float(scale or 1000.0), ""
+        except (TypeError, ValueError):
+            return None, "dim%s 数值非法" % index
+    seen = set(seen or ())
+    if index in seen:
+        return None, "尺寸引用存在循环（#%s）" % index
+    guard = seen | {index}          # a self reference is a cycle too
+    for tok in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", str(raw)):
+        m = re.match(r"^dim(\d+)$", tok)
+        if m and int(m.group(1)) in guard:
+            return None, "尺寸引用存在循环（#%s → #%s）" % (index, m.group(1))
+    seen.add(index)
+    ns = dict(_param_namespace(kdoc))
+    bad: Dict[int, str] = {}
+    ns.update(_dim_refs(kdoc, sk, scale, seen, bad))
+    try:
+        return float(eval_expr(raw, ns)), ""
+    except Exception as exc:
+        # a name missing *because of* a cycle in the chain is a cycle, not a typo
+        for _i, why in sorted(bad.items()):
+            if "循环" in str(why):
+                return None, why
+        return None, _expr_reason(cons, raw, exc)
+
+
+def _dim_refs(kdoc, sk, scale: float, seen, bad=None) -> Dict[str, float]:
+    """{"dimN": value_mm} for the sketch's dimensions (R111/A-1).
+
+    A dimension that cannot be resolved is left out of the namespace; when *bad*
+    is given, its reason is recorded there so a caller can tell a cycle in the
+    chain from a plain typo (R111/A-1 follow-up).
+    """
+    out: Dict[str, float] = {}
+    cons = list(getattr(sk, "constraints", []) or [])
+    for i, c in enumerate(cons):
+        if not c or c[0] not in DIM_KINDS or i in seen:
+            continue
+        mm, why = _dim_value_mm(kdoc, sk, i, scale, seen=seen)
+        if mm is None:
+            if bad is not None:
+                bad[i] = why
+            continue
+        out["dim%d" % i] = mm
+    return out
+
+
+def _namespace_for(kdoc, sk, scale: float) -> Dict[str, float]:
+    """Parameter table values plus ``dimN`` dimension values, in mm (R111/A-1)."""
+    ns = dict(_param_namespace(kdoc))
+    ns.update(_dim_refs(kdoc, sk, scale, set()))
+    return ns
+
+
+def _resolve_value_mm(kdoc, raw, scale: float, sk=None):
     """(target_metres, expression_or_None, reason) for a dimension value.
 
     A number is millimetres (what the UI and the scripts pass); an expression
-    (R110/A-2, e.g. "2*d") is evaluated against the parameter table, which is also
-    in millimetres.
+    (R110/A-2, e.g. "2*d") is evaluated against the parameter table and the
+    sketch's own dimensions (``dimN``, R111/A-1), both in millimetres.
     """
     from scdm.params import eval_expr
     if isinstance(raw, str):
+        ns = _namespace_for(kdoc, sk, scale) if sk is not None             else _param_namespace(kdoc)
         try:
-            mm = float(eval_expr(raw, _param_namespace(kdoc)))
+            mm = float(eval_expr(raw, ns))
         except Exception as exc:
-            return None, raw, "表达式无法求值：%s（%s）" % (exc, raw)
+            cons = list(getattr(sk, "constraints", []) or []) if sk is not None else []
+            return None, raw, "表达式无法求值：%s（%s）" % (_expr_reason(cons, raw, exc),
+                                                       raw)
         return mm / float(scale or 1000.0), raw, ""
     try:
         mm = float(raw)
@@ -200,8 +305,8 @@ def _resolve_value_mm(kdoc, raw, scale: float):
 def _solver_rows(sk, ns, scale: float) -> list:
     """Constraint rows with expression values resolved to metres (R110/A-2).
 
-    The stored rows keep the expression as written (readable, and it re-resolves
-    whenever the table changes); the solver needs numbers, and its unit is metres.
+    The stored rows keep the expression as written (readable, re-resolvable);
+    the solver needs numbers, and its unit is metres.
     """
     from scdm.params import eval_expr
     out = []
@@ -217,19 +322,51 @@ def _solver_rows(sk, ns, scale: float) -> list:
     return out
 
 
+def dof_report(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, Any]:
+    """Solve a *copy* of the sketch and report its degrees of freedom (R111/A-6).
+
+    Read-only on purpose: the points are copied, so asking for the report never
+    perturbs the sketch (rule 85 - a measurement must not change the workload).
+    """
+    from scdm import sketch as S
+    from scdm.sketch_solver import solve_report
+    out: Dict[str, Any] = {"ok": False, "reason": "", "dof": None,
+                           "redundant": None, "conflicting": None,
+                           "converged": None, "residual": None}
+    sk = find_sketch(kdoc, sketch_id)
+    if sk is None:
+        out["reason"] = "草图不存在：%s" % sketch_id
+        return out
+    pts, segs = S.read_points(sk)
+    pts = [list(p) for p in pts]              # never write back
+    has_radius = any(x and x[0] == "radius" for x in sk.constraints)
+    circles = S.read_circles(sk) if has_radius else None
+    try:
+        rep = solve_report(pts, _solver_rows(sk, _namespace_for(kdoc, sk, scale),
+                                             scale),
+                           segments=segs, circles=circles, max_iter=200)
+    except Exception as exc:
+        out["reason"] = "求解失败：%s" % exc
+        return out
+    out.update(ok=True, dof=int(getattr(rep, "dof", -1)),
+               redundant=int(getattr(rep, "redundant", -1)),
+               conflicting=bool(getattr(rep, "conflicting", False)),
+               converged=bool(getattr(rep, "converged", True)),
+               residual=float(getattr(rep, "max_residual", -1.0)))
+    return out
+
+
 def dimensions(kdoc, sketch_id: str, scale: float = 1000.0) -> List[dict]:
     """The drivable dimensions of a sketch, values in millimetres (R110).
 
     Distance and radius rows are listed; an expression row also carries its raw
     text, so a UI can show it next to the resolved value.  A numeric row is stored
     in metres (the solver's unit) and an expression in millimetres (the parameter
-    table's unit) - the conversion happens here.
+    table's unit, and ``dimN`` likewise) - the conversion happens here.
     """
-    from scdm.params import eval_expr
     sk = find_sketch(kdoc, sketch_id)
     if sk is None:
         return []
-    ns = _param_namespace(kdoc)
     out = []
     for i, c in enumerate(getattr(sk, "constraints", []) or []):
         if not c or c[0] not in DIM_KINDS:
@@ -239,9 +376,21 @@ def dimensions(kdoc, sketch_id: str, scale: float = 1000.0) -> List[dict]:
             continue
         raw = c[vi]
         expr = raw if isinstance(raw, str) else None
-        try:
-            mm = float(eval_expr(raw, ns)) if expr else float(raw) * scale
-        except Exception:
+        why = ""
+        if expr:
+            mm, why = _dim_value_mm(kdoc, sk, i, scale, seen=set())
+        else:
+            try:
+                mm = float(raw) * scale
+            except (TypeError, ValueError):
+                mm, why = None, "尺寸值不是数字：%r" % (raw,)
+        if mm is None:
+            # a broken dimension must stay visible (and numbered) in the tree,
+            # otherwise its index cannot be fixed from the UI
+            out.append({"index": i, "kind": c[0], "value_mm": None, "expr": expr,
+                        "reason": why,
+                        "label": "%s 无法求值%s" % (DIM_LABELS.get(c[0], c[0]),
+                                                  ("（%s）" % expr) if expr else "")})
             continue
         out.append({"index": i, "kind": c[0], "value_mm": mm, "expr": expr,
                     "label": "%s %gmm%s" % (DIM_LABELS.get(c[0], c[0]), mm,
@@ -253,19 +402,28 @@ def redrive_expressions(kdoc, scale: float = 1000.0) -> Dict[str, Any]:
     """Re-solve every expression dimension after the parameter table changed.
 
     This is what makes "change d in the parameter dialog" move the sketch (and the
-    bodies built from it) - the expression is stored on the constraint, so it only
-    has to be driven again with the resolved value.
+    bodies built from it): the expression stays on the constraint, so it only has
+    to be driven again.  A dimension may reference another one (R111/A-1), so the
+    pass repeats until the values settle - bounded, because a cycle is refused by
+    the resolution itself.
     """
     out: Dict[str, Any] = {"ok": True, "reason": "", "redriven": 0, "failed": []}
-    for sk in list(getattr(kdoc, "sketches", []) or []):
-        for dim in dimensions(kdoc, sk.id, scale):
-            if not dim["expr"]:
-                continue
-            rep = set_dimension(kdoc, sk.id, dim["index"], dim["expr"], scale)
-            if rep["ok"]:
-                out["redriven"] += 1
-            else:
-                out["failed"].append((sk.id, dim["index"], rep["reason"]))
+    for _pass in range(3):
+        changed = False
+        for sk in list(getattr(kdoc, "sketches", []) or []):
+            for dim in dimensions(kdoc, sk.id, scale):
+                if not dim["expr"]:
+                    continue
+                before = dim["value_mm"]
+                rep = set_dimension(kdoc, sk.id, dim["index"], dim["expr"], scale)
+                if rep["ok"]:
+                    out["redriven"] += 1
+                    if abs(rep["value_mm"] - before) > 1e-12:
+                        changed = True
+                else:
+                    out["failed"].append((sk.id, dim["index"], rep["reason"]))
+        if not changed:
+            break
     if out["failed"]:
         out["ok"] = False
         out["reason"] = "；".join("%s#%s：%s" % f for f in out["failed"])
@@ -307,7 +465,7 @@ def set_dimension(kdoc, sketch_id: str, index: int, value_mm,
     if len(c) <= vi:
         rep["reason"] = "该尺寸约束缺少数值：%s" % (c,)
         return rep
-    target, expr, why = _resolve_value_mm(kdoc, value_mm, scale)
+    target, expr, why = _resolve_value_mm(kdoc, value_mm, scale, sk)
     if target is None:
         rep["reason"] = why
         return rep
@@ -329,11 +487,20 @@ def set_dimension(kdoc, sketch_id: str, index: int, value_mm,
     saved_cons = list(sk.constraints)
     c[vi] = expr if expr else target     # keep the expression, else store metres
     sk.constraints[index] = tuple(c)
+    if expr:
+        # R111/A-1: reject a self reference or a chain that leads back here, and
+        # say which two dimensions form the cycle
+        probe_mm, probe_why = _dim_value_mm(kdoc, sk, index, scale, seen=set())
+        if probe_mm is None and "循环" in (probe_why or ""):
+            sk.constraints = saved_cons
+            rep["reason"] = probe_why
+            return rep
     try:
         pts, segs = S.read_points(sk)
         has_radius = any(x and x[0] == "radius" for x in sk.constraints)
         circles = S.read_circles(sk) if has_radius else None
-        report = solve_report(pts, _solver_rows(sk, _param_namespace(kdoc), scale),
+        report = solve_report(pts, _solver_rows(sk, _namespace_for(kdoc, sk, scale),
+                                          scale),
                               segments=segs, circles=circles, max_iter=200)
         rep["dof"] = int(getattr(report, "dof", -1))
         rep["residual"] = float(getattr(report, "max_residual", -1.0))
@@ -435,9 +602,30 @@ def sync_sketch_bodies(kdoc, sketch_id: Optional[str] = None,
     return out
 
 
-def extrude_active(kdoc, height_mm: float, scale: float = 1000.0,
+def _face_plane_distance(face, origin, normal):
+    """(signed_distance, reason) from a plane to a face along the normal (A-2).
+
+    "Pull to face" needs a plane parallel to the sketch; anything else is refused
+    with the reason rather than extruded to a guessed distance.
+    """
+    from scdm import kernel as K
+    try:
+        fn, fc = K.face_normal_center(face)
+    except Exception as exc:
+        return None, "到面：无法读取目标面（%s）" % exc
+    dot = sum(fn[i] * normal[i] for i in range(3))
+    if abs(abs(dot) - 1.0) > 1e-6:
+        return None, "到面需要与草图平面平行的平面"
+    d = sum((fc[i] - origin[i]) * normal[i] for i in range(3))
+    if abs(d) < 1e-9:
+        return None, "到面：目标面就在草图平面上"
+    return d, ""
+
+
+def extrude_active(kdoc, height_mm: float = 10.0, scale: float = 1000.0,
                    session: Optional[SketchSession] = None,
-                   name: str = "拉伸", mode: str = "one") -> Dict[str, Any]:
+                   name: str = "拉伸", mode: str = "one",
+                   to_face=None) -> Dict[str, Any]:
     """Turn the active sketch into bodies (the Pull bridge, R105).
 
     Returns {"ok", "reason", "bodies", "sketch", "volume", "height_mm"}.  The
@@ -466,6 +654,17 @@ def extrude_active(kdoc, height_mm: float, scale: float = 1000.0,
         out["reason"] = "拉伸高度必须大于 0"
         return out
     axes = S.sketch_axes(sk.plane, sk.origin, sk.normal, sk.xdir)
+    if to_face is not None:
+        # R111/A-2: the height is the plane-to-face distance and the side of the
+        # sketch plane decides the direction - what the GUI used to compute itself
+        d, why = _face_plane_distance(to_face, axes[0], axes[3])
+        if d is None:
+            out["reason"] = why
+            return out
+        h = abs(d)
+        height_mm = h * float(scale)
+        mode = "reverse" if d < 0 else "one"
+        out["to_face_mm"] = height_mm
     made = []
     recorded = False
     try:

@@ -415,11 +415,16 @@ class LeftPanel(QWidget):
                 except Exception:
                     dims = []
                 for d in dims:
-                    dn = QTreeWidgetItem(["%s（双击修改）" % d["label"]])
+                    # R111/A-1: the index is shown because another dimension
+                    # references this one by name ("dim5"), so it has to be
+                    # discoverable without reading the file
+                    dn = QTreeWidgetItem(["#%d %s（双击修改）"
+                                          % (d["index"], d["label"])])
                     dn.setData(0, Qt.UserRole,
                                ("sketch_dim", sk.id, d["index"]))
                     dn.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
-                    dn.setToolTip(0, "驱动尺寸：改值后重新求解草图并重建实体")
+                    dn.setToolTip(0, "驱动尺寸：改值后重新求解草图并重建实体；"
+                                    "别的尺寸可用 dim%d 引用它" % d["index"])
                     it.addChild(dn)
             doc_feats = getattr(getattr(session.kdoc, "document_features",
                                         None), "features", [])
