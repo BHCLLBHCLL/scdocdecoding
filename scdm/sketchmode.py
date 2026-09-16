@@ -210,6 +210,11 @@ def set_dimension(kdoc, sketch_id: str, index: int, value_mm: float,
     rep["old_mm"] = float(c[3]) * scale
     rep["label"] = "距离 %gmm" % float(value_mm)
     saved_curves = list(sk.curves)
+    # R108/A-1: weld touching vertices *before* solving - separately drawn lines
+    # only meet in coordinates, and a solve without COINCIDENT tears the outline
+    # open.  The welds are kept even if the drive itself fails (they are a repair,
+    # not part of the edit), so the snapshot below is taken after welding.
+    rep["welded"] = int(S.weld_coincident(sk))
     saved_cons = list(sk.constraints)
     c[3] = target
     sk.constraints[index] = tuple(c)
@@ -238,7 +243,8 @@ def set_dimension(kdoc, sketch_id: str, index: int, value_mm: float,
     return rep
 
 
-def sketch_params(sk, height_mm: float, loop=None, curves=None) -> Dict[str, Any]:
+def sketch_params(sk, height_mm: float, loop=None, curves=None,
+                  mode=None) -> Dict[str, Any]:
     """The feature payload of a sketch body (R106/B-1, R107/A-1).
 
     The curves travel with the feature (a reloaded project replays the same body
@@ -257,6 +263,8 @@ def sketch_params(sk, height_mm: float, loop=None, curves=None) -> Dict[str, Any
     }
     if loop is not None:
         out["loop"] = int(loop)
+    if mode:
+        out["mode"] = str(mode)          # R108/A-4: one | symmetric | reverse
     return out
 
 
@@ -311,7 +319,7 @@ def sync_sketch_bodies(kdoc, sketch_id: Optional[str] = None,
 
 def extrude_active(kdoc, height_mm: float, scale: float = 1000.0,
                    session: Optional[SketchSession] = None,
-                   name: str = "拉伸") -> Dict[str, Any]:
+                   name: str = "拉伸", mode: str = "one") -> Dict[str, Any]:
     """Turn the active sketch into bodies (the Pull bridge, R105).
 
     Returns {"ok", "reason", "bodies", "sketch", "volume", "height_mm"}.  The
@@ -350,13 +358,15 @@ def extrude_active(kdoc, height_mm: float, scale: float = 1000.0,
         for i, loop in enumerate(loops):
             curves = loop_curves(loop)
             solid = S.extrude_loops(curves, h, axes=axes)[0]
+            # R108/A-4: one | symmetric | reverse - same volume, different seat
+            solid = S.place_extrusion(solid, mode, h, axes[3])
             body = kdoc.add_body(
                 solid, name=name if len(loops) == 1 else "%s%d" % (name, i + 1))
             # R106/B-1: the sketch becomes the body's feature, so an edited
             # sketch (sync_sketch_bodies) or height (edit_feature) rebuilds it
             kdoc.record_feature(body.id, "sketch",
                                 **sketch_params(sk, height_mm, loop=i,
-                                                curves=curves))
+                                                curves=curves, mode=mode))
             made.append(body)
         recorded = True
     except Exception as exc:

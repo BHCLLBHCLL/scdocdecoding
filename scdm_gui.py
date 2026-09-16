@@ -3526,8 +3526,19 @@ else:
                 self._sketch_second = None
                 self._sketch_chain = []
                 self.left.populate_tree(ses)
+                # R108/A-1: a freshly drawn corner is welded to whatever it
+                # touches, so a later dimension drive cannot pull the outline apart
+                welded = 0
+                try:
+                    from scdm import sketch as S
+                    welded = S.weld_coincident(sk)
+                except Exception:
+                    welded = 0
                 n = self._sync_sketch_bodies(sk.id)      # R106/B-1: live link
-                self._rebuild("草图已更新 → 重建 %d 个实体" % n if n else "")
+                msg = "草图已更新 → 重建 %d 个实体" % n if n else ""
+                if welded:
+                    msg = ((msg + "；") if msg else "") + "焊接 %d 个重合点" % welded
+                self._rebuild(msg)
 
             if tool == "point":
                 put("point", (uv[0], uv[1], 0.0))
@@ -4624,22 +4635,40 @@ else:
                 self._set_status(f"替换失败: {exc}")
 
         def _pull_sketch(self):
-            """R105: the bridge - the active sketch becomes a body, then 3D.
+            """R105: the bridge; R108/A-4: honours the Pull options.
 
-            The height comes from the Pull options (default 10mm), the sketch is
-            the *active* one (not simply the last), and a successful pull leaves
-            sketch mode - which is what makes sketch -> solid one action.
+            The height comes from the Pull options (default 10mm), "对称" makes the
+            body straddle the sketch plane, "到面" measures the selected face, and a
+            successful pull leaves sketch mode - which is what makes sketch -> solid
+            one action.
             """
             ses = self.session()
             opts = self._opts_for("tool.pull")
             h = float(opts.get("distance") or 10.0)
-            rep = SKM.extrude_active(ses.kdoc, h, ses.scale, self._sketch_session)
+            mode = "symmetric" if opts.get("symmetric") else "one"
+            if opts.get("to_face") and self.scene:
+                tgt = self._pull_to_face_target(None)
+                sk_now = SKM.resolve_active(ses.kdoc, self._sketch_session)[0]
+                if tgt is not None and sk_now is not None:
+                    n, org = tuple(sk_now.normal), tuple(sk_now.origin)
+                    c = tgt["center"]
+                    d = sum((c[i] - org[i]) * n[i] for i in range(3))
+                    if abs(d) > 1e-9:          # a face on the sketch plane: no-op
+                        h = abs(d) * ses.scale
+                        mode = "reverse" if d < 0 else "one"
+            rep = SKM.extrude_active(ses.kdoc, h, ses.scale, self._sketch_session,
+                                     mode=mode)
             if not rep["ok"]:
                 self._set_status("草图拉伸失败：%s" % rep["reason"])
                 return
-            self._record("sketch.pull", distance=h)
-            self._exit_sketch("草图已拉伸 ×%d（%.1fmm）"
-                              % (len(rep["bodies"]), h))
+            self._record("sketch.pull", distance=h, mode=mode)
+            detail = {"symmetric": "，两侧", "reverse": "，反向"}.get(mode, "")
+            self._exit_sketch("草图已拉伸 ×%d（%.1fmm%s）"
+                              % (len(rep["bodies"]), h, detail))
+
+        def _do_sketch_pull(self):
+            """R105: 拉伸草图 - extrude the active sketch and return to 3D."""
+            self._pull_sketch()
 
         def _do_sketch_finish(self):
             """R105: 完成草图 - the explicit way out (same as Esc / mode.3d)."""
@@ -4647,10 +4676,6 @@ else:
                 self._set_status("当前不在草图模式")
                 return
             self._exit_sketch("已退出草图模式（完成草图）")
-
-        def _do_sketch_pull(self):
-            """R105: 拉伸草图 - extrude the active sketch and return to 3D."""
-            self._pull_sketch()
 
         def _apply_sketch_constraint(self, kind: str):
             """Resolve a constraint against the active sketch using scdm.sketch.

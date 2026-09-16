@@ -333,7 +333,9 @@ def _apply_one(shape, feature: Feature, scale: float):
         idx = int(p.get("loop", 0) or 0)
         # a feature stores its own single loop, so the index is only meaningful
         # for the live link; fall back to the first solid when it is out of range
-        return solids[idx] if 0 <= idx < len(solids) else solids[0]
+        solid = solids[idx] if 0 <= idx < len(solids) else solids[0]
+        # R108/A-4: one | symmetric | reverse (same volume, different seat)
+        return S.place_extrusion(solid, p.get("mode"), h, axes[3])
     if op in ("hole", "hole_tapped", "hole_cbore", "hole_csink"):
         face = resolve_face(shape, p.get("selector", {}))
         if face is None:

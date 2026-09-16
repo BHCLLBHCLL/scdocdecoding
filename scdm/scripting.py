@@ -998,7 +998,8 @@ def op_sketch_pull(kdoc, opts, scale):
             raise ValueError("草图拉伸：草图序号越界")
         sk = sks[int(idx)]
         session = SKM.SketchSession(sketch_id=sk.id, plane=sk.plane)
-    rep = SKM.extrude_active(kdoc, h, scale, session)
+    rep = SKM.extrude_active(kdoc, h, scale, session,
+                             mode=str(opts.get("mode", "one")))
     if not rep["ok"]:
         raise ValueError("草图拉伸失败：%s" % rep["reason"])
     return rep["bodies"][-1], "草图拉伸 ×%d（%gmm）" % (len(rep["bodies"]), h)

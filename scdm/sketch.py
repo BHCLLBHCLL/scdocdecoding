@@ -277,31 +277,105 @@ def extrude_loops(curves: Sequence[tuple], thickness: float, plane: str = "xy",
     return out
 
 
-def read_points(sk):
-    """(points, segments) of a sketch in solver variables (R107/A-3).
+#: how an extrusion is placed relative to the sketch plane (R108/A-4)
+EXTRUDE_MODES = ("one", "symmetric", "reverse")
+
+
+def place_extrusion(solid, mode: str, thickness: float, normal):
+    """Shift an extrusion along its normal (R108/A-4).
+
+    `one`: the sketch plane is the start face (the historic behaviour);
+    `symmetric`: it is the middle (the body straddles the plane);
+    `reverse`: the extrusion goes the other way.  All three have the same
+    volume for the same thickness - the difference is where the body sits, which
+    is exactly what the tests check.
+    """
+    from scdm import kernel as K
+    if mode in (None, "", "one"):
+        return solid
+    if mode == "symmetric":
+        f = -0.5 * float(thickness)
+    elif mode == "reverse":
+        f = -float(thickness)
+    else:
+        raise ValueError("未知拉伸方式：%s" % mode)
+    return K.translate(solid, tuple(f * float(n) for n in normal))
+
+
+def weld_coincident(sk, tol: float = 1e-9) -> int:
+    """Weld sketch vertices that meet within `tol` (R108/A-1).
+
+    Separately drawn lines only *touch* in coordinates: without a COINCIDENT
+    constraint a solve moves the ends apart and the outline tears open (R107
+    measured exactly that: the dimension drive succeeded and the loop was gone).
+    This appends the missing constraints - vertices only, never a circle centre or
+    its radius handle - and returns how many were added.
+
+    Geometry is untouched: welding only states "these points are the same point",
+    so the next solve keeps them together.
+    """
+    pts, _segs, kinds = read_points(sk, with_kinds=True)
+    known = set()
+    for c in getattr(sk, "constraints", []) or []:
+        if c and c[0] == COINCIDENT and len(c) >= 3:
+            known.add(frozenset((int(c[1]), int(c[2]))))
+    groups: List[List[int]] = []
+    for i, p in enumerate(pts):
+        if kinds[i] != "vertex":
+            continue
+        for g in groups:
+            if any(abs(p[0] - pts[m][0]) <= tol and abs(p[1] - pts[m][1]) <= tol
+                   for m in g):
+                g.append(i)
+                break
+        else:
+            groups.append([i])
+    added = 0
+    for g in groups:
+        for k in range(1, len(g)):
+            pair = frozenset((g[0], g[k]))
+            if pair in known:
+                continue
+            sk.constraints.append((COINCIDENT, g[0], g[k]))
+            known.add(pair)
+            added += 1
+    return added
+
+
+def read_points(sk, with_kinds: bool = False):
+    """(points, segments[, kinds]) of a sketch in solver variables (R107/A-3).
 
     One implementation for the solver, the GUI and the dimension editor: a
     line/rect contributes its two corner variables, a circle its centre and a
-    radius handle, a polyline its vertices.
+    radius handle, a polyline its vertices.  `kinds` (R108/A-1) says where each
+    variable came from, so the welding pass can tell a real vertex from a circle
+    centre or its radius handle.
     """
     pts: List[list] = []
     segments: List[tuple] = []
+    kinds: List[str] = []
     for c in sk.curves:
         if c[0] in ("line", "rect"):
             base = len(pts)
             for p in (c[1], c[2]):
                 pts.append([float(p[0]), float(p[1]), float(p[2])])
+                kinds.append("vertex")
             segments.append((base, base + 1))
         elif c[0] == "circle":
-            pts.append([float(c[1][0]), float(c[1][1]), float(c[1][2])])
-            pts.append([float(c[1][0] + c[2]), float(c[1][1]), float(c[1][2])])
+            # a circle centre may be a 2-tuple (R108: the welding pass hit this)
+            cz = float(c[1][2]) if len(c[1]) > 2 else 0.0
+            for p in ((c[1][0], c[1][1], cz),
+                      (c[1][0] + c[2], c[1][1], cz)):
+                pts.append([float(p[0]), float(p[1]), float(p[2])])
+                kinds.append("circle")
         elif c[0] == "poly":
             base = len(pts)
             for p in c[1]:
                 pts.append([float(p[0]), float(p[1]), 0.0])
+                kinds.append("vertex")
             for k in range(len(c[1]) - 1):
                 segments.append((base + k, base + k + 1))
-    return pts, segments
+    return (pts, segments, kinds) if with_kinds else (pts, segments)
 
 
 def write_points(sk, pts) -> None:

@@ -5,7 +5,11 @@
 
 ---
 
-## A. 草图链（承 R107）
+## A. 草图链（承 R107）——**A-1 自动焊接 / A-4 拉伸选项 已交付（R108）**
+
+> 交付见 [ROUND_R108_20260912.md](ROUND_R108_20260912.md)：顶点 COINCIDENT 焊接（驱动前自动执行、幂等、只焊顶点）、
+> one/symmetric/reverse 三种落座 + GUI 对称/到面。A-2/A-3/A-5..A-7 与 B/C 组顺延到
+> [IMPROVEMENT_PLAN_R109.md](IMPROVEMENT_PLAN_R109.md)。
 
 | # | 项 | 现状证据 | 验收（可复算） |
 | --- | --- | --- | --- |
