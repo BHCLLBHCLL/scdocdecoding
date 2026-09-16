@@ -214,7 +214,10 @@ def set_dimension(kdoc, sketch_id: str, index: int, value_mm: float,
     # only meet in coordinates, and a solve without COINCIDENT tears the outline
     # open.  The welds are kept even if the drive itself fails (they are a repair,
     # not part of the edit), so the snapshot below is taken after welding.
-    rep["welded"] = int(S.weld_coincident(sk))
+    weld_report: Dict[str, Any] = {}
+    rep["welded"] = int(S.weld_coincident(sk, tol=0.1 / float(scale or 1000.0),
+                                          report=weld_report))
+    rep["welded_moved"] = int(weld_report.get("moved", 0))
     saved_cons = list(sk.constraints)
     c[3] = target
     sk.constraints[index] = tuple(c)
@@ -276,6 +279,7 @@ def sync_sketch_bodies(kdoc, sketch_id: Optional[str] = None,
     this rebuilds the solids, instead of leaving them as orphans of the old
     curves.  Returns {"ok", "reason", "updated", "failed"}.
     """
+    from scdm import sketch as S          # R109: used for welding before replay
     out: Dict[str, Any] = {"ok": True, "reason": "", "updated": [], "failed": []}
     for bid, stack in list(getattr(kdoc, "features", {}).items()):
         for f in list(stack.features):
@@ -288,11 +292,12 @@ def sync_sketch_bodies(kdoc, sketch_id: Optional[str] = None,
             if sk is None:
                 out["failed"].append((bid, "草图已不存在：%s" % sid))
                 continue
+            # R109/A-1: the outline may have been edited a hair apart - weld first
+            S.weld_coincident(sk, tol=0.1 / float(scale or 1000.0))
             # R107/A-1: a feature owns one loop; the live link follows its index
             idx = f.params.get("loop")
             curves = None
             if idx is not None:
-                from scdm import sketch as S
                 loops = S.sketch_loops(sk.curves)
                 if not (0 <= int(idx) < len(loops)):
                     out["failed"].append(
@@ -350,10 +355,20 @@ def extrude_active(kdoc, height_mm: float, scale: float = 1000.0,
     made = []
     recorded = False
     try:
+        # R109/A-1: welding first turns "drawn a hair apart" into a real loop
+        weld_report: Dict[str, Any] = {}
+        out["welded"] = int(S.weld_coincident(
+            sk, tol=0.1 / float(scale or 1000.0), report=weld_report))
+        out["welded_moved"] = int(weld_report.get("moved", 0))
         # R107/A-1 + A-2: every closed loop becomes its own body (a circle a real
         # cylinder), and each body's feature carries exactly its own loop
         loops = S.sketch_loops(sk.curves)
         if not loops:
+            gap = S.min_vertex_gap(sk)
+            if gap is not None and gap * float(scale) <= 1.0:
+                raise ValueError(
+                    "草图没有闭环：最近的两个端点相距 %.3gmm（未重合）"
+                    % (gap * float(scale)))
             raise ValueError("草图没有闭环（画矩形、圆或闭合线段）")
         for i, loop in enumerate(loops):
             curves = loop_curves(loop)
@@ -371,7 +386,8 @@ def extrude_active(kdoc, height_mm: float, scale: float = 1000.0,
         recorded = True
     except Exception as exc:
         if not made:
-            out["reason"] = "草图无闭环：%s" % exc
+            text = str(exc)
+            out["reason"] = text if "没有闭环" in text else "草图无闭环：%s" % text
             return out
     out.update(ok=True, bodies=made, sketch=sk, feature=recorded,
                volume=sum(K.volume(b.shape) for b in made))

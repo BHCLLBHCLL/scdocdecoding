@@ -73,16 +73,14 @@ def test_welding_only_touches_real_vertices():
     assert S.weld_coincident(sk) == 0
 
 
-def test_without_welding_a_drive_tears_the_outline():
-    """The honest 'before' half: this is what R107 measured."""
+def test_solving_without_welding_tears_the_outline():
+    """The honest 'before' half: this is what R107 measured.
+
+    R109 makes welding automatic when a sketch is extruded or synced, so the tear
+    is reproduced at the solver level - exactly the path that used to be taken.
+    """
     doc = KernelDoc()
     sk = _four_lines(doc)
-    rep = SKM.extrude_active(doc, 5.0, 1000.0)
-    body = rep["bodies"][0]
-    assert len(S.sketch_loops(sk.curves)) == 1
-    assert K.volume(body.shape) == pytest.approx(_mm3(10, 8, 5), rel=1e-9)
-
-    # simulate the pre-R108 path: solve without welding
     from scdm.sketch_solver import solve_report
     cons = list(sk.constraints)
     cons[5] = (S.DIST, 0, 1, 0.020)
@@ -90,9 +88,17 @@ def test_without_welding_a_drive_tears_the_outline():
     solve_report(pts, cons, segments=segs, max_iter=200)
     S.write_points(sk, pts)
     assert S.sketch_loops(sk.curves) == []          # the outline is gone
-    syn = SKM.sync_sketch_bodies(doc, sk.id, 1000.0)
-    assert syn["ok"] is False and "闭环已不存在" in syn["reason"]
-    assert K.volume(body.shape) == pytest.approx(_mm3(10, 8, 5), rel=1e-9)
+
+    # ... while the extrude path repairs it by welding first (R109)
+    sk2 = _four_lines(KernelDoc())
+    doc2 = sk2 and None
+    doc3 = KernelDoc()
+    sk3 = _four_lines(doc3)
+    rep = SKM.extrude_active(doc3, 5.0, 1000.0)
+    assert rep["ok"] and rep["welded"] == 4
+    assert len(S.sketch_loops(sk3.curves)) == 1
+    assert K.volume(rep["bodies"][0].shape) == pytest.approx(_mm3(10, 8, 5),
+                                                             rel=1e-9)
 
 
 def test_the_drive_welds_so_the_rectangle_survives():
@@ -100,11 +106,12 @@ def test_the_drive_welds_so_the_rectangle_survives():
     sk = _four_lines(doc)
     rep = SKM.extrude_active(doc, 5.0, 1000.0)
     body = rep["bodies"][0]
-    assert len(sk.constraints) == 7
+    # R109: the extrude welded the corners itself (4 constraints on top of 7)
+    assert rep["welded"] == 4 and len(sk.constraints) == 11
 
     drive = SKM.set_dimension(doc, sk.id, 5, 20.0, 1000.0)
     assert drive["ok"], drive["reason"]
-    assert drive["welded"] == 4 and drive["dof"] == 0
+    assert drive["welded"] == 0 and drive["dof"] == 0
     assert len(S.sketch_loops(sk.curves)) == 1      # welded, so it holds together
     assert SKM.sync_sketch_bodies(doc, sk.id, 1000.0)["updated"] == [body.id]
     assert K.volume(body.shape) == pytest.approx(_mm3(20, 8, 5), rel=1e-6)

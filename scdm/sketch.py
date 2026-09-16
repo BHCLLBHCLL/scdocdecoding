@@ -302,17 +302,40 @@ def place_extrusion(solid, mode: str, thickness: float, normal):
     return K.translate(solid, tuple(f * float(n) for n in normal))
 
 
-def weld_coincident(sk, tol: float = 1e-9) -> int:
-    """Weld sketch vertices that meet within `tol` (R108/A-1).
+def min_vertex_gap(sk) -> Optional[float]:
+    """Smallest distance between two distinct sketch vertices (R109/A-1).
+
+    Used to tell "no closed loop because the corners are a hair apart" from
+    "there is nothing to extrude at all".
+    """
+    pts, _segs, kinds = read_points(sk, with_kinds=True)
+    verts = [p for i, p in enumerate(pts) if kinds[i] == "vertex"]
+    best = None
+    for i in range(len(verts)):
+        for j in range(i + 1, len(verts)):
+            d = math.hypot(verts[i][0] - verts[j][0], verts[i][1] - verts[j][1])
+            if best is None or d < best:
+                best = d
+    return best
+
+
+def weld_coincident(sk, tol: float = 1e-4, snap: bool = True,
+                    report=None) -> int:
+    """Weld sketch vertices that meet within `tol` (R108/A-1, R109 tolerance).
 
     Separately drawn lines only *touch* in coordinates: without a COINCIDENT
     constraint a solve moves the ends apart and the outline tears open (R107
-    measured exactly that: the dimension drive succeeded and the loop was gone).
-    This appends the missing constraints - vertices only, never a circle centre or
-    its radius handle - and returns how many were added.
+    measured exactly that).  `tol` is in sketch units (metres); the default
+    1e-4 = 0.1 mm is the coincidence tolerance a CAD tool uses when the user
+    *thinks* two corners are connected.
 
-    Geometry is untouched: welding only states "these points are the same point",
-    so the next solve keeps them together.
+    With `snap` the later points of a group are also moved onto its leader, so the
+    outline is closed **immediately** - a COINCIDENT constraint alone would only
+    close it at the next solve, and `sketch_loops()` would still see a gap.
+    Only vertices take part: never a circle centre or its radius handle.
+
+    Returns how many constraints were added; pass a `report` dict to also get
+    {"added", "moved", "groups"}.
     """
     pts, _segs, kinds = read_points(sk, with_kinds=True)
     known = set()
@@ -331,14 +354,27 @@ def weld_coincident(sk, tol: float = 1e-9) -> int:
         else:
             groups.append([i])
     added = 0
+    moved = 0
     for g in groups:
+        if len(g) < 2:
+            continue
+        lead = pts[g[0]]
         for k in range(1, len(g)):
+            other = pts[g[k]]
+            if (snap and (abs(other[0] - lead[0]) > 1e-15
+                          or abs(other[1] - lead[1]) > 1e-15)):
+                other[0], other[1] = lead[0], lead[1]
+                moved += 1
             pair = frozenset((g[0], g[k]))
             if pair in known:
                 continue
             sk.constraints.append((COINCIDENT, g[0], g[k]))
             known.add(pair)
             added += 1
+    if snap and moved:
+        write_points(sk, pts)
+    if report is not None:
+        report.update(added=added, moved=moved, groups=len(groups))
     return added
 
 
@@ -358,7 +394,9 @@ def read_points(sk, with_kinds: bool = False):
         if c[0] in ("line", "rect"):
             base = len(pts)
             for p in (c[1], c[2]):
-                pts.append([float(p[0]), float(p[1]), float(p[2])])
+                # a point may be a 2-tuple (rect/line are often written that way)
+                pz = float(p[2]) if len(p) > 2 else 0.0
+                pts.append([float(p[0]), float(p[1]), pz])
                 kinds.append("vertex")
             segments.append((base, base + 1))
         elif c[0] == "circle":

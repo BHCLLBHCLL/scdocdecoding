@@ -858,6 +858,56 @@ else:
             except Exception as exc:
                 self._set_status(f"保存失败: {exc}")
 
+        # ---- R109/A-6: the mode travels with the undo stack -----------------
+        def _push_undo(self):
+            """Push the document *and* the sketch-mode state onto the history.
+
+            The document snapshot alone is not enough: crossing the boundary (a 3D
+            command leaving sketch mode) is a user-visible step, so undo has to
+            take the mode back with the geometry.  Safe before a document exists
+            (entering the mode during start-up, or when a new document is opened).
+            """
+            if getattr(self, "_applying_ui", False):
+                # R109/A-6: undo/redo restoring the mode must not push - a push
+                # here would truncate the redo stack it is being restored from
+                return
+            ses = self.session() if self.sessions else None
+            if ses is None or getattr(ses, "kdoc", None) is None:
+                return
+            snap = ses.kdoc.snapshot()
+            if isinstance(snap, dict):
+                snap["ui"] = {
+                    "mode": self._mode(),
+                    "sketch": (self._sketch_session.sketch_id
+                               if self._sketch_session is not None else None),
+                }
+            ses.history.push(snap)
+
+        def _apply_ui_state(self, snap, why="已恢复草图模式"):
+            """Re-enter or leave sketch mode to match a restored snapshot."""
+            if not isinstance(snap, dict):
+                return
+            # a snapshot without UI info is a pre-R109 or document-creation state,
+            # i.e. plain 3D mode (commits made *inside* sketch mode always carry it)
+            ui = snap.get("ui") or {"mode": SKM.MODE_SOLID}
+            ses = self.session()
+            self._applying_ui = True
+            try:
+                if ui.get("mode") == SKM.MODE_SKETCH:
+                    if self._mode() == SKM.MODE_SKETCH:
+                        return
+                    sk = SKM.find_sketch(ses.kdoc, ui.get("sketch") or "")
+                    if sk is None:
+                        return
+                    plane = (("custom", sk.origin, sk.normal, sk.xdir)
+                             if sk.plane == "custom" else sk.plane)
+                    self._begin_sketch(plane, reuse=sk)
+                    self._set_status(why)
+                elif self._mode() == SKM.MODE_SKETCH:
+                    self._exit_sketch("已退出草图模式（撤销/重做）")
+            finally:
+                self._applying_ui = False
+
         def _do_edit_undo(self):
             ses = self.session()
             snap = ses.history.undo()
@@ -866,6 +916,7 @@ else:
                 return
             ses.kdoc.restore(snap)
             ses.dirty = True
+            self._apply_ui_state(snap, "已撤销（回到草图模式）")   # R109/A-6
             self._rebuild("已撤销")
 
         def _do_edit_redo(self):
@@ -875,6 +926,7 @@ else:
                 self._set_status("无法重做")
                 return
             ses.kdoc.restore(snap)
+            self._apply_ui_state(snap, "已重做（回到草图模式）")
             self._rebuild("已重做")
 
         def _do_edit_copy(self):
@@ -3528,17 +3580,25 @@ else:
                 self.left.populate_tree(ses)
                 # R108/A-1: a freshly drawn corner is welded to whatever it
                 # touches, so a later dimension drive cannot pull the outline apart
-                welded = 0
+                welded = moved = 0
                 try:
                     from scdm import sketch as S
-                    welded = S.weld_coincident(sk)
+                    # R109/A-1: weld within the 0.1mm coincidence tolerance, so
+                    # "drawn a hair apart" is connected like the user meant it
+                    rep = {}
+                    welded = S.weld_coincident(sk, tol=0.1 / (ses.scale or 1000.0),
+                                               report=rep)
+                    moved = int(rep.get("moved", 0))
                 except Exception:
-                    welded = 0
+                    welded = moved = 0
                 n = self._sync_sketch_bodies(sk.id)      # R106/B-1: live link
-                msg = "草图已更新 → 重建 %d 个实体" % n if n else ""
+                bits = []
+                if n:
+                    bits.append("重建 %d 个实体" % n)
                 if welded:
-                    msg = ((msg + "；") if msg else "") + "焊接 %d 个重合点" % welded
-                self._rebuild(msg)
+                    bits.append("焊接 %d 个重合点%s"
+                                % (welded, "（移动 %d）" % moved if moved else ""))
+                self._rebuild("草图已更新 → " + "；".join(bits) if bits else "")
 
             if tool == "point":
                 put("point", (uv[0], uv[1], 0.0))
@@ -3802,7 +3862,7 @@ else:
         def _commit(self, msg: str):
             ses = self.session()
             ses.dirty = True
-            ses.history.push(ses.kdoc.snapshot())
+            self._push_undo()            # R109/A-6: document + sketch-mode state
             self._rebuild(msg)
             self._update_tool_chrome()
 
@@ -3896,6 +3956,7 @@ else:
             self._show_sketch_tab(False)
             self._set_mode_chip("")
             self._rebuild(reason or "已退出草图模式（三维模式）")
+            self._push_undo()            # R109/A-6: leaving the mode is a step
             return True
 
         def _edit_sketch(self, sketch_id: str):
@@ -4070,6 +4131,7 @@ else:
                 self._set_status(
                     "草图模式（%s）：选择草图工具开始绘制；「完成草图」/Esc 回三维"
                     "（点三维命令会自动退出草图模式）" % label)
+            self._push_undo()            # R109/A-6: entering the mode is a step
 
         _SKETCH_HINTS = {
             "line": "直线：单击起点、终点",
