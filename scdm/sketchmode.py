@@ -160,6 +160,32 @@ DIM_KINDS = ("dist", "radius")
 DIM_LABELS = {"dist": "距离", "radius": "半径"}
 
 
+#: how far apart two sketch endpoints may be and still be welded (R112/A-2).
+#: The library default is the historic 0.1 mm; the viewport writes its snap
+#: radius here, so snapping and welding are one number (rule 84).
+DEFAULT_WELD_TOL_MM = 0.1
+
+
+def weld_tolerance_mm(kdoc) -> float:
+    """The document's weld/snap tolerance in millimetres (R112/A-2)."""
+    try:
+        v = float(getattr(kdoc, "weld_tol_mm", DEFAULT_WELD_TOL_MM))
+    except (TypeError, ValueError):
+        return DEFAULT_WELD_TOL_MM
+    return v if v > 0.0 else DEFAULT_WELD_TOL_MM
+
+
+def set_weld_tolerance_mm(kdoc, mm) -> float:
+    """Set the document's weld/snap tolerance; returns the value in force."""
+    try:
+        v = float(mm)
+    except (TypeError, ValueError):
+        return weld_tolerance_mm(kdoc)
+    if v > 0.0:
+        kdoc.weld_tol_mm = v
+    return weld_tolerance_mm(kdoc)
+
+
 def _param_namespace(kdoc) -> Dict[str, float]:
     """The document's parameter values, or {} when there is no table."""
     table = getattr(kdoc, "param_table", None)
@@ -332,7 +358,8 @@ def dof_report(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, Any]:
     from scdm.sketch_solver import solve_report
     out: Dict[str, Any] = {"ok": False, "reason": "", "dof": None,
                            "redundant": None, "conflicting": None,
-                           "converged": None, "residual": None}
+                           "converged": None, "residual": None,
+                           "conflict_cons": (), "redundant_cons": ()}
     sk = find_sketch(kdoc, sketch_id)
     if sk is None:
         out["reason"] = "草图不存在：%s" % sketch_id
@@ -352,8 +379,27 @@ def dof_report(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, Any]:
                redundant=int(getattr(rep, "redundant", -1)),
                conflicting=bool(getattr(rep, "conflicting", False)),
                converged=bool(getattr(rep, "converged", True)),
-               residual=float(getattr(rep, "max_residual", -1.0)))
+               residual=float(getattr(rep, "max_residual", -1.0)),
+               # R112/A-6: not just "how many" - *which* constraints
+               conflict_cons=tuple(getattr(rep, "violated_cons", ()) or ()),
+               redundant_cons=tuple(getattr(rep, "redundant_cons", ()) or ()))
     return out
+
+
+def dimension_marks(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, Any]:
+    """{index: "冲突" | "冗余"} for the tree (R112/A-6), one solve.
+
+    A conflicting row wins over a redundant one: if it is both violated and
+    repeated, "conflict" is what the user has to fix first.
+    """
+    rep = dof_report(kdoc, sketch_id, scale)
+    marks: Dict[int, str] = {}
+    for i in rep.get("redundant_cons", ()) or ():
+        marks[int(i)] = "冗余"
+    for i in rep.get("conflict_cons", ()) or ():
+        marks[int(i)] = "冲突"
+    rep["marks"] = marks
+    return rep
 
 
 def dimensions(kdoc, sketch_id: str, scale: float = 1000.0) -> List[dict]:
@@ -481,7 +527,8 @@ def set_dimension(kdoc, sketch_id: str, index: int, value_mm,
     # R108/A-1 + R109/A-1: weld touching vertices before solving; the welds are a
     # repair and survive a failed drive, so the constraint snapshot comes after
     weld_report: Dict[str, Any] = {}
-    rep["welded"] = int(S.weld_coincident(sk, tol=0.1 / float(scale or 1000.0),
+    rep["welded"] = int(S.weld_coincident(
+        sk, tol=weld_tolerance_mm(kdoc) / float(scale or 1000.0),
                                           report=weld_report))
     rep["welded_moved"] = int(weld_report.get("moved", 0))
     saved_cons = list(sk.constraints)
@@ -560,7 +607,8 @@ def sync_sketch_bodies(kdoc, sketch_id: Optional[str] = None,
     curves.  Returns {"ok", "reason", "updated", "failed"}.
     """
     from scdm import sketch as S          # R109: used for welding before replay
-    out: Dict[str, Any] = {"ok": True, "reason": "", "updated": [], "failed": []}
+    out: Dict[str, Any] = {"ok": True, "reason": "", "updated": [], "failed": [],
+                           "extra_loops": 0}
     for bid, stack in list(getattr(kdoc, "features", {}).items()):
         for f in list(stack.features):
             if f.op != "sketch":
@@ -573,7 +621,8 @@ def sync_sketch_bodies(kdoc, sketch_id: Optional[str] = None,
                 out["failed"].append((bid, "草图已不存在：%s" % sid))
                 continue
             # R109/A-1: the outline may have been edited a hair apart - weld first
-            S.weld_coincident(sk, tol=0.1 / float(scale or 1000.0))
+            S.weld_coincident(
+                sk, tol=weld_tolerance_mm(kdoc) / float(scale or 1000.0))
             # R107/A-1: a feature owns one loop; the live link follows its index
             idx = f.params.get("loop")
             curves = None
@@ -599,6 +648,25 @@ def sync_sketch_bodies(kdoc, sketch_id: Optional[str] = None,
     if out["failed"]:
         out["ok"] = False
         out["reason"] = "；".join("%s：%s" % (b, r) for b, r in out["failed"])
+    # R112/A-1: a curve-adding edit (mirror / pattern) can leave closed loops
+    # with no body yet.  Report them so the UI can say "pull again" instead of
+    # silently ignoring the new geometry.
+    try:
+        per_sketch: Dict[str, int] = {}
+        for _bid, stack in list(getattr(kdoc, "features", {}).items()):
+            for f in list(stack.features):
+                if f.op == "sketch" and f.params.get("sketch_id"):
+                    sid = str(f.params.get("sketch_id"))
+                    per_sketch[sid] = per_sketch.get(sid, 0) + 1
+        extra = 0
+        for sid, n in per_sketch.items():
+            sk = find_sketch(kdoc, sid)
+            if sk is None:
+                continue
+            extra += max(0, len(S.sketch_loops(sk.curves)) - n)
+        out["extra_loops"] = int(extra)
+    except Exception:
+        out["extra_loops"] = 0
     return out
 
 
@@ -671,30 +739,52 @@ def extrude_active(kdoc, height_mm: float = 10.0, scale: float = 1000.0,
         # R109/A-1: welding first turns "drawn a hair apart" into a real loop
         weld_report: Dict[str, Any] = {}
         out["welded"] = int(S.weld_coincident(
-            sk, tol=0.1 / float(scale or 1000.0), report=weld_report))
+            sk, tol=weld_tolerance_mm(kdoc) / float(scale or 1000.0),
+            report=weld_report))
         out["welded_moved"] = int(weld_report.get("moved", 0))
         # R107/A-1 + A-2: every closed loop becomes its own body (a circle a real
         # cylinder), and each body's feature carries exactly its own loop
         loops = S.sketch_loops(sk.curves)
         if not loops:
             gap = S.min_vertex_gap(sk)
-            if gap is not None and gap * float(scale) <= 1.0:
+            tol_mm = weld_tolerance_mm(kdoc)
+            if gap is not None and gap * float(scale) <= max(1.0, 10.0 * tol_mm):
                 raise ValueError(
-                    "草图没有闭环：最近的两个端点相距 %.3gmm（未重合）"
-                    % (gap * float(scale)))
+                    "草图没有闭环：最近的两个端点相距 %.3gmm"
+                    "（未重合，当前焊接容差 %.3gmm）"
+                    % (gap * float(scale), tol_mm))
             raise ValueError("草图没有闭环（画矩形、圆或闭合线段）")
+        # R112/A-1: a pull on a sketch that already owns bodies updates them loop
+        # by loop and only *creates* the loops that are new.  Without this, the
+        # mirror/pattern hint ("pull again") would duplicate the profile that was
+        # already built instead of adding the new one.
+        mine: Dict[int, Any] = {}
+        for bid, stack in list(getattr(kdoc, "features", {}).items()):
+            for f in list(stack.features):
+                if (f.op == "sketch" and f.params.get("sketch_id") == sk.id
+                        and f.params.get("loop") is not None):
+                    mine.setdefault(int(f.params["loop"]), (bid, f))
         for i, loop in enumerate(loops):
             curves = loop_curves(loop)
             solid = S.extrude_loops(curves, h, axes=axes)[0]
             # R108/A-4: one | symmetric | reverse - same volume, different seat
             solid = S.place_extrusion(solid, mode, h, axes[3])
+            params = sketch_params(sk, height_mm, loop=i, curves=curves,
+                                   mode=mode)
+            old = mine.get(i)
+            if old is not None and kdoc.body_by_id(old[0]) is not None:
+                # the loop already has a body: re-derive it in place
+                old[1].params.update(params)
+                ok, why = kdoc.replay_body(old[0], scale)
+                if not ok:
+                    raise ValueError("重放失败：%s" % why)
+                made.append(kdoc.body_by_id(old[0]))
+                continue
             body = kdoc.add_body(
                 solid, name=name if len(loops) == 1 else "%s%d" % (name, i + 1))
             # R106/B-1: the sketch becomes the body's feature, so an edited
             # sketch (sync_sketch_bodies) or height (edit_feature) rebuilds it
-            kdoc.record_feature(body.id, "sketch",
-                                **sketch_params(sk, height_mm, loop=i,
-                                                curves=curves, mode=mode))
+            kdoc.record_feature(body.id, "sketch", **params)
             made.append(body)
         recorded = True
     except Exception as exc:

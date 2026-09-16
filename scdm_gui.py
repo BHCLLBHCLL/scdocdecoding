@@ -20,6 +20,7 @@ try:
     from PyQt5.QtCore import Qt, QSettings, QSize, QPoint
     from PyQt5.QtWidgets import (
         QAction, QApplication, QCheckBox, QDialog, QDialogButtonBox,
+        QDoubleSpinBox, QSpinBox,
         QFileDialog, QFormLayout, QHBoxLayout, QLabel, QMainWindow,
         QMenu, QMessageBox, QSplitter, QStackedWidget, QStatusBar,
         QTabBar, QToolBar, QToolButton, QVBoxLayout, QWidget,
@@ -72,9 +73,13 @@ else:
     from scdm.gui.viewport import ViewportHost
 
     class OptionsDialog(QDialog):
-        def __init__(self, sel: SelectionModel, parent=None):
+        def __init__(self, sel: SelectionModel, parent=None, weld_mm=None):
             super().__init__(parent)
             self.setWindowTitle("选项")
+            # R112/A-2: the document is the source of truth for the weld
+            # tolerance; the settings model only carries the last view value
+            self._weld0 = float(weld_mm if weld_mm is not None
+                                else getattr(sel, "weld_tol_mm", 0.1))
             form = QFormLayout(self)
             self.snap_grid = QCheckBox("捕捉到栅格")
             self.snap_grid.setChecked(sel.snap_grid)
@@ -84,10 +89,27 @@ else:
             self.snap_mid.setChecked(sel.snap_mid)
             self.snap_coin = QCheckBox("重合（既有草图点）")
             self.snap_coin.setChecked(sel.snap_coin)
+            # R112/A-2: one radius drives both snapping and welding
+            self.snap_radius = QDoubleSpinBox()
+            self.snap_radius.setRange(0.01, 100.0)
+            self.snap_radius.setDecimals(2)
+            self.snap_radius.setSingleStep(0.5)
+            self.snap_radius.setSuffix(" mm")
+            self.snap_radius.setValue(float(getattr(sel, "snap_radius_mm", 5.0)))
+            self.snap_radius.setToolTip("草图绘制时的捕捉半径（世界毫米）")
+            self.weld_tol = QDoubleSpinBox()
+            self.weld_tol.setRange(0.001, 100.0)
+            self.weld_tol.setDecimals(3)
+            self.weld_tol.setSingleStep(0.1)
+            self.weld_tol.setSuffix(" mm")
+            self.weld_tol.setValue(self._weld0)
+            self.weld_tol.setToolTip("端点焊接/修复容差（拉伸与重解时按此闭合间隙）")
             form.addRow("捕捉", self.snap_grid)
             form.addRow("", self.snap_end)
             form.addRow("", self.snap_mid)
             form.addRow("", self.snap_coin)
+            form.addRow("半径", self.snap_radius)
+            form.addRow("焊接容差", self.weld_tol)
             hint = QLabel("内核精度与撤销步数在 M2 接入 OCCT 后生效。")
             hint.setWordWrap(True)
             form.addRow(hint)
@@ -101,6 +123,8 @@ else:
             sel.snap_end = self.snap_end.isChecked()
             sel.snap_mid = self.snap_mid.isChecked()
             sel.snap_coin = self.snap_coin.isChecked()
+            sel.snap_radius_mm = float(self.snap_radius.value())   # R112/A-2
+            sel.weld_tol_mm = float(self.weld_tol.value())
 
     class ScdmViewer(QMainWindow):
         def __init__(self, path: str = None):
@@ -714,10 +738,20 @@ else:
             preview.exec_()
 
         def _do_file_options(self):
-            dlg = OptionsDialog(self.sel, self)
+            kdoc = self.session().kdoc
+            dlg = OptionsDialog(
+                self.sel, self,
+                weld_mm=SKM.weld_tolerance_mm(kdoc) if kdoc is not None else None)
             if dlg.exec_():
                 dlg.apply_to(self.sel)
-                self._set_status("已更新捕捉选项")
+                # R112/A-2: the weld tolerance is a document fact (it survives a
+                # save and is what the library welds with), the snap radius is a
+                # view aid - the dialog edits both, this writes each where it lives
+                mm = SKM.set_weld_tolerance_mm(
+                    kdoc, self.sel.weld_tol_mm) if kdoc is not None else 0.0
+                self._set_status("已更新捕捉选项（捕捉半径 %gmm，焊接容差 %gmm）"
+                                 % (getattr(self.sel, "snap_radius_mm", 5.0), mm)
+                                 if mm else "已更新捕捉选项")
 
         def _do_file_exit(self):
             self.close()
@@ -3512,6 +3546,71 @@ else:
             self._rebuild("已偏移闭环轮廓（重建 %d 个实体）" % n if n
                           else "已偏移闭环轮廓")
 
+        def _do_sketch_mirror(self):
+            """R112/A-1: mirror the sketch curves about a sketch axis.
+
+            Options: index 0 = about the horizontal axis (default: vertical),
+            index 1 = keep the original curves.  Replacing the curves is refused
+            while dimensions exist, because their indices address the curves.
+            """
+            ses = self.session()
+            if not self._need_kernel():
+                return
+            from scdm import sketch as S
+            sk, why = SKM.resolve_active(ses.kdoc, self._sketch_session)
+            if sk is None:
+                self._set_status("镜像：%s（先进入草图）" % (why or "文档里没有草图"))
+                return
+            axis = "u" if self.left.is_checked("sketch.mirror", 0) else "v"
+            keep = bool(self.left.is_checked("sketch.mirror", 1))
+            if not keep and any(c and c[0] in SKM.DIM_KINDS
+                                for c in sk.constraints):
+                self._set_status("镜像：草图已有尺寸，替换原曲线会打乱尺寸序号 - "
+                                 "请保留原曲线")
+                return
+            rep = S.mirror_curves(sk, axis, keep=keep)
+            if not rep["ok"]:
+                self._set_status("镜像失败：%s" % rep["reason"])
+                return
+            self._record("sketch.mirror", axis=axis, keep=keep)
+            n = self._sync_sketch_bodies(sk.id)          # R106/B-1
+            self._rebuild("已镜像 %d 条曲线（%s轴%s）%s"
+                          % (rep["added"], "水平" if axis == "u" else "竖直",
+                             "，保留原曲线" if keep else "，替换原曲线",
+                             "，重建 %d 个实体" % n if n else "")
+                          + self._extra_loop_hint())
+
+        def _do_sketch_pattern(self):
+            """R112/A-1: linear pattern of the sketch curves (count + spacing).
+
+            The count includes the original (SpaceClaim reading) and the spacing
+            is in millimetres, converted here - the library works in metres.
+            """
+            ses = self.session()
+            if not self._need_kernel():
+                return
+            from scdm import sketch as S
+            sk, why = SKM.resolve_active(ses.kdoc, self._sketch_session)
+            if sk is None:
+                self._set_status("阵列：%s（先进入草图）" % (why or "文档里没有草图"))
+                return
+            count = self.left.count_value("sketch.pattern", 0) or 3
+            dx = self.left.spin_value("sketch.pattern", 0)
+            dy = self.left.spin_value("sketch.pattern", 1)
+            scale = float(ses.scale or 1000.0)
+            rep = S.pattern_curves(sk, int(count), float(dx or 0.0) / scale,
+                                   float(dy or 0.0) / scale)
+            if not rep["ok"]:
+                self._set_status("阵列失败：%s" % rep["reason"])
+                return
+            self._record("sketch.pattern", count=int(count),
+                         dx_mm=float(dx or 0.0), dy_mm=float(dy or 0.0))
+            n = self._sync_sketch_bodies(sk.id)          # R106/B-1
+            self._rebuild("已阵列 ×%d（+%d 条曲线）%s"
+                          % (rep["count"], rep["added"],
+                             "，重建 %d 个实体" % n if n else "")
+                          + self._extra_loop_hint())
+
         def _do_sketch_layout(self):
             ses = self.session()
             if not self._need_kernel():
@@ -3555,7 +3654,10 @@ else:
                     anchors.append([float(c[1][0]), float(c[1][1])])
                 elif c[0] == "point":
                     anchors.append([float(c[1][0]), float(c[1][1])])
-            tol = 5.0 / (self.session().scale or 1000.0)   # 5 mm world tolerance
+            # R112/A-2: the radius from the options dialog, not a constant - the
+            # same number is handed to the library as the weld tolerance
+            tol = (float(getattr(self.sel, "snap_radius_mm", 5.0))
+                   / (self.session().scale or 1000.0))
             uv, snap_kind = S.snap_uv(uv, pts0, segs0, tol,
                                       snap_end=self.sel.snap_end,
                                       snap_mid=self.sel.snap_mid,
@@ -3991,6 +4093,13 @@ else:
                 text += " · 冗余 %d" % info["redundant"]
             if info["conflicting"]:
                 text += " · 冲突"
+            # R112/A-6: name the constraints the user has to fix, using the same
+            # #N numbers the structure tree shows
+            if info.get("conflict_cons"):
+                text += " #%s" % "、#".join(str(i) for i in info["conflict_cons"])
+            elif info.get("redundant_cons"):
+                text += "（#%s 重复）" % "、#".join(str(i)
+                                              for i in info["redundant_cons"])
             self._set_mode_chip(text)
 
         def _edit_sketch_dimension(self, sketch_id, index):
@@ -4039,7 +4148,15 @@ else:
             rep = SKM.sync_sketch_bodies(ses.kdoc, sketch_id, ses.scale)
             if rep["failed"]:
                 self._set_status("草图同步失败：%s" % rep["reason"])
+            # R112/A-1: loops that no body follows yet (a mirror or a pattern
+            # added profiles) - the caller says so instead of staying silent
+            self._sync_extra = int(rep.get("extra_loops", 0) or 0)
             return len(rep["updated"])
+
+        def _extra_loop_hint(self) -> str:
+            """R112/A-1: closed loops that no body follows yet."""
+            k = int(getattr(self, "_sync_extra", 0) or 0)
+            return "，还有 %d 个闭环未建体（再「拉伸草图」）" % k if k else ""
 
         def _sketch_source(self, plane):
             """(source, body_id, point, normal) for the plane we are about to use."""
@@ -4096,6 +4213,9 @@ else:
                 return
             from scdm import sketch as S
             ses = self.session()
+            # R112/A-2: the document keeps its own weld tolerance (default 0.1mm,
+            # set in the options dialog).  It is deliberately *not* the viewport
+            # snap radius: welding at the snap radius merges distinct profiles.
             if plane is None:
                 plane = self._sketch_plane_from_selection()
             sks = ses.kdoc.sketches

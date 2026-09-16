@@ -58,6 +58,10 @@ class SolveReport:
     redundant: int              # constraint rows - rank(J)
     conflicting: bool           # not converged AND dof <= 0
     message: str = ""
+    # R112/A-6: *which* constraints fight (violated rows) and which repeat an
+    # earlier row (redundant) - indices into the constraint list as passed in
+    violated_cons: Tuple[int, ...] = ()
+    redundant_cons: Tuple[int, ...] = ()
 
 
 class SketchSolver:
@@ -272,6 +276,56 @@ class SketchSolver:
                 J[i][j] = (rp[i] - r0[i]) / h
         return J
 
+    def row_owners(self) -> List[int]:
+        """Constraint index for every residual row, in row order (R112/A-6).
+
+        `_ROW_KINDS` is the nominal row count per kind; when a row was skipped
+        (a dangling point or segment) the constraint is asked on its own, so the
+        mapping is exact either way - the DOF numbers stay the source of truth.
+        """
+        nominal = [_ROW_KINDS.get(c[0], 0) for c in self.constraints]
+        n_rows = len(self.residuals(self._gather()))
+        owners: List[int] = []
+        if sum(nominal) == n_rows:
+            for ci, n in enumerate(nominal):
+                owners.extend([ci] * n)
+            return owners
+        for ci, c in enumerate(self.constraints):
+            kept = self.constraints
+            self.constraints = [c]
+            try:
+                n = len(self.residuals(self._gather()))
+            finally:
+                self.constraints = kept
+            owners.extend([ci] * n)
+        return owners
+
+    @staticmethod
+    def dependent_rows(J: List[List[float]],
+                       tol: float = 1e-9) -> List[int]:
+        """Row indices that do not raise the rank (R112/A-6).
+
+        Same Gram-Schmidt and the same thresholds as `_rank`, so
+        `len(dependent_rows(J)) == rows - _rank(J)` holds by construction -
+        the localisation cannot disagree with the count it explains.
+        """
+        dep: List[int] = []
+        basis: List[List[float]] = []
+        for i, row in enumerate(J):
+            if not any(abs(v) > tol for v in row):
+                dep.append(i)
+                continue
+            v = row[:]
+            for b in basis:
+                dp = sum(a * c for a, c in zip(v, b))
+                v = [a - dp * c for a, c in zip(v, b)]
+            nrm = math.sqrt(sum(a * a for a in v))
+            if nrm > 1e-7:
+                basis.append([a / nrm for a in v])
+            else:
+                dep.append(i)
+        return dep
+
     @staticmethod
     def _rank(J: List[List[float]], tol: float = 1e-9) -> int:
         """Numerical rank via Gram–Schmidt on rows."""
@@ -343,6 +397,15 @@ class SketchSolver:
         rows = len(r)
         dof = nv - rank
         redundant = max(0, rows - rank)
+        # R112/A-6: name the constraints behind those two numbers.  A violated
+        # row is one the solve could not satisfy (0.1um, far above the 1e-10
+        # convergence tolerance); a dependent row repeats an earlier one.
+        owners = self.row_owners()
+        violated = sorted({owners[i] for i, v in enumerate(r)
+                           if abs(v) > 1e-7 and i < len(owners)})
+        dep_rows = self.dependent_rows(J)
+        redundant_cons = sorted({owners[i] for i in dep_rows
+                                 if i < len(owners)})
         # an under-constrained sketch always converges (free drift); failure
         # to converge means the constraints are inconsistent (conflicting)
         conflicting = not converged
@@ -355,7 +418,8 @@ class SketchSolver:
         else:
             msg = "未收敛（可能欠约束漂移）"
         return SolveReport(converged, iters, max_res, dof, redundant,
-                           conflicting, msg)
+                           conflicting, msg, tuple(violated),
+                           tuple(redundant_cons))
 
 
 def _gauss_solve(a: List[List[float]], b: List[float]) -> Optional[List[float]]:

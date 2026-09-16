@@ -18,6 +18,14 @@ class SelectionModel:
     snap_end: bool = True
     snap_mid: bool = True
     snap_coin: bool = False    # P19: 重合 - snap to existing sketch anchors
+    # R112/A-2: the snap radius in millimetres (world units).  The same number
+    # is the weld tolerance, so "it snapped" and "it welded" cannot disagree
+    snap_radius_mm: float = 5.0
+    # R112/A-2: welding is a *repair* tolerance, not a drawing aid.  Snapping a
+    # corner and welding two profiles are different questions: a 5mm weld
+    # tolerance merges profiles 2mm apart (measured), so this stays its own
+    # number with the historic 0.1mm default
+    weld_tol_mm: float = 0.1
     items: List[Sel] = field(default_factory=list)
 
     def clear(self) -> None:

@@ -149,6 +149,10 @@ TABS: Tuple[Tab, ...] = (
         Group("修改", "Modify", (
             C("sketch.trim", "修剪", "Trim", "M3", "cut"),
             C("sketch.offset", "偏移", "Offset", "M3", "offset"),
+            C("sketch.mirror", "镜像", "Mirror", "M3", "mirror",
+              note="关于草图轴镜像曲线（选项：水平轴、保留原曲线）"),
+            C("sketch.pattern", "阵列", "Pattern", "M3", "pattern",
+              note="草图曲线的线性阵列（选项：数量、X/Y 间距）"),
             C("sketch.tangent", "切线", "Tangent", "M3", "tangent"),
             C("sketch.construction", "构造线", "Construction", "M3", "const"),
             C("create.project", "投影", "Project", "M3", "project"),
@@ -411,6 +415,7 @@ M3_LIVE = {
     "sketch.spline", "sketch.construction", "sketch.offset", "sketch.layout",
     "sketch.grid", "sketch.trim", "create.project",
     "sketch.finish", "sketch.pull",      # R105: sketch-mode boundary commands
+    "sketch.mirror", "sketch.pattern",  # R112/A-1: sketch-only curve edits
     "con.dim", "con.hv", "con.coin", "con.perp",
     "con.eq", "con.par", "con.tan", "con.mid", "con.fix",
 }

@@ -57,6 +57,9 @@ def save_scdm(path: str, kdoc: KernelDoc) -> None:
                    for n in getattr(kdoc, "groups", [])],
         # R110/A-5: the sketch the user was editing (for resolve_active)
         "active_sketch": getattr(kdoc, "active_sketch", None),
+        # R112/A-2: snap radius == weld tolerance (mm), so a reloaded
+        # project keeps welding the way the viewport snapped it
+        "weld_tol_mm": float(getattr(kdoc, "weld_tol_mm", 0.1)),
         "features": {bid: stack.as_dict()
                      for bid, stack in getattr(kdoc, "features", {}).items()
                      if len(stack)},
@@ -136,6 +139,10 @@ def load_scdm(path: str) -> KernelDoc:
                 pass
         doc._n = max_n
     doc.active_sketch = man.get("active_sketch")   # R110/A-5
+    try:                                        # R112/A-2
+        doc.weld_tol_mm = float(man.get("weld_tol_mm", 0.1))
+    except (TypeError, ValueError):
+        doc.weld_tol_mm = 0.1
     doc.notes = [dict(n) for n in man.get("notes", [])]
     doc.named = [{"name": n.get("name", ""),
                   "items": [tuple(it) for it in n.get("items", [])]}

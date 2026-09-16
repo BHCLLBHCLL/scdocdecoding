@@ -1005,6 +1005,66 @@ def op_sketch_pull(kdoc, opts, scale):
     return rep["bodies"][-1], "草图拉伸 ×%d（%gmm）" % (len(rep["bodies"]), h)
 
 
+def _op_sketch(kdoc, opts):
+    """The sketch a scripted sketch edit works on (R112/A-1).
+
+    `opts["sketch"]` names a sketch index; without it the document's active
+    sketch is used, which is what the GUI was last editing.
+    """
+    from scdm import sketchmode as SKM
+    sks = list(getattr(kdoc, "sketches", []) or [])
+    if not sks:
+        raise ValueError("草图操作：文档里还没有草图")
+    idx = opts.get("sketch")
+    if idx is not None:
+        if not (0 <= int(idx) < len(sks)):
+            raise ValueError("草图操作：草图序号越界（%s）" % idx)
+        return sks[int(idx)]
+    sk, why = SKM.resolve_active(kdoc, None)
+    if sk is None:
+        raise ValueError("草图操作：%s（用 sketch 指定序号）"
+                         % (why or "没有活动草图"))
+    return sk
+
+
+def op_sketch_mirror(kdoc, opts, scale):
+    """R112/A-1: mirror the sketch about an axis (script step).
+
+    opts: sketch = sketch index (default: the active one), axis = "u" (the
+    horizontal axis) or "v" (the vertical axis, the default), keep = keep the
+    original curves (default True, which is what a CAD mirror adds).
+    """
+    from scdm import sketch as S
+    from scdm import sketchmode as SKM
+    sk = _op_sketch(kdoc, opts)
+    rep = S.mirror_curves(sk, str(opts.get("axis", "v")),
+                          keep=bool(opts.get("keep", True)))
+    if not rep["ok"]:
+        raise ValueError("草图镜像失败：%s" % rep["reason"])
+    syn = SKM.sync_sketch_bodies(kdoc, sk.id, scale)
+    return None, "草图镜像（%s 轴，+%d 条曲线，重建 %d 个实体）" % (
+        rep["axis"], rep["added"], len(syn.get("updated", [])))
+
+
+def op_sketch_pattern(kdoc, opts, scale):
+    """R112/A-1: linear pattern of the sketch curves (script step).
+
+    opts: sketch = sketch index, count = instances in total (the original
+    included, default 3), dx_mm / dy_mm = spacing per step in millimetres.
+    """
+    from scdm import sketch as S
+    from scdm import sketchmode as SKM
+    sk = _op_sketch(kdoc, opts)
+    du = float(opts.get("dx_mm", 10.0)) / float(scale or 1000.0)
+    dv = float(opts.get("dy_mm", 0.0)) / float(scale or 1000.0)
+    rep = S.pattern_curves(sk, int(opts.get("count", 3)), du, dv)
+    if not rep["ok"]:
+        raise ValueError("草图阵列失败：%s" % rep["reason"])
+    syn = SKM.sync_sketch_bodies(kdoc, sk.id, scale)
+    return None, "草图阵列 ×%d（+%d 条曲线，重建 %d 个实体）" % (
+        rep["count"], rep["added"], len(syn.get("updated", [])))
+
+
 def op_sketch_drive(kdoc, opts, scale):
     """R107/A-3: drive one sketch dimension by number (script step).
 
@@ -1083,6 +1143,8 @@ OPS = {
     "asm.mate": op_asm_mate,            # R104/A-1+P1-1: mate / alignment
     "sketch.pull": op_sketch_pull,      # R105: sketch -> solid bridge
     "sketch.drive": op_sketch_drive,    # R107/A-3: drive a dimension
+    "sketch.mirror": op_sketch_mirror,  # R112/A-1: mirror the sketch
+    "sketch.pattern": op_sketch_pattern,  # R112/A-1: linear pattern
 }
 
 

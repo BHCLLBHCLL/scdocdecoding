@@ -123,6 +123,10 @@ class KernelDoc:
         # R110/A-5: the sketch the user was last editing - persisted with the
         # project so resolve_active() points at it again after a reload
         self.active_sketch: Optional[str] = None
+        # R112/A-2: snap radius == weld tolerance (mm).  The library default is
+        # the historic 0.1mm; the viewport writes its snap radius here so
+        # "snapping" and "welding" cannot drift apart (rule 84)
+        self.weld_tol_mm: float = 0.1
         self.sim = None                   # scdm.simprep.SimModel (H8)
         self.named: List[dict] = []  # named selections: {"name": str, "items": [(kind,id)]}
         self.groups: List[dict] = []  # user groups: same shape as named

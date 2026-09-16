@@ -4,6 +4,7 @@ from __future__ import annotations
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtWidgets import (
     QAbstractItemView, QCheckBox, QDoubleSpinBox, QGroupBox, QHBoxLayout,
+    QSpinBox,
     QHeaderView, QLabel, QListWidget, QListWidgetItem, QMenu, QInputDialog,
     QRadioButton, QScrollArea, QSplitter, QStackedWidget, QTableWidget,
     QTableWidgetItem, QTabWidget, QToolButton, QTreeWidget, QTreeWidgetItem,
@@ -183,8 +184,12 @@ class LeftPanel(QWidget):
         self._opt_pages["none"] = (none, [])
         self.opt_stack.addWidget(none)
 
-        def check_spin(cmd, pairs, spins):
-            """Option page with checkboxes + numeric (mm) spinboxes."""
+        def check_spin(cmd, pairs, spins, counts=()):
+            """Option page with checkboxes + numeric (mm) spinboxes + counts.
+
+            `counts` are whole numbers (pattern instances), which is why they
+            are separate from the millimetre spins (R112/A-1).
+            """
             w = QWidget()
             f = QVBoxLayout(w)
             f.setContentsMargins(4, 4, 4, 4)
@@ -206,8 +211,18 @@ class LeftPanel(QWidget):
                 row.addWidget(sb)
                 f.addLayout(row)
                 sp.append(sb)
+            ct = []
+            for label, default in counts:
+                row = QHBoxLayout()
+                row.addWidget(QLabel(label))
+                sb = QSpinBox()
+                sb.setRange(2, 500)
+                sb.setValue(int(default))
+                row.addWidget(sb)
+                f.addLayout(row)
+                ct.append(sb)
             f.addStretch(1)
-            self._opt_pages[cmd] = (w, boxes, sp)
+            self._opt_pages[cmd] = (w, boxes, sp, ct)
             self.opt_stack.addWidget(w)
 
         def checks_nyi(cmd, labels, note):
@@ -240,6 +255,11 @@ class LeftPanel(QWidget):
                    [("距离", 10.0)])
         radios("tool.combine", ["合并", "减去", "相交"])
         checks("mode.sketch", [("草图网格", True), ("捕捉栅格", True)])
+        # R112/A-1: the sketch-only edits (no sketch-entity selection yet, so
+        # mirror is about a sketch axis and the pattern is linear)
+        checks("sketch.mirror", [("关于水平轴", False), ("保留原曲线", True)])
+        check_spin("sketch.pattern", [], [("X 间距", 10.0), ("Y 间距", 0.0)],
+                   [("数量", 3)])
         checks("mode.section", [("剖面显示", True), ("截面可拉", True)])
         checks("tool.split_body", [("保留两侧", True)])
         checks_nyi("tool.fill", ["保留边", "相切连续"],
@@ -283,6 +303,13 @@ class LeftPanel(QWidget):
         page = self._opt_pages.get(cmd)
         if page and len(page) > 2 and 0 <= index < len(page[2]):
             return float(page[2][index].value())
+        return None
+
+    def count_value(self, cmd: str, index: int):
+        """Whole-number option (a pattern count), or None when absent (R112)."""
+        page = self._opt_pages.get(cmd)
+        if page and len(page) > 3 and 0 <= index < len(page[3]):
+            return int(page[3][index].value())
         return None
 
     def show_options(self, cmd: str) -> None:
@@ -414,12 +441,23 @@ class LeftPanel(QWidget):
                     dims = _SKM.dimensions(session.kdoc, sk.id, session.scale)
                 except Exception:
                     dims = []
+                # R112/A-6: an over-constrained sketch says *which* rows fight;
+                # only the active sketch is solved, so the tree stays cheap
+                marks = {}
+                if getattr(session.kdoc, "active_sketch", None) == sk.id:
+                    try:
+                        marks = _SKM.dimension_marks(session.kdoc, sk.id,
+                                                     session.scale)["marks"]
+                    except Exception:
+                        marks = {}
                 for d in dims:
                     # R111/A-1: the index is shown because another dimension
                     # references this one by name ("dim5"), so it has to be
                     # discoverable without reading the file
-                    dn = QTreeWidgetItem(["#%d %s（双击修改）"
-                                          % (d["index"], d["label"])])
+                    mark = marks.get(d["index"], "")
+                    dn = QTreeWidgetItem(["%s#%d %s（双击修改）"
+                                          % (mark + " " if mark else "",
+                                             d["index"], d["label"])])
                     dn.setData(0, Qt.UserRole,
                                ("sketch_dim", sk.id, d["index"]))
                     dn.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)

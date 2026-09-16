@@ -302,11 +302,13 @@ def place_extrusion(solid, mode: str, thickness: float, normal):
     return K.translate(solid, tuple(f * float(n) for n in normal))
 
 
-def min_vertex_gap(sk) -> Optional[float]:
-    """Smallest distance between two distinct sketch vertices (R109/A-1).
+def min_vertex_gap(sk, floor: float = 1e-9) -> Optional[float]:
+    """Smallest **open** distance between two distinct sketch vertices (R109/A-1).
 
     Used to tell "no closed loop because the corners are a hair apart" from
-    "there is nothing to extrude at all".
+    "there is nothing to extrude at all".  Pairs that already coincide (within
+    `floor`) are not a gap: a sketch with three welded corners and one tear used
+    to report 0.0 and lose the tear entirely (R112/A-2).
     """
     pts, _segs, kinds = read_points(sk, with_kinds=True)
     verts = [p for i, p in enumerate(pts) if kinds[i] == "vertex"]
@@ -314,6 +316,8 @@ def min_vertex_gap(sk) -> Optional[float]:
     for i in range(len(verts)):
         for j in range(i + 1, len(verts)):
             d = math.hypot(verts[i][0] - verts[j][0], verts[i][1] - verts[j][1])
+            if d <= floor:
+                continue
             if best is None or d < best:
                 best = d
     return best
@@ -636,6 +640,124 @@ def offset_polygon(pts: Sequence[Point2], distance: float) -> List[Point2]:
         s = distance / cos_half
         out.append([p1[0] + bx / L * s, p1[1] + by / L * s])
     return out
+
+
+#: curve kinds the 2D transforms (mirror / pattern) understand (R112/A-1)
+TRANSFORMABLE = ("line", "poly", "rect", "circle", "point")
+
+
+def transform_curves(sk, fn) -> Dict[str, Any]:
+    """Map every curve of a sketch through `fn(u, v) -> (u, v)` (R112/A-1).
+
+    Returns `{"ok", "reason", "copies", "skipped"}`; the sketch is **not**
+    modified, so the caller decides whether the copies are added.  A kind the
+    2D map does not understand refuses the whole operation by name - a
+    half-mirrored sketch would be worse than a refusal (rule 86).
+    """
+    curves = list(getattr(sk, "curves", []) or [])
+    bad = sorted({c[0] for c in curves if c and c[0] not in TRANSFORMABLE})
+    if bad:
+        n = sum(1 for c in curves if c and c[0] in bad)
+        return {"ok": False, "copies": [], "skipped": bad,
+                "reason": "不支持曲线类型：%s（共 %d 条）" % ("、".join(bad), n)}
+
+    def mp(u, v):
+        mu, mv = fn(float(u), float(v))
+        return [float(mu), float(mv)]
+
+    copies: List[tuple] = []
+    for c in curves:
+        k = c[0]
+        if k == "line":
+            a, b = c[1], c[2]
+            copies.append(("line",
+                           tuple(mp(a[0], a[1]) + [0.0]),
+                           tuple(mp(b[0], b[1]) + [0.0])))
+        elif k == "rect":
+            # two opposite corners map to four corners through a general map,
+            # so a rotated mirror stays correct (a rect is stored as a poly)
+            u1, v1, u2, v2 = (float(c[1][0]), float(c[1][1]),
+                              float(c[2][0]), float(c[2][1]))
+            corners = [(u1, v1), (u2, v1), (u2, v2), (u1, v2)]
+            copies.append(("poly", [mp(u, v) for (u, v) in corners]))
+        elif k == "poly":
+            copies.append(("poly", [mp(p[0], p[1]) for p in c[1]]))
+        elif k == "circle":
+            cen = c[1]
+            copies.append(("circle", tuple(mp(cen[0], cen[1]) + [0.0]),
+                           float(c[2])))
+        else:                                   # point
+            p = c[1]
+            copies.append(("point", tuple(mp(p[0], p[1]) + [0.0])))
+    return {"ok": True, "reason": "", "copies": copies, "skipped": []}
+
+
+def _mirror_fn(axis):
+    """`fn(u, v)` reflecting about a sketch axis or an explicit line."""
+    if axis in ("v", "vertical"):
+        return lambda u, v: (-u, v)
+    if axis in ("u", "horizontal"):
+        return lambda u, v: (u, -v)
+    try:
+        (p0, p1) = axis
+        du, dv = float(p1[0]) - float(p0[0]), float(p1[1]) - float(p0[1])
+    except (TypeError, ValueError):
+        raise ValueError("镜像轴无效：%r（用 u / v 或两点直线）" % (axis,))
+    L = math.hypot(du, dv)
+    if L < 1e-12:
+        raise ValueError("镜像轴长度为零")
+    nx, ny = -dv / L, du / L
+
+    def fn(u, v):
+        d = (u - float(p0[0])) * nx + (v - float(p0[1])) * ny
+        return (u - 2.0 * d * nx, v - 2.0 * d * ny)
+
+    return fn
+
+
+def mirror_curves(sk, axis="v", keep: bool = True) -> Dict[str, Any]:
+    """Mirror a sketch about one of its axes, or about a line (R112/A-1).
+
+    `axis` is "v" (the vertical axis: u -> -u), "u" (the horizontal axis:
+    v -> -v) or a pair of points giving the mirror line.  `keep` keeps the
+    originals, which is what a CAD mirror adds; `keep=False` replaces them.
+    """
+    try:
+        fn = _mirror_fn(axis)
+    except ValueError as exc:
+        return {"ok": False, "added": 0, "reason": str(exc)}
+    rep = transform_curves(sk, fn)
+    if not rep["ok"]:
+        return {"ok": False, "added": 0, "reason": rep["reason"],
+                "skipped": rep["skipped"]}
+    copies = rep["copies"]
+    sk.curves = (list(sk.curves) + copies) if keep else list(copies)
+    return {"ok": True, "added": len(copies), "kept": bool(keep),
+            "axis": axis if isinstance(axis, str) else "line", "reason": ""}
+
+
+def pattern_curves(sk, count: int, du: float, dv: float) -> Dict[str, Any]:
+    """Linear pattern: `count` instances in total (the original included).
+
+    Offsets are in sketch units (metres) per step, so instance `i` carries
+    `i * (du, dv)` - the SpaceClaim "count + spacing" reading (R112/A-1).
+    """
+    count = int(count)
+    if count < 2:
+        return {"ok": False, "added": 0, "reason": "阵列数量必须 ≥ 2（当前 %d）" % count}
+    if abs(float(du)) + abs(float(dv)) < 1e-12:
+        return {"ok": False, "added": 0, "reason": "阵列间距不能为 0"}
+    added: List[tuple] = []
+    for i in range(1, count):
+        off_u, off_v = float(du) * i, float(dv) * i
+        rep = transform_curves(sk, lambda u, v, a=off_u, b=off_v: (u + a, v + b))
+        if not rep["ok"]:
+            return {"ok": False, "added": 0, "reason": rep["reason"],
+                    "skipped": rep["skipped"]}
+        added.extend(rep["copies"])
+    sk.curves = list(sk.curves) + added
+    return {"ok": True, "added": len(added), "count": count,
+            "du": float(du), "dv": float(dv), "reason": ""}
 
 
 def _unit2(x, y):
