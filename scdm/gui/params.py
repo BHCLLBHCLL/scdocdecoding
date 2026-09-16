@@ -73,7 +73,7 @@ def apply_param_text(kdoc, table_text: str, feat_text: str,
     Returns {"table", "edits", "reports", "errors", "done", "failed"}.
     """
     out = {"table": None, "edits": [], "reports": [], "errors": [],
-           "done": [], "failed": []}
+           "done": [], "failed": [], "redrive": None}
     edits, errors = FEAT.parse_edit_lines(feat_text, body_ids(kdoc))
     out["edits"] = edits
     if errors:
@@ -85,6 +85,14 @@ def apply_param_text(kdoc, table_text: str, feat_text: str,
         out["errors"] = ["参数表：%s" % exc]
         return out
     kdoc.param_table = table
+    # R110/A-2: a changed parameter re-resolves every expression dimension, and
+    # the bodies built from those sketches follow
+    from scdm import sketchmode as SKM
+    redrive = SKM.redrive_expressions(kdoc, scale)
+    if redrive["redriven"]:
+        for sk in list(getattr(kdoc, "sketches", []) or []):
+            SKM.sync_sketch_bodies(kdoc, sk.id, scale)
+    out["redrive"] = redrive
     for p in list(getattr(kdoc, "parametrics", []) or []):
         p.table = table
         try:

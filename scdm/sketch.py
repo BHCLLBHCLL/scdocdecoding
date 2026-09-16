@@ -8,7 +8,7 @@ Closed loops (rect or a chain of line segments) are extruded to a solid via OCCT
 from __future__ import annotations
 
 import math
-from typing import List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 Point2 = List[float]  # mutable [x, y]
 
@@ -416,8 +416,35 @@ def read_points(sk, with_kinds: bool = False):
     return (pts, segments, kinds) if with_kinds else (pts, segments)
 
 
-def write_points(sk, pts) -> None:
-    """Write solved variables back into the sketch curves (R107/A-3)."""
+def read_circles(sk) -> Dict[int, float]:
+    """The solver's radius variables: {centre_point_index: radius} (R110/A-1).
+
+    The LM solver keeps circle radii in a separate variable set (`circles`), so a
+    (RADIUS, centre, value) constraint can drive them; this maps a sketch's
+    circles onto that layout.  It stays empty for sketches without circles, which
+    keeps the solver's DOF count unchanged for them.
+    """
+    out: Dict[int, float] = {}
+    idx = 0
+    for c in sk.curves:
+        if c[0] in ("line", "rect"):
+            idx += 2
+        elif c[0] == "circle":
+            out[idx] = float(c[2])
+            idx += 2
+        elif c[0] == "poly":
+            idx += len(c[1])
+    return out
+
+
+def write_points(sk, pts, circles=None) -> None:
+    """Write solved variables back into the sketch curves (R107/A-3).
+
+    R110/A-1: a circle's radius comes back from its handle point - or from the
+    solver's `circles` mapping when a radius constraint drove it.  Before this,
+    driving a circle's centre -> handle distance moved the handle but left the
+    stored radius alone, so the circle never actually grew.
+    """
     idx = 0
     for i, c in enumerate(sk.curves):
         if c[0] in ("line", "rect"):
@@ -426,7 +453,18 @@ def write_points(sk, pts) -> None:
             sk.curves[i] = (c[0], p1, p2)
             idx += 2
         elif c[0] == "circle":
-            sk.curves[i] = (c[0], tuple(pts[idx])[:2] + (c[1][2],), c[2])
+            centre = pts[idx]
+            handle = pts[idx + 1] if idx + 1 < len(pts) else None
+            cz = float(c[1][2]) if len(c[1]) > 2 else 0.0
+            r = None
+            if circles and idx in circles:
+                r = float(circles[idx])
+            if r is None and handle is not None:
+                r = math.hypot(handle[0] - centre[0], handle[1] - centre[1])
+            if r is None or r <= 0:
+                r = float(c[2])
+            sk.curves[i] = (c[0], (float(centre[0]), float(centre[1]), cz),
+                            float(r))
             idx += 2
         elif c[0] == "poly":
             n = len(c[1])

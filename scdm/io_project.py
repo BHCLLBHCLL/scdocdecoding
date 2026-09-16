@@ -55,6 +55,8 @@ def save_scdm(path: str, kdoc: KernelDoc) -> None:
         "groups": [{"name": n.get("name", ""),
                     "items": [list(it) for it in n.get("items", [])]}
                    for n in getattr(kdoc, "groups", [])],
+        # R110/A-5: the sketch the user was editing (for resolve_active)
+        "active_sketch": getattr(kdoc, "active_sketch", None),
         "features": {bid: stack.as_dict()
                      for bid, stack in getattr(kdoc, "features", {}).items()
                      if len(stack)},
@@ -133,6 +135,7 @@ def load_scdm(path: str) -> KernelDoc:
             except Exception:
                 pass
         doc._n = max_n
+    doc.active_sketch = man.get("active_sketch")   # R110/A-5
     doc.notes = [dict(n) for n in man.get("notes", [])]
     doc.named = [{"name": n.get("name", ""),
                   "items": [tuple(it) for it in n.get("items", [])]}

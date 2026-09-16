@@ -2354,8 +2354,10 @@ else:
                              feature=e["index"], param=e["param"],
                              value=r["value"])
             n_expr = len(rep["table"].names()) if rep["table"] else 0
-            self._commit("参数已更新：%d 个表达式 + %d 个特征参数"
-                         % (n_expr, len(rep["done"])))
+            snapped = (rep.get("redrive") or {}).get("redriven", 0)
+            self._commit("参数已更新：%d 个表达式 + %d 个特征参数%s"
+                         % (n_expr, len(rep["done"]),
+                            "，重解 %d 个草图尺寸" % snapped if snapped else ""))
             if rep["failed"]:
                 QMessageBox.warning(self, "特征参数", chr(10).join(
                     "%s #%s %s：%s" % (r["body"], r["index"], r["param"],
@@ -3983,18 +3985,26 @@ else:
             if row is None:
                 self._set_status("该尺寸不可驱动（或草图已不存在）")
                 return
-            vals = self._ask_numbers("驱动尺寸", [("尺寸 mm", row["value_mm"])])
-            if not vals:
+            text = self._ask_text(
+                "驱动尺寸",
+                "尺寸 mm（可输入表达式，例如 2*d）：%s" % row["label"])
+            if not text:
                 return
-            rep = SKM.set_dimension(ses.kdoc, sketch_id, index, vals[0], ses.scale)
+            try:
+                value = float(text)
+            except ValueError:
+                value = text            # R110/A-2: an expression, not a number
+            rep = SKM.set_dimension(ses.kdoc, sketch_id, index, value, ses.scale)
             if not rep["ok"]:
                 QMessageBox.warning(self, "驱动尺寸", rep["reason"])
                 self._set_status("尺寸未改动：%s" % rep["reason"])
                 return
             n = self._sync_sketch_bodies(sketch_id)
-            self._record("sketch.drive", index=index, value_mm=vals[0])
-            self._commit("尺寸 %gmm（剩余自由度 %s，重建 %d 个实体）"
-                         % (vals[0], rep["dof"], n))
+            self._record("sketch.drive", index=index, value_mm=rep["value_mm"])
+            self._commit("尺寸 %gmm%s（剩余自由度 %s，重建 %d 个实体）"
+                         % (rep["value_mm"],
+                            "＝" + rep["expr"] if rep.get("expr") else "",
+                            rep["dof"], n))
 
         def _sync_sketch_bodies(self, sketch_id=None) -> int:
             """R106/B-1: rebuild the bodies that were extruded from this sketch.
@@ -4121,6 +4131,7 @@ else:
             self.tools.set_mode("mode.sketch", "M3", True)
             self.ribbon.set_checked("mode.sketch", True)
             self._show_sketch_tab(True)
+            ses.kdoc.active_sketch = sk.id      # R110/A-5
             self._set_mode_chip("草图模式 · %s" % self._sketch_session.label())
             stale = self._sketch_session.stale(ses.kdoc)
             label = self._sketch_session.label()

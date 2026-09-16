@@ -120,6 +120,9 @@ class KernelDoc:
         # recompute on demand, only the REPORT leaves the session)
         self.meshes: Dict[str, Any] = {}
         self.param_table = None           # scdm.params.ParamTable (optional)
+        # R110/A-5: the sketch the user was last editing - persisted with the
+        # project so resolve_active() points at it again after a reload
+        self.active_sketch: Optional[str] = None
         self.sim = None                   # scdm.simprep.SimModel (H8)
         self.named: List[dict] = []  # named selections: {"name": str, "items": [(kind,id)]}
         self.groups: List[dict] = []  # user groups: same shape as named

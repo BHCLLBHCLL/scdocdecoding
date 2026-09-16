@@ -86,6 +86,12 @@ def resolve_active(kdoc, session: Optional["SketchSession"] = None):
         sk = find_sketch(kdoc, session.sketch_id)
         if sk is not None:
             return sk, ""
+    # R110/A-5: the document remembers the sketch that was being edited
+    active = getattr(kdoc, "active_sketch", None)
+    if active:
+        sk = find_sketch(kdoc, active)
+        if sk is not None:
+            return sk, ""
     sks = list(getattr(kdoc, "sketches", []) or [])
     if not sks:
         return None, "没有草图：先用草图工具画一个轮廓"
@@ -147,46 +153,144 @@ def loop_curves(loop: tuple) -> list:
         return [("circle", tuple(loop[1]), float(loop[2]))]
     return [("poly", [list(p) for p in (loop[1] if loop else [])])]
 
-#: constraint kinds this module can *drive* (R107/A-3).
-#: A circle's size is driven through its centre -> radius-handle distance, which
-#: is exactly what the sketch Dimension command creates, so `dist` covers it;
-#: `radius` would need the solver's circles mapping and is not offered yet.
-DIM_KINDS = ("dist",)
+#: constraint kinds this module can *drive* (R110/A-1 adds the radius)
+DIM_KINDS = ("dist", "radius")
+
+#: human labels per dimension kind
+DIM_LABELS = {"dist": "距离", "radius": "半径"}
 
 
-def dimensions(kdoc, sketch_id: str, scale: float = 1000.0) -> List[dict]:
-    """The drivable dimensions of a sketch, values in millimetres (R107/A-3)."""
-    sk = find_sketch(kdoc, sketch_id)
-    if sk is None:
-        return []
-    out = []
-    for i, c in enumerate(getattr(sk, "constraints", []) or []):
-        if not c or len(c) < 4 or c[0] not in DIM_KINDS:
-            continue
+def _param_namespace(kdoc) -> Dict[str, float]:
+    """The document's parameter values, or {} when there is no table."""
+    table = getattr(kdoc, "param_table", None)
+    if table is None:
+        return {}
+    try:
+        return table.resolve()
+    except Exception:
+        return {}
+
+
+def _dim_value_index(c) -> int:
+    """Where the driven value sits: (dist, i, j, v) vs (radius, centre, v)."""
+    return 2 if (c and c[0] == "radius") else 3
+
+
+def _resolve_value_mm(kdoc, raw, scale: float):
+    """(target_metres, expression_or_None, reason) for a dimension value.
+
+    A number is millimetres (what the UI and the scripts pass); an expression
+    (R110/A-2, e.g. "2*d") is evaluated against the parameter table, which is also
+    in millimetres.
+    """
+    from scdm.params import eval_expr
+    if isinstance(raw, str):
         try:
-            v = float(c[3])
-        except (TypeError, ValueError):
-            continue
-        out.append({"index": i, "kind": c[0], "value_mm": v * scale,
-                    "label": "距离 %gmm" % (v * scale)})
+            mm = float(eval_expr(raw, _param_namespace(kdoc)))
+        except Exception as exc:
+            return None, raw, "表达式无法求值：%s（%s）" % (exc, raw)
+        return mm / float(scale or 1000.0), raw, ""
+    try:
+        mm = float(raw)
+    except (TypeError, ValueError):
+        return None, None, "尺寸值不是数字或表达式：%r" % (raw,)
+    return mm / float(scale or 1000.0), None, ""
+
+
+def _solver_rows(sk, ns, scale: float) -> list:
+    """Constraint rows with expression values resolved to metres (R110/A-2).
+
+    The stored rows keep the expression as written (readable, and it re-resolves
+    whenever the table changes); the solver needs numbers, and its unit is metres.
+    """
+    from scdm.params import eval_expr
+    out = []
+    for x in getattr(sk, "constraints", []) or []:
+        if x and x[0] in DIM_KINDS:
+            vi = _dim_value_index(x)
+            if len(x) > vi and isinstance(x[vi], str):
+                y = list(x)
+                y[vi] = float(eval_expr(x[vi], ns)) / float(scale or 1000.0)
+                out.append(tuple(y))
+                continue
+        out.append(x)
     return out
 
 
-def set_dimension(kdoc, sketch_id: str, index: int, value_mm: float,
+def dimensions(kdoc, sketch_id: str, scale: float = 1000.0) -> List[dict]:
+    """The drivable dimensions of a sketch, values in millimetres (R110).
+
+    Distance and radius rows are listed; an expression row also carries its raw
+    text, so a UI can show it next to the resolved value.  A numeric row is stored
+    in metres (the solver's unit) and an expression in millimetres (the parameter
+    table's unit) - the conversion happens here.
+    """
+    from scdm.params import eval_expr
+    sk = find_sketch(kdoc, sketch_id)
+    if sk is None:
+        return []
+    ns = _param_namespace(kdoc)
+    out = []
+    for i, c in enumerate(getattr(sk, "constraints", []) or []):
+        if not c or c[0] not in DIM_KINDS:
+            continue
+        vi = _dim_value_index(c)
+        if len(c) <= vi:
+            continue
+        raw = c[vi]
+        expr = raw if isinstance(raw, str) else None
+        try:
+            mm = float(eval_expr(raw, ns)) if expr else float(raw) * scale
+        except Exception:
+            continue
+        out.append({"index": i, "kind": c[0], "value_mm": mm, "expr": expr,
+                    "label": "%s %gmm%s" % (DIM_LABELS.get(c[0], c[0]), mm,
+                                            ("（%s）" % expr) if expr else "")})
+    return out
+
+
+def redrive_expressions(kdoc, scale: float = 1000.0) -> Dict[str, Any]:
+    """Re-solve every expression dimension after the parameter table changed.
+
+    This is what makes "change d in the parameter dialog" move the sketch (and the
+    bodies built from it) - the expression is stored on the constraint, so it only
+    has to be driven again with the resolved value.
+    """
+    out: Dict[str, Any] = {"ok": True, "reason": "", "redriven": 0, "failed": []}
+    for sk in list(getattr(kdoc, "sketches", []) or []):
+        for dim in dimensions(kdoc, sk.id, scale):
+            if not dim["expr"]:
+                continue
+            rep = set_dimension(kdoc, sk.id, dim["index"], dim["expr"], scale)
+            if rep["ok"]:
+                out["redriven"] += 1
+            else:
+                out["failed"].append((sk.id, dim["index"], rep["reason"]))
+    if out["failed"]:
+        out["ok"] = False
+        out["reason"] = "；".join("%s#%s：%s" % f for f in out["failed"])
+    return out
+
+
+def set_dimension(kdoc, sketch_id: str, index: int, value_mm,
                   scale: float = 1000.0) -> Dict[str, Any]:
     """Drive one sketch dimension: re-solve and write the points back (A-3).
+
+    ``value_mm`` is a number in millimetres or an **expression** (R110/A-2) such as
+    "2*d", resolved against the document's parameter table; the expression is
+    stored on the constraint, so it re-resolves whenever the table changes.
 
     Uses the Levenberg-Marquardt solver (not the legacy relaxation) because a
     *driven* dimension has to land on its target tightly - the acceptance is a
     closed-form volume.  Atomic: a solve that misses the target restores both the
-    constraint and the curves, so a failed drive never leaves a half-solved
-    sketch behind.
+    constraint and the curves, so a failed drive never leaves a half-solved sketch.
     """
     from scdm import sketch as S
     from scdm.sketch_solver import solve_report
     rep: Dict[str, Any] = {"ok": False, "reason": "", "index": index,
-                           "old_mm": None, "value_mm": float(value_mm),
-                           "label": "", "dof": None, "residual": None}
+                           "old_mm": None, "value_mm": None, "expr": None,
+                           "label": "", "dof": None, "residual": None,
+                           "welded": 0, "welded_moved": 0}
     sk = find_sketch(kdoc, sketch_id)
     if sk is None:
         rep["reason"] = "草图不存在：%s" % sketch_id
@@ -196,47 +300,56 @@ def set_dimension(kdoc, sketch_id: str, index: int, value_mm: float,
         rep["reason"] = "标注序号越界：%s" % index
         return rep
     c = list(cons[index])
-    if len(c) < 4 or c[0] not in DIM_KINDS:
+    if not c or c[0] not in DIM_KINDS:
         rep["reason"] = "该约束不是可驱动尺寸：%s" % (c[0] if c else "?")
         return rep
-    try:
-        target = float(value_mm) / float(scale or 1.0)
-    except (TypeError, ValueError):
-        rep["reason"] = "尺寸值不是数字：%r" % (value_mm,)
+    vi = _dim_value_index(c)
+    if len(c) <= vi:
+        rep["reason"] = "该尺寸约束缺少数值：%s" % (c,)
+        return rep
+    target, expr, why = _resolve_value_mm(kdoc, value_mm, scale)
+    if target is None:
+        rep["reason"] = why
         return rep
     if target <= 0:
         rep["reason"] = "尺寸必须大于 0"
         return rep
-    rep["old_mm"] = float(c[3]) * scale
-    rep["label"] = "距离 %gmm" % float(value_mm)
+    old = c[vi]
+    rep["old_mm"] = float(old) * scale if not isinstance(old, str) else None
+    rep["value_mm"] = target * scale
+    rep["expr"] = expr
+    rep["label"] = "%s %gmm" % (DIM_LABELS.get(c[0], c[0]), target * scale)
     saved_curves = list(sk.curves)
-    # R108/A-1: weld touching vertices *before* solving - separately drawn lines
-    # only meet in coordinates, and a solve without COINCIDENT tears the outline
-    # open.  The welds are kept even if the drive itself fails (they are a repair,
-    # not part of the edit), so the snapshot below is taken after welding.
+    # R108/A-1 + R109/A-1: weld touching vertices before solving; the welds are a
+    # repair and survive a failed drive, so the constraint snapshot comes after
     weld_report: Dict[str, Any] = {}
     rep["welded"] = int(S.weld_coincident(sk, tol=0.1 / float(scale or 1000.0),
                                           report=weld_report))
     rep["welded_moved"] = int(weld_report.get("moved", 0))
     saved_cons = list(sk.constraints)
-    c[3] = target
+    c[vi] = expr if expr else target     # keep the expression, else store metres
     sk.constraints[index] = tuple(c)
     try:
         pts, segs = S.read_points(sk)
-        report = solve_report(pts, sk.constraints, segments=segs, max_iter=200)
+        has_radius = any(x and x[0] == "radius" for x in sk.constraints)
+        circles = S.read_circles(sk) if has_radius else None
+        report = solve_report(pts, _solver_rows(sk, _param_namespace(kdoc), scale),
+                              segments=segs, circles=circles, max_iter=200)
         rep["dof"] = int(getattr(report, "dof", -1))
         rep["residual"] = float(getattr(report, "max_residual", -1.0))
-        # verify the driven dimension itself, not just the solver's own residual
-        i, j = int(c[1]), int(c[2])
-        if i >= len(pts) or j >= len(pts):
-            raise ValueError("尺寸引用的点不存在")
-        got = math.hypot(pts[j][0] - pts[i][0], pts[j][1] - pts[i][1])
+        i = int(c[1])
+        if c[0] == "radius":
+            got = float(circles.get(i, 0.0)) if circles else 0.0
+        else:
+            j = int(c[2])
+            if i >= len(pts) or j >= len(pts):
+                raise ValueError("尺寸引用的点不存在")
+            got = math.hypot(pts[j][0] - pts[i][0], pts[j][1] - pts[i][1])
         if abs(got - target) > 1e-6 * target + 1e-9:
-            raise ValueError("求解未落到目标尺寸（%.6g vs %.6g m）"
-                             % (got, target))
+            raise ValueError("求解未落到目标尺寸（%.6g vs %.6g m）" % (got, target))
         if not getattr(report, "converged", True):
             raise ValueError("求解未收敛：%s" % getattr(report, "message", ""))
-        S.write_points(sk, pts)
+        S.write_points(sk, pts, circles=circles)
     except Exception as exc:
         sk.curves = saved_curves
         sk.constraints = saved_cons
@@ -347,6 +460,7 @@ def extrude_active(kdoc, height_mm: float, scale: float = 1000.0,
     if not sk.curves:
         out["reason"] = "草图没有曲线"
         return out
+    kdoc.active_sketch = sk.id          # R110/A-5: remembered by the document
     h = float(height_mm) / float(scale)
     if h <= 0:
         out["reason"] = "拉伸高度必须大于 0"
