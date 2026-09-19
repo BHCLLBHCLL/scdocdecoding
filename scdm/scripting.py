@@ -1028,41 +1028,71 @@ def _op_sketch(kdoc, opts):
 
 
 def op_sketch_mirror(kdoc, opts, scale):
-    """R112/A-1: mirror the sketch about an axis (script step).
+    """R112/A-1 + R113/A-1: mirror the sketch about an axis (script step).
 
     opts: sketch = sketch index (default: the active one), axis = "u" (the
     horizontal axis) or "v" (the vertical axis, the default), keep = keep the
     original curves (default True, which is what a CAD mirror adds).
+
+    R113/A-1 adds two ways to name the axis from geometry, both in millimetres:
+    `axis_line_mm = [u0, v0, u1, v1]` (an explicit line) and `pick_mm = [u, v]`
+    with `pick_tol_mm` (the sketch edge nearest that pick).
     """
     from scdm import sketch as S
     from scdm import sketchmode as SKM
     sk = _op_sketch(kdoc, opts)
-    rep = S.mirror_curves(sk, str(opts.get("axis", "v")),
-                          keep=bool(opts.get("keep", True)))
+    sc = float(scale or 1000.0)
+    axis = opts.get("axis", "v")
+    line = opts.get("axis_line_mm")
+    pick = opts.get("pick_mm")
+    if pick is not None:
+        tol = float(opts.get("pick_tol_mm", 5.0)) / sc
+        near = S.nearest_segment(sk, [float(pick[0]) / sc, float(pick[1]) / sc],
+                                 tol)
+        if near is None:
+            raise ValueError("草图镜像：拾取点附近没有可作为轴的直线")
+        line = [near[0][0] * sc, near[0][1] * sc, near[1][0] * sc, near[1][1] * sc]
+    if line is not None:
+        if len(line) != 4:
+            raise ValueError("草图镜像：axis_line_mm 需要 4 个数（u0,v0,u1,v1）")
+        axis = ((float(line[0]) / sc, float(line[1]) / sc),
+                (float(line[2]) / sc, float(line[3]) / sc))
+    rep = S.mirror_curves(sk, axis, keep=bool(opts.get("keep", True)))
     if not rep["ok"]:
         raise ValueError("草图镜像失败：%s" % rep["reason"])
     syn = SKM.sync_sketch_bodies(kdoc, sk.id, scale)
-    return None, "草图镜像（%s 轴，+%d 条曲线，重建 %d 个实体）" % (
-        rep["axis"], rep["added"], len(syn.get("updated", [])))
+    return None, "草图镜像（%s，+%d 条曲线，重建 %d 个实体）" % (
+        "以直线为轴" if rep["axis"] == "line" else "%s 轴" % rep["axis"],
+        rep["added"], len(syn.get("updated", [])))
 
 
 def op_sketch_pattern(kdoc, opts, scale):
-    """R112/A-1: linear pattern of the sketch curves (script step).
+    """R112/A-1 + R113/A-2: linear or circular pattern of the sketch curves.
 
     opts: sketch = sketch index, count = instances in total (the original
-    included, default 3), dx_mm / dy_mm = spacing per step in millimetres.
+    included, default 3), mode = "linear" (default) or "circular",
+    dx_mm / dy_mm = spacing per step (linear), cu_mm / cv_mm = the centre and
+    sweep_deg = the angle from the first instance to the last (circular).
     """
     from scdm import sketch as S
     from scdm import sketchmode as SKM
     sk = _op_sketch(kdoc, opts)
-    du = float(opts.get("dx_mm", 10.0)) / float(scale or 1000.0)
-    dv = float(opts.get("dy_mm", 0.0)) / float(scale or 1000.0)
-    rep = S.pattern_curves(sk, int(opts.get("count", 3)), du, dv)
+    sc = float(scale or 1000.0)
+    mode = str(opts.get("mode", "linear"))
+    du = float(opts.get("dx_mm", 10.0)) / sc
+    dv = float(opts.get("dy_mm", 0.0)) / sc
+    center = (float(opts.get("cu_mm", 0.0)) / sc,
+              float(opts.get("cv_mm", 0.0)) / sc)
+    rep = S.pattern_curves(sk, int(opts.get("count", 3)), du, dv, mode=mode,
+                           center=center, sweep_deg=float(opts.get("sweep_deg",
+                                                                  360.0)))
     if not rep["ok"]:
         raise ValueError("草图阵列失败：%s" % rep["reason"])
     syn = SKM.sync_sketch_bodies(kdoc, sk.id, scale)
-    return None, "草图阵列 ×%d（+%d 条曲线，重建 %d 个实体）" % (
-        rep["count"], rep["added"], len(syn.get("updated", [])))
+    what = ("圆周 %.3g°" % rep["sweep_deg"]) if rep["mode"] == "circular" \
+        else "线性"
+    return None, "草图阵列 ×%d（%s，+%d 条曲线，重建 %d 个实体）" % (
+        rep["count"], what, rep["added"], len(syn.get("updated", [])))
 
 
 def op_sketch_drive(kdoc, opts, scale):

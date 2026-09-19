@@ -736,28 +736,62 @@ def mirror_curves(sk, axis="v", keep: bool = True) -> Dict[str, Any]:
             "axis": axis if isinstance(axis, str) else "line", "reason": ""}
 
 
-def pattern_curves(sk, count: int, du: float, dv: float) -> Dict[str, Any]:
-    """Linear pattern: `count` instances in total (the original included).
+def pattern_curves(sk, count: int, du: float = 0.0, dv: float = 0.0,
+                   mode: str = "linear", center=None,
+                   sweep_deg: float = 360.0) -> Dict[str, Any]:
+    """Pattern of the sketch curves: `count` instances, original included.
 
-    Offsets are in sketch units (metres) per step, so instance `i` carries
-    `i * (du, dv)` - the SpaceClaim "count + spacing" reading (R112/A-1).
+    `linear` (R112/A-1) steps by `i * (du, dv)` in sketch units - the
+    SpaceClaim "count + spacing" reading.  `circular` (R113/A-2) rotates the
+    copies about `center` by `i * sweep / (count - 1)` degrees, so `sweep_deg`
+    is the angle **from the first instance to the last** (360 with 4 instances
+    gives even quarters).
     """
     count = int(count)
     if count < 2:
-        return {"ok": False, "added": 0, "reason": "阵列数量必须 ≥ 2（当前 %d）" % count}
-    if abs(float(du)) + abs(float(dv)) < 1e-12:
-        return {"ok": False, "added": 0, "reason": "阵列间距不能为 0"}
+        return {"ok": False, "added": 0,
+                "reason": "阵列数量必须 ≥ 2（当前 %d）" % count}
+    kind = "linear" if mode in (None, "", "linear") else str(mode)
+    fns: List[Any] = []
+    if kind == "linear":
+        if abs(float(du)) + abs(float(dv)) < 1e-12:
+            return {"ok": False, "added": 0, "reason": "阵列间距不能为 0"}
+        for i in range(1, count):
+            a, b = float(du) * i, float(dv) * i
+            fns.append(lambda u, v, a=a, b=b: (u + a, v + b))
+    elif kind == "circular":
+        try:
+            cu, cv = float(center[0]), float(center[1])
+        except (TypeError, IndexError, ValueError):
+            return {"ok": False, "added": 0,
+                    "reason": "圆周阵列需要圆心（center=(u, v)）"}
+        sweep = float(sweep_deg)
+        if abs(sweep) < 1e-9:
+            return {"ok": False, "added": 0, "reason": "圆周阵列的总角度不能为 0"}
+        step = math.radians(sweep / float(count - 1))
+        for i in range(1, count):
+            ca, sa = math.cos(step * i), math.sin(step * i)
+            fns.append(lambda u, v, cu=cu, cv=cv, ca=ca, sa=sa: (
+                cu + (u - cu) * ca - (v - cv) * sa,
+                cv + (u - cu) * sa + (v - cv) * ca))
+    else:
+        return {"ok": False, "added": 0,
+                "reason": "未知阵列方式：%s（linear / circular）" % mode}
     added: List[tuple] = []
-    for i in range(1, count):
-        off_u, off_v = float(du) * i, float(dv) * i
-        rep = transform_curves(sk, lambda u, v, a=off_u, b=off_v: (u + a, v + b))
+    for fn in fns:
+        rep = transform_curves(sk, fn)
         if not rep["ok"]:
             return {"ok": False, "added": 0, "reason": rep["reason"],
                     "skipped": rep["skipped"]}
         added.extend(rep["copies"])
     sk.curves = list(sk.curves) + added
-    return {"ok": True, "added": len(added), "count": count,
-            "du": float(du), "dv": float(dv), "reason": ""}
+    out: Dict[str, Any] = {"ok": True, "added": len(added), "count": count,
+                           "mode": kind, "du": float(du), "dv": float(dv),
+                           "reason": ""}
+    if kind == "circular":
+        out.update(center=[float(center[0]), float(center[1])],
+                   sweep_deg=float(sweep_deg), step_deg=float(sweep) / (count - 1))
+    return out
 
 
 def _unit2(x, y):
@@ -819,6 +853,35 @@ def snap_uv(uv, points, segments, tol, snap_end: bool = True,
     if grid_step and grid_step > 0:
         return [round(v / grid_step) * grid_step for v in uv], "grid"
     return [float(uv[0]), float(uv[1])], None
+
+
+def nearest_segment(sk, pick, tol: float):
+    """The sketch edge nearest to `pick` within `tol` (R113/A-1).
+
+    A picked line - or one edge of a rectangle / polyline - can act as a mirror
+    axis, which is the interaction the sketch tools already use (trim takes a
+    pick too).  Circles and points have no axis, so they are not candidates.
+    Returns `(a, b, distance)` or None.
+    """
+    best = None
+    for c in getattr(sk, "curves", []) or []:
+        segs = []
+        if c[0] == "line":
+            segs.append(((float(c[1][0]), float(c[1][1])),
+                         (float(c[2][0]), float(c[2][1]))))
+        elif c[0] == "rect":
+            u1, v1, u2, v2 = (float(c[1][0]), float(c[1][1]),
+                              float(c[2][0]), float(c[2][1]))
+            corners = [(u1, v1), (u2, v1), (u2, v2), (u1, v2)]
+            segs += [(corners[i], corners[(i + 1) % 4]) for i in range(4)]
+        elif c[0] == "poly":
+            pts = [(float(p[0]), float(p[1])) for p in c[1]]
+            segs += [(pts[i], pts[(i + 1) % len(pts)]) for i in range(len(pts))]
+        for (a, b) in segs:
+            d, _t = point_segment_distance(pick, a, b)
+            if d <= tol and (best is None or d < best[2]):
+                best = (a, b, d)
+    return best
 
 
 def _seg_intersection(a, b, c, d, eps: float = 1e-12):

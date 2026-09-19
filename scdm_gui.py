@@ -3547,11 +3547,13 @@ else:
                           else "已偏移闭环轮廓")
 
         def _do_sketch_mirror(self):
-            """R112/A-1: mirror the sketch curves about a sketch axis.
+            """R112/A-1 + R113/A-1: mirror about a sketch axis or a picked line.
 
             Options: index 0 = about the horizontal axis (default: vertical),
-            index 1 = keep the original curves.  Replacing the curves is refused
-            while dimensions exist, because their indices address the curves.
+            index 1 = keep the original curves, index 2 = use the sketch edge
+            nearest the last click as the axis (default on).  Replacing the
+            curves is refused while dimensions exist, because their indices
+            address the curves.
             """
             ses = self.session()
             if not self._need_kernel():
@@ -3561,8 +3563,18 @@ else:
             if sk is None:
                 self._set_status("镜像：%s（先进入草图）" % (why or "文档里没有草图"))
                 return
+            scale = float(ses.scale or 1000.0)
             axis = "u" if self.left.is_checked("sketch.mirror", 0) else "v"
             keep = bool(self.left.is_checked("sketch.mirror", 1))
+            source = "关于%s轴" % ("水平" if axis == "u" else "竖直")
+            if self.left.is_checked("sketch.mirror", 2):       # R113/A-1
+                recent = getattr(self, "_sketch_recent", [])
+                if recent:
+                    tol = (float(getattr(self.sel, "snap_radius_mm", 5.0)) / scale)
+                    near = S.nearest_segment(sk, recent[0], tol)
+                    if near is not None:
+                        axis = (near[0], near[1])
+                        source = "以拾取直线为轴（距拾取点 %.3gmm）" % (near[2] * scale)
             if not keep and any(c and c[0] in SKM.DIM_KINDS
                                 for c in sk.constraints):
                 self._set_status("镜像：草图已有尺寸，替换原曲线会打乱尺寸序号 - "
@@ -3572,19 +3584,26 @@ else:
             if not rep["ok"]:
                 self._set_status("镜像失败：%s" % rep["reason"])
                 return
-            self._record("sketch.mirror", axis=axis, keep=keep)
+            if isinstance(axis, tuple):                        # replay by line
+                self._record("sketch.mirror", keep=keep, axis_line_mm=[
+                    axis[0][0] * scale, axis[0][1] * scale,
+                    axis[1][0] * scale, axis[1][1] * scale])
+            else:
+                self._record("sketch.mirror", axis=axis, keep=keep)
             n = self._sync_sketch_bodies(sk.id)          # R106/B-1
-            self._rebuild("已镜像 %d 条曲线（%s轴%s）%s"
-                          % (rep["added"], "水平" if axis == "u" else "竖直",
+            self._rebuild("已镜像 %d 条曲线（%s%s）%s"
+                          % (rep["added"], source,
                              "，保留原曲线" if keep else "，替换原曲线",
                              "，重建 %d 个实体" % n if n else "")
                           + self._extra_loop_hint())
 
         def _do_sketch_pattern(self):
-            """R112/A-1: linear pattern of the sketch curves (count + spacing).
+            """R112/A-1 + R113/A-2: linear or circular pattern of the curves.
 
-            The count includes the original (SpaceClaim reading) and the spacing
+            The count includes the original (SpaceClaim reading) and every length
             is in millimetres, converted here - the library works in metres.
+            Option index 0 switches to a circular pattern; the centre and the
+            total angle come from the page as well.
             """
             ses = self.session()
             if not self._need_kernel():
@@ -3598,16 +3617,30 @@ else:
             dx = self.left.spin_value("sketch.pattern", 0)
             dy = self.left.spin_value("sketch.pattern", 1)
             scale = float(ses.scale or 1000.0)
-            rep = S.pattern_curves(sk, int(count), float(dx or 0.0) / scale,
-                                   float(dy or 0.0) / scale)
+            if self.left.is_checked("sketch.pattern", 0):       # R113/A-2
+                cu = self.left.spin_value("sketch.pattern", 2) or 0.0
+                cv = self.left.spin_value("sketch.pattern", 3) or 0.0
+                sweep = self.left.spin_value("sketch.pattern", 4)
+                sweep = 360.0 if sweep is None else float(sweep)
+                rep = S.pattern_curves(sk, int(count), mode="circular",
+                                       center=(cu / scale, cv / scale),
+                                       sweep_deg=sweep)
+                what = "圆周 %.3g°" % sweep
+            else:
+                rep = S.pattern_curves(sk, int(count), float(dx or 0.0) / scale,
+                                       float(dy or 0.0) / scale)
+                what = "线性"
             if not rep["ok"]:
                 self._set_status("阵列失败：%s" % rep["reason"])
                 return
-            self._record("sketch.pattern", count=int(count),
-                         dx_mm=float(dx or 0.0), dy_mm=float(dy or 0.0))
+            self._record("sketch.pattern", count=int(count), mode=rep["mode"],
+                         dx_mm=float(dx or 0.0), dy_mm=float(dy or 0.0),
+                         cu_mm=float(self.left.spin_value("sketch.pattern", 2) or 0.0),
+                         cv_mm=float(self.left.spin_value("sketch.pattern", 3) or 0.0),
+                         sweep_deg=float(rep.get("sweep_deg", 360.0)))
             n = self._sync_sketch_bodies(sk.id)          # R106/B-1
-            self._rebuild("已阵列 ×%d（+%d 条曲线）%s"
-                          % (rep["count"], rep["added"],
+            self._rebuild("已阵列 ×%d（%s，+%d 条曲线）%s"
+                          % (rep["count"], what, rep["added"],
                              "，重建 %d 个实体" % n if n else "")
                           + self._extra_loop_hint())
 

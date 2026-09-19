@@ -202,12 +202,14 @@ def _dim_value_index(c) -> int:
     return 2 if (c and c[0] == "radius") else 3
 
 
-def _expr_reason(cons, raw, exc) -> str:
+def _expr_reason(cons, raw, exc, extra_names=()) -> str:
     """Why an expression failed, naming the indices that *can* be referenced.
 
     R111/A-1: ``dimN`` binds to the **constraint index**, and only a ``dist`` or
     ``radius`` row carries a value.  A user who names a geometric row (or a
     stale index) needs that mapping - "unknown parameter" alone is not fixable.
+    R113/A-5 adds ``<sketch>_dimN`` for the other sketches, passed in as
+    *extra_names* so the list is complete.
     """
     import re
     named = sorted({int(m.group(1)) for m in re.finditer(r"\bdim(\d+)\b", str(raw))})
@@ -224,18 +226,53 @@ def _expr_reason(cons, raw, exc) -> str:
     elif outside:
         head = "尺寸序号越界：%s（本草图共 %d 条约束）" % (
             "、".join("dim%d" % n for n in outside), len(cons))
-    tail = "；可引用的尺寸：%s" % ("、".join("dim%d" % i for i in available)
-                                  if available else "无")
+    names = ["dim%d" % i for i in available]
+    names += ["%s_dim%d" % (s, i) for (s, i) in extra_names]
+    tail = "；可引用的尺寸：%s" % ("、".join(names) if names else "无")
     return head + tail
 
 
-def _dim_value_mm(kdoc, sk, index: int, scale: float, seen=None):
+def _dim_token_refs(raw):
+    """[(sketch_id | None, constraint index)] named by an expression (R113/A-5).
+
+    ``dim3`` is the current sketch; ``S2_dim3`` is sketch ``S2``.  The underscore
+    form keeps every reference a single identifier, so the parameter evaluator
+    (and its tests) stay untouched.
+    """
+    import re
+    out = []
+    for tok in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", str(raw)):
+        m = re.match(r"^dim(\d+)$", tok)
+        if m:
+            out.append((None, int(m.group(1))))
+            continue
+        m = re.match(r"^([A-Za-z][A-Za-z0-9]*)_dim(\d+)$", tok)
+        if m:
+            out.append((m.group(1), int(m.group(2))))
+    return out
+
+
+def _foreign_dim_names(kdoc, sk):
+    """(sketch_id, index) of the *other* sketches' dimensions (R113/A-5)."""
+    out = []
+    for other in getattr(kdoc, "sketches", []) or []:
+        if other is sk:
+            continue
+        sid = str(getattr(other, "id", ""))
+        for i, c in enumerate(getattr(other, "constraints", []) or []):
+            if c and c[0] in DIM_KINDS:
+                out.append((sid, i))
+    return out
+
+
+def _dim_value_mm(kdoc, sk, index: int, scale: float, seen=None, entry=None):
     """(value_mm, reason) of one dimension, resolving dimension references.
 
     R111/A-1: an expression may name another dimension as ``dimN`` (N = the
-    constraint index of a ``dist``/``radius`` row).  Chains are resolved
-    recursively and a cycle is refused with the two indices, instead of quietly
-    evaluating to something.
+    constraint index of a ``dist``/``radius`` row of this sketch).
+    R113/A-5: ``<sketch_id>_dimN`` names one in another sketch (``S2_dim3``).
+    Chains are resolved recursively and a cycle is refused with the indices,
+    instead of quietly evaluating to something.
     """
     import re
     from scdm.params import eval_expr
@@ -255,52 +292,86 @@ def _dim_value_mm(kdoc, sk, index: int, scale: float, seen=None):
         except (TypeError, ValueError):
             return None, "dim%s 数值非法" % index
     seen = set(seen or ())
-    if index in seen:
-        return None, "尺寸引用存在循环（#%s）" % index
-    guard = seen | {index}          # a self reference is a cycle too
-    for tok in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", str(raw)):
-        m = re.match(r"^dim(\d+)$", tok)
-        if m and int(m.group(1)) in guard:
-            return None, "尺寸引用存在循环（#%s → #%s）" % (index, m.group(1))
-    seen.add(index)
+    here = (str(getattr(sk, "id", "")), int(index))
+    mine = here[0]
+    entry = str(entry or mine)          # the sketch the user actually edited
+
+    def label(sid, idx):                # the entry sketch keeps the R111 "#5"
+        return "#%d" % idx if sid in (None, entry) else "%s#%d" % (sid, idx)
+
+    if here in seen:
+        return None, "尺寸引用存在循环（%s）" % label(*here)
+    guard = seen | {here}               # a self reference is a cycle too
+    for sid, other in _dim_token_refs(raw):
+        target = mine if sid is None else sid
+        if (target, other) in guard:
+            return None, "尺寸引用存在循环（%s → %s）" % (label(*here),
+                                                       label(target, other))
+    seen.add(here)
     ns = dict(_param_namespace(kdoc))
-    bad: Dict[int, str] = {}
-    ns.update(_dim_refs(kdoc, sk, scale, seen, bad))
+    bad: Dict[Any, str] = {}
+    ns.update(_dim_refs(kdoc, sk, scale, seen, bad, entry=entry))
     try:
         return float(eval_expr(raw, ns)), ""
     except Exception as exc:
         # a name missing *because of* a cycle in the chain is a cycle, not a typo
-        for _i, why in sorted(bad.items()):
+        for _k, why in sorted(bad.items(), key=lambda kv: str(kv[0])):
             if "循环" in str(why):
                 return None, why
-        return None, _expr_reason(cons, raw, exc)
+        return None, _expr_reason(cons, raw, exc, _foreign_dim_names(kdoc, sk))
 
 
-def _dim_refs(kdoc, sk, scale: float, seen, bad=None) -> Dict[str, float]:
-    """{"dimN": value_mm} for the sketch's dimensions (R111/A-1).
+def _dim_refs(kdoc, sk, scale: float, seen, bad=None, entry=None,
+              want_sketches=()) -> Dict[str, float]:
+    """{"dimN" / "<sketch>_dimN": value_mm} for the dimensions (R111 + R113).
 
-    A dimension that cannot be resolved is left out of the namespace; when *bad*
-    is given, its reason is recorded there so a caller can tell a cycle in the
-    chain from a plain typo (R111/A-1 follow-up).
+    ``dimN`` addresses the *current* sketch (R111/A-1); every sketch is also
+    published as ``<sketch_id>_dimN`` so a dimension in one sketch can drive one
+    in another (R113/A-5).  A dimension that cannot be resolved is left out of
+    the namespace; when *bad* is given its reason is recorded under the
+    ``(sketch_id, index)`` key, so a caller can tell a cycle from a plain typo.
     """
     out: Dict[str, float] = {}
-    cons = list(getattr(sk, "constraints", []) or [])
-    for i, c in enumerate(cons):
-        if not c or c[0] not in DIM_KINDS or i in seen:
+    # only the sketches this one actually names are pulled in, so the namespace
+    # stays cheap on a document with many sketches (R113/A-5)
+    wanted = {str(s) for s in (want_sketches or ())}
+    for c in getattr(sk, "constraints", []) or []:
+        if not c or c[0] not in DIM_KINDS:
             continue
-        mm, why = _dim_value_mm(kdoc, sk, i, scale, seen=seen)
-        if mm is None:
-            if bad is not None:
-                bad[i] = why
-            continue
-        out["dim%d" % i] = mm
+        vi = _dim_value_index(c)
+        if len(c) > vi and isinstance(c[vi], str):
+            for sid, _i in _dim_token_refs(c[vi]):
+                if sid:
+                    wanted.add(sid)
+    sks = [sk] + [o for o in (getattr(kdoc, "sketches", []) or [])
+                  if o is not sk and str(getattr(o, "id", "")) in wanted]
+    for cur in sks:
+        cid = str(getattr(cur, "id", ""))
+        for i, c in enumerate(getattr(cur, "constraints", []) or []):
+            if not c or c[0] not in DIM_KINDS or (cid, i) in seen:
+                continue
+            mm, why = _dim_value_mm(kdoc, cur, i, scale, seen=seen,
+                                    entry=entry)
+            if mm is None:
+                if bad is not None:
+                    bad[(cid, i)] = why
+                continue
+            if cur is sk:
+                out["dim%d" % i] = mm
+            out["%s_dim%d" % (cid, i)] = mm
     return out
 
 
-def _namespace_for(kdoc, sk, scale: float) -> Dict[str, float]:
-    """Parameter table values plus ``dimN`` dimension values, in mm (R111/A-1)."""
+def _namespace_for(kdoc, sk, scale: float, raw=None) -> Dict[str, float]:
+    """Parameter table + ``dimN`` values in mm (R111/A-1, R113/A-5).
+
+    *raw* is the expression about to be resolved, if any: a sketch it names is
+    published even when no stored constraint mentions it yet (the first drive of
+    a cross-sketch reference has nothing stored to scan).
+    """
     ns = dict(_param_namespace(kdoc))
-    ns.update(_dim_refs(kdoc, sk, scale, set()))
+    named = {sid for sid, _i in _dim_token_refs(raw) if sid} if raw else ()
+    ns.update(_dim_refs(kdoc, sk, scale, set(), want_sketches=named))
     return ns
 
 
@@ -313,13 +384,15 @@ def _resolve_value_mm(kdoc, raw, scale: float, sk=None):
     """
     from scdm.params import eval_expr
     if isinstance(raw, str):
-        ns = _namespace_for(kdoc, sk, scale) if sk is not None             else _param_namespace(kdoc)
+        ns = (_namespace_for(kdoc, sk, scale, raw) if sk is not None
+              else _param_namespace(kdoc))
         try:
             mm = float(eval_expr(raw, ns))
         except Exception as exc:
             cons = list(getattr(sk, "constraints", []) or []) if sk is not None else []
-            return None, raw, "表达式无法求值：%s（%s）" % (_expr_reason(cons, raw, exc),
-                                                       raw)
+            extra = _foreign_dim_names(kdoc, sk) if sk is not None else []
+            return None, raw, "表达式无法求值：%s（%s）" % (_expr_reason(cons, raw, exc,
+                                                       extra), raw)
         return mm / float(scale or 1000.0), raw, ""
     try:
         mm = float(raw)

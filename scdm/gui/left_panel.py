@@ -257,8 +257,11 @@ class LeftPanel(QWidget):
         checks("mode.sketch", [("草图网格", True), ("捕捉栅格", True)])
         # R112/A-1: the sketch-only edits (no sketch-entity selection yet, so
         # mirror is about a sketch axis and the pattern is linear)
-        checks("sketch.mirror", [("关于水平轴", False), ("保留原曲线", True)])
-        check_spin("sketch.pattern", [], [("X 间距", 10.0), ("Y 间距", 0.0)],
+        checks("sketch.mirror", [("关于水平轴", False), ("保留原曲线", True),
+                                 ("以拾取直线为轴", True)])
+        check_spin("sketch.pattern", [("圆周阵列", False)],
+                   [("X 间距", 10.0), ("Y 间距", 0.0), ("圆心 U", 0.0),
+                    ("圆心 V", 0.0), ("总角度", 360.0)],
                    [("数量", 3)])
         checks("mode.section", [("剖面显示", True), ("截面可拉", True)])
         checks("tool.split_body", [("保留两侧", True)])
@@ -406,7 +409,11 @@ class LeftPanel(QWidget):
             info.addChild(QTreeWidgetItem(["标题 Caption：%d 个" % len(caps)]))
             named = list(getattr(doc, "named_selections", []) or [])
             info.addChild(QTreeWidgetItem(["命名选择：%d 个" % len(named)]))
-        if session.kdoc is not None and session.kdoc.bodies:
+        # R113/A-5: sketches are shown even when the document has no body yet -
+        # a sketch-only document used to hide them, so it could not be re-entered
+        # from the tree at all
+        if session.kdoc is not None and (session.kdoc.bodies
+                                         or session.kdoc.sketches):
             if session.kdoc.components:
                 for comp in session.kdoc.components:
                     label = comp.name + ("（锚定）" if comp.anchored else "")
@@ -432,7 +439,9 @@ class LeftPanel(QWidget):
                 it = QTreeWidgetItem([sk.name])
                 it.setData(0, Qt.UserRole, ("sketch", sk.id))
                 it.setCheckState(0, Qt.Checked)
-                it.setToolTip(0, "双击进入该草图编辑")
+                it.setToolTip(
+                    0, "双击进入该草图编辑；其它草图可用 %s_dim3 引用它的"
+                       "尺寸（%s 是本草图序号）" % (sk.id, sk.id))
                 root.addChild(it)
                 # R107/A-3: the drivable dimensions, so a sketch can be changed
                 # by its numbers instead of by redrawing
@@ -461,8 +470,10 @@ class LeftPanel(QWidget):
                     dn.setData(0, Qt.UserRole,
                                ("sketch_dim", sk.id, d["index"]))
                     dn.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
-                    dn.setToolTip(0, "驱动尺寸：改值后重新求解草图并重建实体；"
-                                    "别的尺寸可用 dim%d 引用它" % d["index"])
+                    dn.setToolTip(
+                        0, "驱动尺寸：改值后重新求解草图并重建实体；本图用 "
+                           "dim%d 引用它，其它草图用 %s_dim%d"
+                           % (d["index"], sk.id, d["index"]))
                     it.addChild(dn)
             doc_feats = getattr(getattr(session.kdoc, "document_features",
                                         None), "features", [])
