@@ -259,7 +259,10 @@ class LeftPanel(QWidget):
         # mirror is about a sketch axis and the pattern is linear)
         checks("sketch.mirror", [("关于水平轴", False), ("保留原曲线", True),
                                  ("以拾取直线为轴", True)])
-        check_spin("sketch.pattern", [("圆周阵列", False)],
+        # R114/A-2: 沿曲线 needs a selected sketch curve as the path, so it needs
+        # no extra numbers; 圆周 only needs a centre, 线性 only a spacing
+        check_spin("sketch.pattern", [("圆周阵列", False),
+                                      ("沿曲线阵列（选中曲线为路径）", False)],
                    [("X 间距", 10.0), ("Y 间距", 0.0), ("圆心 U", 0.0),
                     ("圆心 V", 0.0), ("总角度", 360.0)],
                    [("数量", 3)])

@@ -344,11 +344,13 @@ class Scene:
         self._face_actors.clear()
         self._edge_actor = None
         self._vert_actor = None
-        for act in (self._sketch_actor, self._sketch_pts_actor):
+        for act in ([self._sketch_actor, self._sketch_pts_actor]
+                    + list(getattr(self, "_sketch_sel_actors", []))):
             if act:
                 self.renderer.RemoveActor(act)
         self._sketch_actor = None
         self._sketch_pts_actor = None
+        self._sketch_sel_actors = []
         self.clear_constraint_marks()
         for act in getattr(self, "_light_actors", []):
             self.renderer.RemoveActor(act)
@@ -749,60 +751,109 @@ class Scene:
         self.renderer.AddActor(act)
         self._light_actors.append(act)
 
+    @staticmethod
+    def _curve_geometry(sk, axes, c):
+        """(world segments, world points) of one sketch curve (R114/A-1).
+
+        One source for what a curve looks like, shared by the sketch display and
+        the selection highlight, so a highlighted edge is exactly a drawn edge.
+        """
+        import math as _math
+        from scdm import sketch as S
+
+        def wpt(p):
+            return list(S.axes_to_world(axes, float(p[0]), float(p[1])))
+
+        segs, pts = [], []
+        if c[0] == "poly":
+            ring = [wpt(p) for p in c[1]]
+            if ring and ring[0] != ring[-1]:
+                ring.append(ring[0])
+            for a, b in zip(ring, ring[1:]):
+                segs.append([list(a), list(b)])
+        elif c[0] == "rect":
+            x0, y0 = c[1][0], c[1][1]
+            x1, y1 = c[2][0], c[2][1]
+            loop = [wpt((x0, y0)), wpt((x1, y0)), wpt((x1, y1)),
+                    wpt((x0, y1)), wpt((x0, y0))]
+            for a, b in zip(loop, loop[1:]):
+                segs.append([list(a), list(b)])
+        elif c[0] == "line":
+            segs.append([wpt(c[1]), wpt(c[2])])
+        elif c[0] == "circle":
+            cx, cy, r = c[1][0], c[1][1], c[2]
+            ring = [wpt((cx + r * _math.cos(t), cy + r * _math.sin(t)))
+                    for t in [_math.tau * i / 32 for i in range(32)]]
+            ring.append(ring[0])
+            for a, b in zip(ring, ring[1:]):
+                segs.append([list(a), list(b)])
+        elif c[0] == "point":
+            pts.append(wpt(c[1]))
+        return segs, pts
+
+    def set_sketch_highlight(self, sk, refs):
+        """Draw the selected sketch entities on top (R114/A-1).
+
+        `refs` are `(kind, curve_index, sub_index)` with kind "curve" (one edge)
+        or "point" (one vertex); an empty list clears the highlight.
+        """
+        for a in getattr(self, "_sketch_sel_actors", []):
+            self.renderer.RemoveActor(a)
+        self._sketch_sel_actors = []
+        if sk is None or not refs:
+            return
+        from scdm import sketch as S
+        axes = S.sketch_axes(sk.plane, sk.origin, sk.normal, sk.xdir)
+        segs, pts = [], []
+        for ref in refs:
+            try:
+                kind, ci, sub = ref[0], int(ref[1]), int(ref[2])
+            except (IndexError, TypeError, ValueError):
+                continue
+            if kind == "point":
+                pl = S.curve_points(sk, ci)
+                if pl and 0 <= sub < len(pl):
+                    seg = S.axes_to_world(axes, float(pl[sub][0]),
+                                          float(pl[sub][1]))
+                    pts.append(list(seg))
+            else:
+                seg = S.curve_segment(sk, ci, sub)
+                if seg is not None:
+                    segs.append([list(S.axes_to_world(axes, float(seg[0][0]),
+                                                       float(seg[0][1]))),
+                                 list(S.axes_to_world(axes, float(seg[1][0]),
+                                                      float(seg[1][1])))])
+        if segs:
+            act = _lines_actor(segs, (1.0, 0.45, 0.05), 4.0)
+            self.renderer.AddActor(act)
+            self._sketch_sel_actors.append(act)
+        if pts:
+            act = _points_actor(pts, (1.0, 0.45, 0.05), 12)
+            self.renderer.AddActor(act)
+            self._sketch_sel_actors.append(act)
+
     def _build_sketches(self, kdoc):
         """Render sketch curves as on-plane 2D line/polygon actors.
 
         Curve coords are plane-local (u, v), mapped through the sketch's axes
-        (named datum plane or custom origin/normal/xdir).
+        (named datum plane or custom origin/normal/xdir).  The per-curve geometry
+        comes from `_curve_geometry`, the same call the selection highlight uses
+        (R114/A-1), so what is drawn and what can be picked cannot drift apart.
         """
-        import math as _math
         from scdm import sketch as S
         segs, pts = [], []
         for sk in getattr(kdoc, "sketches", []):
             axes = S.sketch_axes(sk.plane, sk.origin, sk.normal, sk.xdir)
-
-            def wpt(p, _ax=axes):
-                return list(S.axes_to_world(_ax, float(p[0]), float(p[1])))
-            for c in sk.curves:
-                if c[0] == "poly":
-                    ring = [wpt(p) for p in c[1]]
-                    if ring[0] != ring[-1]:
-                        ring.append(ring[0])
-                    for a, b in zip(ring, ring[1:]):
-                        segs.append([list(a), list(b)])
-                elif c[0] == "rect":
-                    x0, y0 = c[1][0], c[1][1]
-                    x1, y1 = c[2][0], c[2][1]
-                    loop = [wpt((x0, y0)), wpt((x1, y0)), wpt((x1, y1)),
-                            wpt((x0, y1)), wpt((x0, y0))]
-                    for a, b in zip(loop, loop[1:]):
-                        segs.append([list(a), list(b)])
-                elif c[0] == "line":
-                    segs.append([list(wpt(c[1])), list(wpt(c[2]))])
-                elif c[0] == "circle":
-                    cx, cy = c[1][0], c[1][1]
-                    r = c[2]
-                    ring = [wpt((cx + r * _math.cos(t), cy + r * _math.sin(t)))
-                            for t in [_math.tau * i / 32 for i in range(32)]]
-                    ring.append(ring[0])
-                    for a, b in zip(ring, ring[1:]):
-                        segs.append([list(a), list(b)])
-                elif c[0] == "point":
-                    pts.append(list(wpt(c[1])))
-            for c in getattr(sk, "construction", []):
-                if c and c[0] == "line":
-                    segs.append([list(wpt(c[1])), list(wpt(c[2]))])
-                elif c and c[0] == "poly":
-                    ring = [wpt(p) for p in c[1]]
-                    for a, b in zip(ring, ring[1:]):
-                        segs.append([list(a), list(b)])
+            for c in list(sk.curves) + list(getattr(sk, "construction", []) or []):
+                s2, p2 = self._curve_geometry(sk, axes, c)
+                segs.extend(s2)
+                pts.extend(p2)
         if segs:
             self._sketch_actor = _lines_actor(segs, (0.10, 0.30, 0.65), 2.2)
             self.renderer.AddActor(self._sketch_actor)
         if pts:
             self._sketch_pts_actor = _points_actor(pts, (0.10, 0.30, 0.65), 8)
             self.renderer.AddActor(self._sketch_pts_actor)
-
     def clear_constraint_marks(self):
         """P21: remove the constraint glyph actors."""
         for a in getattr(self, "_constraint_actors", []):

@@ -149,6 +149,10 @@ else:
             self._sketch_second = None
             self._sketch_chain = []
             self._sketch_recent = []  # last two sketch-plane clicks (constraint picking)
+            # R114/A-1: the selected sketch entities, as (kind, curve, sub) -
+            # what Mirror and Pattern-along-path act on, and what the viewport
+            # highlights
+            self.sketch_selection = []
             self._pending_paste = False
             self.settings = QSettings("scdocdecoding", "scdm")
             from scdm.scripting import Recorder
@@ -3567,7 +3571,34 @@ else:
             axis = "u" if self.left.is_checked("sketch.mirror", 0) else "v"
             keep = bool(self.left.is_checked("sketch.mirror", 1))
             source = "关于%s轴" % ("水平" if axis == "u" else "竖直")
-            if self.left.is_checked("sketch.mirror", 2):       # R113/A-1
+            # R114/A-1: a selection wins over the last click.  One edge (or two
+            # vertices) is an axis; more than one edge is ambiguous.
+            picked = list(getattr(self, "sketch_selection", []))
+            edges = [r for r in picked if r[0] == "curve"]
+            verts = [r for r in picked if r[0] == "point"]
+            if len(edges) > 1 or (edges and len(picked) > 1):
+                self._set_status("镜像：请只选一条轴（当前选中 %d 项草图图元）"
+                                 % len(picked))
+                return
+            if len(edges) == 1:
+                seg = S.curve_segment(sk, edges[0][1], edges[0][2])
+                if seg is None:
+                    self._set_status("镜像：选中的草图边已不存在")
+                    return
+                axis = (seg[0], seg[1])
+                source = "以选中的草图边为轴（曲线 %d 第 %d 段）" % (edges[0][1],
+                                                                edges[0][2])
+            elif len(verts) == 2:
+                pts = []
+                for r in verts:
+                    pl = S.curve_points(sk, r[1])
+                    if pl and 0 <= r[2] < len(pl):
+                        pts.append(pl[r[2]])
+                if len(pts) == 2 and math.hypot(pts[1][0] - pts[0][0],
+                                                pts[1][1] - pts[0][1]) > 1e-12:
+                    axis = (pts[0], pts[1])
+                    source = "以两个选中端点为轴"
+            elif self.left.is_checked("sketch.mirror", 2):       # R113/A-1
                 recent = getattr(self, "_sketch_recent", [])
                 if recent:
                     tol = (float(getattr(self.sel, "snap_radius_mm", 5.0)) / scale)
@@ -3617,7 +3648,20 @@ else:
             dx = self.left.spin_value("sketch.pattern", 0)
             dy = self.left.spin_value("sketch.pattern", 1)
             scale = float(ses.scale or 1000.0)
-            if self.left.is_checked("sketch.pattern", 0):       # R113/A-2
+            path_index = None
+            if self.left.is_checked("sketch.pattern", 1):       # R114/A-2
+                edges = [r for r in getattr(self, "sketch_selection", [])
+                         if r[0] == "curve"]
+                if len(edges) != 1:
+                    self._set_status(
+                        "阵列：沿曲线阵列需要先选中一条曲线作为路径（当前 %d 条）"
+                        % len(edges))
+                    return
+                path_index = int(edges[0][1])
+                rep = S.pattern_curves(sk, int(count), mode="along",
+                                       path=S.curve_points(sk, path_index))
+                what = "沿曲线 %d" % path_index
+            elif self.left.is_checked("sketch.pattern", 0):     # R113/A-2
                 cu = self.left.spin_value("sketch.pattern", 2) or 0.0
                 cv = self.left.spin_value("sketch.pattern", 3) or 0.0
                 sweep = self.left.spin_value("sketch.pattern", 4)
@@ -3633,11 +3677,14 @@ else:
             if not rep["ok"]:
                 self._set_status("阵列失败：%s" % rep["reason"])
                 return
-            self._record("sketch.pattern", count=int(count), mode=rep["mode"],
-                         dx_mm=float(dx or 0.0), dy_mm=float(dy or 0.0),
-                         cu_mm=float(self.left.spin_value("sketch.pattern", 2) or 0.0),
-                         cv_mm=float(self.left.spin_value("sketch.pattern", 3) or 0.0),
-                         sweep_deg=float(rep.get("sweep_deg", 360.0)))
+            rec = {"count": int(count), "mode": rep["mode"],
+                   "dx_mm": float(dx or 0.0), "dy_mm": float(dy or 0.0),
+                   "cu_mm": float(self.left.spin_value("sketch.pattern", 2) or 0.0),
+                   "cv_mm": float(self.left.spin_value("sketch.pattern", 3) or 0.0),
+                   "sweep_deg": float(rep.get("sweep_deg", 360.0))}
+            if path_index is not None:
+                rec["path_index"] = path_index
+            self._record("sketch.pattern", **rec)
             n = self._sync_sketch_bodies(sk.id)          # R106/B-1
             self._rebuild("已阵列 ×%d（%s，+%d 条曲线）%s"
                           % (rep["count"], what, rep["added"],
@@ -3840,8 +3887,12 @@ else:
                 self._sketch_chain.append(uv)
                 self._set_status(f"样条：已取 {len(self._sketch_chain)} 点，右键结束")
 
-        def _sketch_record_click(self):
-            """Remember the last two sketch-plane clicks for constraint picking."""
+        def _sketch_record_click(self, add: bool = False):
+            """Remember the click, and select the sketch entity under it (R114).
+
+            The last two clicks still drive constraint picking (P19); the entity
+            selection is what Mirror / Pattern-along-path consume.
+            """
             st = self._sketch_state
             axes = st.get("axes")
             p3 = self.scene.plane_point(axes if axes else st["plane"])
@@ -3850,8 +3901,47 @@ else:
             from scdm import sketch as S
             uv = list(S.world_to_uv(axes, p3)) if axes else [p3[0], p3[1]]
             self._sketch_recent = ([uv] + self._sketch_recent)[:2]
-            self._set_status(
-                f"草图选择点 {len(self._sketch_recent)}/2：应用约束将作用于最近图元")
+            hit = self._select_sketch_entity(uv, add=add)
+            if hit is None:
+                self._set_status(
+                    f"草图选择点 {len(self._sketch_recent)}/2：应用约束将作用于最近图元")
+
+        def _select_sketch_entity(self, uv, add: bool = False):
+            """Select the sketch edge / vertex nearest `uv` (R114/A-1).
+
+            Returns the `(kind, curve, sub)` reference, or None when the click hit
+            nothing within the snapping radius (which clears the selection unless
+            this was an additive click).
+            """
+            ses = self.session()
+            sk, _why = SKM.resolve_active(ses.kdoc, self._sketch_session)
+            if sk is None:
+                return None
+            from scdm import sketch as S
+            scale = float(ses.scale or 1000.0)
+            tol = float(getattr(self.sel, "snap_radius_mm", 5.0)) / scale
+            hit = S.pick_entity(sk, uv, tol)
+            if hit is None:
+                if not add:
+                    self.sketch_selection = []
+                self._refresh_selection_highlights()
+                self._set_status("未选中草图图元（点击线或端点；Shift 加选）")
+                return None
+            ref = (str(hit[0]), int(hit[1]), int(hit[2]))
+            if add:
+                if ref in self.sketch_selection:
+                    self.sketch_selection = [r for r in self.sketch_selection
+                                             if r != ref]
+                else:
+                    self.sketch_selection = list(self.sketch_selection) + [ref]
+            else:
+                self.sketch_selection = [ref]
+            self._refresh_selection_highlights()
+            what = "端点 %d" % ref[2] if ref[0] == "point" else "边 %d" % ref[2]
+            self._set_status("已选草图%s（曲线 %d，距点击 %.3gmm，共 %d 项）"
+                             % (what, ref[1], float(hit[3]) * scale,
+                                len(self.sketch_selection)))
+            return ref
 
         def _nearest_sketch_point(self, pts, uv):
             best, bd = 0, None
@@ -4080,6 +4170,12 @@ else:
             self._sketch_start = None
             self._sketch_second = None
             self._sketch_chain = []
+            # R114/A-1: the selected sketch entities belong to the mode
+            if getattr(self, "sketch_selection", None):
+                self.sketch_selection = []
+                if self.scene is not None and hasattr(self.scene,
+                                                     "set_sketch_highlight"):
+                    self.scene.set_sketch_highlight(None, [])
             if not was:
                 return False
             self._set_sketch_grid(False)
@@ -5326,7 +5422,8 @@ else:
                 self._sketch_click()
                 return
             if self.tools.mode == "mode.sketch" and self._sketch_state and self.scene:
-                self._sketch_record_click()
+                iren = self.vtk_widget.GetRenderWindow().GetInteractor()
+                self._sketch_record_click(add=bool(iren.GetShiftKey()))
             if tool == "tool.move":
                 self._apply_move(actor, world)
                 return
@@ -5531,6 +5628,14 @@ else:
             self.scene.highlight_nodes(
                 [n for n in nodes if n in self.scene._face_actors
                  or str(n).startswith(("edge:", "vertex:"))])
+            # R114/A-1: the sketch entities are highlighted by their own overlay
+            ses = self.session()
+            sk = None
+            if ses.kdoc is not None:
+                sk, _why = SKM.resolve_active(ses.kdoc, self._sketch_session)
+            if hasattr(self.scene, "set_sketch_highlight"):
+                self.scene.set_sketch_highlight(
+                    sk, list(getattr(self, "sketch_selection", [])))
             self._update_tool_chrome()
 
         def _select_node(self, kind, node, add):

@@ -202,7 +202,7 @@ def _dim_value_index(c) -> int:
     return 2 if (c and c[0] == "radius") else 3
 
 
-def _expr_reason(cons, raw, exc, extra_names=()) -> str:
+def _expr_reason(cons, raw, exc, extra_names=(), kdoc=None, sk=None) -> str:
     """Why an expression failed, naming the indices that *can* be referenced.
 
     R111/A-1: ``dimN`` binds to the **constraint index**, and only a ``dist`` or
@@ -212,13 +212,37 @@ def _expr_reason(cons, raw, exc, extra_names=()) -> str:
     *extra_names* so the list is complete.
     """
     import re
+    # R114/A-5: a cross-sketch name is diagnosed before anything else - "unknown
+    # parameter S2_dim5" does not tell the user that S2 was deleted
+    missing, bad_dim = [], []
+    for sid, i in _dim_token_refs(raw):
+        if not sid:
+            continue
+        target = None
+        for o in getattr(kdoc, "sketches", []) or []:
+            if str(getattr(o, "id", "")) == sid:
+                target = o
+                break
+        if target is None:
+            missing.append(sid)
+            continue
+        ocons = list(getattr(target, "constraints", []) or [])
+        if not (0 <= i < len(ocons)) or not ocons[i] or ocons[i][0] not in DIM_KINDS:
+            bad_dim.append((sid, i))
     named = sorted({int(m.group(1)) for m in re.finditer(r"\bdim(\d+)\b", str(raw))})
     available = [i for i, c in enumerate(cons) if c and c[0] in DIM_KINDS]
     outside = [n for n in named if not (0 <= n < len(cons))]
     not_dim = [n for n in named
                if 0 <= n < len(cons) and (cons[n] or [""])[0] not in DIM_KINDS]
     head = str(exc)
-    if not_dim:
+    if missing:
+        # the referenced sketch is gone: name it, and still list what *can* be
+        # referenced (R113 discipline: a refusal has to be actionable)
+        head = "被引用草图 %s 已不存在" % "、".join(sorted(set(missing)))
+    elif bad_dim:
+        head = "被引用草图 %s" % "、".join(
+            "%s 没有尺寸 #%d" % (sid, i) for sid, i in bad_dim)
+    elif not_dim:
         head = "%s 不是尺寸（约束 #%s 是 %s）" % (
             "、".join("dim%d" % n for n in not_dim),
             "、#".join(str(n) for n in not_dim),
@@ -318,7 +342,8 @@ def _dim_value_mm(kdoc, sk, index: int, scale: float, seen=None, entry=None):
         for _k, why in sorted(bad.items(), key=lambda kv: str(kv[0])):
             if "循环" in str(why):
                 return None, why
-        return None, _expr_reason(cons, raw, exc, _foreign_dim_names(kdoc, sk))
+        return None, _expr_reason(cons, raw, exc, _foreign_dim_names(kdoc, sk),
+                                  kdoc=kdoc, sk=sk)
 
 
 def _dim_refs(kdoc, sk, scale: float, seen, bad=None, entry=None,
@@ -391,8 +416,8 @@ def _resolve_value_mm(kdoc, raw, scale: float, sk=None):
         except Exception as exc:
             cons = list(getattr(sk, "constraints", []) or []) if sk is not None else []
             extra = _foreign_dim_names(kdoc, sk) if sk is not None else []
-            return None, raw, "表达式无法求值：%s（%s）" % (_expr_reason(cons, raw, exc,
-                                                       extra), raw)
+            why = _expr_reason(cons, raw, exc, extra, kdoc=kdoc, sk=sk)
+            return None, raw, "表达式无法求值：%s（%s）" % (why, raw)
         return mm / float(scale or 1000.0), raw, ""
     try:
         mm = float(raw)
@@ -471,6 +496,11 @@ def dimension_marks(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, An
         marks[int(i)] = "冗余"
     for i in rep.get("conflict_cons", ()) or ():
         marks[int(i)] = "冲突"
+    # R114/A-5: a dimension whose expression cannot be resolved (a dangling
+    # cross-sketch reference, a typo) is unusable - say so on its row
+    for row in dimensions(kdoc, sketch_id, scale):
+        if row.get("reason") and int(row["index"]) not in marks:
+            marks[int(row["index"])] = "悬空"
     rep["marks"] = marks
     return rep
 

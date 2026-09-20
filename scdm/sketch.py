@@ -738,14 +738,16 @@ def mirror_curves(sk, axis="v", keep: bool = True) -> Dict[str, Any]:
 
 def pattern_curves(sk, count: int, du: float = 0.0, dv: float = 0.0,
                    mode: str = "linear", center=None,
-                   sweep_deg: float = 360.0) -> Dict[str, Any]:
+                   sweep_deg: float = 360.0, path=None) -> Dict[str, Any]:
     """Pattern of the sketch curves: `count` instances, original included.
 
     `linear` (R112/A-1) steps by `i * (du, dv)` in sketch units - the
     SpaceClaim "count + spacing" reading.  `circular` (R113/A-2) rotates the
     copies about `center` by `i * sweep / (count - 1)` degrees, so `sweep_deg`
     is the angle **from the first instance to the last** (360 with 4 instances
-    gives even quarters).
+    gives even quarters).  `along` (R114/A-2) walks `path` (a UV polyline) by
+    arc length, placing instance `k` at `k * L / (count - 1)` and rotating it by
+    the change of tangent - "follow the curve" with the first point as anchor.
     """
     count = int(count)
     if count < 2:
@@ -774,9 +776,42 @@ def pattern_curves(sk, count: int, du: float = 0.0, dv: float = 0.0,
             fns.append(lambda u, v, cu=cu, cv=cv, ca=ca, sa=sa: (
                 cu + (u - cu) * ca - (v - cv) * sa,
                 cv + (u - cu) * sa + (v - cv) * ca))
+    elif kind == "along":
+        pts = [(float(p[0]), float(p[1])) for p in (path or [])]
+        if len(pts) < 2:
+            return {"ok": False, "added": 0,
+                    "reason": "沿曲线阵列需要一条路径（至少 2 个点）"}
+        seg = [math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1])
+               for i in range(len(pts) - 1)]
+        total = sum(seg)
+        if total < 1e-12:
+            return {"ok": False, "added": 0, "reason": "路径长度为零"}
+        cum = [0.0]
+        for s in seg:
+            cum.append(cum[-1] + s)
+
+        def at(s):
+            """(point, tangent angle) at arc length `s` along the path."""
+            s = min(max(float(s), 0.0), total)
+            k = 0
+            while k + 1 < len(cum) - 1 and cum[k + 1] < s:
+                k += 1
+            span = cum[k + 1] - cum[k]
+            t = 0.0 if span <= 1e-15 else (s - cum[k]) / span
+            a, b = pts[k], pts[k + 1]
+            return ((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t),
+                    math.atan2(b[1] - a[1], b[0] - a[0]))
+
+        p0, a0 = at(0.0)
+        for k in range(1, count):
+            pk, ak = at(total * k / float(count - 1))
+            ca, sa = math.cos(ak - a0), math.sin(ak - a0)
+            fns.append(lambda u, v, pk=pk, ca=ca, sa=sa: (
+                pk[0] + (u - p0[0]) * ca - (v - p0[1]) * sa,
+                pk[1] + (u - p0[0]) * sa + (v - p0[1]) * ca))
     else:
         return {"ok": False, "added": 0,
-                "reason": "未知阵列方式：%s（linear / circular）" % mode}
+                "reason": "未知阵列方式：%s（linear / circular / along）" % mode}
     added: List[tuple] = []
     for fn in fns:
         rep = transform_curves(sk, fn)
@@ -791,6 +826,9 @@ def pattern_curves(sk, count: int, du: float = 0.0, dv: float = 0.0,
     if kind == "circular":
         out.update(center=[float(center[0]), float(center[1])],
                    sweep_deg=float(sweep_deg), step_deg=float(sweep) / (count - 1))
+    elif kind == "along":
+        out.update(path_length=float(total),
+                   step=float(total) / (count - 1))
     return out
 
 
@@ -853,6 +891,92 @@ def snap_uv(uv, points, segments, tol, snap_end: bool = True,
     if grid_step and grid_step > 0:
         return [round(v / grid_step) * grid_step for v in uv], "grid"
     return [float(uv[0]), float(uv[1])], None
+
+
+def curve_points(sk, index: int):
+    """The polyline of one sketch curve in UV, or None (R114/A-1).
+
+    Closed kinds (rect / closed poly) repeat their first point, so the closing
+    edge is a segment like any other - what picking and path following need.
+    """
+    curves = list(getattr(sk, "curves", []) or [])
+    if not (0 <= int(index) < len(curves)):
+        return None
+    c = curves[int(index)]
+    if c[0] == "line":
+        return [(float(c[1][0]), float(c[1][1])),
+                (float(c[2][0]), float(c[2][1]))]
+    if c[0] == "poly":
+        pts = [(float(p[0]), float(p[1])) for p in c[1]]
+        if len(pts) > 2 and _near(pts[0], pts[-1]):
+            pts.append(pts[0])
+        return pts
+    if c[0] == "rect":
+        u1, v1, u2, v2 = (float(c[1][0]), float(c[1][1]),
+                          float(c[2][0]), float(c[2][1]))
+        return [(u1, v1), (u2, v1), (u2, v2), (u1, v2), (u1, v1)]
+    if c[0] == "circle":
+        cx, cy, r = float(c[1][0]), float(c[1][1]), float(c[2])
+        ring = [(cx + r * math.cos(math.tau * i / 64),
+                 cy + r * math.sin(math.tau * i / 64)) for i in range(64)]
+        ring.append(ring[0])
+        return ring
+    if c[0] == "point":
+        return [(float(c[1][0]), float(c[1][1]))]
+    return None
+
+
+def curve_segment(sk, index: int, sub: int = 0):
+    """((u0,v0),(u1,v1)) of one segment of a curve, or None (R114/A-1)."""
+    pts = curve_points(sk, index)
+    if not pts or len(pts) < 2:
+        return None
+    k = int(sub) % (len(pts) - 1)
+    return (pts[k], pts[k + 1])
+
+
+def pick_entity(sk, pick, tol: float):
+    """The sketch entity nearest to `pick`, within `tol` (R114/A-1).
+
+    Returns `(kind, curve_index, sub_index, distance)`: kind is "point" for a
+    vertex (sub_index = its ordinal in the curve) or "curve" for an edge
+    (sub_index = the segment ordinal, 0 for a single-segment curve).  A vertex
+    within the tolerance wins over an edge unless the edge is more than twice as
+    close, so clicking a corner selects the corner while clicking the middle of a
+    line selects the line.  A circle is an edge (its centre is the only vertex) -
+    the sampled ring points are geometry, not user vertices.
+    """
+    pu, pv = float(pick[0]), float(pick[1])
+    best_pt = None
+    best_cv = None
+    for i, c in enumerate(getattr(sk, "curves", []) or []):
+        pts = curve_points(sk, i)
+        if not pts:
+            continue
+        if c[0] == "circle":
+            cx, cy, r = float(c[1][0]), float(c[1][1]), float(c[2])
+            d = abs(math.hypot(pu - cx, pv - cy) - r)
+            if best_cv is None or d < best_cv[3]:
+                best_cv = ("curve", i, 0, d)
+            d = math.hypot(pu - cx, pv - cy)
+            if best_pt is None or d < best_pt[3]:
+                best_pt = ("point", i, 0, d)
+            continue
+        for j, p in enumerate(pts):
+            d = math.hypot(pu - p[0], pv - p[1])
+            if best_pt is None or d < best_pt[3]:
+                best_pt = ("point", i, j, d)
+        for k in range(len(pts) - 1):
+            d, _t = point_segment_distance(pick, pts[k], pts[k + 1])
+            if best_cv is None or d < best_cv[3]:
+                best_cv = ("curve", i, k, d)
+    tol = float(tol)
+    if best_pt is not None and best_pt[3] <= tol and (
+            best_cv is None or best_pt[3] <= max(best_cv[3] * 2.0, 1e-15)):
+        return best_pt
+    if best_cv is not None and best_cv[3] <= tol:
+        return best_cv
+    return None
 
 
 def nearest_segment(sk, pick, tol: float):

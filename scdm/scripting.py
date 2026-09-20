@@ -1083,14 +1083,23 @@ def op_sketch_pattern(kdoc, opts, scale):
     dv = float(opts.get("dy_mm", 0.0)) / sc
     center = (float(opts.get("cu_mm", 0.0)) / sc,
               float(opts.get("cv_mm", 0.0)) / sc)
+    path = None
+    if mode == "along":
+        if opts.get("path_index") is None:
+            raise ValueError("草图阵列：沿曲线阵列需要 path_index（曲线序号）")
+        path = S.curve_points(sk, int(opts["path_index"]))
+        if not path:
+            raise ValueError("草图阵列：曲线序号越界（%s）" % opts["path_index"])
     rep = S.pattern_curves(sk, int(opts.get("count", 3)), du, dv, mode=mode,
                            center=center, sweep_deg=float(opts.get("sweep_deg",
-                                                                  360.0)))
+                                                                  360.0)),
+                           path=path)
     if not rep["ok"]:
         raise ValueError("草图阵列失败：%s" % rep["reason"])
     syn = SKM.sync_sketch_bodies(kdoc, sk.id, scale)
-    what = ("圆周 %.3g°" % rep["sweep_deg"]) if rep["mode"] == "circular" \
-        else "线性"
+    what = {"circular": "圆周 %.3g°" % rep.get("sweep_deg", 360.0),
+            "along": "沿曲线（路径长 %.3gmm）" % (rep.get("path_length", 0.0) * sc),
+            }.get(rep["mode"], "线性")
     return None, "草图阵列 ×%d（%s，+%d 条曲线，重建 %d 个实体）" % (
         rep["count"], what, rep["added"], len(syn.get("updated", [])))
 
