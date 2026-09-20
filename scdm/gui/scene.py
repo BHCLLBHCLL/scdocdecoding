@@ -351,6 +351,7 @@ class Scene:
         self._sketch_actor = None
         self._sketch_pts_actor = None
         self._sketch_sel_actors = []
+        self._conflict_actors = []
         self.clear_constraint_marks()
         for act in getattr(self, "_light_actors", []):
             self.renderer.RemoveActor(act)
@@ -859,6 +860,38 @@ class Scene:
         for a in getattr(self, "_constraint_actors", []):
             self.renderer.RemoveActor(a)
         self._constraint_actors = []
+
+    def clear_conflict_marks(self):
+        """R115/A-1: remove the conflict overlay actors."""
+        for a in getattr(self, "_conflict_actors", []):
+            self.renderer.RemoveActor(a)
+        self._conflict_actors = []
+
+    def set_conflict_marks(self, sk, points=(), segments=()):
+        """Mark the geometry the solver could not satisfy (R115/A-1).
+
+        `points` and `segments` are in sketch UV, mapped through the sketch's axes
+        here - so the library stays Qt-free and the overlay cannot drift from the
+        geometry it points at.
+        """
+        self.clear_conflict_marks()
+        if sk is None or (not points and not segments):
+            return
+        from scdm import sketch as S
+        axes = S.sketch_axes(sk.plane, sk.origin, sk.normal, sk.xdir)
+        segs = [[list(S.axes_to_world(axes, float(a[0]), float(a[1]))),
+                 list(S.axes_to_world(axes, float(b[0]), float(b[1])))]
+                for a, b in (segments or ())]
+        pts = [list(S.axes_to_world(axes, float(p[0]), float(p[1])))
+               for p in (points or ())]
+        if segs:
+            act = _lines_actor(segs, (0.90, 0.15, 0.10), 4.5)
+            self.renderer.AddActor(act)
+            self._conflict_actors.append(act)
+        if pts:
+            act = _points_actor(pts, (0.90, 0.15, 0.10), 12)
+            self.renderer.AddActor(act)
+            self._conflict_actors.append(act)
 
     def show_constraint_marks(self, marks, scale=0.0035):
         """P21: label applied sketch constraints; marks are (x, y, z, text)."""

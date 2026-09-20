@@ -119,21 +119,20 @@ def test_the_feature_definition_is_independent_of_the_live_sketch():
     assert rep["ok"] is False and "草图已不存在" in rep["reason"]
 
 
-def test_an_open_outline_is_refused_atomically():
+def test_an_open_outline_takes_its_body_away():
+    """R115/A-6: with no loop left the body has no defining geometry, so the sync
+    removes it (and says which one) instead of leaving a stale solid behind."""
     doc, sk, body = _rect_doc()
-    before = K.volume(body.shape)
     # replace the closed rectangle with a single line (no loop at all)
     sk.curves = [("line", (0.0, 0.0), (0.010, 0.0))]
     rep = SKM.sync_sketch_bodies(doc, sk.id, 1000.0)
-    assert rep["ok"] is False and rep["failed"]
-    assert K.volume(body.shape) == pytest.approx(before, rel=1e-12)
-    # the feature was not half-updated: it still describes the body that exists
-    f = doc.feature_stack(body.id).features[0]
-    assert f.params["height"] == 5.0
-    # R107 stores the loop's canonical form, so the rectangle is a 4-point poly
-    assert f.params["curves"][0][0] == "poly"
-    assert len(f.params["curves"][0][1]) == 4
-    assert doc.can_replay(body.id)[0] is True
+    assert rep["ok"] and not rep["failed"]
+    assert rep["removed"] and rep["removed"][0][0] == body.id
+    assert "第 1 个闭环已不存在" in rep["removed"][0][1]
+    assert doc.body_by_id(body.id) is None
+    assert doc.features.get(body.id) is None
+    # and a snapshot taken before the edit still describes the whole document
+    assert doc.can_replay(body.id)[0] is False
 
 
 # --- the GUI hook -----------------------------------------------------------

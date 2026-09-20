@@ -400,10 +400,31 @@ else:
             self.doc_tabs.setCurrentIndex(self.cur)
             self._activate_session()
 
+        @staticmethod
+        def _looks_like_project(path: str) -> bool:
+            """Does this file carry a saved project manifest? (R115)
+
+            The extension is a hint, not the truth: a project saved under another
+            name (the Save-As list offers .scdoc) used to be handed to the
+            official-document reader, which failed with a modal dialog instead of
+            opening the project the user saved.  A project is a zip carrying a
+            manifest.json, so that is what is checked.
+            """
+            import zipfile
+            try:
+                if not zipfile.is_zipfile(path):
+                    return False
+                with zipfile.ZipFile(path) as zf:
+                    with zf.open("manifest.json") as fh:
+                        return b"scdm-session" in fh.read(512)
+            except (OSError, KeyError, ValueError, zipfile.BadZipFile):
+                return False
+
         def open_path(self, path: str):
             low = path.lower()
             try:
-                if low.endswith((".step", ".stp", ".brep", ".scdm")):
+                if (low.endswith((".step", ".stp", ".brep", ".scdm"))
+                        or self._looks_like_project(path)):
                     ses = self._session_from_cad(path)
                 else:
                     ses = session_from_scdoc(path)
@@ -426,6 +447,28 @@ else:
             self.ribbon.set_body_visible(True)
             self._activate_session()
             self._report_import(ses)
+            self._report_reference_warnings(ses)      # R115/A-2
+
+        def _report_reference_warnings(self, ses):
+            """R115/A-2: say up front which dimensions cannot be resolved.
+
+            A dangling cross-sketch reference (the referenced sketch was deleted)
+            or a typo is otherwise only found by entering that sketch and driving
+            the row, so the health check runs on open and names the rows.
+            """
+            if ses.kdoc is None:
+                return
+            try:
+                warns = SKM.reference_warnings(ses.kdoc, ses.scale)
+            except Exception:
+                return
+            if not warns:
+                return
+            head = "；".join("%s#%d %s" % (w["sketch"], w["index"], w["reason"])
+                            for w in warns[:2])
+            self._set_status("已打开：%d 条尺寸引用悬空（%s%s）"
+                             % (len(warns), head,
+                                "" if len(warns) <= 2 else " 等"))
 
         def _report_import(self, ses):
             """P47: tell the user what the importer could NOT rebuild.
@@ -545,7 +588,7 @@ else:
             ses.path = path
             ses.kdoc = KernelDoc()
             low = path.lower()
-            if low.endswith(".scdm"):
+            if low.endswith(".scdm") or self._looks_like_project(path):
                 from scdm.io_project import load_scdm
                 ses.kdoc = load_scdm(path)
             elif low.endswith(".brep"):
@@ -4160,7 +4203,10 @@ else:
             session, the grid, the locked camera, the ribbon tab and the chip.
             Returns whether we actually were in sketch mode.
             """
-            was = self._mode() == SKM.MODE_SKETCH
+            # R115: the *session* says whether the mode is open, not the tool mode:
+            # clicking the 3D button sets the tool mode first, and reading it here
+            # made this whole teardown (sketch sync, grid, ribbon, chip) a no-op
+            was = self._mode() == SKM.MODE_SKETCH or self._sketch_session is not None
             if was and self._sketch_session is not None:
                 # R106/B-1: the sketch may have been edited while in the mode
                 self._sync_sketch_bodies(self._sketch_session.sketch_id)
@@ -4229,7 +4275,17 @@ else:
             elif info.get("redundant_cons"):
                 text += "（#%s 重复）" % "、#".join(str(i)
                                               for i in info["redundant_cons"])
+            dangling = [r for r in SKM.dimensions(ses.kdoc, sid, ses.scale)
+                        if r.get("reason")]
+            if dangling:
+                text += " · 悬空 %d" % len(dangling)
             self._set_mode_chip(text)
+            # R115/A-1: the geometry behind those numbers, marked in the viewport
+            if self.scene is not None and hasattr(self.scene, "set_conflict_marks"):
+                geo = SKM.conflict_geometry(ses.kdoc, sid, ses.scale)
+                self.scene.set_conflict_marks(
+                    SKM.find_sketch(ses.kdoc, sid),
+                    geo.get("points", ()), geo.get("segments", ()))
 
         def _edit_sketch_dimension(self, sketch_id, index):
             """R107/A-3: drive a sketch dimension from the structure tree.
@@ -4280,12 +4336,21 @@ else:
             # R112/A-1: loops that no body follows yet (a mirror or a pattern
             # added profiles) - the caller says so instead of staying silent
             self._sync_extra = int(rep.get("extra_loops", 0) or 0)
+            # R115/A-6: a loop that vanished takes its body with it
+            self._sync_removed = list(rep.get("removed", []) or [])
             return len(rep["updated"])
 
         def _extra_loop_hint(self) -> str:
-            """R112/A-1: closed loops that no body follows yet."""
+            """R112/A-1 + R115/A-6: what the sync did to the body set."""
+            bits = ""
             k = int(getattr(self, "_sync_extra", 0) or 0)
-            return "，还有 %d 个闭环未建体（再「拉伸草图」）" % k if k else ""
+            if k:
+                bits += "，还有 %d 个闭环未建体（再「拉伸草图」）" % k
+            gone = list(getattr(self, "_sync_removed", []) or [])
+            if gone:
+                bits += "，删除 %d 个实体（%s）" % (
+                    len(gone), "、".join(why for _b, why in gone[:2]))
+            return bits
 
         def _sketch_source(self, plane):
             """(source, body_id, point, normal) for the plane we are about to use."""

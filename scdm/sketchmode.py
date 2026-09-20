@@ -426,11 +426,14 @@ def _resolve_value_mm(kdoc, raw, scale: float, sk=None):
     return mm / float(scale or 1000.0), None, ""
 
 
-def _solver_rows(sk, ns, scale: float) -> list:
+def _solver_rows(sk, ns, scale: float, report=None) -> list:
     """Constraint rows with expression values resolved to metres (R110/A-2).
 
     The stored rows keep the expression as written (readable, re-resolvable);
-    the solver needs numbers, and its unit is metres.
+    the solver needs numbers, and its unit is metres.  A row whose expression
+    cannot be resolved is **left out** and recorded in `report["skipped"]`
+    (R115): a dangling reference constrains nothing, and dropping the row must
+    not take the whole DOF report with it.
     """
     from scdm.params import eval_expr
     out = []
@@ -438,8 +441,14 @@ def _solver_rows(sk, ns, scale: float) -> list:
         if x and x[0] in DIM_KINDS:
             vi = _dim_value_index(x)
             if len(x) > vi and isinstance(x[vi], str):
+                try:
+                    v = float(eval_expr(x[vi], ns)) / float(scale or 1000.0)
+                except Exception:
+                    if report is not None:
+                        report.setdefault("skipped", []).append(str(x[vi]))
+                    continue
                 y = list(x)
-                y[vi] = float(eval_expr(x[vi], ns)) / float(scale or 1000.0)
+                y[vi] = v
                 out.append(tuple(y))
                 continue
         out.append(x)
@@ -457,7 +466,8 @@ def dof_report(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, Any]:
     out: Dict[str, Any] = {"ok": False, "reason": "", "dof": None,
                            "redundant": None, "conflicting": None,
                            "converged": None, "residual": None,
-                           "conflict_cons": (), "redundant_cons": ()}
+                           "conflict_cons": (), "redundant_cons": (),
+                           "skipped": []}
     sk = find_sketch(kdoc, sketch_id)
     if sk is None:
         out["reason"] = "草图不存在：%s" % sketch_id
@@ -467,9 +477,11 @@ def dof_report(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, Any]:
     has_radius = any(x and x[0] == "radius" for x in sk.constraints)
     circles = S.read_circles(sk) if has_radius else None
     try:
-        rep = solve_report(pts, _solver_rows(sk, _namespace_for(kdoc, sk, scale),
-                                             scale),
-                           segments=segs, circles=circles, max_iter=200)
+        skipped: Dict[str, Any] = {}
+        rows = _solver_rows(sk, _namespace_for(kdoc, sk, scale), scale,
+                            skipped)
+        rep = solve_report(pts, rows, segments=segs, circles=circles,
+                           max_iter=200)
     except Exception as exc:
         out["reason"] = "求解失败：%s" % exc
         return out
@@ -480,17 +492,22 @@ def dof_report(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, Any]:
                residual=float(getattr(rep, "max_residual", -1.0)),
                # R112/A-6: not just "how many" - *which* constraints
                conflict_cons=tuple(getattr(rep, "violated_cons", ()) or ()),
-               redundant_cons=tuple(getattr(rep, "redundant_cons", ()) or ()))
+               redundant_cons=tuple(getattr(rep, "redundant_cons", ()) or ()),
+               skipped=list(skipped.get("skipped", [])))
     return out
 
 
-def dimension_marks(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, Any]:
+def dimension_marks(kdoc, sketch_id: str, scale: float = 1000.0,
+                    solve: bool = True) -> Dict[str, Any]:
     """{index: "冲突" | "冗余"} for the tree (R112/A-6), one solve.
 
     A conflicting row wins over a redundant one: if it is both violated and
     repeated, "conflict" is what the user has to fix first.
     """
-    rep = dof_report(kdoc, sketch_id, scale)
+    # R115/A-2: the tree marks *every* sketch's unusable rows, but only the active
+    # one is worth an LM solve - the rest get the dangling-row pass alone
+    rep = (dof_report(kdoc, sketch_id, scale) if solve
+           else {"ok": True, "redundant_cons": (), "conflict_cons": ()})
     marks: Dict[int, str] = {}
     for i in rep.get("redundant_cons", ()) or ():
         marks[int(i)] = "冗余"
@@ -503,6 +520,101 @@ def dimension_marks(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, An
             marks[int(row["index"])] = "悬空"
     rep["marks"] = marks
     return rep
+
+
+def conflict_geometry(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, Any]:
+    """The UV geometry of the rows the solver could not satisfy (R115/A-1).
+
+    Returns `{"ok", "reason", "cons", "points", "segments", "solve"}` where the
+    points and segments are in sketch coordinates, ready for a viewport overlay.
+    Kept free of Qt on purpose: the mapping is exactly what a test can check when
+    there is no 3D scene (headless runs have none).
+    """
+    from scdm import sketch as S
+    out: Dict[str, Any] = {"ok": False, "reason": "", "cons": [], "points": [],
+                           "segments": [], "solve": None}
+    sk = find_sketch(kdoc, sketch_id)
+    if sk is None:
+        out["reason"] = "草图不存在：%s" % sketch_id
+        return out
+    info = dof_report(kdoc, sketch_id, scale)
+    out["solve"] = info
+    if not info["ok"]:
+        out["reason"] = info["reason"]
+        return out
+    cons = list(getattr(sk, "constraints", []) or [])
+    pts, segs = S.read_points(sk)
+    seg_of = {}
+    for (i, j) in segs:
+        seg_of.setdefault((min(i, j), max(i, j)), (i, j))
+    mark_pts: Dict[int, None] = {}
+    mark_segs: Dict[Tuple[int, int], None] = {}
+
+    def want_point(i):
+        if isinstance(i, int) and 0 <= i < len(pts):
+            mark_pts[i] = None
+
+    def want_seg(i, j):
+        want_point(i)
+        want_point(j)
+        key = (min(i, j), max(i, j))
+        if key in seg_of:
+            mark_segs[key] = None
+
+    marked: Dict[int, None] = {}
+    for ci in list(info.get("conflict_cons", ()) or ()) + \
+            list(info.get("redundant_cons", ()) or ()):
+        if not (0 <= ci < len(cons)) or ci in marked:
+            continue
+        marked[ci] = None
+        c = cons[ci]
+        if not c:
+            continue
+        kind = c[0]
+        if kind in ("dist", "h", "v", "coin", "point_on") and len(c) >= 3:
+            want_seg(int(c[1]), int(c[2]))
+        elif kind == "fixed" and len(c) >= 2:
+            want_point(int(c[1]))
+        elif kind == "radius" and len(c) >= 2:
+            want_point(int(c[1]))
+        elif kind in ("equal", "par", "perp") and len(c) >= 3:
+            for s in (int(c[1]), int(c[2])):
+                if 0 <= s < len(segs):
+                    want_seg(int(segs[s][0]), int(segs[s][1]))
+        elif kind == "tangent" and len(c) >= 3:
+            s = int(c[1])
+            if 0 <= s < len(segs):
+                want_seg(int(segs[s][0]), int(segs[s][1]))
+            want_point(int(c[2]))
+        elif kind == "mid" and len(c) >= 3:
+            want_point(int(c[1]))
+            s = int(c[2])
+            if 0 <= s < len(segs):
+                want_seg(int(segs[s][0]), int(segs[s][1]))
+        out["cons"].append(int(ci))
+    out["points"] = [[float(pts[i][0]), float(pts[i][1])] for i in sorted(mark_pts)]
+    out["segments"] = [[[float(pts[a][0]), float(pts[a][1])],
+                        [float(pts[b][0]), float(pts[b][1])]]
+                       for (a, b) in sorted(mark_segs)]
+    out["ok"] = True
+    return out
+
+
+def reference_warnings(kdoc, scale: float = 1000.0) -> List[dict]:
+    """Dimensions whose expression cannot be resolved (R115/A-2).
+
+    What an open-time health check reports: a dangling cross-sketch reference, a
+    typo, a deleted sketch.  One entry per row, with the sketch id and index so
+    the message can point at exactly the row to fix.
+    """
+    out: List[dict] = []
+    for sk in getattr(kdoc, "sketches", []) or []:
+        sid = str(getattr(sk, "id", ""))
+        for row in dimensions(kdoc, sid, scale):
+            if row.get("reason"):
+                out.append({"sketch": sid, "index": int(row["index"]),
+                            "expr": row.get("expr"), "reason": row["reason"]})
+    return out
 
 
 def dimensions(kdoc, sketch_id: str, scale: float = 1000.0) -> List[dict]:
@@ -711,7 +823,7 @@ def sync_sketch_bodies(kdoc, sketch_id: Optional[str] = None,
     """
     from scdm import sketch as S          # R109: used for welding before replay
     out: Dict[str, Any] = {"ok": True, "reason": "", "updated": [], "failed": [],
-                           "extra_loops": 0}
+                           "removed": [], "extra_loops": 0}
     for bid, stack in list(getattr(kdoc, "features", {}).items()):
         for f in list(stack.features):
             if f.op != "sketch":
@@ -732,8 +844,17 @@ def sync_sketch_bodies(kdoc, sketch_id: Optional[str] = None,
             if idx is not None:
                 loops = S.sketch_loops(sk.curves)
                 if not (0 <= int(idx) < len(loops)):
-                    out["failed"].append(
-                        (bid, "草图第 %d 个闭环已不存在" % (int(idx) + 1)))
+                    # R115/A-6: the loop this body was built from no longer
+                    # exists, so the body has no defining geometry left - it goes
+                    # with it (the undo stack still holds the state before the
+                    # sketch edit, so this is recoverable).
+                    reason = "草图第 %d 个闭环已不存在" % (int(idx) + 1)
+                    kdoc.remove(bid)
+                    try:
+                        kdoc.features.pop(bid, None)
+                    except AttributeError:
+                        pass
+                    out["removed"].append((bid, reason))
                     continue
                 curves = loop_curves(loops[int(idx)])
             # the new definition is committed only if the replay succeeds -

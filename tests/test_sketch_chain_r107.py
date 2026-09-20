@@ -66,14 +66,22 @@ def test_each_body_follows_its_own_loop():
     assert K.volume(bodies[1].shape) == pytest.approx(_mm3(10, 4, 5), rel=1e-9)
 
 
-def test_a_removed_loop_is_reported_and_leaves_the_other_alone():
+def test_a_removed_loop_takes_its_body_and_leaves_the_other_alone():
+    """R115/A-6 changed this from "reported and kept" to "reported and removed":
+    a body whose loop no longer exists has no defining geometry left, so it goes
+    with the loop while the other loop keeps following the sketch."""
     doc = KernelDoc()
     sk, bodies = _extrude(doc, [_rect(10, 8), _rect(5, 4, x0=0.02)], 5.0)
+    keep_id, gone_id = bodies[0].id, bodies[1].id
     del sk.curves[1]
     rep = SKM.sync_sketch_bodies(doc, sk.id, 1000.0)
-    assert rep["ok"] is False and bodies[1].id in rep["reason"]
-    assert "第 2 个闭环已不存在" in rep["reason"]
-    assert K.volume(bodies[1].shape) == pytest.approx(_mm3(5, 4, 5), rel=1e-9)
+    assert rep["ok"] and not rep["failed"]
+    assert [b for b, _why in rep["removed"]] == [gone_id]
+    assert "第 2 个闭环已不存在" in rep["removed"][0][1]
+    assert doc.body_by_id(gone_id) is None
+    assert [b.id for b in doc.bodies] == [keep_id]
+    assert K.volume(doc.body_by_id(keep_id).shape) == pytest.approx(
+        _mm3(10, 8, 5), rel=1e-9)
 
 
 # --- A-2: exact circular sections ------------------------------------------

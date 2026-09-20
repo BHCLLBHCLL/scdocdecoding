@@ -455,13 +455,13 @@ class LeftPanel(QWidget):
                     dims = []
                 # R112/A-6: an over-constrained sketch says *which* rows fight;
                 # only the active sketch is solved, so the tree stays cheap
-                marks = {}
-                if getattr(session.kdoc, "active_sketch", None) == sk.id:
-                    try:
-                        marks = _SKM.dimension_marks(session.kdoc, sk.id,
-                                                     session.scale)["marks"]
-                    except Exception:
-                        marks = {}
+                active = getattr(session.kdoc, "active_sketch", None) == sk.id
+                try:
+                    marks = _SKM.dimension_marks(session.kdoc, sk.id,
+                                                 session.scale,
+                                                 solve=active)["marks"]
+                except Exception:
+                    marks = {}
                 for d in dims:
                     # R111/A-1: the index is shown because another dimension
                     # references this one by name ("dim5"), so it has to be
