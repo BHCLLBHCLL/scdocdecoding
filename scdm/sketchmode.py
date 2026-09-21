@@ -159,6 +159,12 @@ DIM_KINDS = ("dist", "radius")
 #: human labels per dimension kind
 DIM_LABELS = {"dist": "距离", "radius": "半径"}
 
+#: human labels per constraint kind - what a conflict mark says it is (R116/A-1)
+CON_LABELS = {"dist": "尺寸", "h": "水平", "v": "竖直", "coin": "重合",
+              "fixed": "固定", "radius": "半径", "tangent": "相切",
+              "mid": "中点", "par": "平行", "perp": "垂直", "equal": "相等",
+              "point_on": "点在线上"}
+
 
 #: how far apart two sketch endpoints may be and still be welded (R112/A-2).
 #: The library default is the historic 0.1 mm; the viewport writes its snap
@@ -550,27 +556,22 @@ def conflict_geometry(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, 
     mark_pts: Dict[int, None] = {}
     mark_segs: Dict[Tuple[int, int], None] = {}
 
-    def want_point(i):
-        if isinstance(i, int) and 0 <= i < len(pts):
-            mark_pts[i] = None
+    def geometry_of(kind, c):
+        """(point indices, segment keys) of one constraint (R116/A-1)."""
+        p: set = set()
+        s: set = set()
 
-    def want_seg(i, j):
-        want_point(i)
-        want_point(j)
-        key = (min(i, j), max(i, j))
-        if key in seg_of:
-            mark_segs[key] = None
+        def want_point(i):
+            if isinstance(i, int) and 0 <= i < len(pts):
+                p.add(i)
 
-    marked: Dict[int, None] = {}
-    for ci in list(info.get("conflict_cons", ()) or ()) + \
-            list(info.get("redundant_cons", ()) or ()):
-        if not (0 <= ci < len(cons)) or ci in marked:
-            continue
-        marked[ci] = None
-        c = cons[ci]
-        if not c:
-            continue
-        kind = c[0]
+        def want_seg(i, j):
+            want_point(i)
+            want_point(j)
+            key = (min(i, j), max(i, j))
+            if key in seg_of:
+                s.add(key)
+
         if kind in ("dist", "h", "v", "coin", "point_on") and len(c) >= 3:
             want_seg(int(c[1]), int(c[2]))
         elif kind == "fixed" and len(c) >= 2:
@@ -578,26 +579,62 @@ def conflict_geometry(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, 
         elif kind == "radius" and len(c) >= 2:
             want_point(int(c[1]))
         elif kind in ("equal", "par", "perp") and len(c) >= 3:
-            for s in (int(c[1]), int(c[2])):
-                if 0 <= s < len(segs):
-                    want_seg(int(segs[s][0]), int(segs[s][1]))
+            for si in (int(c[1]), int(c[2])):
+                if 0 <= si < len(segs):
+                    want_seg(int(segs[si][0]), int(segs[si][1]))
         elif kind == "tangent" and len(c) >= 3:
-            s = int(c[1])
-            if 0 <= s < len(segs):
-                want_seg(int(segs[s][0]), int(segs[s][1]))
+            si = int(c[1])
+            if 0 <= si < len(segs):
+                want_seg(int(segs[si][0]), int(segs[si][1]))
             want_point(int(c[2]))
         elif kind == "mid" and len(c) >= 3:
             want_point(int(c[1]))
-            s = int(c[2])
-            if 0 <= s < len(segs):
-                want_seg(int(segs[s][0]), int(segs[s][1]))
-        out["cons"].append(int(ci))
-    out["points"] = [[float(pts[i][0]), float(pts[i][1])] for i in sorted(mark_pts)]
-    out["segments"] = [[[float(pts[a][0]), float(pts[a][1])],
-                        [float(pts[b][0]), float(pts[b][1])]]
-                       for (a, b) in sorted(mark_segs)]
+            si = int(c[2])
+            if 0 <= si < len(segs):
+                want_seg(int(segs[si][0]), int(segs[si][1]))
+        return p, s
+
+    def uv(i):
+        return [float(pts[i][0]), float(pts[i][1])]
+
+    # R116/A-1: one mark per constraint, carrying *what kind* it is and whether it
+    # is violated (conflict) or merely repeated (redundant) - a viewport can then
+    # colour the two differently, and a UI can say "尺寸 #5" instead of "#5".
+    marks: List[dict] = []
+    for ci in [int(i) for i in (info.get("conflict_cons", ()) or ())] + \
+            [int(i) for i in (info.get("redundant_cons", ()) or ())]:
+        if not (0 <= ci < len(cons)) or any(m["index"] == ci for m in marks):
+            continue
+        c = cons[ci]
+        if not c:
+            continue
+        p, s = geometry_of(c[0], c)
+        state = ("conflict" if ci in (info.get("conflict_cons", ()) or ())
+                 else "redundant")
+        marks.append({"index": ci, "kind": str(c[0]),
+                      "label": CON_LABELS.get(str(c[0]), str(c[0])),
+                      "state": state,
+                      "points": [uv(i) for i in sorted(p)],
+                      "segments": [[uv(a), uv(b)] for (a, b) in sorted(s)]})
+        out["cons"].append(ci)
+        for i in sorted(p):
+            mark_pts.setdefault(i, None)
+        for key in sorted(s):
+            mark_segs.setdefault(key, None)
+    out["marks"] = marks
+    out["points"] = [uv(i) for i in sorted(mark_pts)]
+    out["segments"] = [[uv(a), uv(b)] for (a, b) in sorted(mark_segs)]
     out["ok"] = True
     return out
+
+
+def conflict_labels(kdoc, sketch_id: str, scale: float = 1000.0) -> List[str]:
+    """["尺寸#5 冲突", "尺寸#7 冗余"] - the marks as short UI text (R116/A-1)."""
+    geo = conflict_geometry(kdoc, sketch_id, scale)
+    state = {"conflict": "冲突", "redundant": "冗余"}
+    return ["%s#%d %s" % (m["label"], m["index"],
+                          state.get(m["state"], m["state"]))
+            for m in geo.get("marks", [])]
 
 
 def reference_warnings(kdoc, scale: float = 1000.0) -> List[dict]:

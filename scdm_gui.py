@@ -450,25 +450,22 @@ else:
             self._report_reference_warnings(ses)      # R115/A-2
 
         def _report_reference_warnings(self, ses):
-            """R115/A-2: say up front which dimensions cannot be resolved.
+            """R115/A-2 + R116/A-2: say up front what points at something deleted.
 
-            A dangling cross-sketch reference (the referenced sketch was deleted)
-            or a typo is otherwise only found by entering that sketch and driving
-            the row, so the health check runs on open and names the rows.
+            A dangling cross-sketch reference, a mate to a removed component, a
+            named selection on a deleted body: all of it is otherwise only found by
+            tripping over it, so the health check runs on open and names the rows.
             """
             if ses.kdoc is None:
                 return
             try:
-                warns = SKM.reference_warnings(ses.kdoc, ses.scale)
+                from scdm.health import document_warnings, warning_summary
+                warns = document_warnings(ses.kdoc, ses.scale)
             except Exception:
                 return
             if not warns:
                 return
-            head = "；".join("%s#%d %s" % (w["sketch"], w["index"], w["reason"])
-                            for w in warns[:2])
-            self._set_status("已打开：%d 条尺寸引用悬空（%s%s）"
-                             % (len(warns), head,
-                                "" if len(warns) <= 2 else " 等"))
+            self._set_status(warning_summary(warns))
 
         def _report_import(self, ses):
             """P47: tell the user what the importer could NOT rebuild.
@@ -3692,18 +3689,26 @@ else:
             dy = self.left.spin_value("sketch.pattern", 1)
             scale = float(ses.scale or 1000.0)
             path_index = None
+            offset_mm = 0.0
             if self.left.is_checked("sketch.pattern", 1):       # R114/A-2
+                # R116/A-5: every selected curve is path material, and the chain
+                # decides the order - the user does not have to click them in order
                 edges = [r for r in getattr(self, "sketch_selection", [])
                          if r[0] == "curve"]
-                if len(edges) != 1:
+                if not edges:
                     self._set_status(
-                        "阵列：沿曲线阵列需要先选中一条曲线作为路径（当前 %d 条）"
-                        % len(edges))
+                        "阵列：沿曲线阵列需要先选中曲线作为路径（当前 0 条）")
                     return
-                path_index = int(edges[0][1])
-                rep = S.pattern_curves(sk, int(count), mode="along",
-                                       path=S.curve_points(sk, path_index))
-                what = "沿曲线 %d" % path_index
+                idxs = [int(r[1]) for r in edges]
+                path, why = S.path_points(sk, idxs)
+                if not path:
+                    self._set_status("阵列：%s" % why)
+                    return
+                offset_mm = float(self.left.spin_value("sketch.pattern", 5) or 0.0)
+                rep = S.pattern_curves(sk, int(count), mode="along", path=path,
+                                       offset=offset_mm / scale)
+                path_index = idxs if len(idxs) > 1 else idxs[0]
+                what = "沿曲线 %s" % "+".join(str(i) for i in idxs)
             elif self.left.is_checked("sketch.pattern", 0):     # R113/A-2
                 cu = self.left.spin_value("sketch.pattern", 2) or 0.0
                 cv = self.left.spin_value("sketch.pattern", 3) or 0.0
@@ -3727,6 +3732,7 @@ else:
                    "sweep_deg": float(rep.get("sweep_deg", 360.0))}
             if path_index is not None:
                 rec["path_index"] = path_index
+                rec["offset_mm"] = offset_mm
             self._record("sketch.pattern", **rec)
             n = self._sync_sketch_bodies(sk.id)          # R106/B-1
             self._rebuild("已阵列 ×%d（%s，+%d 条曲线）%s"
@@ -4284,8 +4290,7 @@ else:
             if self.scene is not None and hasattr(self.scene, "set_conflict_marks"):
                 geo = SKM.conflict_geometry(ses.kdoc, sid, ses.scale)
                 self.scene.set_conflict_marks(
-                    SKM.find_sketch(ses.kdoc, sid),
-                    geo.get("points", ()), geo.get("segments", ()))
+                    SKM.find_sketch(ses.kdoc, sid), geo.get("marks", ()))
 
         def _edit_sketch_dimension(self, sketch_id, index):
             """R107/A-3: drive a sketch dimension from the structure tree.

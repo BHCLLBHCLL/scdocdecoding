@@ -305,7 +305,8 @@ def test_the_op_and_gui_pattern_along_a_selected_curve():
         v.left.set_checked("sketch.pattern", 1, True)
         before = len(vsk.curves)
         v.on_command("sketch.pattern")
-        assert "需要先选中一条曲线" in v._prompt.text(), v._prompt.text()
+        # R116 allows several curves, so the wording dropped the "一条"
+        assert "需要先选中曲线作为路径" in v._prompt.text(), v._prompt.text()
         assert len(vsk.curves) == before
         v._select_sketch_entity([0.040, 0.0002])
         page = v.left._opt_pages["sketch.pattern"]

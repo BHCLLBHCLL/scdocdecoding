@@ -738,7 +738,8 @@ def mirror_curves(sk, axis="v", keep: bool = True) -> Dict[str, Any]:
 
 def pattern_curves(sk, count: int, du: float = 0.0, dv: float = 0.0,
                    mode: str = "linear", center=None,
-                   sweep_deg: float = 360.0, path=None) -> Dict[str, Any]:
+                   sweep_deg: float = 360.0, path=None,
+                   offset: float = 0.0) -> Dict[str, Any]:
     """Pattern of the sketch curves: `count` instances, original included.
 
     `linear` (R112/A-1) steps by `i * (du, dv)` in sketch units - the
@@ -746,8 +747,12 @@ def pattern_curves(sk, count: int, du: float = 0.0, dv: float = 0.0,
     copies about `center` by `i * sweep / (count - 1)` degrees, so `sweep_deg`
     is the angle **from the first instance to the last** (360 with 4 instances
     gives even quarters).  `along` (R114/A-2) walks `path` (a UV polyline) by
-    arc length, placing instance `k` at `k * L / (count - 1)` and rotating it by
-    the change of tangent - "follow the curve" with the first point as anchor.
+    arc length, placing instance `k` at
+    `offset + k * (L - offset) / (count - 1)` and rotating it by the change of
+    tangent - "follow the curve" with the first point as anchor.  `offset`
+    (R116/A-5, sketch units) starts the pattern further along the path, so the
+    first copy need not sit at the start; with a zero offset the last copy lands
+    exactly on the end.
     """
     count = int(count)
     if count < 2:
@@ -802,9 +807,17 @@ def pattern_curves(sk, count: int, du: float = 0.0, dv: float = 0.0,
             return ((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t),
                     math.atan2(b[1] - a[1], b[0] - a[0]))
 
+        off = float(offset or 0.0)
+        if off < 0.0:
+            return {"ok": False, "added": 0, "reason": "起点偏移不能为负"}
+        if off >= total:
+            return {"ok": False, "added": 0,
+                    "reason": "起点偏移超出路径长度（%.3gmm ≥ %.3gmm）"
+                              % (off * 1000.0, total * 1000.0)}
+        step_len = (total - off) / float(count - 1)
         p0, a0 = at(0.0)
         for k in range(1, count):
-            pk, ak = at(total * k / float(count - 1))
+            pk, ak = at(off + step_len * k)
             ca, sa = math.cos(ak - a0), math.sin(ak - a0)
             fns.append(lambda u, v, pk=pk, ca=ca, sa=sa: (
                 pk[0] + (u - p0[0]) * ca - (v - p0[1]) * sa,
@@ -827,8 +840,8 @@ def pattern_curves(sk, count: int, du: float = 0.0, dv: float = 0.0,
         out.update(center=[float(center[0]), float(center[1])],
                    sweep_deg=float(sweep_deg), step_deg=float(sweep) / (count - 1))
     elif kind == "along":
-        out.update(path_length=float(total),
-                   step=float(total) / (count - 1))
+        out.update(path_length=float(total), offset=float(offset or 0.0),
+                   step=(float(total) - float(offset or 0.0)) / (count - 1))
     return out
 
 
@@ -934,6 +947,74 @@ def curve_segment(sk, index: int, sub: int = 0):
     k = int(sub) % (len(pts) - 1)
     return (pts[k], pts[k + 1])
 
+
+def path_points(sk, indices, tol: float = 1e-4):
+    """Chain sketch curves into one path polyline (R116/A-5).
+
+    `indices` may be one curve or several; the chain is built by nearest endpoint
+    (reversing a curve when that is what joins it) and the *best* start is picked,
+    so the caller neither has to select the curves in order nor start at the first
+    one.  A gap larger than `tol` refuses the whole path by name - silently
+    bridging it would invent geometry the user never drew.
+    Returns `(points, reason)`.
+    """
+    if isinstance(indices, int):
+        indices = [indices]
+    parts = []
+    for i in indices or ():
+        pl = curve_points(sk, int(i))
+        if not pl:
+            return None, "路径曲线序号无效：%s" % i
+        parts.append((int(i), list(pl)))
+    if not parts:
+        return None, "沿曲线阵列需要一条路径（至少 1 条曲线）"
+    if len(parts) == 1:
+        return list(parts[0][1]), ""
+
+    def chain_from(start: int, rev: bool):
+        """(chain, curves used, first gap reason) starting at `parts[start]`."""
+        _ci, pl = parts[start]
+        chain = list(reversed(pl)) if rev else list(pl)
+        left = [k for k in range(len(parts)) if k != start]
+        used = 1
+        gap = ""
+        while left:
+            tip = chain[-1]
+            best = None
+            for k in left:
+                pl2 = parts[k][1]
+                for r2 in (False, True):
+                    pts = list(reversed(pl2)) if r2 else pl2
+                    d = math.hypot(pts[0][0] - tip[0], pts[0][1] - tip[1])
+                    if best is None or d < best[0]:
+                        best = (d, k, r2)
+            d, k, r2 = best
+            if d > float(tol):
+                gap = ("路径不连续：曲线 %d 与已链好的路径相距 %.3gmm"
+                       % (parts[k][0], d * 1000.0))
+                break
+            pts = list(reversed(parts[k][1])) if r2 else parts[k][1]
+            chain.extend(pts[1:])
+            left.remove(k)
+            used += 1
+        return chain, used, gap
+
+    # R116/A-5: the selection order is the user's intent, so the first listed
+    # curve in its stored orientation wins when it can consume the whole path
+    # (the chain direction decides which tangent the copies follow).
+    preferred = chain_from(0, False)
+    if preferred[1] == len(parts):
+        return preferred[0], ""
+    best = None
+    for start in range(len(parts)):
+        for rev in (False, True):
+            chain, used, gap = chain_from(start, rev)
+            if best is None or used > best[1]:
+                best = (chain, used, gap)
+    chain, used, gap = best
+    if used < len(parts):
+        return None, gap or "路径无法连成一条（可能需要更大的容差）"
+    return chain, ""
 
 def pick_entity(sk, pick, tol: float):
     """The sketch entity nearest to `pick`, within `tol` (R114/A-1).

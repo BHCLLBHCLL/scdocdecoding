@@ -264,7 +264,7 @@ class LeftPanel(QWidget):
         check_spin("sketch.pattern", [("圆周阵列", False),
                                       ("沿曲线阵列（选中曲线为路径）", False)],
                    [("X 间距", 10.0), ("Y 间距", 0.0), ("圆心 U", 0.0),
-                    ("圆心 V", 0.0), ("总角度", 360.0)],
+                    ("圆心 V", 0.0), ("总角度", 360.0), ("起点偏移", 0.0)],
                    [("数量", 3)])
         checks("mode.section", [("剖面显示", True), ("截面可拉", True)])
         checks("tool.split_body", [("保留两侧", True)])

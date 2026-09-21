@@ -1067,12 +1067,14 @@ def op_sketch_mirror(kdoc, opts, scale):
 
 
 def op_sketch_pattern(kdoc, opts, scale):
-    """R112/A-1 + R113/A-2: linear or circular pattern of the sketch curves.
+    """R112/A-1 + R113/A-2 + R116/A-5: linear / circular / along pattern.
 
     opts: sketch = sketch index, count = instances in total (the original
     included, default 3), mode = "linear" (default) or "circular",
     dx_mm / dy_mm = spacing per step (linear), cu_mm / cv_mm = the centre and
-    sweep_deg = the angle from the first instance to the last (circular).
+    sweep_deg = the angle from the first instance to the last (circular),
+    path_index = one curve or a list of them to chain into the path and
+    offset_mm = where along that path the pattern starts (along).
     """
     from scdm import sketch as S
     from scdm import sketchmode as SKM
@@ -1086,14 +1088,17 @@ def op_sketch_pattern(kdoc, opts, scale):
     path = None
     if mode == "along":
         if opts.get("path_index") is None:
-            raise ValueError("草图阵列：沿曲线阵列需要 path_index（曲线序号）")
-        path = S.curve_points(sk, int(opts["path_index"]))
+            raise ValueError("草图阵列：沿曲线阵列需要 path_index（曲线序号或列表）")
+        idx = opts["path_index"]
+        idxs = list(idx) if isinstance(idx, (list, tuple)) else [idx]
+        path, why = S.path_points(sk, idxs)
         if not path:
-            raise ValueError("草图阵列：曲线序号越界（%s）" % opts["path_index"])
+            raise ValueError("草图阵列：%s" % why)
     rep = S.pattern_curves(sk, int(opts.get("count", 3)), du, dv, mode=mode,
                            center=center, sweep_deg=float(opts.get("sweep_deg",
                                                                   360.0)),
-                           path=path)
+                           path=path,
+                           offset=float(opts.get("offset_mm", 0.0)) / sc)
     if not rep["ok"]:
         raise ValueError("草图阵列失败：%s" % rep["reason"])
     syn = SKM.sync_sketch_bodies(kdoc, sk.id, scale)

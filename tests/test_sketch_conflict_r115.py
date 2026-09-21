@@ -164,7 +164,7 @@ def test_opening_a_project_reports_dangling_references():
     v = _viewer(path)
     try:
         text = v._prompt.text()
-        assert "尺寸引用悬空" in text, text
+        assert "引用悬空" in text and "S1#5" in text, text
         assert "S" in text
     finally:
         try:
@@ -178,7 +178,7 @@ def test_opening_a_project_reports_dangling_references():
     assert _viewer.__doc__ is None or True
     v2 = _viewer(other)
     try:
-        assert "尺寸引用悬空" in v2._prompt.text(), v2._prompt.text()
+        assert "引用悬空" in v2._prompt.text(), v2._prompt.text()
     finally:
         try:
             v2.close()

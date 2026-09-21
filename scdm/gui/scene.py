@@ -867,31 +867,46 @@ class Scene:
             self.renderer.RemoveActor(a)
         self._conflict_actors = []
 
-    def set_conflict_marks(self, sk, points=(), segments=()):
-        """Mark the geometry the solver could not satisfy (R115/A-1).
+    #: conflict red / redundant amber (R116/A-1)
+    CONFLICT_COLOR = (0.90, 0.15, 0.10)
+    REDUNDANT_COLOR = (0.95, 0.65, 0.10)
 
-        `points` and `segments` are in sketch UV, mapped through the sketch's axes
-        here - so the library stays Qt-free and the overlay cannot drift from the
+    def set_conflict_marks(self, sk, marks=()):
+        """Mark the geometry the solver could not satisfy (R115/A-1, R116/A-1).
+
+        `marks` are the library's typed marks (`conflict_geometry()["marks"]`):
+        each carries UV points/segments and a `state`, so a violated row is drawn
+        in red and a merely repeated one in amber.  The UV-to-world mapping lives
+        here, so the library stays Qt-free and the overlay cannot drift from the
         geometry it points at.
         """
         self.clear_conflict_marks()
-        if sk is None or (not points and not segments):
+        if sk is None or not marks:
             return
         from scdm import sketch as S
         axes = S.sketch_axes(sk.plane, sk.origin, sk.normal, sk.xdir)
-        segs = [[list(S.axes_to_world(axes, float(a[0]), float(a[1]))),
-                 list(S.axes_to_world(axes, float(b[0]), float(b[1])))]
-                for a, b in (segments or ())]
-        pts = [list(S.axes_to_world(axes, float(p[0]), float(p[1])))
-               for p in (points or ())]
-        if segs:
-            act = _lines_actor(segs, (0.90, 0.15, 0.10), 4.5)
-            self.renderer.AddActor(act)
-            self._conflict_actors.append(act)
-        if pts:
-            act = _points_actor(pts, (0.90, 0.15, 0.10), 12)
-            self.renderer.AddActor(act)
-            self._conflict_actors.append(act)
+        by_color: Dict[tuple, list] = {}
+        for m in marks:
+            color = (self.CONFLICT_COLOR if m.get("state") == "conflict"
+                     else self.REDUNDANT_COLOR)
+            bucket = by_color.setdefault(color, [[], []])
+            for a, b in (m.get("segments") or ()):
+                bucket[0].append([list(S.axes_to_world(axes, float(a[0]),
+                                                      float(a[1]))),
+                                  list(S.axes_to_world(axes, float(b[0]),
+                                                       float(b[1])))])
+            for p in (m.get("points") or ()):
+                bucket[1].append(list(S.axes_to_world(axes, float(p[0]),
+                                                      float(p[1]))))
+        for color, (segs, pts) in by_color.items():
+            if segs:
+                act = _lines_actor(segs, color, 4.5)
+                self.renderer.AddActor(act)
+                self._conflict_actors.append(act)
+            if pts:
+                act = _points_actor(pts, color, 12)
+                self.renderer.AddActor(act)
+                self._conflict_actors.append(act)
 
     def show_constraint_marks(self, marks, scale=0.0035):
         """P21: label applied sketch constraints; marks are (x, y, z, text)."""
