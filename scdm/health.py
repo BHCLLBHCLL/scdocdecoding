@@ -67,10 +67,13 @@ def document_warnings(kdoc, scale: float = 1000.0) -> List[dict]:
                         and bid not in comp_ids:
                     out.append({"scope": scope,
                                 "id": "%s/%s" % (entry.get("name", "?"), sid),
-                                "reason": "%s %s 指向已删除的 %s" % (
+                                "reason": "%s %s 指向已删除的 %s%s" % (
                                     "命名选择" if scope == "named" else "组",
-                                    entry.get("name", "?"), bid),
+                                    entry.get("name", "?"), bid,
+                                    "（导入，只读）" if entry.get("imported")
+                                    else ""),
                                 "extra": str(kind),
+                                "readonly": bool(entry.get("imported")),
                                 "ref": (key, str(kind), str(sid),
                                         entry.get("name", ""))})
 
@@ -272,6 +275,11 @@ def repair_warning(kdoc, warning, action: str = "auto", scale: float = 1000.0,
     refusal can be acted on.
     """
     scope = warning.get("scope", "")
+    if warning.get("readonly"):
+        # R120/A-3: an imported structure belongs to the document it came
+        # from - a repair here would rewrite someone else's grouping
+        return {"ok": False, "action": "", "options": [],
+                "reason": "该引用来自导入结构（只读），不能在这里修"}
     options = list(FIXES.get(scope, ()))
     act = action
     if act in (None, "", "auto"):
@@ -289,18 +297,54 @@ def repair_warning(kdoc, warning, action: str = "auto", scale: float = 1000.0,
     return {"ok": bool(ok), "action": act, "options": options, "reason": why}
 
 
-def repair_plan(kdoc, scale: float = 1000.0) -> List[dict]:
+def repair_selected(kdoc, ids=None, scale: float = 1000.0, action="auto",
+                    to=None) -> dict:
+    """Fix only the warnings named in `ids` (R120/A-1) - or all when None.
+
+    `action` may be one action or a `{scope: action}` map, so "retarget the
+    dimensions, drop the rest" is one call.  `to` may be one target for every
+    retargeted row or a `{warning id: target}` map (a target is a sketch id, or a
+    `(sketch, index)` pair).  Everything not named is left exactly as it was.
+    """
+    wanted = None if ids is None else {str(i) for i in ids}
+    out = {"ok": True, "fixed": [], "skipped": []}
+    for w in document_warnings(kdoc, scale):
+        if wanted is not None and w["id"] not in wanted:
+            continue
+        act = (action.get(w.get("scope", ""), "auto")
+               if isinstance(action, dict) else action)
+        target = to.get(w["id"]) if isinstance(to, dict) else to
+        tgt, tix = target, None
+        if isinstance(target, (tuple, list)) and len(target) == 2:
+            tgt, tix = target
+        rep = repair_warning(kdoc, w, act, scale, to=tgt, to_index=tix)
+        if rep["ok"]:
+            out["fixed"].append((w["id"], rep["reason"]))
+        else:
+            out["skipped"].append((w["id"], rep["reason"]))
+    return out
+
+
+def repair_plan(kdoc, scale: float = 1000.0, ids=None) -> List[dict]:
     """What `repair_all()` would do, without doing it (R119/A-2).
 
     One entry per warning: `{"id", "scope", "action", "text"}`.  Reviewing the
     list first is the difference between "the tool fixed my document" and "the
     tool changed my document" - a destructive step deserves a look.
     """
+    wanted = None if ids is None else {str(i) for i in ids}
     out: List[dict] = []
     for w in document_warnings(kdoc, scale):
+        if wanted is not None and w["id"] not in wanted:
+            continue
+        if w.get("readonly"):
+            out.append({"id": w["id"], "scope": w.get("scope", ""),
+                        "action": "", "text": "只读（导入），跳过"})
+            continue
         options = FIXES.get(w.get("scope", ""), ())
         act = options[0] if options else ""
-        out.append({"id": w["id"], "scope": w.get("scope", ""), "action": act,
+        out.append({"id": w["id"], "scope": w.get("scope", ""),
+                    "action": act,
                     "text": ACTION_TEXT.get(act, act or "无法修复")})
     return out
 
@@ -321,11 +365,4 @@ def repair_all(kdoc, scale: float = 1000.0) -> dict:
     Entries are removed *by value*, so repairing one cannot shift the next one
     out from under the loop.  What cannot be fixed is reported, not guessed at.
     """
-    out = {"ok": True, "fixed": [], "skipped": []}
-    for w in document_warnings(kdoc, scale):
-        rep = repair_warning(kdoc, w, "auto", scale)
-        if rep["ok"]:
-            out["fixed"].append((w["id"], rep["reason"]))
-        else:
-            out["skipped"].append((w["id"], rep["reason"]))
-    return out
+    return repair_selected(kdoc, None, scale, "auto")

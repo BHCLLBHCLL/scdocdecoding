@@ -2464,6 +2464,27 @@ else:
                     return w
             return None
 
+        def _selected_health_ids(self):
+            """The ids of the health rows selected in the tree (R120/A-1).
+
+            None means "no health row selected", which the repair command reads as
+            "everything"; an empty list is never returned (that would repair
+            nothing and look like a silent failure).
+            """
+            tree = getattr(self.left, "tree", None)
+            if tree is None:
+                return None
+            try:
+                items = tree.selectedItems()
+            except Exception:
+                return None
+            ids = []
+            for it in items:
+                data = it.data(0, Qt.UserRole)
+                if data and data[0] == "health" and len(data) > 2 and data[2]:
+                    ids.append(str(data[2]))
+            return ids or None
+
         def _do_repair_refs(self):
             """R118/A-2: fix dangling references - the selected row, or all of them.
 
@@ -2481,13 +2502,20 @@ else:
                 self._set_status("引用修复：没有悬空引用")
                 return
             # R119/A-2: preview first (the option page asks for it); the plan says
-            # what each warning would turn into before anything is touched
+            # what each warning would turn into before anything is touched.
+            # R120/A-1: when health rows are selected, only those are repaired.
             try:
                 dry = bool(self.left.is_checked("repair.refs", 0))
             except Exception:
                 dry = False
+            try:
+                retarget = bool(self.left.is_checked("repair.refs", 1))
+                to = "S%d" % int(self.left.spin_value("repair.refs", 0) or 1)
+            except Exception:
+                retarget, to = False, None
+            ids = self._selected_health_ids()
             if dry:
-                plan = HEALTH.repair_plan(ses.kdoc, ses.scale)
+                plan = HEALTH.repair_plan(ses.kdoc, ses.scale, ids=ids)
                 self.repair_plan = plan
                 head = "；".join("%s → %s" % (p["id"], p["text"]) for p in plan[:2])
                 more = "" if len(plan) <= 2 else " 等 %d 条" % len(plan)
@@ -2495,21 +2523,35 @@ else:
                                  % (len(plan), head, more))
                 return
             self.repair_plan = []
-            target = self._selected_health_warning()
+            # R120/A-2: "retarget the dimensions, drop the rest" in one action
+            action = {"dimension": "retarget"} if retarget else "auto"
             self._push_undo()
+            target = self._selected_health_warning() if (ids and len(ids) == 1) \
+                else None
             if target is not None:
-                rep = HEALTH.repair_warning(ses.kdoc, target, "auto", ses.scale)
+                # one row picked: repair it and say exactly what happened
+                act = action
+                if isinstance(act, dict) and target.get("scope") != "dimension":
+                    act = "auto"
+                rep = HEALTH.repair_warning(ses.kdoc, target, act, ses.scale,
+                                            to=to)
                 if not rep["ok"]:
                     self._set_status("引用修复：%s" % rep["reason"])
                     self._rebuild()
                     return
                 self._set_status("引用修复：%s → %s" % (target["id"], rep["reason"]))
+                self._rebuild()
+                return
+            rep = HEALTH.repair_selected(ses.kdoc, ids, ses.scale,
+                                         action=action, to=to)
+            more = ""
+            if rep["skipped"]:
+                more = "，%d 条跳过（%s）" % (len(rep["skipped"]),
+                                            rep["skipped"][0][1])
+            if ids:
+                self._set_status("引用修复：选中 %d 条，修好 %d 条%s"
+                                 % (len(ids), len(rep["fixed"]), more))
             else:
-                rep = HEALTH.repair_all(ses.kdoc, ses.scale)
-                more = ""
-                if rep["skipped"]:
-                    more = "，%d 条需手工（%s）" % (len(rep["skipped"]),
-                                                  rep["skipped"][0][1])
                 self._set_status("引用修复：修好 %d 条%s"
                                  % (len(rep["fixed"]), more))
             self._rebuild()
