@@ -153,6 +153,7 @@ else:
             # what Mirror and Pattern-along-path act on, and what the viewport
             # highlights
             self.sketch_selection = []
+            self.repair_plan = []      # R119/A-2: the last dry-run plan
             self._pending_paste = False
             self.settings = QSettings("scdocdecoding", "scdm")
             from scdm.scripting import Recorder
@@ -2476,8 +2477,24 @@ else:
             from scdm import health as HEALTH
             warns = HEALTH.document_warnings(ses.kdoc, ses.scale)
             if not warns:
+                self.repair_plan = []
                 self._set_status("引用修复：没有悬空引用")
                 return
+            # R119/A-2: preview first (the option page asks for it); the plan says
+            # what each warning would turn into before anything is touched
+            try:
+                dry = bool(self.left.is_checked("repair.refs", 0))
+            except Exception:
+                dry = False
+            if dry:
+                plan = HEALTH.repair_plan(ses.kdoc, ses.scale)
+                self.repair_plan = plan
+                head = "；".join("%s → %s" % (p["id"], p["text"]) for p in plan[:2])
+                more = "" if len(plan) <= 2 else " 等 %d 条" % len(plan)
+                self._set_status("引用修复预览：%d 条（%s%s）；取消「先预览」即执行"
+                                 % (len(plan), head, more))
+                return
+            self.repair_plan = []
             target = self._selected_health_warning()
             self._push_undo()
             if target is not None:
@@ -5985,6 +6002,30 @@ else:
                                          % (cid, len(live)))
                         return
                     self._set_status("引用体检：组件 %s 已不存在（%s）" % (cid, ident))
+                    return
+                if scope in ("named", "group") and isinstance(ref, tuple) \
+                        and ref and kdoc:
+                    key = str(ref[0])
+                    wanted = ref[3] if len(ref) > 3 else None
+                    live = []
+                    for entry in getattr(kdoc, key, []) or []:
+                        if wanted is not None \
+                                and entry.get("name", "") != wanted:
+                            continue
+                        for _k2, s2 in entry.get("items", []) or []:
+                            bid = str(s2).split(":")[0]
+                            if kdoc.body_by_id(bid) is not None \
+                                    and bid not in live:
+                                live.append(bid)
+                    if live:
+                        self.sel.items = [("body", b) for b in live]
+                        self._refresh_selection_highlights()
+                        self.left.set_selection_list(["体 %s" % b for b in live])
+                        self._set_status("引用体检：已选中 %d 个仍然存在的成员"
+                                         % len(live))
+                        return
+                    self._set_status("引用体检：%s 的成员都已不存在（%s）"
+                                     % (key, ident))
                     return
                 if scope == "config" and isinstance(ref, tuple) and ref and kdoc:
                     cfg_id = str(ref[0])

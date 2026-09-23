@@ -274,6 +274,8 @@ class LeftPanel(QWidget):
         checks_nyi("tool.replace", ["延伸目标面"],
                    "替换为平面移动+愈合，无延伸语义")
         checks("measure.dist", [("自动标注", True)])
+        # R119/A-2: a destructive one-click step deserves a look first
+        checks("repair.refs", [("先预览（不改动文档）", False)])
         checks("insert.cyl", [("创建后进入拉动", True)])
         checks("insert.sphere", [("创建后进入拉动", True)])
 

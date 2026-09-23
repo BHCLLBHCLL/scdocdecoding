@@ -71,7 +71,8 @@ def document_warnings(kdoc, scale: float = 1000.0) -> List[dict]:
                                     "命名选择" if scope == "named" else "组",
                                     entry.get("name", "?"), bid),
                                 "extra": str(kind),
-                                "ref": (key, str(kind), str(sid))})
+                                "ref": (key, str(kind), str(sid),
+                                        entry.get("name", ""))})
 
     # 4. configurations: hidden components, suppressed bodies, transforms and the
     #    property snapshot are all keyed by id
@@ -148,8 +149,13 @@ def warning_summary(warnings, limit: int = 2) -> str:
 #: which repair actions a dangling reference supports (R118/A-2).  A dimension row
 #: cannot simply be dropped - removing a constraint renumbers every later row, so
 #: the safe fix is to freeze it at the value the geometry has right now.
-FIXES = {"dimension": ("freeze",), "mate": ("drop",), "named": ("drop",),
-         "group": ("drop",), "config": ("drop",), "instance": ("drop",)}
+FIXES = {"dimension": ("freeze", "retarget"), "mate": ("drop",),
+         "named": ("drop",), "group": ("drop",), "config": ("drop",),
+         "instance": ("drop",)}
+
+#: what each action does, in the words the review list uses (R119/A-2)
+ACTION_TEXT = {"freeze": "冻结为当前值", "retarget": "改指向另一张草图",
+               "drop": "删除该悬空项"}
 
 
 def _freeze_dimension(kdoc, warning, scale: float):
@@ -181,6 +187,34 @@ def _freeze_dimension(kdoc, warning, scale: float):
     return True, "已冻结为 %.4gmm" % value_mm
 
 
+def _retarget_dimension(kdoc, warning, to, to_index, scale: float):
+    """Point an unresolvable dimension at another sketch (R119/A-1).
+
+    Freezing is blunt - it throws the intent away.  Retargeting keeps it: the row
+    keeps its expression form, only the sketch it names changes.  The drive goes
+    through `set_dimension`, so a target that cannot be solved is refused and the
+    row is rolled back.
+    """
+    from scdm import sketchmode as SKM
+    if not to:
+        return False, "改指向需要给出目标草图（to=\"S2\"）"
+    sid, index = warning["ref"]
+    target = SKM.find_sketch(kdoc, str(to))
+    if target is None:
+        return False, "目标草图 %s 已不存在" % to
+    idx = int(index if to_index is None else to_index)
+    ocons = list(getattr(target, "constraints", []) or [])
+    if not (0 <= idx < len(ocons)) or not ocons[idx] or \
+            ocons[idx][0] not in SKM.DIM_KINDS:
+        return False, "目标草图 %s 没有尺寸 #%d" % (to, idx)
+    expr = "%s_dim%d" % (to, idx)
+    rep = SKM.set_dimension(kdoc, sid, int(index), expr, scale)
+    if not rep["ok"]:
+        return False, rep["reason"]
+    return True, "已改指向 %s（%s，%gmm）" % (expr, rep.get("expr") or "",
+                                             rep.get("value_mm") or 0.0)
+
+
 def _drop(kdoc, warning) -> tuple:
     """Remove a dangling entry by value (never by list index)."""
     scope, ref = warning["scope"], warning.get("ref")
@@ -192,8 +226,11 @@ def _drop(kdoc, warning) -> tuple:
                 return True, "已删除指向 %s 的配合" % cid
         return False, "没有找到该配合"
     if scope in ("named", "group"):
-        key, kind, sid = ref
+        key, kind, sid = ref[0], ref[1], ref[2]
+        wanted = ref[3] if len(ref) > 3 else None
         for entry in getattr(kdoc, key, []) or []:
+            if wanted is not None and entry.get("name", "") != wanted:
+                continue
             items = [it for it in entry.get("items", []) or []
                      if not (str(it[0]) == kind and str(it[1]) == sid)]
             if len(items) != len(entry.get("items", []) or []):
@@ -224,12 +261,15 @@ def _drop(kdoc, warning) -> tuple:
     return False, "该引用不支持删除"
 
 
-def repair_warning(kdoc, warning, action: str = "auto", scale: float = 1000.0):
-    """Fix one dangling reference (R118/A-2).
+def repair_warning(kdoc, warning, action: str = "auto", scale: float = 1000.0,
+                   to=None, to_index=None):
+    """Fix one dangling reference (R118/A-2, R119/A-1).
 
     Returns `{"ok", "reason", "action", "options"}`.  `action` "auto" picks the
-    safe fix for the scope; an unsupported request is refused *with the list of
-    what would work*, so the refusal can be acted on.
+    safe fix for the scope (a dimension is frozen, everything else is dropped);
+    "retarget" keeps a dimension's intent by pointing it at `to` instead.  An
+    unsupported request is refused *with the list of what would work*, so the
+    refusal can be acted on.
     """
     scope = warning.get("scope", "")
     options = list(FIXES.get(scope, ()))
@@ -242,9 +282,37 @@ def repair_warning(kdoc, warning, action: str = "auto", scale: float = 1000.0):
                           % (act or "无", "、".join(options) or "无")}
     if act == "freeze":
         ok, why = _freeze_dimension(kdoc, warning, scale)
+    elif act == "retarget":
+        ok, why = _retarget_dimension(kdoc, warning, to, to_index, scale)
     else:
         ok, why = _drop(kdoc, warning)
     return {"ok": bool(ok), "action": act, "options": options, "reason": why}
+
+
+def repair_plan(kdoc, scale: float = 1000.0) -> List[dict]:
+    """What `repair_all()` would do, without doing it (R119/A-2).
+
+    One entry per warning: `{"id", "scope", "action", "text"}`.  Reviewing the
+    list first is the difference between "the tool fixed my document" and "the
+    tool changed my document" - a destructive step deserves a look.
+    """
+    out: List[dict] = []
+    for w in document_warnings(kdoc, scale):
+        options = FIXES.get(w.get("scope", ""), ())
+        act = options[0] if options else ""
+        out.append({"id": w["id"], "scope": w.get("scope", ""), "action": act,
+                    "text": ACTION_TEXT.get(act, act or "无法修复")})
+    return out
+
+
+def plan_text(plan) -> str:
+    """The plan as one line per entry, for a status bar or a dialog."""
+    if not plan:
+        return ""
+    lines = ["引用修复预览：%d 条" % len(plan)]
+    for p in plan:
+        lines.append("%s → %s" % (p["id"], p["text"]))
+    return "\n".join(lines)
 
 
 def repair_all(kdoc, scale: float = 1000.0) -> dict:

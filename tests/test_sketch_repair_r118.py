@@ -117,7 +117,8 @@ def test_freezing_keeps_the_geometry_and_clears_the_warning():
     assert len(warns) == 1 and warns[0]["scope"] == "dimension"
     rep = HEALTH.repair_warning(doc, warns[0], "auto", 1000.0)
     assert rep["ok"] and "冻结" in rep["reason"], rep
-    assert rep["options"] == ["freeze"]
+    # R119 adds "retarget" to the dimension options
+    assert rep["options"] == ["freeze", "retarget"]
     assert isinstance(sk.constraints[5][3], float)
     assert sk.constraints[5][3] == pytest.approx(0.020, rel=1e-6)   # as drawn
     assert [tuple(p) for p in S.read_points(sk)[0]] == pts_before
@@ -129,7 +130,8 @@ def test_dropping_a_dimension_is_refused_with_the_options():
     warns = HEALTH.document_warnings(doc, 1000.0)
     rep = HEALTH.repair_warning(doc, warns[0], "drop", 1000.0)
     assert rep["ok"] is False
-    assert rep["options"] == ["freeze"] and "可用" in rep["reason"], rep
+    assert "可用" in rep["reason"] and "freeze" in rep["reason"], rep
+    assert rep["options"] == ["freeze", "retarget"]
     assert HEALTH.document_warnings(doc, 1000.0)           # nothing changed
 
 
