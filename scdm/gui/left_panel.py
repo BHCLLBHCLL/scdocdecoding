@@ -435,7 +435,7 @@ class LeftPanel(QWidget):
                 sub = QTreeWidgetItem(["%s %s：%s" % (
                     scope_cn.get(w["scope"], w["scope"]), w["id"], w["reason"])])
                 sub.setData(0, Qt.UserRole,
-                            ("health", w["scope"], w["id"], w.get("extra")))
+                            ("health", w["scope"], w["id"], dict(w)))
                 sub.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
                 sub.setToolTip(0, "双击定位到相关的草图/对象")
                 hn.addChild(sub)

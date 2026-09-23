@@ -2445,6 +2445,58 @@ else:
             """H4 检查几何：全项检出 + 一键修复向导（R83 起含未封闭度）。"""
             return self._run_geometry_check("检查几何")
 
+        def _selected_health_warning(self):
+            """The health row selected in the tree, as its warning dict (R118/A-2)."""
+            tree = getattr(self.left, "tree", None)
+            item = tree.currentItem() if tree is not None else None
+            data = item.data(0, Qt.UserRole) if item is not None else None
+            if not data or data[0] != "health" or len(data) < 4:
+                return None
+            warn = data[3]
+            if isinstance(warn, dict) and warn.get("scope"):
+                return warn
+            # older payload (scope/id only): match it against the live check
+            from scdm import health as HEALTH
+            for w in HEALTH.document_warnings(self.session().kdoc,
+                                              self.session().scale):
+                if len(data) > 2 and w["scope"] == data[1] and w["id"] == data[2]:
+                    return w
+            return None
+
+        def _do_repair_refs(self):
+            """R118/A-2: fix dangling references - the selected row, or all of them.
+
+            Freezing a dimension is safe (its index is what other expressions
+            address); the other scopes are entries that can simply be dropped.
+            Whatever cannot be fixed is reported, never guessed at.
+            """
+            ses = self.session()
+            if not self._need_kernel():
+                return
+            from scdm import health as HEALTH
+            warns = HEALTH.document_warnings(ses.kdoc, ses.scale)
+            if not warns:
+                self._set_status("引用修复：没有悬空引用")
+                return
+            target = self._selected_health_warning()
+            self._push_undo()
+            if target is not None:
+                rep = HEALTH.repair_warning(ses.kdoc, target, "auto", ses.scale)
+                if not rep["ok"]:
+                    self._set_status("引用修复：%s" % rep["reason"])
+                    self._rebuild()
+                    return
+                self._set_status("引用修复：%s → %s" % (target["id"], rep["reason"]))
+            else:
+                rep = HEALTH.repair_all(ses.kdoc, ses.scale)
+                more = ""
+                if rep["skipped"]:
+                    more = "，%d 条需手工（%s）" % (len(rep["skipped"]),
+                                                  rep["skipped"][0][1])
+                self._set_status("引用修复：修好 %d 条%s"
+                                 % (len(rep["fixed"]), more))
+            self._rebuild()
+
         def _do_prep_small(self):
             """R91/P423: 小特征（Defeaturing）走**同一套**几何检查/修复。"""
             return self._run_geometry_check("小特征")
@@ -4290,7 +4342,8 @@ else:
             if self.scene is not None and hasattr(self.scene, "set_conflict_marks"):
                 geo = SKM.conflict_geometry(ses.kdoc, sid, ses.scale)
                 self.scene.set_conflict_marks(
-                    SKM.find_sketch(ses.kdoc, sid), geo.get("marks", ()))
+                    SKM.find_sketch(ses.kdoc, sid), geo.get("marks", ()),
+                    geo.get("links", ()))
 
         def _edit_sketch_dimension(self, sketch_id, index):
             """R107/A-3: drive a sketch dimension from the structure tree.
@@ -5902,8 +5955,45 @@ else:
                     self._set_status("引用体检：打开 %s" % ident)
                     self._edit_sketch(ident.split("#", 1)[0])
                     return
-                extra = str(data[3]) if len(data) > 3 and data[3] else ""
+                warn = data[3] if len(data) > 3 else None
+                ref = warn.get("ref") if isinstance(warn, dict) else None
                 kdoc = self.session().kdoc
+                if scope == "dimension" and isinstance(ref, tuple) and ref:
+                    self._set_status("引用体检：打开 %s" % ident)
+                    self._edit_sketch(str(ref[0]))
+                    return
+                if scope == "mate" and isinstance(ref, tuple) and ref and kdoc:
+                    # R118/A-3: the dangling side is gone, so locating the mate
+                    # means selecting the end that still exists
+                    cands = [str(x) for x in ref if x]
+                    live = []
+                    for cid in cands:
+                        comp = next((c for c in
+                                     getattr(kdoc, "components", []) or []
+                                     if c.id == cid), None)
+                        ids = list(getattr(comp, "body_ids", []) or []) if comp else []
+                        live = [b for b in ids if kdoc.body_by_id(b) is not None]
+                        if live:
+                            break
+                    cid = cands[0] if cands else "?"
+                    if live:
+                        self.sel.items = [("body", b) for b in live]
+                        self._refresh_selection_highlights()
+                        self.left.set_selection_list(
+                            ["体 %s" % b for b in live])
+                        self._set_status("引用体检：已选中组件 %s 的 %d 个实体"
+                                         % (cid, len(live)))
+                        return
+                    self._set_status("引用体检：组件 %s 已不存在（%s）" % (cid, ident))
+                    return
+                if scope == "config" and isinstance(ref, tuple) and ref and kdoc:
+                    cfg_id = str(ref[0])
+                    n = kdoc.apply_configuration(cfg_id)
+                    self._set_status("引用体检：已切换到配置 %s（%s 项）"
+                                     % (cfg_id, n))
+                    self._rebuild()
+                    return
+                extra = str(warn.get("extra", "") if isinstance(warn, dict) else "")
                 for cand in (extra, ident.split("/")[-1]):
                     bid = str(cand or "").split(":")[0]
                     if bid and kdoc is not None and kdoc.body_by_id(bid) is not None:

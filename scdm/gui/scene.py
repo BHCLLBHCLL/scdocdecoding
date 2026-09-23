@@ -870,8 +870,9 @@ class Scene:
     #: conflict red / redundant amber (R116/A-1)
     CONFLICT_COLOR = (0.90, 0.15, 0.10)
     REDUNDANT_COLOR = (0.95, 0.65, 0.10)
+    REDUNDANT_LINK_COLOR = (0.70, 0.35, 0.85)
 
-    def set_conflict_marks(self, sk, marks=()):
+    def set_conflict_marks(self, sk, marks=(), links=()):
         """Mark the geometry the solver could not satisfy (R115/A-1, R116/A-1).
 
         `marks` are the library's typed marks (`conflict_geometry()["marks"]`):
@@ -905,6 +906,23 @@ class Scene:
                 self._conflict_actors.append(act)
             if pts:
                 act = _points_actor(pts, color, 12)
+                self.renderer.AddActor(act)
+                self._conflict_actors.append(act)
+        # R118/A-1: connect a repeated row to the one it repeats, so "which one is
+        # the copy" is answered by the picture and not by two index numbers
+        if links:
+            by_index = {m.get("index"): m for m in marks}
+            pairs = []
+            for src, dep in links:
+                a, b = by_index.get(int(src)), by_index.get(int(dep))
+                pa = (a or {}).get("points") or []
+                pb = (b or {}).get("points") or []
+                if pa and pb:
+                    pairs.append([
+                        list(S.axes_to_world(axes, float(pa[0][0]), float(pa[0][1]))),
+                        list(S.axes_to_world(axes, float(pb[0][0]), float(pb[0][1])))])
+            if pairs:
+                act = _lines_actor(pairs, self.REDUNDANT_LINK_COLOR, 2.0)
                 self.renderer.AddActor(act)
                 self._conflict_actors.append(act)
 

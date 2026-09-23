@@ -11,6 +11,7 @@ can say exactly what to fix.  Read-only: it never repairs anything (rule 85).
 """
 from __future__ import annotations
 
+import math
 from typing import Dict, List
 
 
@@ -39,7 +40,8 @@ def document_warnings(kdoc, scale: float = 1000.0) -> List[dict]:
         for w in SKM.reference_warnings(kdoc, scale):
             out.append({"scope": "dimension", "id": "%s#%d" % (w["sketch"],
                                                             w["index"]),
-                        "reason": w["reason"], "extra": w.get("expr")})
+                        "reason": w["reason"], "extra": w.get("expr"),
+                        "ref": (w["sketch"], int(w["index"]))})
     except Exception:
         pass
 
@@ -48,10 +50,12 @@ def document_warnings(kdoc, scale: float = 1000.0) -> List[dict]:
         for side in ("a", "b"):
             cid = m.get(side)
             if cid and cid not in comp_ids and cid not in body_ids:
-                out.append({"scope": "mate", "id": "%s.%s" % (m.get("id", "?"),
-                                                             side),
+                out.append({"scope": "mate",
+                            "id": "%s/%s.%s" % (m.get("type", "?"), cid, side),
                             "reason": "配合指向已删除的组件 %s" % cid,
-                            "extra": m.get("type")})
+                            "extra": m.get("type"),
+                            "ref": (cid, side,
+                                    m.get("b" if side == "a" else "a"))})
 
     # 3. named selections and groups: items are (kind, id)
     for scope, key in (("named", "named"), ("group", "groups")):
@@ -66,7 +70,8 @@ def document_warnings(kdoc, scale: float = 1000.0) -> List[dict]:
                                 "reason": "%s %s 指向已删除的 %s" % (
                                     "命名选择" if scope == "named" else "组",
                                     entry.get("name", "?"), bid),
-                                "extra": str(kind)})
+                                "extra": str(kind),
+                                "ref": (key, str(kind), str(sid))})
 
     # 4. configurations: hidden components, suppressed bodies, transforms and the
     #    property snapshot are all keyed by id
@@ -76,23 +81,27 @@ def document_warnings(kdoc, scale: float = 1000.0) -> List[dict]:
                 out.append({"scope": "config",
                             "id": "%s/%s" % (cfg.id, cid),
                             "reason": "配置 %s 指向已删除的组件 %s" % (cfg.id, cid),
-                            "extra": "hidden"})
+                            "extra": "hidden",
+                            "ref": (cfg.id, "hidden_components", cid)})
         for bid in getattr(cfg, "suppressed_bodies", []) or []:
             if bid not in body_ids:
                 out.append({"scope": "config", "id": "%s/%s" % (cfg.id, bid),
                             "reason": "配置 %s 指向已删除的实体 %s" % (cfg.id, bid),
-                            "extra": "suppressed"})
+                            "extra": "suppressed",
+                            "ref": (cfg.id, "suppressed_bodies", bid)})
         for cid in (getattr(cfg, "transforms", {}) or {}):
             if cid not in comp_ids and cid not in body_ids:
                 out.append({"scope": "config", "id": "%s/%s" % (cfg.id, cid),
                             "reason": "配置 %s 的位姿指向已删除的 %s" % (cfg.id, cid),
-                            "extra": "transform"})
+                            "extra": "transform",
+                            "ref": (cfg.id, "transforms", cid)})
         for bid in (getattr(cfg, "properties", {}) or {}):
             if bid not in body_ids:
                 out.append({"scope": "config", "id": "%s/%s" % (cfg.id, bid),
                             "reason": "配置 %s 的属性指向已删除的实体 %s" % (cfg.id,
                                                                      bid),
-                            "extra": "properties"})
+                            "extra": "properties",
+                            "ref": (cfg.id, "properties", bid)})
 
     # 5. placed instances (an ordinary body id link)
     for inst in getattr(kdoc, "instances", []) or []:
@@ -102,7 +111,7 @@ def document_warnings(kdoc, scale: float = 1000.0) -> List[dict]:
                 out.append({"scope": "instance",
                             "id": "%s/%s" % (inst.get("id", "?"), bid),
                             "reason": "实例指向已删除的实体 %s" % bid,
-                            "extra": key})
+                            "extra": key, "ref": (key, bid)})
     return out
 
 
@@ -134,3 +143,121 @@ def warning_summary(warnings, limit: int = 2) -> str:
                     for w in warnings[:limit])
     more = "" if len(warnings) <= limit else " 等 %d 处" % len(warnings)
     return "已打开：%d 处引用悬空（%s%s）" % (len(warnings), head, more)
+
+
+#: which repair actions a dangling reference supports (R118/A-2).  A dimension row
+#: cannot simply be dropped - removing a constraint renumbers every later row, so
+#: the safe fix is to freeze it at the value the geometry has right now.
+FIXES = {"dimension": ("freeze",), "mate": ("drop",), "named": ("drop",),
+         "group": ("drop",), "config": ("drop",), "instance": ("drop",)}
+
+
+def _freeze_dimension(kdoc, warning, scale: float):
+    """Turn an unresolvable dimension into the number the geometry has now."""
+    from scdm import sketch as S
+    from scdm import sketchmode as SKM
+    sid, index = warning["ref"]
+    sk = SKM.find_sketch(kdoc, sid)
+    if sk is None:
+        return False, "草图 %s 已不存在" % sid
+    cons = list(getattr(sk, "constraints", []) or [])
+    if not (0 <= int(index) < len(cons)):
+        return False, "尺寸序号越界：%s" % index
+    c = cons[int(index)]
+    pts, _segs = S.read_points(sk)
+    if c[0] == "radius":
+        circles = S.read_circles(sk)
+        radius = float(circles.get(int(c[1]), c[2] if len(c) > 2 else 0.0))
+        value_mm = radius * float(scale or 1000.0)
+    else:
+        i, j = int(c[1]), int(c[2])
+        if not (0 <= i < len(pts) and 0 <= j < len(pts)):
+            return False, "尺寸引用的点不存在"
+        value_mm = math.hypot(pts[j][0] - pts[i][0],
+                              pts[j][1] - pts[i][1]) * float(scale or 1000.0)
+    rep = SKM.set_dimension(kdoc, sid, int(index), value_mm, scale)
+    if not rep["ok"]:
+        return False, rep["reason"]
+    return True, "已冻结为 %.4gmm" % value_mm
+
+
+def _drop(kdoc, warning) -> tuple:
+    """Remove a dangling entry by value (never by list index)."""
+    scope, ref = warning["scope"], warning.get("ref")
+    if scope == "mate":
+        cid = ref[0]                     # (dangling id, side[, other id])
+        for i, m in enumerate(kdoc.mates):
+            if cid in (m.get("a"), m.get("b")):
+                kdoc.mates.pop(i)
+                return True, "已删除指向 %s 的配合" % cid
+        return False, "没有找到该配合"
+    if scope in ("named", "group"):
+        key, kind, sid = ref
+        for entry in getattr(kdoc, key, []) or []:
+            items = [it for it in entry.get("items", []) or []
+                     if not (str(it[0]) == kind and str(it[1]) == sid)]
+            if len(items) != len(entry.get("items", []) or []):
+                entry["items"] = items
+                return True, "已从 %s 移除 %s" % (entry.get("name", "?"), sid)
+        return False, "没有找到该条目"
+    if scope == "config":
+        cfg_id, field, value = ref
+        cfg = kdoc.configuration_by(cfg_id)
+        if cfg is None:
+            return False, "配置 %s 已不存在" % cfg_id
+        if field in ("hidden_components", "suppressed_bodies"):
+            seq = [x for x in getattr(cfg, field, []) or [] if x != value]
+            setattr(cfg, field, seq)
+            return True, "已从配置 %s 移除 %s" % (cfg_id, value)
+        table = getattr(cfg, field, None)
+        if isinstance(table, dict) and value in table:
+            table.pop(value, None)
+            return True, "已从配置 %s 移除 %s" % (cfg_id, value)
+        return False, "配置 %s 里没有 %s" % (cfg_id, value)
+    if scope == "instance":
+        key, value = ref
+        for i, inst in enumerate(getattr(kdoc, "instances", []) or []):
+            if inst.get(key) == value:
+                kdoc.instances.pop(i)
+                return True, "已删除指向 %s 的实例" % value
+        return False, "没有找到该实例"
+    return False, "该引用不支持删除"
+
+
+def repair_warning(kdoc, warning, action: str = "auto", scale: float = 1000.0):
+    """Fix one dangling reference (R118/A-2).
+
+    Returns `{"ok", "reason", "action", "options"}`.  `action` "auto" picks the
+    safe fix for the scope; an unsupported request is refused *with the list of
+    what would work*, so the refusal can be acted on.
+    """
+    scope = warning.get("scope", "")
+    options = list(FIXES.get(scope, ()))
+    act = action
+    if act in (None, "", "auto"):
+        act = options[0] if options else ""
+    if act not in options:
+        return {"ok": False, "action": act, "options": options,
+                "reason": "该引用不能这样修：%s（可用：%s）"
+                          % (act or "无", "、".join(options) or "无")}
+    if act == "freeze":
+        ok, why = _freeze_dimension(kdoc, warning, scale)
+    else:
+        ok, why = _drop(kdoc, warning)
+    return {"ok": bool(ok), "action": act, "options": options, "reason": why}
+
+
+def repair_all(kdoc, scale: float = 1000.0) -> dict:
+    """Fix every dangling reference that has a safe fix (R118/A-2).
+
+    Entries are removed *by value*, so repairing one cannot shift the next one
+    out from under the loop.  What cannot be fixed is reported, not guessed at.
+    """
+    out = {"ok": True, "fixed": [], "skipped": []}
+    for w in document_warnings(kdoc, scale):
+        rep = repair_warning(kdoc, w, "auto", scale)
+        if rep["ok"]:
+            out["fixed"].append((w["id"], rep["reason"]))
+        else:
+            out["skipped"].append((w["id"], rep["reason"]))
+    return out

@@ -629,6 +629,12 @@ def conflict_geometry(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, 
         for key in sorted(s):
             mark_segs.setdefault(key, None)
     out["marks"] = marks
+    # R118/A-1: the redundancy link - which mark repeats which - so a viewport can
+    # draw the pair together instead of leaving the user to compare two numbers
+    redundant = {int(m["index"]) for m in marks if m["state"] == "redundant"}
+    out["links"] = [(int(src), int(dep))
+                    for dep, src in (info.get("duplicate_of", ()) or ())
+                    if int(dep) in redundant]
     out["points"] = [uv(i) for i in sorted(mark_pts)]
     out["segments"] = [[uv(a), uv(b)] for (a, b) in sorted(mark_segs)]
     out["ok"] = True

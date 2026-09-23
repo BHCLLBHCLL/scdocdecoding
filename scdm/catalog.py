@@ -247,6 +247,8 @@ TABS: Tuple[Tab, ...] = (
             C("repair.small", "小面", "Small Faces", "M4", "face"),
             C("repair.check", "检查几何", "Check Geometry", "M4", "check",
               note="H4 全项检出 + 未封闭度（真缺口/缝边/自由环，R83）"),
+            C("repair.refs", "引用修复", "Fix References", "M4", "check",
+              note="修复悬空引用：尺寸冻结为当前值；配合/命名选择/组/配置/实例删除悬空项"),
             C("repair.solidify", "实体化", "Solidify", "M4", "solid"),
         )),
     )),
@@ -430,7 +432,7 @@ M4_LIVE = {
     "create.hole_cbore",
     "create.hole_csink", "create.boss",
     "repair.stitch", "repair.solidify", "repair.gaps", "repair.missing",
-    "repair.extra", "repair.small", "repair.check",
+    "repair.extra", "repair.small", "repair.check", "repair.refs",
     "prep.small",                       # R91/P423: routed to the check wizard
     "measure.interfere",
     "asm.insert", "asm.create", "asm.move", "asm.anchor", "asm.mate",
