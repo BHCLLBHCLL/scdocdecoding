@@ -254,7 +254,8 @@ class LeftPanel(QWidget):
         check_spin("tool.move", [("复制", False), ("到点", False), ("到面", False)],
                    [("距离", 10.0)])
         radios("tool.combine", ["合并", "减去", "相交"])
-        checks("mode.sketch", [("草图网格", True), ("捕捉栅格", True)])
+        checks("mode.sketch", [("草图网格", True), ("捕捉栅格", True),
+                               ("闭环消失时保留实体（断开参数）", False)])
         # R112/A-1: the sketch-only edits (no sketch-entity selection yet, so
         # mirror is about a sketch axis and the pattern is linear)
         checks("sketch.mirror", [("关于水平轴", False), ("保留原曲线", True),
@@ -415,6 +416,29 @@ class LeftPanel(QWidget):
         # R113/A-5: sketches are shown even when the document has no body yet -
         # a sketch-only document used to hide them, so it could not be re-entered
         # from the tree at all
+        # R117/A-2: the reference health check as a tree node, so it is there
+        # whenever the tree is rebuilt instead of a status line that scrolls away
+        try:
+            from scdm import health as _HEALTH
+            health = _HEALTH.document_warnings(session.kdoc, session.scale) \
+                if session.kdoc is not None else []
+        except Exception:
+            health = []
+        if health:
+            scope_cn = {"dimension": "尺寸", "mate": "配合", "named": "命名选择",
+                        "group": "组", "config": "配置", "instance": "实例"}
+            hn = QTreeWidgetItem(["引用体检：%d 条（双击定位）" % len(health)])
+            hn.setData(0, Qt.UserRole, ("health", ""))
+            hn.setToolTip(0, "打开工程时的体检结果：按 ID 指向已删除对象的引用")
+            root.addChild(hn)
+            for w in health:
+                sub = QTreeWidgetItem(["%s %s：%s" % (
+                    scope_cn.get(w["scope"], w["scope"]), w["id"], w["reason"])])
+                sub.setData(0, Qt.UserRole,
+                            ("health", w["scope"], w["id"], w.get("extra")))
+                sub.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+                sub.setToolTip(0, "双击定位到相关的草图/对象")
+                hn.addChild(sub)
         if session.kdoc is not None and (session.kdoc.bodies
                                          or session.kdoc.sketches):
             if session.kdoc.components:

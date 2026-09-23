@@ -473,7 +473,7 @@ def dof_report(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, Any]:
                            "redundant": None, "conflicting": None,
                            "converged": None, "residual": None,
                            "conflict_cons": (), "redundant_cons": (),
-                           "skipped": []}
+                           "duplicate_of": (), "skipped": []}
     sk = find_sketch(kdoc, sketch_id)
     if sk is None:
         out["reason"] = "草图不存在：%s" % sketch_id
@@ -499,6 +499,7 @@ def dof_report(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, Any]:
                # R112/A-6: not just "how many" - *which* constraints
                conflict_cons=tuple(getattr(rep, "violated_cons", ()) or ()),
                redundant_cons=tuple(getattr(rep, "redundant_cons", ()) or ()),
+               duplicate_of=tuple(getattr(rep, "duplicate_of", ()) or ()),
                skipped=list(skipped.get("skipped", [])))
     return out
 
@@ -611,9 +612,15 @@ def conflict_geometry(kdoc, sketch_id: str, scale: float = 1000.0) -> Dict[str, 
         p, s = geometry_of(c[0], c)
         state = ("conflict" if ci in (info.get("conflict_cons", ()) or ())
                  else "redundant")
+        dup = None
+        if state == "redundant":
+            for dep, src in info.get("duplicate_of", ()) or ():
+                if int(dep) == ci:
+                    dup = int(src)
+                    break
         marks.append({"index": ci, "kind": str(c[0]),
                       "label": CON_LABELS.get(str(c[0]), str(c[0])),
-                      "state": state,
+                      "state": state, "duplicate_of": dup,
                       "points": [uv(i) for i in sorted(p)],
                       "segments": [[uv(a), uv(b)] for (a, b) in sorted(s)]})
         out["cons"].append(ci)
@@ -632,9 +639,14 @@ def conflict_labels(kdoc, sketch_id: str, scale: float = 1000.0) -> List[str]:
     """["尺寸#5 冲突", "尺寸#7 冗余"] - the marks as short UI text (R116/A-1)."""
     geo = conflict_geometry(kdoc, sketch_id, scale)
     state = {"conflict": "冲突", "redundant": "冗余"}
-    return ["%s#%d %s" % (m["label"], m["index"],
-                          state.get(m["state"], m["state"]))
-            for m in geo.get("marks", [])]
+    out = []
+    for m in geo.get("marks", []):
+        text = "%s#%d %s" % (m["label"], m["index"],
+                             state.get(m["state"], m["state"]))
+        if m.get("duplicate_of") is not None:
+            text += "（重复 #%d）" % m["duplicate_of"]
+        out.append(text)
+    return out
 
 
 def reference_warnings(kdoc, scale: float = 1000.0) -> List[dict]:
@@ -851,7 +863,8 @@ def sketch_params(sk, height_mm: float, loop=None, curves=None,
 
 
 def sync_sketch_bodies(kdoc, sketch_id: Optional[str] = None,
-                       scale: float = 1000.0) -> Dict[str, Any]:
+                       scale: float = 1000.0,
+                       detach: bool = False) -> Dict[str, Any]:
     """Re-derive every sketch body from its (possibly edited) sketch.
 
     This is what makes the sketch a real feature: editing the outline and calling
@@ -860,7 +873,7 @@ def sync_sketch_bodies(kdoc, sketch_id: Optional[str] = None,
     """
     from scdm import sketch as S          # R109: used for welding before replay
     out: Dict[str, Any] = {"ok": True, "reason": "", "updated": [], "failed": [],
-                           "removed": [], "extra_loops": 0}
+                           "removed": [], "detached": [], "extra_loops": 0}
     for bid, stack in list(getattr(kdoc, "features", {}).items()):
         for f in list(stack.features):
             if f.op != "sketch":
@@ -886,6 +899,19 @@ def sync_sketch_bodies(kdoc, sketch_id: Optional[str] = None,
                     # with it (the undo stack still holds the state before the
                     # sketch edit, so this is recoverable).
                     reason = "草图第 %d 个闭环已不存在" % (int(idx) + 1)
+                    body = kdoc.body_by_id(bid)
+                    if detach and body is not None:
+                        # R117/A-6: keep the solid but stop pretending it is
+                        # parametric - the shape becomes the base and the feature
+                        # goes, so a replay has nothing left to rebuild
+                        body.base_shape = body.shape
+                        body.base_pose = []
+                        try:
+                            stack.features.remove(f)
+                        except ValueError:
+                            pass
+                        out["detached"].append((bid, reason))
+                        continue
                     kdoc.remove(bid)
                     try:
                         kdoc.features.pop(bid, None)

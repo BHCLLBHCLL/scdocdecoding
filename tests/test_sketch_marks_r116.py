@@ -89,7 +89,8 @@ def test_a_repeated_row_is_marked_redundant():
     geo = SKM.conflict_geometry(doc, sk.id, 1000.0)
     assert [m["index"] for m in geo["marks"]] == [7]
     assert geo["marks"][0]["state"] == "redundant"
-    assert SKM.conflict_labels(doc, sk.id, 1000.0) == ["尺寸#7 冗余"]
+    # R117 adds the attribution, so the label also says what it repeats
+    assert SKM.conflict_labels(doc, sk.id, 1000.0) == ["尺寸#7 冗余（重复 #5）"]
 
 
 def test_marks_name_each_constraint_kind():

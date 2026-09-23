@@ -62,6 +62,8 @@ class SolveReport:
     # earlier row (redundant) - indices into the constraint list as passed in
     violated_cons: Tuple[int, ...] = ()
     redundant_cons: Tuple[int, ...] = ()
+    # R117/A-1: (redundant constraint, the constraint it repeats)
+    duplicate_of: Tuple[Tuple[int, int], ...] = ()
 
 
 class SketchSolver:
@@ -327,6 +329,35 @@ class SketchSolver:
         return dep
 
     @staticmethod
+    def duplicate_of_row(J: List[List[float]], dep_row: int,
+                         tol: float = 1e-9):
+        """The earlier row that `dep_row` repeats, with its |cos| (R117/A-1).
+
+        A redundant row is a linear combination of earlier rows; the one it mostly
+        repeats has the largest normalised correlation.  Returns
+        `(row_index | None, |cos|)`; a weak best (< 0.99) means the row is
+        *redundant without being a duplicate*, so no single row is named.
+        """
+        def norm(row):
+            n = math.sqrt(sum(v * v for v in row))
+            return None if n <= tol else [v / n for v in row]
+
+        target = norm(list(J[dep_row]) if 0 <= dep_row < len(J) else [])
+        if target is None:
+            return None, 0.0
+        best = (None, 0.0)
+        for i, row in enumerate(J):
+            if i == dep_row:
+                continue
+            other = norm(list(row))
+            if other is None:
+                continue
+            cos = abs(sum(a * b for a, b in zip(target, other)))
+            if cos > best[1]:
+                best = (i, cos)
+        return best
+
+    @staticmethod
     def _rank(J: List[List[float]], tol: float = 1e-9) -> int:
         """Numerical rank via Gram–Schmidt on rows."""
         rows = [row[:] for row in J if any(abs(v) > tol for v in row)]
@@ -406,6 +437,20 @@ class SketchSolver:
         dep_rows = self.dependent_rows(J)
         redundant_cons = sorted({owners[i] for i in dep_rows
                                  if i < len(owners)})
+        # R117/A-1: name the row a redundant one repeats (a triple duplicate
+        # points at the original, not at the second copy)
+        pairs: Dict[int, int] = {}
+        for i in dep_rows:
+            src, cos = self.duplicate_of_row(J, i)
+            if src is None or cos < 0.99 or i >= len(owners) or src >= len(owners):
+                continue
+            seen = {i}
+            while src in pairs and src not in seen:      # follow the chain home
+                seen.add(src)
+                src = pairs[src]
+            pairs[int(i)] = int(src)
+        dup_of = tuple((int(owners[i]), int(owners[j]))
+                       for i, j in sorted(pairs.items()))
         # an under-constrained sketch always converges (free drift); failure
         # to converge means the constraints are inconsistent (conflicting)
         conflicting = not converged
@@ -419,7 +464,7 @@ class SketchSolver:
             msg = "未收敛（可能欠约束漂移）"
         return SolveReport(converged, iters, max_res, dof, redundant,
                            conflicting, msg, tuple(violated),
-                           tuple(redundant_cons))
+                           tuple(redundant_cons), dup_of)
 
 
 def _gauss_solve(a: List[List[float]], b: List[float]) -> Optional[List[float]]:

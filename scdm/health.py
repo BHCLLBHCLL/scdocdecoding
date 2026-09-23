@@ -106,6 +106,23 @@ def document_warnings(kdoc, scale: float = 1000.0) -> List[dict]:
     return out
 
 
+def report_text(warnings) -> str:
+    """The warnings as one line each, for a script or a dialog (R117/A-2).
+
+    The tree shows the same list; this is the copyable form.  Line count ==
+    warning count (plus the header only when there is something to report).
+    """
+    scope_cn = {"dimension": "尺寸", "mate": "配合", "named": "命名选择",
+                "group": "组", "config": "配置", "instance": "实例"}
+    if not warnings:
+        return ""
+    out = ["引用体检：%d 条" % len(warnings)]
+    for w in warnings:
+        out.append("%s %s：%s" % (scope_cn.get(w["scope"], w["scope"]),
+                                  w["id"], w["reason"]))
+    return "\n".join(out)
+
+
 def warning_summary(warnings, limit: int = 2) -> str:
     """One line for the status bar: scopes, ids and the first reasons."""
     scope_cn = {"dimension": "尺寸", "mate": "配合", "named": "命名选择",

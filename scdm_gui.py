@@ -4335,7 +4335,14 @@ else:
             ses = self.session()
             if not getattr(ses.kdoc, "features", None):
                 return 0
-            rep = SKM.sync_sketch_bodies(ses.kdoc, sketch_id, ses.scale)
+            # R117/A-6: the user chooses whether a body whose loop vanished is
+            # deleted (and recoverable from undo) or kept as a plain solid
+            try:
+                detach = bool(self.left.is_checked("mode.sketch", 2))
+            except Exception:
+                detach = False
+            rep = SKM.sync_sketch_bodies(ses.kdoc, sketch_id, ses.scale,
+                                         detach=detach)
             if rep["failed"]:
                 self._set_status("草图同步失败：%s" % rep["reason"])
             # R112/A-1: loops that no body follows yet (a mirror or a pattern
@@ -4343,6 +4350,7 @@ else:
             self._sync_extra = int(rep.get("extra_loops", 0) or 0)
             # R115/A-6: a loop that vanished takes its body with it
             self._sync_removed = list(rep.get("removed", []) or [])
+            self._sync_detached = list(rep.get("detached", []) or [])
             return len(rep["updated"])
 
         def _extra_loop_hint(self) -> str:
@@ -4355,6 +4363,10 @@ else:
             if gone:
                 bits += "，删除 %d 个实体（%s）" % (
                     len(gone), "、".join(why for _b, why in gone[:2]))
+            kept = list(getattr(self, "_sync_detached", []) or [])
+            if kept:
+                bits += "，保留 %d 个实体（已断开参数：%s）" % (
+                    len(kept), "、".join(why for _b, why in kept[:2]))
             return bits
 
         def _sketch_source(self, plane):
@@ -5878,6 +5890,27 @@ else:
             if data[0] == "sketch_dim":
                 # R107/A-3: double-click a dimension to drive the sketch by number
                 self._edit_sketch_dimension(data[1], data[2])
+                return
+            if data[0] == "health":
+                # R117/A-2: a health row says what is wrong; double-click goes
+                # there - a sketch dimension opens its sketch, an id selects it
+                if len(data) < 3 or not data[2]:
+                    self._set_status("引用体检：双击其中一条可定位到相关草图/对象")
+                    return
+                scope, ident = data[1], str(data[2])
+                if scope == "dimension" and "#" in ident:
+                    self._set_status("引用体检：打开 %s" % ident)
+                    self._edit_sketch(ident.split("#", 1)[0])
+                    return
+                extra = str(data[3]) if len(data) > 3 and data[3] else ""
+                kdoc = self.session().kdoc
+                for cand in (extra, ident.split("/")[-1]):
+                    bid = str(cand or "").split(":")[0]
+                    if bid and kdoc is not None and kdoc.body_by_id(bid) is not None:
+                        self._select_node("body", bid, False)
+                        self._set_status("引用体检：已选中 %s" % bid)
+                        return
+                self._set_status("引用体检：%s %s" % (scope, ident))
                 return
             if data[0] != "feature_param":
                 return
