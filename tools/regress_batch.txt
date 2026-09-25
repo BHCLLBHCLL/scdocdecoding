@@ -26,6 +26,7 @@ tests/test_sketch_tick_r121.py
 tests/test_sketch_param_r122.py
 tests/test_sketch_expr_r123.py
 tests/test_sketch_anchor_r124.py
+tests/test_sketch_target_r125.py
 tests/test_sketch_solver.py
 tests/test_features.py
 tests/test_feature_edit_r102.py
@@ -55,3 +56,4 @@ tests/test_sheetmetal.py
 tests/test_explode_r88.py
 tests/test_trim_cache_r97.py
 tests/test_ref_loss_r95.py
+tests/test_tooling_r125.py

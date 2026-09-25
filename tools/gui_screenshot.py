@@ -115,6 +115,18 @@ DEMOS = {"solid": None, "sketch": _demo_sketch, "picks": _demo_picks,
          "mate": _demo_mate}
 
 
+def _tree_rows(tree) -> int:
+    """How many rows the structure tree shows (R125/A-9).
+
+    Counted recursively so a change in what the tree *lists* - a new node, a
+    dropped one - is part of what a reference image claims to show.
+    """
+    def walk(item) -> int:
+        return 1 + sum(walk(item.child(i)) for i in range(item.childCount()))
+
+    return sum(walk(tree.topLevelItem(i)) for i in range(tree.topLevelItemCount()))
+
+
 def grab(out: str, path=None, demo: str = "sketch", size=(1500, 950),
          settle: float = 0.12, rounds: int = 12) -> dict:
     """Render the GUI and write `out`; returns {"out", "size", "chip", "3d"}."""
@@ -184,8 +196,14 @@ def grab(out: str, path=None, demo: str = "sketch", size=(1500, 950),
             warns = HEALTH.document_warnings(doc, viewer.session().scale)
         except Exception:
             warns = []
+        # R125/A-9: the facts a stale image would contradict.  All of them are
+        # platform independent, so an offscreen check still means something.
         return {"out": out, "ok": bool(ok), "size": [pm.width(), pm.height()],
                 "chip": viewer._mode_chip.text(), "health": len(warns),
+                "tree_rows": _tree_rows(viewer.left.tree),
+                "sketch_sel": len(getattr(viewer, "sketch_selection", []) or []),
+                "anchors": len(getattr(viewer, "anchor_markers", []) or []),
+                "bodies": len(getattr(doc, "bodies", []) or []),
                 "3d": bool(getattr(viewer, "_enable_3d", False))}
     finally:
         try:
@@ -203,9 +221,10 @@ def check(dirname: str = os.path.join("docs", "screenshots")) -> dict:
     """Re-render every recorded screenshot and compare what it should show.
 
     Pixels are not compared: they differ between platforms and GPUs.  What is
-    compared is what the image is *for* - the scenario, the mode chip and the
-    health count - so a layout change that breaks the demo is caught, while a
-    different font is not.  The size is compared only when both runs had 3D.
+    compared is what the image is *for* - the scenario, the mode chip, the health
+    count, the structure tree, the selection and the body count (R125/A-9) - so a
+    layout change that breaks the demo is caught, while a different font is not.
+    The size is compared only when both runs had 3D.
     """
     out = {"checked": [], "stale": [], "ok": True}
     if not os.path.isdir(dirname):
@@ -226,6 +245,9 @@ def check(dirname: str = os.path.join("docs", "screenshots")) -> dict:
             bad.append("chip: %r != %r" % (got.get("chip"), want.get("chip")))
         if got.get("health") != want.get("health"):
             bad.append("health: %r != %r" % (got.get("health"), want.get("health")))
+        for key in ("tree_rows", "sketch_sel", "anchors", "bodies"):
+            if key in want and got.get(key) != want.get(key):
+                bad.append("%s: %r != %r" % (key, got.get(key), want.get(key)))
         if got.get("3d") and want.get("3d") and got.get("size") != want.get("size"):
             bad.append("size: %r != %r" % (got.get("size"), want.get("size")))
         entry = {"png": png, "demo": want.get("demo"), "problems": bad}
@@ -266,7 +288,9 @@ def main(argv=None) -> int:
         json.dump({"file": os.path.basename(args.out), "demo": args.demo,
                    "model": args.file, "size_arg": args.size,
                    "size": rep["size"], "chip": rep["chip"],
-                   "health": rep["health"], "3d": rep["3d"]}, fh,
+                   "health": rep["health"], "tree_rows": rep["tree_rows"],
+                   "sketch_sel": rep["sketch_sel"], "anchors": rep["anchors"],
+                   "bodies": rep["bodies"], "3d": rep["3d"]}, fh,
                   ensure_ascii=False, indent=2, sort_keys=True)
     print("saved %(out)s %(size)s chip=%(chip)s health=%(health)s 3d=%(3d)s" % rep)
     print("recorded " + side)

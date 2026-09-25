@@ -4,7 +4,7 @@ from __future__ import annotations
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtWidgets import (
     QAbstractItemView, QCheckBox, QDoubleSpinBox, QGroupBox, QHBoxLayout,
-    QSpinBox,
+    QLineEdit, QSpinBox,
     QHeaderView, QLabel, QListWidget, QListWidgetItem, QMenu, QInputDialog,
     QRadioButton, QScrollArea, QSplitter, QStackedWidget, QTableWidget,
     QTableWidgetItem, QTabWidget, QToolButton, QTreeWidget, QTreeWidgetItem,
@@ -187,11 +187,15 @@ class LeftPanel(QWidget):
         self._opt_pages["none"] = (none, [])
         self.opt_stack.addWidget(none)
 
-        def check_spin(cmd, pairs, spins, counts=()):
+        def check_spin(cmd, pairs, spins, counts=(), choices=(), fields=()):
             """Option page with checkboxes + numeric (mm) spinboxes + counts.
 
             `counts` are whole numbers (pattern instances), which is why they
-            are separate from the millimetre spins (R112/A-1).
+            are separate from the millimetre spins (R112/A-1).  `choices` are
+            mutually exclusive radio buttons (R125/A-1: what a retarget points
+            at - the **first** is the default, which is the historical
+            behaviour) and `fields` are free-text inputs.  Both default to
+            empty, so every page that came before keeps its shape.
             """
             w = QWidget()
             f = QVBoxLayout(w)
@@ -224,8 +228,25 @@ class LeftPanel(QWidget):
                 row.addWidget(sb)
                 f.addLayout(row)
                 ct.append(sb)
+            ch = []
+            for labels in choices:             # one group of mutually exclusive ones
+                grp = []
+                for label in labels:
+                    rb = QRadioButton(label)
+                    rb.setChecked(not grp)     # the first choice is the default
+                    f.addWidget(rb)
+                    grp.append(rb)
+                ch.append(grp)
+            ed = []
+            for label, default in fields:
+                row = QHBoxLayout()
+                row.addWidget(QLabel(label))
+                le = QLineEdit(str(default))
+                row.addWidget(le)
+                f.addLayout(row)
+                ed.append(le)
             f.addStretch(1)
-            self._opt_pages[cmd] = (w, boxes, sp, ct)
+            self._opt_pages[cmd] = (w, boxes, sp, ct, ch, ed)
             self.opt_stack.addWidget(w)
 
         def checks_nyi(cmd, labels, note):
@@ -280,10 +301,16 @@ class LeftPanel(QWidget):
                    "替换为平面移动+愈合，无延伸语义")
         checks("measure.dist", [("自动标注", True)])
         # R119/A-2: a destructive one-click step deserves a look first
+        # R125/A-1: the target of a retarget is a *choice* - the three kinds the
+        # library understands (sketch / parameter / expression) - plus one field
+        # for its text; the sketch number keeps its old millimetre spin so the
+        # default path is exactly what it was
         check_spin("repair.refs", [("先预览（不改动文档）", False),
-                                   ("尺寸改指向草图序号", False),
+                                   ("尺寸改指向（保留意图）", False),
                                    ("跳过选中的（其余全修）", False)],
-                   [("序号", 1.0)])
+                   [("草图序号", 1.0)],
+                   choices=[["改指向：草图序号", "改指向：参数名", "改指向：算式"]],
+                   fields=[("目标", "1")])
         checks("insert.cyl", [("创建后进入拉动", True)])
         checks("insert.sphere", [("创建后进入拉动", True)])
 
@@ -328,6 +355,38 @@ class LeftPanel(QWidget):
         if page and len(page) > 3 and 0 <= index < len(page[3]):
             return int(page[3][index].value())
         return None
+
+    def choice_value(self, cmd: str, index: int) -> int:
+        """Which radio button is chosen, or 0 when the page has none (R125/A-1).
+
+        The first choice is the historical behaviour, so a page without radios -
+        and a caller that never learned about them - reads as "unchanged".
+        """
+        page = self._opt_pages.get(cmd)
+        if page and len(page) > 4 and 0 <= index < len(page[4]):
+            for i, rb in enumerate(page[4][index]):
+                if rb.isChecked():
+                    return i
+        return 0
+
+    def set_choice(self, cmd: str, index: int, which: int) -> None:
+        page = self._opt_pages.get(cmd)
+        if page and len(page) > 4 and 0 <= index < len(page[4]):
+            buttons = page[4][index]
+            if 0 <= int(which) < len(buttons):
+                buttons[int(which)].setChecked(True)
+
+    def text_value(self, cmd: str, index: int) -> str:
+        """Text of a free-text option field, or '' when the page has none."""
+        page = self._opt_pages.get(cmd)
+        if page and len(page) > 5 and 0 <= index < len(page[5]):
+            return str(page[5][index].text())
+        return ""
+
+    def set_text(self, cmd: str, index: int, text: str) -> None:
+        page = self._opt_pages.get(cmd)
+        if page and len(page) > 5 and 0 <= index < len(page[5]):
+            page[5][index].setText(str(text))
 
     def show_options(self, cmd: str) -> None:
         """Show the option page for the active tool/command (defaults to 'none')."""

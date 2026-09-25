@@ -1,5 +1,7 @@
 {
   "3d": true,
+  "anchors": 0,
+  "bodies": 1,
   "chip": "草图模式 · XY · 自由度 0 · 冗余 2 · 冲突 #5、#7 · 悬空 1",
   "demo": "conflict",
   "file": "sketch_diagnostics.png",
@@ -9,5 +11,7 @@
     1500,
     950
   ],
-  "size_arg": "1500x950"
+  "size_arg": "1500x950",
+  "sketch_sel": 0,
+  "tree_rows": 22
 }

@@ -1,5 +1,7 @@
 {
   "3d": true,
+  "anchors": 5,
+  "bodies": 1,
   "chip": "草图模式 · XY · 自由度 56",
   "demo": "pattern",
   "file": "sketch_pattern_anchors.png",
@@ -9,5 +11,7 @@
     1500,
     950
   ],
-  "size_arg": "1500x950"
+  "size_arg": "1500x950",
+  "sketch_sel": 1,
+  "tree_rows": 13
 }

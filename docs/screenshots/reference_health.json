@@ -1,5 +1,7 @@
 {
   "3d": true,
+  "anchors": 0,
+  "bodies": 3,
   "chip": "",
   "demo": "mate",
   "file": "reference_health.png",
@@ -9,5 +11,7 @@
     1500,
     950
   ],
-  "size_arg": "1500x950"
+  "size_arg": "1500x950",
+  "sketch_sel": 0,
+  "tree_rows": 20
 }

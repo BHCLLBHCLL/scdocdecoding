@@ -16,6 +16,11 @@ jobs:
       - name: DEV_PLAN snapshot is current (P12/P20 anti-drift)
         shell: bash -l {0}
         run: python tools/gen_devplan_snapshot.py --check
+      - name: Reference images are current (R125/A-9)
+        shell: bash -l {0}
+        run: |
+          export QT_QPA_PLATFORM=offscreen
+          python tools/gui_screenshot.py --check
       - name: Run non-official suite
         shell: bash -l {0}
         run: |

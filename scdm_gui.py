@@ -2532,8 +2532,23 @@ else:
                 dry = False
             try:
                 retarget = bool(self.left.is_checked("repair.refs", 1))
-                to = self._selected_sketch_id() or \
-                    ("S%d" % int(self.left.spin_value("repair.refs", 0) or 1))
+                # R125/A-1: the target *kind* is a choice on the page - the sketch
+                # number (the historical default), a parameter name or an
+                # expression.  Whatever the box says is handed to the library,
+                # which refuses a target it cannot use, so a typo cannot touch the
+                # document (rule 91: the page promises exactly what runs).
+                kind = int(self.left.choice_value("repair.refs", 0) or 0)
+                txt = (self.left.text_value("repair.refs", 0) or "").strip()
+                if kind == 1:
+                    to = "param:%s" % txt
+                elif kind == 2:
+                    to = "expr:%s" % txt
+                else:
+                    to = self._selected_sketch_id() or \
+                        ("S%d" % int(self.left.spin_value("repair.refs", 0) or 1))
+                self.repair_target = ("参数 %s" % (txt or "（空）") if kind == 1
+                                      else "算式 %s" % (txt or "（空）")
+                                      if kind == 2 else "草图 %s" % to)
             except Exception:
                 retarget, to = False, None
             try:
@@ -2553,6 +2568,10 @@ else:
             self.repair_plan = []
             # R120/A-2: "retarget the dimensions, drop the rest" in one action
             action = {"dimension": "retarget"} if retarget else "auto"
+            # the status names the target the page asked for, so the number on
+            # screen and the number in the box are the same number
+            note = ("（改指向 %s）" % getattr(self, "repair_target", "")
+                    if retarget else "")
             self._push_undo()
             if ids and skip_sel:
                 # R121/A-1: unticking rows in the preview = fix all but those
@@ -2562,8 +2581,8 @@ else:
                 if rep["skipped"]:
                     more = "，%d 条跳过（%s）" % (len(rep["skipped"]),
                                                 rep["skipped"][0][1])
-                self._set_status("引用修复：跳过选中的 %d 条，修好 %d 条%s"
-                                 % (len(ids), len(rep["fixed"]), more))
+                self._set_status("引用修复：跳过选中的 %d 条，修好 %d 条%s%s"
+                                 % (len(ids), len(rep["fixed"]), more, note))
                 self._rebuild()
                 return
             target = self._selected_health_warning() if (ids and len(ids) == 1) \
@@ -2589,11 +2608,11 @@ else:
                 more = "，%d 条跳过（%s）" % (len(rep["skipped"]),
                                             rep["skipped"][0][1])
             if ids:
-                self._set_status("引用修复：选中 %d 条，修好 %d 条%s"
-                                 % (len(ids), len(rep["fixed"]), more))
+                self._set_status("引用修复：选中 %d 条，修好 %d 条%s%s"
+                                 % (len(ids), len(rep["fixed"]), more, note))
             else:
-                self._set_status("引用修复：修好 %d 条%s"
-                                 % (len(rep["fixed"]), more))
+                self._set_status("引用修复：修好 %d 条%s%s"
+                                 % (len(rep["fixed"]), more, note))
             self._rebuild()
 
         def _do_prep_small(self):
