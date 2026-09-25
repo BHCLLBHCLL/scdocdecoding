@@ -201,7 +201,17 @@ def _retarget_dimension(kdoc, warning, to, to_index, scale: float):
     from scdm import sketchmode as SKM
     if not to:
         return False, ("改指向需要给出目标"
-                      "（to=\"S2\"、\"param:d\" 或 \"expr:2*d\"）")
+                      "（to=\"S2\"、\"S2_dim5\"、\"param:d\" 或 \"expr:2*d\"）")
+    if isinstance(to, (tuple, list)) and len(to) == 2:
+        # R126/A-11: a pair means "that sketch, that dimension" - the form
+        # repair_selected() has always taken from a {id: target} map
+        to, to_index = to[0], int(to[1])
+    elif isinstance(to, str) and "_dim" in to:
+        # ... and the rows store exactly that pair as "S2_dim5", so the string a
+        # document lists is itself a target (one grammar, not two)
+        head, _, tail = str(to).rpartition("_dim")
+        if head and tail.isdigit() and SKM.find_sketch(kdoc, head) is not None:
+            to, to_index = head, int(tail)
     sid, index = warning["ref"]
     if str(to).startswith("expr:"):
         # R123/A-2: the target may be an expression, so a dangling row can become

@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtWidgets import (
-    QAbstractItemView, QCheckBox, QDoubleSpinBox, QGroupBox, QHBoxLayout,
-    QLineEdit, QSpinBox,
+    QAbstractItemView, QCheckBox, QComboBox, QDoubleSpinBox, QGroupBox,
+    QHBoxLayout, QLineEdit, QSpinBox,
     QHeaderView, QLabel, QListWidget, QListWidgetItem, QMenu, QInputDialog,
     QRadioButton, QScrollArea, QSplitter, QStackedWidget, QTableWidget,
     QTableWidgetItem, QTabWidget, QToolButton, QTreeWidget, QTreeWidgetItem,
@@ -187,7 +187,8 @@ class LeftPanel(QWidget):
         self._opt_pages["none"] = (none, [])
         self.opt_stack.addWidget(none)
 
-        def check_spin(cmd, pairs, spins, counts=(), choices=(), fields=()):
+        def check_spin(cmd, pairs, spins, counts=(), choices=(), fields=(),
+                       pickers=()):
             """Option page with checkboxes + numeric (mm) spinboxes + counts.
 
             `counts` are whole numbers (pattern instances), which is why they
@@ -245,8 +246,35 @@ class LeftPanel(QWidget):
                 row.addWidget(le)
                 f.addLayout(row)
                 ed.append(le)
+            pk = []
+            for label in pickers:
+                row = QHBoxLayout()
+                row.addWidget(QLabel(label))
+                box = QComboBox()
+                row.addWidget(box)
+                f.addLayout(row)
+                pk.append(box)
+            # choosing an entry writes the radio group and the field, so the
+            # picker is a shortcut for those two widgets - never a third
+            # opinion about what the target is (R126/A-11)
+            for k, box in enumerate(pk):
+                grp = ch[k] if k < len(ch) else None
+                fld = ed[k] if k < len(ed) else None
+
+                def _pick(i, box=box, grp=grp, fld=fld):
+                    data = box.itemData(i)
+                    if not data:
+                        return
+                    kind, text = data
+                    if grp:
+                        for j, rb in enumerate(grp):
+                            rb.setChecked(j == int(kind))
+                    if fld:
+                        fld.setText(str(text))
+
+                box.currentIndexChanged.connect(_pick)
             f.addStretch(1)
-            self._opt_pages[cmd] = (w, boxes, sp, ct, ch, ed)
+            self._opt_pages[cmd] = (w, boxes, sp, ct, ch, ed, pk)
             self.opt_stack.addWidget(w)
 
         def checks_nyi(cmd, labels, note):
@@ -310,7 +338,8 @@ class LeftPanel(QWidget):
                                    ("跳过选中的（其余全修）", False)],
                    [("草图序号", 1.0)],
                    choices=[["改指向：草图序号", "改指向：参数名", "改指向：算式"]],
-                   fields=[("目标", "1")])
+                   fields=[("目标", "")],
+                   pickers=["从文档里挑"])
         checks("insert.cyl", [("创建后进入拉动", True)])
         checks("insert.sphere", [("创建后进入拉动", True)])
 
@@ -387,6 +416,47 @@ class LeftPanel(QWidget):
         page = self._opt_pages.get(cmd)
         if page and len(page) > 5 and 0 <= index < len(page[5]):
             page[5][index].setText(str(text))
+
+    def set_targets(self, cmd: str, index: int, entries) -> int:
+        """List the targets a command can be pointed at (R126/A-11).
+
+        The first row is a placeholder, so refreshing the list never rewrites
+        what the user typed; choosing a real entry is what writes the radio group
+        and the text field.  Returns how many real entries were listed.
+        """
+        page = self._opt_pages.get(cmd)
+        if not (page and len(page) > 6 and 0 <= index < len(page[6])):
+            return 0
+        box = page[6][index]
+        box.blockSignals(True)
+        box.clear()
+        box.addItem("（从文档里挑）", None)
+        n = 0
+        for e in entries or ():
+            box.addItem(str(e.get("label") or e.get("to") or ""),
+                        (int(e.get("radio", 0)),
+                         str(e.get("text") or e.get("to") or "")))
+            n += 1
+        box.setCurrentIndex(0)
+        box.blockSignals(False)
+        return n
+
+    def set_target_index(self, cmd: str, index: int, which: int) -> None:
+        page = self._opt_pages.get(cmd)
+        if page and len(page) > 6 and 0 <= index < len(page[6]):
+            page[6][index].setCurrentIndex(int(which))
+
+    def target_count(self, cmd: str, index: int) -> int:
+        page = self._opt_pages.get(cmd)
+        if page and len(page) > 6 and 0 <= index < len(page[6]):
+            return max(0, page[6][index].count() - 1)      # without the placeholder
+        return 0
+
+    def target_label(self, cmd: str, index: int) -> str:
+        page = self._opt_pages.get(cmd)
+        if page and len(page) > 6 and 0 <= index < len(page[6]):
+            return page[6][index].currentText()
+        return ""
 
     def show_options(self, cmd: str) -> None:
         """Show the option page for the active tool/command (defaults to 'none')."""

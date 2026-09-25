@@ -971,6 +971,115 @@ def sync_sketch_bodies(kdoc, sketch_id: Optional[str] = None,
     return out
 
 
+def preview_dimension(kdoc, sketch_id: str, index: int, value_mm,
+                      scale: float = 1000.0) -> Dict[str, Any]:
+    """What driving a dimension would do - computed on copies (R126/A-4).
+
+    Nothing in `kdoc` is touched: every sketch is copied into a scratch
+    document, the **same** `set_dimension` drives the copy, and the prospective
+    solids are built with the same feature code a replay uses.  So the preview
+    cannot drift from the real drive (rule 84), and a cancel is simply "do
+    nothing" - the volume on screen stays the volume in the document.
+
+    Returns {"ok", "reason", "value_mm", "expr", "dof", "before", "after",
+             "bodies": [{"body", "before", "after", "shape"}]}.
+    """
+    import copy
+    from scdm import features as FEAT
+    from scdm import sketch as S
+    from scdm.kdoc import KernelDoc
+    out: Dict[str, Any] = {"ok": False, "reason": "", "value_mm": None,
+                           "expr": "", "dof": None, "before": 0.0, "after": 0.0,
+                           "bodies": []}
+    if find_sketch(kdoc, sketch_id) is None:
+        out["reason"] = "草图已不存在：%s" % sketch_id
+        return out
+    try:
+        scratch = KernelDoc()
+        scratch.sketches = [copy.deepcopy(s) for s in kdoc.sketches]
+        scratch.param_table = getattr(kdoc, "param_table", None)
+        probe = find_sketch(scratch, sketch_id)
+        rep = set_dimension(scratch, sketch_id, index, value_mm, scale)
+    except Exception as exc:              # a copy must never break the document
+        out["reason"] = "预览失败：%s" % exc
+        return out
+    if not rep["ok"]:
+        out["reason"] = rep["reason"]
+        return out
+    out["value_mm"] = rep.get("value_mm")
+    out["expr"] = rep.get("expr") or ""
+    out["dof"] = rep.get("dof")
+    loops = S.sketch_loops(probe.curves)
+    for bid, stack in list(getattr(kdoc, "features", {}).items()):
+        for f in list(stack.features):
+            if f.op != "sketch" or f.params.get("sketch_id") != sketch_id:
+                continue
+            params = dict(f.params)
+            idx = params.get("loop")
+            if idx is None:
+                # no live loop link: the body follows the whole sketch, exactly
+                # like sync_sketch_bodies() rebuilds it
+                params["curves"] = [list(c) for c in probe.curves]
+            else:
+                if not (0 <= int(idx) < len(loops)):
+                    out["reason"] = "草图第 %d 个闭环已不存在" % (int(idx) + 1)
+                    return out
+                params["curves"] = loop_curves(loops[int(idx)])
+            try:
+                solid = FEAT.sketch_solid(params, scale)
+            except Exception as exc:
+                out["reason"] = "预览失败：%s" % exc
+                return out
+            body = kdoc.body_by_id(bid)
+            before = K.volume(body.shape) if body is not None else 0.0
+            after = K.volume(solid)
+            out["before"] += float(before)
+            out["after"] += float(after)
+            out["bodies"].append({"body": bid, "before": float(before),
+                                  "after": float(after), "shape": solid})
+    out["ok"] = True
+    return out
+
+
+def target_options(kdoc, scale: float = 1000.0) -> List[Dict[str, Any]]:
+    """What a dangling dimension can be pointed at, from this document (A-11).
+
+    One place that knows the grammar the repair accepts, so the interface can
+    offer exactly the targets that would work: another sketch, one dimension of
+    such a sketch, or a parameter-table entry.  Every entry carries the `to`
+    string the library takes plus the option-page widgets it corresponds to
+    (`radio` = which target kind, `text` = what to put in the field), so picking
+    one *is* the same call as typing it - the picker is a shortcut, not a second
+    source of truth.
+    """
+    out: List[Dict[str, Any]] = []
+    for sk in list(getattr(kdoc, "sketches", []) or []):
+        rows = dimensions(kdoc, sk.id, scale)
+        live = [r for r in rows if r.get("value_mm") is not None]
+        out.append({"to": sk.id, "kind": 0, "text": sk.id, "radio": 0,
+                    "label": "草图 %s（%d 个尺寸）" % (sk.id, len(live))})
+        for r in live:
+            out.append({"to": "%s_dim%d" % (sk.id, r["index"]), "kind": 0,
+                        "text": "%s_dim%d" % (sk.id, r["index"]), "radio": 0,
+                        "label": "草图 %s 的尺寸 #%d（%.3gmm）"
+                                 % (sk.id, r["index"], r["value_mm"])})
+    table = getattr(kdoc, "param_table", None)
+    names: Dict[str, Any] = {}
+    try:
+        names = table.resolve() if table is not None else {}
+    except Exception:
+        names = {}
+    for name in sorted(names):
+        try:
+            mm = "%.3gmm" % float(names[name])
+        except (TypeError, ValueError):
+            mm = str(names[name])
+        out.append({"to": "param:%s" % name, "kind": 1, "radio": 1,
+                    "text": name,
+                    "label": "参数 %s（%s）" % (name, mm)})
+    return out
+
+
 def _face_plane_distance(face, origin, normal):
     """(signed_distance, reason) from a plane to a face along the normal (A-2).
 

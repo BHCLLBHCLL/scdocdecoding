@@ -312,6 +312,34 @@ def _sketch_curves(raw):
     return out
 
 
+def sketch_solid(params: dict, scale: float, curves=None):
+    """The solid a @@sketch@@ feature describes (R126/A-4).
+
+    One implementation for two callers: replaying a body from its history, and
+    previewing what a dimension change *would* build.  `curves` overrides the
+    recorded outline, which is how a preview shows the prospective shape without
+    touching the document.
+    """
+    from scdm import sketch as S
+    axes = S.sketch_axes(params.get("plane", "xy"),
+                         tuple(params.get("origin") or (0, 0, 0)),
+                         tuple(params.get("normal") or (0, 0, 1)),
+                         tuple(params.get("xdir") or (1, 0, 0)))
+    h = float(params.get("height", 10.0)) / float(scale or 1000.0)
+    if h <= 0:
+        raise ValueError("草图拉伸高度必须大于 0")
+    raw = params.get("curves") if curves is None else curves
+    solids = S.extrude_loops(_sketch_curves(raw), h, axes=axes)
+    if not solids:
+        raise ValueError("草图没有可拉伸的闭环")
+    idx = int(params.get("loop", 0) or 0)
+    # a feature stores its own single loop, so the index is only meaningful
+    # for the live link; fall back to the first solid when it is out of range
+    solid = solids[idx] if 0 <= idx < len(solids) else solids[0]
+    # R108/A-4: one | symmetric | reverse (same volume, different seat)
+    return S.place_extrusion(solid, params.get("mode"), h, axes[3])
+
+
 def _apply_one(shape, feature: Feature, scale: float):
     op = feature.op
     p = feature.params
@@ -321,21 +349,9 @@ def _apply_one(shape, feature: Feature, scale: float):
         # replays the same body) and sketch_id keeps the live link for edits.
         # R107/A-2: the replay goes through the *exact* loop extrusion, so a
         # circle feature rebuilds a real cylinder, not a polygon approximation.
-        from scdm import sketch as S
-        axes = S.sketch_axes(p.get("plane", "xy"),
-                             tuple(p.get("origin") or (0, 0, 0)),
-                             tuple(p.get("normal") or (0, 0, 1)),
-                             tuple(p.get("xdir") or (1, 0, 0)))
-        h = float(p.get("height", 10.0)) / scale
-        if h <= 0:
-            raise ValueError("草图拉伸高度必须大于 0")
-        solids = S.extrude_loops(_sketch_curves(p.get("curves")), h, axes=axes)
-        idx = int(p.get("loop", 0) or 0)
-        # a feature stores its own single loop, so the index is only meaningful
-        # for the live link; fall back to the first solid when it is out of range
-        solid = solids[idx] if 0 <= idx < len(solids) else solids[0]
-        # R108/A-4: one | symmetric | reverse (same volume, different seat)
-        return S.place_extrusion(solid, p.get("mode"), h, axes[3])
+        # R126/A-4: the build itself lives in sketch_solid(), because a preview
+        # has to build the very same solid without replaying the document
+        return sketch_solid(p, scale)
     if op in ("hole", "hole_tapped", "hole_cbore", "hole_csink"):
         face = resolve_face(shape, p.get("selector", {}))
         if face is None:

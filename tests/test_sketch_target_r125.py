@@ -84,7 +84,7 @@ def test_the_page_defaults_to_the_sketch_number():
     try:
         v.left.show_options("repair.refs")
         assert v.left.choice_value("repair.refs", 0) == KIND_SKETCH
-        assert v.left.text_value("repair.refs", 0) == "1"
+        assert v.left.text_value("repair.refs", 0) == ""    # nothing typed yet
         assert v.left.is_checked("repair.refs", 1) is False      # nothing retargets
         page = v.left._opt_pages["repair.refs"]
         assert len(page[1]) == 3 and len(page[2]) == 1           # WYSIWYG: unchanged

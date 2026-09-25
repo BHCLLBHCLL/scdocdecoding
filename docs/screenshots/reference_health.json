@@ -6,6 +6,7 @@
   "demo": "mate",
   "file": "reference_health.png",
   "health": 2,
+  "ink": 268605,
   "model": "box.scdoc",
   "size": [
     1500,

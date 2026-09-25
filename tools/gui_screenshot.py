@@ -115,6 +115,32 @@ DEMOS = {"solid": None, "sketch": _demo_sketch, "picks": _demo_picks,
          "mate": _demo_mate}
 
 
+def _viewport_ink(img, rect) -> int:
+    """Pixels inside `rect` that are not the flat viewport background (A-12).
+
+    The 3D view is a plain background until something is drawn, so counting what
+    is *not* that colour is how "this image shows geometry" stops being an
+    assumption: a blank render records `ink = 0` and the check says so.
+    """
+    import numpy as np
+    from PyQt5.QtGui import QImage
+    x0, y0, w, h = (int(v) for v in rect)
+    if w <= 0 or h <= 0:
+        return 0
+    img = img.convertToFormat(QImage.Format_RGB32)      # 4 bytes per pixel
+    buf = img.constBits()
+    buf.setsize(img.bytesPerLine() * img.height())
+    arr = np.frombuffer(buf, dtype=np.uint8).reshape(
+        img.height(), img.bytesPerLine() // 4, 4)[:, :, :3]
+    x1, y1 = min(img.width(), x0 + w), min(img.height(), y0 + h)
+    x0, y0 = max(0, x0), max(0, y0)
+    if x1 <= x0 or y1 <= y0:
+        return 0
+    view = arr[y0:y1, x0:x1]
+    base = view[0, 0].astype(int)
+    return int((np.abs(view.astype(int) - base) > 12).any(axis=2).sum())
+
+
 def _tree_rows(tree) -> int:
     """How many rows the structure tree shows (R125/A-9).
 
@@ -162,6 +188,7 @@ def grab(out: str, path=None, demo: str = "sketch", size=(1500, 950),
         from PyQt5.QtCore import QPoint
         from PyQt5.QtGui import QImage, QPainter
         pm = viewer.grab()
+        ink = 0
         if getattr(viewer, "_enable_3d", False) and viewer.vtk_widget is not None:
             from vtkmodules.vtkIOImage import vtkPNGWriter
             from vtkmodules.vtkRenderingCore import vtkWindowToImageFilter
@@ -178,10 +205,15 @@ def grab(out: str, path=None, demo: str = "sketch", size=(1500, 950),
             wr.SetInputConnection(w2i.GetOutputPort())
             wr.Write()
             painter = QPainter(pm)
-            painter.drawImage(viewer.vtk_widget.mapTo(viewer, QPoint(0, 0)),
-                              QImage(tmp).scaled(viewer.vtk_widget.width(),
-                                                 viewer.vtk_widget.height()))
+            pos = viewer.vtk_widget.mapTo(viewer, QPoint(0, 0))
+            painter.drawImage(pos, QImage(tmp).scaled(viewer.vtk_widget.width(),
+                                                      viewer.vtk_widget.height()))
             painter.end()
+            # R126/A-12: what the viewport actually shows, measured on the same
+            # pixels that go into the file
+            ink = _viewport_ink(pm.toImage(), (pos.x(), pos.y(),
+                                               viewer.vtk_widget.width(),
+                                               viewer.vtk_widget.height()))
             try:
                 os.remove(tmp)
             except OSError:
@@ -204,6 +236,7 @@ def grab(out: str, path=None, demo: str = "sketch", size=(1500, 950),
                 "sketch_sel": len(getattr(viewer, "sketch_selection", []) or []),
                 "anchors": len(getattr(viewer, "anchor_markers", []) or []),
                 "bodies": len(getattr(doc, "bodies", []) or []),
+                "ink": int(ink),
                 "3d": bool(getattr(viewer, "_enable_3d", False))}
     finally:
         try:
@@ -248,6 +281,13 @@ def check(dirname: str = os.path.join("docs", "screenshots")) -> dict:
         for key in ("tree_rows", "sketch_sel", "anchors", "bodies"):
             if key in want and got.get(key) != want.get(key):
                 bad.append("%s: %r != %r" % (key, got.get(key), want.get(key)))
+        # R126/A-12: a recorded image whose viewport was empty is stale by
+        # definition - it cannot be showing the geometry it claims to show
+        if want.get("3d") and not want.get("ink"):
+            bad.append("记录的视口是空的（ink=%r）" % want.get("ink"))
+        if got.get("3d") and want.get("3d") and "ink" in want and \
+                got.get("ink") != want.get("ink"):
+            bad.append("ink: %r != %r" % (got.get("ink"), want.get("ink")))
         if got.get("3d") and want.get("3d") and got.get("size") != want.get("size"):
             bad.append("size: %r != %r" % (got.get("size"), want.get("size")))
         entry = {"png": png, "demo": want.get("demo"), "problems": bad}
@@ -290,7 +330,8 @@ def main(argv=None) -> int:
                    "size": rep["size"], "chip": rep["chip"],
                    "health": rep["health"], "tree_rows": rep["tree_rows"],
                    "sketch_sel": rep["sketch_sel"], "anchors": rep["anchors"],
-                   "bodies": rep["bodies"], "3d": rep["3d"]}, fh,
+                   "bodies": rep["bodies"], "ink": rep["ink"],
+                   "3d": rep["3d"]}, fh,
                   ensure_ascii=False, indent=2, sort_keys=True)
     print("saved %(out)s %(size)s chip=%(chip)s health=%(health)s 3d=%(3d)s" % rep)
     print("recorded " + side)

@@ -156,6 +156,7 @@ else:
             self.repair_plan = []      # R119/A-2: the last dry-run plan
             self.anchor_marker = None  # R123/A-1: the anchor the last pattern used
             self.anchor_markers = []   # R124/A-2: one per instance, all drawn
+            self.dim_preview = None    # R126/A-4: the pending dimension change
             self._pending_paste = False
             self.settings = QSettings("scdocdecoding", "scdm")
             from scdm.scripting import Recorder
@@ -664,8 +665,10 @@ else:
                     "tool.select", "tool.pull", "tool.move", "tool.fill",
                     "tool.replace", "tool.combine", "tool.split_body",
                     "mode.sketch", "mode.section", "measure.dist",
-                    "insert.cyl", "insert.sphere",
+                    "insert.cyl", "insert.sphere", "repair.refs",
                 ) else "none")
+                if cmd_id == "repair.refs":
+                    self._sync_repair_targets()
                 self._set_drag_hooks(cmd_id)
                 if self.vp:
                     self._update_tool_chrome()
@@ -2507,6 +2510,23 @@ else:
                     ids.append(str(data[2]))
             return ids or None
 
+        def _sync_repair_targets(self) -> int:
+            """Fill the retarget picker with what this document offers (A-11).
+
+            The list comes from the library (sketchmode.target_options), so the
+            page can only offer targets the repair would accept.
+            """
+            ses = self.session()
+            if getattr(ses, "kdoc", None) is None:
+                return 0
+            try:
+                n = self.left.set_targets(
+                    "repair.refs", 0, SKM.target_options(ses.kdoc, ses.scale))
+            except Exception:
+                return 0
+            self.repair_targets = int(n)
+            return int(n)
+
         def _do_repair_refs(self):
             """R118/A-2: fix dangling references - the selected row, or all of them.
 
@@ -2518,6 +2538,7 @@ else:
             if not self._need_kernel():
                 return
             from scdm import health as HEALTH
+            self._sync_repair_targets()          # the picker is always current
             warns = HEALTH.document_warnings(ses.kdoc, ses.scale)
             if not warns:
                 self.repair_plan = []
@@ -2539,23 +2560,42 @@ else:
                 # document (rule 91: the page promises exactly what runs).
                 kind = int(self.left.choice_value("repair.refs", 0) or 0)
                 txt = (self.left.text_value("repair.refs", 0) or "").strip()
-                if kind == 1:
+                # R126/A-11: ";" separates one target per selected row (selection
+                # order is the user's intent), and such a target is written in
+                # full - the kind only prefixes the single-target form
+                multi = [t.strip() for t in txt.split(";") if t.strip()]
+                if len(multi) > 1:
+                    to = multi
+                    self.repair_target = "逐行 %s" % "；".join(multi)
+                elif kind == 1:
                     to = "param:%s" % txt
+                    self.repair_target = "参数 %s" % (txt or "（空）")
                 elif kind == 2:
                     to = "expr:%s" % txt
+                    self.repair_target = "算式 %s" % (txt or "（空）")
                 else:
-                    to = self._selected_sketch_id() or \
-                        ("S%d" % int(self.left.spin_value("repair.refs", 0) or 1))
-                self.repair_target = ("参数 %s" % (txt or "（空）") if kind == 1
-                                      else "算式 %s" % (txt or "（空）")
-                                      if kind == 2 else "草图 %s" % to)
+                    to = (multi[0] if multi else
+                          self._selected_sketch_id() or
+                          ("S%d" % int(self.left.spin_value("repair.refs", 0) or 1)))
+                    self.repair_target = "草图 %s" % to
             except Exception:
                 retarget, to = False, None
             try:
                 skip_sel = bool(self.left.is_checked("repair.refs", 2))
             except Exception:
                 skip_sel = False
+            # None means "every warning" (R118); an empty selection is not a
+            # selection at all, so it must stay None
             ids = self._selected_health_ids()
+            if isinstance(to, list):
+                # one target per row, in selection order - and no guessing when
+                # the counts disagree
+                if not ids or len(to) != len(ids):
+                    self._set_status(
+                        "引用修复：逐行目标需要与选中条目一一对应"
+                        "（目标 %d 个，选中 %d 条）" % (len(to), len(ids or [])))
+                    return
+                to = {str(i): t for i, t in zip(ids, to)}
             if dry:
                 plan = HEALTH.repair_plan(ses.kdoc, ses.scale, ids=ids,
                                           exclude=ids if skip_sel else None)
@@ -4521,6 +4561,10 @@ else:
             The value is asked in mm, the sketch is re-solved with the LM solver,
             and the bodies built from that sketch are rebuilt - so a number in the
             tree moves geometry, which is the whole point of a driven dimension.
+
+            R126/A-4: it is *previewed* first.  The prospective solid comes from a
+            copy of the sketch, so what this dialog promises is exactly what the
+            commit produces, and cancelling leaves the volume where it was.
             """
             ses = self.session()
             dims = SKM.dimensions(ses.kdoc, sketch_id, ses.scale)
@@ -4537,17 +4581,82 @@ else:
                 value = float(text)
             except ValueError:
                 value = text            # R110/A-2: an expression, not a number
-            rep = SKM.set_dimension(ses.kdoc, sketch_id, index, value, ses.scale)
+            rep = self.preview_sketch_dimension(sketch_id, index, value)
             if not rep["ok"]:
                 QMessageBox.warning(self, "驱动尺寸", rep["reason"])
                 self._set_status("尺寸未改动：%s" % rep["reason"])
                 return
-            n = self._sync_sketch_bodies(sketch_id)
-            self._record("sketch.drive", index=index, value_mm=rep["value_mm"])
+            if not self._confirm("驱动尺寸", "预览：体积 %.4g → %.4gmm³（%s）；提交？"
+                                 % (rep["before"] * 1e9, rep["after"] * 1e9,
+                                    ("表达式 " + rep["expr"]) if rep["expr"]
+                                    else "数值")):
+                self.cancel_sketch_dimension()
+                return
+            self.commit_sketch_dimension()
+
+        def preview_sketch_dimension(self, sketch_id, index, value):
+            """Show what driving a dimension would do (R126/A-4).
+
+            The document is not touched - see SKM.preview_dimension - so the
+            status line can promise "取消即不变" and mean it.
+            """
+            ses = self.session()
+            rep = SKM.preview_dimension(ses.kdoc, sketch_id, index, value,
+                                        ses.scale)
+            self._clear_dim_preview()
+            if not rep["ok"]:
+                return rep
+            rep["sketch_id"] = sketch_id
+            rep["index"] = int(index)
+            rep["value"] = value
+            first = rep["bodies"][0] if rep["bodies"] else None
+            if self.scene is not None and first is not None:
+                self.scene.show_preview(first["shape"],
+                                        hide_body_id=first["body"])
+            self.dim_preview = rep
+            self._set_status(
+                "预览：体积 %.4g → %.4gmm³（%s）；未提交，取消即不变"
+                % (rep["before"] * 1e9, rep["after"] * 1e9,
+                   ("表达式 " + rep["expr"]) if rep["expr"] else "数值"))
+            return rep
+
+        def commit_sketch_dimension(self):
+            """Apply the previewed change - the only step that edits the document."""
+            rep = getattr(self, "dim_preview", None)
+            if not rep:
+                self._set_status("没有待提交的尺寸预览")
+                return None
+            ses = self.session()
+            self._clear_dim_preview()      # the preview is spent either way
+            out = SKM.set_dimension(ses.kdoc, rep["sketch_id"], rep["index"],
+                                    rep["value"], ses.scale)
+            if not out["ok"]:
+                QMessageBox.warning(self, "驱动尺寸", out["reason"])
+                self._set_status("尺寸未改动：%s" % out["reason"])
+                return out
+            n = self._sync_sketch_bodies(rep["sketch_id"])
+            self._record("sketch.drive", index=rep["index"],
+                         value_mm=out["value_mm"])
             self._commit("尺寸 %gmm%s（剩余自由度 %s，重建 %d 个实体）"
-                         % (rep["value_mm"],
-                            "＝" + rep["expr"] if rep.get("expr") else "",
-                            rep["dof"], n))
+                         % (out["value_mm"],
+                            "＝" + out["expr"] if out.get("expr") else "",
+                            out["dof"], n)
+                         + self._extra_loop_hint())
+            return out
+
+        def cancel_sketch_dimension(self):
+            """Drop the preview: nothing was changed, so nothing is undone."""
+            self._clear_dim_preview()
+            self._set_status("已取消尺寸预览（文档未改动）")
+
+        def _clear_dim_preview(self):
+            self.dim_preview = None
+            if self.scene is not None and hasattr(self.scene, "clear_preview"):
+                self.scene.clear_preview()
+
+        def _confirm(self, title, text):
+            """A yes/no question - one place, so a test can answer it."""
+            return QMessageBox.question(self, title, text) == QMessageBox.Yes
 
         def _sync_sketch_bodies(self, sketch_id=None) -> int:
             """R106/B-1: rebuild the bodies that were extruded from this sketch.
