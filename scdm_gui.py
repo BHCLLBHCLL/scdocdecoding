@@ -3854,10 +3854,37 @@ else:
                     self._set_status("阵列：%s" % why)
                     return
                 offset_mm = float(self.left.spin_value("sketch.pattern", 5) or 0.0)
+                # R122/A-2 + A-6: the anchor is the picked sketch point when
+                # there is one (R114 selection set), else the typed U/V, else the
+                # path start - which is the historical behaviour
+                anchor = None
+                picked_pt = None
+                try:
+                    use_pick = bool(self.left.is_checked("sketch.pattern", 2))
+                except Exception:
+                    use_pick = False
+                if use_pick:
+                    for r in getattr(self, "sketch_selection", []):
+                        if r[0] != "point":
+                            continue
+                        pl = S.curve_points(sk, int(r[1]))
+                        if pl and 0 <= int(r[2]) < len(pl):
+                            picked_pt = pl[int(r[2])]
+                            break
+                if picked_pt is not None:
+                    anchor = [float(picked_pt[0]), float(picked_pt[1])]
+                else:
+                    au = float(self.left.spin_value("sketch.pattern", 6) or 0.0)
+                    av = float(self.left.spin_value("sketch.pattern", 7) or 0.0)
+                    if au or av:
+                        anchor = [au / scale, av / scale]
                 rep = S.pattern_curves(sk, int(count), mode="along", path=path,
-                                       offset=offset_mm / scale)
+                                       offset=offset_mm / scale, anchor=anchor)
                 path_index = idxs if len(idxs) > 1 else idxs[0]
                 what = "沿曲线 %s" % "+".join(str(i) for i in idxs)
+                if anchor is not None:
+                    what += "（锚点 %.3g, %.3gmm）" % (anchor[0] * scale,
+                                                        anchor[1] * scale)
             elif self.left.is_checked("sketch.pattern", 0):     # R113/A-2
                 cu = self.left.spin_value("sketch.pattern", 2) or 0.0
                 cv = self.left.spin_value("sketch.pattern", 3) or 0.0
@@ -3882,6 +3909,8 @@ else:
             if path_index is not None:
                 rec["path_index"] = path_index
                 rec["offset_mm"] = offset_mm
+                if anchor is not None:
+                    rec["anchor_mm"] = [anchor[0] * scale, anchor[1] * scale]
             self._record("sketch.pattern", **rec)
             n = self._sync_sketch_bodies(sk.id)          # R106/B-1
             self._rebuild("已阵列 ×%d（%s，+%d 条曲线）%s"

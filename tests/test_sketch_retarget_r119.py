@@ -103,7 +103,9 @@ def test_a_bad_retarget_target_is_refused():
                                     to_index=3)
     assert not_dim["ok"] is False and "没有尺寸 #3" in not_dim["reason"]
     no_to = HEALTH.repair_warning(doc, warn, "retarget", 1000.0)
-    assert no_to["ok"] is False and "需要给出目标草图" in no_to["reason"]
+    # R122 widened the message: a target may be a sketch or a parameter
+    assert no_to["ok"] is False and "需要给出目标" in no_to["reason"]
+    assert "param:" in no_to["reason"]
     assert a.constraints[5][3] == "S9_dim5"          # nothing was changed
 
 

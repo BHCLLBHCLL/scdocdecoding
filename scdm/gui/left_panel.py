@@ -266,9 +266,11 @@ class LeftPanel(QWidget):
         # R114/A-2: 沿曲线 needs a selected sketch curve as the path, so it needs
         # no extra numbers; 圆周 only needs a centre, 线性 only a spacing
         check_spin("sketch.pattern", [("圆周阵列", False),
-                                      ("沿曲线阵列（选中曲线为路径）", False)],
+                                      ("沿曲线阵列（选中曲线为路径）", False),
+                                      ("锚点用选中草图点", True)],
                    [("X 间距", 10.0), ("Y 间距", 0.0), ("圆心 U", 0.0),
-                    ("圆心 V", 0.0), ("总角度", 360.0), ("起点偏移", 0.0)],
+                    ("圆心 V", 0.0), ("总角度", 360.0), ("起点偏移", 0.0),
+                    ("锚点 U", 0.0), ("锚点 V", 0.0)],
                    [("数量", 3)])
         checks("mode.section", [("剖面显示", True), ("截面可拉", True)])
         checks("tool.split_body", [("保留两侧", True)])

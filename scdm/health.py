@@ -200,8 +200,24 @@ def _retarget_dimension(kdoc, warning, to, to_index, scale: float):
     """
     from scdm import sketchmode as SKM
     if not to:
-        return False, "改指向需要给出目标草图（to=\"S2\"）"
+        return False, "改指向需要给出目标（to=\"S2\" 或 \"param:d\"）"
     sid, index = warning["ref"]
+    if str(to).startswith("param:"):
+        # R122/A-3: point the row at a parameter instead of another sketch - the
+        # number then comes from the parameter table like any other expression
+        name = str(to).split(":", 1)[1].strip()
+        table = getattr(kdoc, "param_table", None)
+        names = {}
+        try:
+            names = table.resolve() if table is not None else {}
+        except Exception:
+            names = {}
+        if name not in names:
+            return False, "参数表里没有 %s" % (name or "（空名）")
+        rep = SKM.set_dimension(kdoc, sid, int(index), name, scale)
+        if not rep["ok"]:
+            return False, rep["reason"]
+        return True, "已改指向参数 %s（%gmm）" % (name, rep.get("value_mm") or 0.0)
     target = SKM.find_sketch(kdoc, str(to))
     if target is None:
         return False, "目标草图 %s 已不存在" % to
