@@ -1,0 +1,13 @@
+{
+  "3d": true,
+  "chip": "草图模式 · XY · 自由度 0 · 冗余 2 · 冲突 #5、#7 · 悬空 1",
+  "demo": "conflict",
+  "file": "sketch_diagnostics.png",
+  "health": 2,
+  "model": "box.scdoc",
+  "size": [
+    1500,
+    950
+  ],
+  "size_arg": "1500x950"
+}

@@ -136,16 +136,18 @@ def test_a_broken_dimension_stays_visible_and_numbered():
     assert "无法求值" in rows[7]["label"] and rows[7]["reason"]
 
 
-def test_expressions_apply_when_driven_not_when_pulled():
-    """The boundary R111 pins: the pull extrudes the sketch *as drawn*; a stored
-    expression takes effect when the dimension is driven or the table changes
-    (`set_dimension` / `redrive_expressions`), which is what the UI does."""
+def test_the_pull_sees_the_sketch_its_dimensions_describe():
+    """R111 pinned "the pull extrudes the sketch as drawn"; R124/A-5 changed it,
+    because a label saying 16mm over a body of 20mm is simply a lie.  The pull now
+    redrives the expression rows first (idempotent when they already agree)."""
     doc = KernelDoc()
     sk, body = _referenced_rect(doc)          # drawn 20x8, width = "2*dim6" = 16
-    assert K.volume(body.shape) == pytest.approx(_mm3(20, 8, 5), rel=1e-9)
+    assert K.volume(body.shape) == pytest.approx(_mm3(16, 8, 5), rel=1e-6)
+    # driving it further still moves the sketch, and the table still re-solves
+    assert SKM.set_dimension(doc, sk.id, 6, 5.0, 1000.0)["ok"]      # height 5mm
     assert SKM.redrive_expressions(doc, 1000.0)["ok"]
     SKM.sync_sketch_bodies(doc, sk.id, 1000.0)
-    assert K.volume(body.shape) == pytest.approx(_mm3(16, 8, 5), rel=1e-6)
+    assert K.volume(body.shape) == pytest.approx(_mm3(10, 5, 5), rel=1e-6)
 
 
 def test_a_cyclic_reference_is_refused_with_both_indices():

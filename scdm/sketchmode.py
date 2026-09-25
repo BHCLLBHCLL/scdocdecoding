@@ -1023,6 +1023,18 @@ def extrude_active(kdoc, height_mm: float = 10.0, scale: float = 1000.0,
         out["reason"] = "拉伸高度必须大于 0"
         return out
     axes = S.sketch_axes(sk.plane, sk.origin, sk.normal, sk.xdir)
+    # R124/A-5: a pull sees the sketch its *dimensions* describe.  Until now the
+    # drawn geometry won, so a row stored as "2*dim6" that had never been solved
+    # extruded at the drawn size - the label and the body disagreed.  Redriving is
+    # idempotent for a sketch that is already consistent, and a row that cannot be
+    # resolved is skipped (R115), so the pull still works on what is drawn.
+    try:
+        redrive = redrive_expressions(kdoc, scale)
+    except Exception as exc:                       # never block the pull
+        redrive = {"ok": False, "reason": str(exc), "redriven": 0, "failed": []}
+    out["redrive"] = {"ok": bool(redrive.get("ok")),
+                      "redriven": int(redrive.get("redriven", 0)),
+                      "reason": redrive.get("reason", "")}
     if to_face is not None:
         # R111/A-2: the height is the plane-to-face distance and the side of the
         # sketch plane decides the direction - what the GUI used to compute itself

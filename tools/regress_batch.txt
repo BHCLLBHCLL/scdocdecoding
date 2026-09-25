@@ -1,0 +1,57 @@
+# 定向回归批（R124 起落盘为单一来源；R123 及以前是手写清单）
+# 组成：草图各轮 + 求解器 + 特征 + 参数/对话框 + 变换 + 配合 + smoke/g1/g2/命令行为
+#       + 覆盖台账/快照/清单 + m2/p12/h7/h3 + 性能预算 + 轻量 GUI + 配置/文档特征/装配实例
+#       + 工程图/钣金 + 爆炸图 + 修剪缓存/参照丢失
+# 用法（仓库根，conda occ）：
+#   $files = Get-Content tools/regress_batch.txt | Where-Object { $_ -and $_[0] -ne '#' }
+#   & $py -m pytest $files -q
+# 每轮新增的用例文件追加在末尾，批次数只应因此增长。
+tests/test_sketch_mode_r105.py
+tests/test_sketch_feature_r106.py
+tests/test_sketch_chain_r107.py
+tests/test_sketch_weld_modes_r108.py
+tests/test_sketch_weld_tol_r109.py
+tests/test_sketch_dims_r110.py
+tests/test_sketch_refs_r111.py
+tests/test_sketch_ops_r112.py
+tests/test_sketch_ops_r113.py
+tests/test_sketch_sel_r114.py
+tests/test_sketch_conflict_r115.py
+tests/test_sketch_marks_r116.py
+tests/test_sketch_health_r117.py
+tests/test_sketch_repair_r118.py
+tests/test_sketch_retarget_r119.py
+tests/test_sketch_repair2_r120.py
+tests/test_sketch_tick_r121.py
+tests/test_sketch_param_r122.py
+tests/test_sketch_expr_r123.py
+tests/test_sketch_anchor_r124.py
+tests/test_sketch_solver.py
+tests/test_features.py
+tests/test_feature_edit_r102.py
+tests/test_feature_transform_r103.py
+tests/test_params_dialog_r103.py
+tests/test_mates.py
+tests/test_mates_r104.py
+tests/test_smoke.py
+tests/test_g1.py
+tests/test_g2.py
+tests/test_command_behavior.py
+tests/test_coverage_ledger.py
+tests/test_snapshot_tool.py
+tests/test_state_inventory.py
+tests/test_m2.py
+tests/test_p12_e2e.py
+tests/test_h7.py
+tests/test_h3writeback.py
+tests/test_perf_budget.py
+tests/test_lightweight_gui.py
+tests/test_configurations.py
+tests/test_config_p331.py
+tests/test_doc_features.py
+tests/test_assembly_instances.py
+tests/test_drawing.py
+tests/test_sheetmetal.py
+tests/test_explode_r88.py
+tests/test_trim_cache_r97.py
+tests/test_ref_loss_r95.py

@@ -824,12 +824,17 @@ def pattern_curves(sk, count: int, du: float = 0.0, dv: float = 0.0,
         except (TypeError, IndexError, ValueError):
             return {"ok": False, "added": 0,
                     "reason": "锚点无效：%r（用 (u, v)）" % (anchor,)}
+        # R124/A-2: where each instance's anchor ends up - the original keeps the
+        # geometry anchor, every copy lands on the path.  A viewport can mark them
+        # all, and a test can check the spacing without a scene.
+        along_anchors = [[float(anc[0]), float(anc[1])]]
         for k in range(1, count):
             pk, ak = at(off + step_len * k)
             ca, sa = math.cos(ak - a0), math.sin(ak - a0)
             fns.append(lambda u, v, pk=pk, ca=ca, sa=sa: (
                 pk[0] + (u - anc[0]) * ca - (v - anc[1]) * sa,
                 pk[1] + (u - anc[0]) * sa + (v - anc[1]) * ca))
+            along_anchors.append([float(pk[0]), float(pk[1])])
     else:
         return {"ok": False, "added": 0,
                 "reason": "未知阵列方式：%s（linear / circular / along）" % mode}
@@ -849,6 +854,7 @@ def pattern_curves(sk, count: int, du: float = 0.0, dv: float = 0.0,
                    sweep_deg=float(sweep_deg), step_deg=float(sweep) / (count - 1))
     elif kind == "along":
         out.update(path_length=float(total), offset=float(offset or 0.0),
+                   anchors=[list(p) for p in along_anchors],
                    anchor=[float(anc[0]), float(anc[1])],
                    step=(float(total) - float(offset or 0.0)) / (count - 1))
     return out

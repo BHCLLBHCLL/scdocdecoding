@@ -1,0 +1,13 @@
+{
+  "3d": true,
+  "chip": "草图模式 · XY · 自由度 56",
+  "demo": "pattern",
+  "file": "sketch_pattern_anchors.png",
+  "health": 0,
+  "model": "box.scdoc",
+  "size": [
+    1500,
+    950
+  ],
+  "size_arg": "1500x950"
+}

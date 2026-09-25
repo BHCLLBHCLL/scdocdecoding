@@ -155,6 +155,7 @@ else:
             self.sketch_selection = []
             self.repair_plan = []      # R119/A-2: the last dry-run plan
             self.anchor_marker = None  # R123/A-1: the anchor the last pattern used
+            self.anchor_markers = []   # R124/A-2: one per instance, all drawn
             self._pending_paste = False
             self.settings = QSettings("scdocdecoding", "scdm")
             from scdm.scripting import Recorder
@@ -3888,9 +3889,13 @@ else:
                 self.anchor_marker = (tuple(anchor)
                                       if rep.get("ok") and anchor is not None
                                       else None)
+                # R124/A-2: one marker per instance, so the spacing is visible too
+                self.anchor_markers = [tuple(p) for p in
+                                       (rep.get("anchors") or [])]
                 if self.scene is not None and hasattr(self.scene,
                                                      "set_anchor_marker"):
-                    self.scene.set_anchor_marker(sk, self.anchor_marker)
+                    self.scene.set_anchor_marker(
+                        sk, self.anchor_markers or self.anchor_marker)
                 path_index = idxs if len(idxs) > 1 else idxs[0]
                 what = "沿曲线 %s" % "+".join(str(i) for i in idxs)
                 if anchor is not None:
@@ -4161,8 +4166,10 @@ else:
             hit = S.pick_entity(sk, uv, tol)
             # R123/A-1: the anchor marker belonged to the last pattern run, so a
             # new selection clears it (otherwise it would point at the wrong thing)
-            if getattr(self, "anchor_marker", None) is not None:
+            if getattr(self, "anchor_marker", None) is not None or \
+                    getattr(self, "anchor_markers", None):
                 self.anchor_marker = None
+                self.anchor_markers = []
                 if self.scene is not None and hasattr(self.scene,
                                                      "set_anchor_marker"):
                     self.scene.set_anchor_marker(None, None)

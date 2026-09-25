@@ -239,17 +239,18 @@ def test_the_op_and_the_gui_pattern_circularly():
 # --- A-5: dimensions that reference another sketch --------------------------
 
 def test_a_dimension_can_reference_another_sketch():
+    """R113 pinned the pull to the *drawn* geometry; R124/A-5 makes the pull follow
+    what the dimension names, so a cross-sketch reference is honoured right away
+    (the drawn 20mm and the named 10mm used to disagree - the label was the lie)."""
     doc = KernelDoc()
     a = _rect_sk(doc, 0.0, 0.0, 0.020, 0.008, width="S2_dim5")   # S1 <- S2
     b = _rect_sk(doc, 0.040, 0.0, 0.010, 0.008)                  # S2: 10mm
     assert (a.id, b.id) == ("S1", "S2")
     rep = SKM.extrude_active(doc, 5.0, 1000.0, _session(a))
     body = rep["bodies"][0]
-    assert K.volume(body.shape) == pytest.approx(_mm3(20, 8, 5), rel=1e-9)
-
-    assert SKM.redrive_expressions(doc, 1000.0)["ok"]
-    SKM.sync_sketch_bodies(doc, a.id, 1000.0)
+    assert rep["redrive"]["ok"] and rep["redrive"]["redriven"] >= 1, rep["redrive"]
     assert K.volume(body.shape) == pytest.approx(_mm3(10, 8, 5), rel=1e-6)
+
     rows = {d["index"]: d for d in SKM.dimensions(doc, a.id, 1000.0)}
     assert rows[5]["expr"] == "S2_dim5"
 

@@ -17,6 +17,7 @@ blank, which is still useful for widget-level checks).
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 import time
@@ -63,6 +64,30 @@ def _demo_conflict(viewer, doc, sketch, constrained):
     viewer._rebuild()
 
 
+def _demo_pattern(viewer, doc, sketch, constrained):
+    """A pattern along a curve with every instance anchor marked (R124/A-2).
+
+    "Anchor U/V" is a number in a dialog until it is on screen; this is what the
+    promise "one marker per instance" looks like - the magenta dots walk the path
+    and the status line names the anchor they started from.
+    """
+    viewer.on_command("mode.sketch")
+    sk = doc.sketches[-1]
+    sk.curves.append(("line", (0.0, 0.0, 0.0), (0.040, 0.0, 0.0)))
+    sk.curves.append(("rect", (0.006, 0.002, 0.0), (0.012, 0.008, 0.0)))
+    viewer.left.show_options("sketch.pattern")
+    viewer.left.set_checked("sketch.pattern", 1, True)      # 沿曲线阵列
+    viewer.left.set_checked("sketch.pattern", 2, False)     # 不用选中点
+    page = viewer.left._opt_pages["sketch.pattern"]
+    page[3][0].setValue(5)                                  # 数量
+    page[2][6].setValue(6.0)                                # 锚点 U=6mm
+    page[2][7].setValue(2.0)                                # 锚点 V=2mm
+    viewer._select_sketch_entity([0.020, 0.0002])           # 选路径曲线
+    viewer.on_command("sketch.pattern")
+    viewer._refresh_sketch_dof()
+    viewer._rebuild()
+
+
 def _demo_mate(viewer, doc, sketch, constrained):
     """Solid mode with a mate whose component was deleted (a health report)."""
     from scdm import kernel as K
@@ -86,7 +111,8 @@ def _demo_picks(viewer, doc, sketch, constrained):
 
 
 DEMOS = {"solid": None, "sketch": _demo_sketch, "picks": _demo_picks,
-         "conflict": _demo_conflict, "mate": _demo_mate}
+         "conflict": _demo_conflict, "pattern": _demo_pattern,
+         "mate": _demo_mate}
 
 
 def grab(out: str, path=None, demo: str = "sketch", size=(1500, 950),
@@ -168,6 +194,49 @@ def grab(out: str, path=None, demo: str = "sketch", size=(1500, 950),
             pass
 
 
+def _sidecar(path: str) -> str:
+    """Where the recorded facts of an image live (R124/A-3)."""
+    return os.path.splitext(path)[0] + ".json"
+
+
+def check(dirname: str = os.path.join("docs", "screenshots")) -> dict:
+    """Re-render every recorded screenshot and compare what it should show.
+
+    Pixels are not compared: they differ between platforms and GPUs.  What is
+    compared is what the image is *for* - the scenario, the mode chip and the
+    health count - so a layout change that breaks the demo is caught, while a
+    different font is not.  The size is compared only when both runs had 3D.
+    """
+    out = {"checked": [], "stale": [], "ok": True}
+    if not os.path.isdir(dirname):
+        return out
+    for name in sorted(os.listdir(dirname)):
+        if not name.endswith(".json"):
+            continue
+        side = os.path.join(dirname, name)
+        with open(side, encoding="utf-8") as fh:
+            want = json.load(fh)
+        png = os.path.join(dirname, want.get("file", name[:-5] + ".png"))
+        tmp = os.path.join("_tmp", "check_" + os.path.basename(png))
+        w, _, h = str(want.get("size_arg", "1500x950")).partition("x")
+        got = grab(tmp, want.get("model", "box.scdoc"),
+                   want.get("demo", "sketch"), (int(w), int(h)))
+        bad = []
+        if got.get("chip") != want.get("chip"):
+            bad.append("chip: %r != %r" % (got.get("chip"), want.get("chip")))
+        if got.get("health") != want.get("health"):
+            bad.append("health: %r != %r" % (got.get("health"), want.get("health")))
+        if got.get("3d") and want.get("3d") and got.get("size") != want.get("size"):
+            bad.append("size: %r != %r" % (got.get("size"), want.get("size")))
+        entry = {"png": png, "demo": want.get("demo"), "problems": bad}
+        if bad:
+            out["stale"].append(entry)
+            out["ok"] = False
+        else:
+            out["checked"].append(entry)
+    return out
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="render the GUI to a PNG")
     ap.add_argument("--out", default=os.path.join("_tmp", "shot.png"))
@@ -176,10 +245,31 @@ def main(argv=None) -> int:
     ap.add_argument("--demo", default="sketch", choices=sorted(DEMOS),
                     help="what to show: solid / sketch / picks")
     ap.add_argument("--size", default="1500x950", help="WxH")
+    ap.add_argument("--check", action="store_true",
+                    help="re-render the recorded screenshots and compare")
+    ap.add_argument("--dir", default=os.path.join("docs", "screenshots"),
+                    help="where the recorded screenshots live")
     args = ap.parse_args(argv)
+    if args.check:
+        rep = check(args.dir)
+        for e in rep["checked"]:
+            print("ok    %s (%s)" % (e["png"], e["demo"]))
+        for e in rep["stale"]:
+            print("stale %s (%s): %s" % (e["png"], e["demo"],
+                                         "; ".join(e["problems"])))
+        print("check: %d ok, %d stale" % (len(rep["checked"]), len(rep["stale"])))
+        return 0 if rep["ok"] else 1
     w, _, h = args.size.partition("x")
     rep = grab(args.out, args.file, args.demo, (int(w or 1500), int(h or 950)))
+    side = _sidecar(args.out)
+    with open(side, "w", encoding="utf-8") as fh:
+        json.dump({"file": os.path.basename(args.out), "demo": args.demo,
+                   "model": args.file, "size_arg": args.size,
+                   "size": rep["size"], "chip": rep["chip"],
+                   "health": rep["health"], "3d": rep["3d"]}, fh,
+                  ensure_ascii=False, indent=2, sort_keys=True)
     print("saved %(out)s %(size)s chip=%(chip)s health=%(health)s 3d=%(3d)s" % rep)
+    print("recorded " + side)
     return 0 if rep["ok"] else 1
 
 

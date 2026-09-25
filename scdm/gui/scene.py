@@ -935,18 +935,25 @@ class Scene:
         self._anchor_actors = []
 
     def set_anchor_marker(self, sk, uv=None):
-        """Mark the point of the sketch that follows the path (R123/A-1).
+        """Mark the anchor(s) that follow the path (R123/A-1, R124/A-2).
 
         The anchor is a number in a dialog until it is on screen; drawing it is how
-        "which point moves?" stops being a guess.  `uv=None` clears it.
+        "which point moves?" stops being a guess.  `uv` may be one point or a list
+        of them (one per pattern instance); None clears the markers.
         """
         self.clear_anchor_marker()
         if sk is None or uv is None:
             return
+        pts = list(uv)
+        if pts and not isinstance(pts[0], (list, tuple)):
+            pts = [pts]
         from scdm import sketch as S
         axes = S.sketch_axes(sk.plane, sk.origin, sk.normal, sk.xdir)
-        w = list(S.axes_to_world(axes, float(uv[0]), float(uv[1])))
-        act = _points_actor([w], self.ANCHOR_COLOR, 16)
+        world = [list(S.axes_to_world(axes, float(p[0]), float(p[1])))
+                 for p in pts if p is not None]
+        if not world:
+            return
+        act = _points_actor(world, self.ANCHOR_COLOR, 16)
         self.renderer.AddActor(act)
         self._anchor_actors.append(act)
 
@@ -1811,10 +1818,25 @@ def _lines_actor(segments, color, width):
 
 
 def _points_actor(vpts, color, size):
+    """Dots at `vpts` (R114 points, conflict pins, the pattern anchor).
+
+    R124: a polydata that holds only points and **no cells draws nothing** - the
+    marker sat in the renderer and never appeared on screen, which is a silent
+    lie of exactly the kind rule 91 is about.  The vertex cells are what make a
+    point a drawable primitive, so every caller gets a visible marker from here.
+    """
+    pts = [list(p) for p in (vpts or [])]
     pd = vtk.vtkPolyData()
     vp = vtk.vtkPoints()
-    vp.SetData(numpy_support.numpy_to_vtk(np.array(vpts, dtype=np.float64), deep=True))
+    if pts:
+        vp.SetData(numpy_support.numpy_to_vtk(np.array(pts, dtype=np.float64),
+                                             deep=True))
     pd.SetPoints(vp)
+    cells = vtk.vtkCellArray()
+    for i in range(len(pts)):
+        cells.InsertNextCell(1)
+        cells.InsertCellPoint(i)
+    pd.SetVerts(cells)
     m = vtk.vtkPolyDataMapper()
     m.SetInputData(pd)
     a = vtk.vtkActor()
