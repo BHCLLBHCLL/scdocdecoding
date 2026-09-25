@@ -352,6 +352,7 @@ class Scene:
         self._sketch_pts_actor = None
         self._sketch_sel_actors = []
         self._conflict_actors = []
+        self._anchor_actors = []
         self.clear_constraint_marks()
         for act in getattr(self, "_light_actors", []):
             self.renderer.RemoveActor(act)
@@ -871,6 +872,7 @@ class Scene:
     CONFLICT_COLOR = (0.90, 0.15, 0.10)
     REDUNDANT_COLOR = (0.95, 0.65, 0.10)
     REDUNDANT_LINK_COLOR = (0.70, 0.35, 0.85)
+    ANCHOR_COLOR = (0.95, 0.10, 0.60)
 
     def set_conflict_marks(self, sk, marks=(), links=()):
         """Mark the geometry the solver could not satisfy (R115/A-1, R116/A-1).
@@ -925,6 +927,28 @@ class Scene:
                 act = _lines_actor(pairs, self.REDUNDANT_LINK_COLOR, 2.0)
                 self.renderer.AddActor(act)
                 self._conflict_actors.append(act)
+
+    def clear_anchor_marker(self):
+        """R123/A-1: remove the along-curve anchor marker."""
+        for a in getattr(self, "_anchor_actors", []):
+            self.renderer.RemoveActor(a)
+        self._anchor_actors = []
+
+    def set_anchor_marker(self, sk, uv=None):
+        """Mark the point of the sketch that follows the path (R123/A-1).
+
+        The anchor is a number in a dialog until it is on screen; drawing it is how
+        "which point moves?" stops being a guess.  `uv=None` clears it.
+        """
+        self.clear_anchor_marker()
+        if sk is None or uv is None:
+            return
+        from scdm import sketch as S
+        axes = S.sketch_axes(sk.plane, sk.origin, sk.normal, sk.xdir)
+        w = list(S.axes_to_world(axes, float(uv[0]), float(uv[1])))
+        act = _points_actor([w], self.ANCHOR_COLOR, 16)
+        self.renderer.AddActor(act)
+        self._anchor_actors.append(act)
 
     def show_constraint_marks(self, marks, scale=0.0035):
         """P21: label applied sketch constraints; marks are (x, y, z, text)."""

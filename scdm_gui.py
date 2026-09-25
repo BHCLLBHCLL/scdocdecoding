@@ -154,6 +154,7 @@ else:
             # highlights
             self.sketch_selection = []
             self.repair_plan = []      # R119/A-2: the last dry-run plan
+            self.anchor_marker = None  # R123/A-1: the anchor the last pattern used
             self._pending_paste = False
             self.settings = QSettings("scdocdecoding", "scdm")
             from scdm.scripting import Recorder
@@ -3880,6 +3881,16 @@ else:
                         anchor = [au / scale, av / scale]
                 rep = S.pattern_curves(sk, int(count), mode="along", path=path,
                                        offset=offset_mm / scale, anchor=anchor)
+                # R123/A-1: remember and draw the anchor this run used
+                # the marker follows the anchor the user *chose* (a picked point or
+                # the typed U/V); the default path-start anchor stays unmarked, so
+                # the marker and the status line always agree
+                self.anchor_marker = (tuple(anchor)
+                                      if rep.get("ok") and anchor is not None
+                                      else None)
+                if self.scene is not None and hasattr(self.scene,
+                                                     "set_anchor_marker"):
+                    self.scene.set_anchor_marker(sk, self.anchor_marker)
                 path_index = idxs if len(idxs) > 1 else idxs[0]
                 what = "沿曲线 %s" % "+".join(str(i) for i in idxs)
                 if anchor is not None:
@@ -4148,6 +4159,13 @@ else:
             scale = float(ses.scale or 1000.0)
             tol = float(getattr(self.sel, "snap_radius_mm", 5.0)) / scale
             hit = S.pick_entity(sk, uv, tol)
+            # R123/A-1: the anchor marker belonged to the last pattern run, so a
+            # new selection clears it (otherwise it would point at the wrong thing)
+            if getattr(self, "anchor_marker", None) is not None:
+                self.anchor_marker = None
+                if self.scene is not None and hasattr(self.scene,
+                                                     "set_anchor_marker"):
+                    self.scene.set_anchor_marker(None, None)
             if hit is None:
                 if not add:
                     self.sketch_selection = []

@@ -781,6 +781,14 @@ def set_dimension(kdoc, sketch_id: str, index: int, value_mm,
     if len(c) <= vi:
         rep["reason"] = "该尺寸约束缺少数值：%s" % (c,)
         return rep
+    # R123/A-2: an expression that names *this* row is a self reference, and saying
+    # so beats "unknown parameter" (the row it names has no value to resolve yet)
+    if isinstance(value_mm, str):
+        mine = str(getattr(sk, "id", ""))
+        for sid, other in _dim_token_refs(value_mm):
+            if sid in (None, mine) and int(other) == int(index):
+                rep["reason"] = "尺寸引用存在循环（#%d → #%d）" % (index, index)
+                return rep
     target, expr, why = _resolve_value_mm(kdoc, value_mm, scale, sk)
     if target is None:
         rep["reason"] = why

@@ -200,8 +200,20 @@ def _retarget_dimension(kdoc, warning, to, to_index, scale: float):
     """
     from scdm import sketchmode as SKM
     if not to:
-        return False, "改指向需要给出目标（to=\"S2\" 或 \"param:d\"）"
+        return False, ("改指向需要给出目标"
+                      "（to=\"S2\"、\"param:d\" 或 \"expr:2*d\"）")
     sid, index = warning["ref"]
+    if str(to).startswith("expr:"):
+        # R123/A-2: the target may be an expression, so a dangling row can become
+        # "2*d" and keep following the parameter table (cycles are still refused
+        # by set_dimension, which is where dimension references are checked)
+        expr = str(to).split(":", 1)[1].strip()
+        if not expr:
+            return False, "算式目标为空（to=\"expr:2*d\"）"
+        rep = SKM.set_dimension(kdoc, sid, int(index), expr, scale)
+        if not rep["ok"]:
+            return False, rep["reason"]
+        return True, "已改指向算式 %s（%gmm）" % (expr, rep.get("value_mm") or 0.0)
     if str(to).startswith("param:"):
         # R122/A-3: point the row at a parameter instead of another sketch - the
         # number then comes from the parameter table like any other expression
