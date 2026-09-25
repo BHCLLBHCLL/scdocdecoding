@@ -298,18 +298,28 @@ def repair_warning(kdoc, warning, action: str = "auto", scale: float = 1000.0,
 
 
 def repair_selected(kdoc, ids=None, scale: float = 1000.0, action="auto",
-                    to=None) -> dict:
+                    to=None, exclude=None) -> dict:
     """Fix only the warnings named in `ids` (R120/A-1) - or all when None.
 
     `action` may be one action or a `{scope: action}` map, so "retarget the
     dimensions, drop the rest" is one call.  `to` may be one target for every
     retargeted row or a `{warning id: target}` map (a target is a sketch id, or a
     `(sketch, index)` pair).  Everything not named is left exactly as it was.
+
+    R121/A-1: `exclude` is the other way round - fix everything *except* these.
+    That is what unticking a row in a preview means, and the two are refused
+    together because "only these" and "all but these" cannot both hold.
     """
+    if ids is not None and exclude:
+        return {"ok": False, "reason": "不能同时限定「只修这些」和「跳过这些」",
+                "fixed": [], "skipped": []}
     wanted = None if ids is None else {str(i) for i in ids}
+    skip = {str(i) for i in (exclude or ())}
     out = {"ok": True, "fixed": [], "skipped": []}
     for w in document_warnings(kdoc, scale):
         if wanted is not None and w["id"] not in wanted:
+            continue
+        if w["id"] in skip:
             continue
         act = (action.get(w.get("scope", ""), "auto")
                if isinstance(action, dict) else action)
@@ -325,7 +335,7 @@ def repair_selected(kdoc, ids=None, scale: float = 1000.0, action="auto",
     return out
 
 
-def repair_plan(kdoc, scale: float = 1000.0, ids=None) -> List[dict]:
+def repair_plan(kdoc, scale: float = 1000.0, ids=None, exclude=None) -> List[dict]:
     """What `repair_all()` would do, without doing it (R119/A-2).
 
     One entry per warning: `{"id", "scope", "action", "text"}`.  Reviewing the
@@ -333,9 +343,12 @@ def repair_plan(kdoc, scale: float = 1000.0, ids=None) -> List[dict]:
     tool changed my document" - a destructive step deserves a look.
     """
     wanted = None if ids is None else {str(i) for i in ids}
+    skip = {str(i) for i in (exclude or ())}
     out: List[dict] = []
     for w in document_warnings(kdoc, scale):
         if wanted is not None and w["id"] not in wanted:
+            continue
+        if w["id"] in skip:
             continue
         if w.get("readonly"):
             out.append({"id": w["id"], "scope": w.get("scope", ""),

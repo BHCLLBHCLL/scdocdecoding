@@ -739,7 +739,7 @@ def mirror_curves(sk, axis="v", keep: bool = True) -> Dict[str, Any]:
 def pattern_curves(sk, count: int, du: float = 0.0, dv: float = 0.0,
                    mode: str = "linear", center=None,
                    sweep_deg: float = 360.0, path=None,
-                   offset: float = 0.0) -> Dict[str, Any]:
+                   offset: float = 0.0, anchor=None) -> Dict[str, Any]:
     """Pattern of the sketch curves: `count` instances, original included.
 
     `linear` (R112/A-1) steps by `i * (du, dv)` in sketch units - the
@@ -752,7 +752,9 @@ def pattern_curves(sk, count: int, du: float = 0.0, dv: float = 0.0,
     tangent - "follow the curve" with the first point as anchor.  `offset`
     (R116/A-5, sketch units) starts the pattern further along the path, so the
     first copy need not sit at the start; with a zero offset the last copy lands
-    exactly on the end.
+    exactly on the end.  `anchor` (R121/A-6) is the point of the *geometry* that
+    follows the path - by default the path's own start, which is only right when
+    the geometry sits there.
     """
     count = int(count)
     if count < 2:
@@ -816,12 +818,18 @@ def pattern_curves(sk, count: int, du: float = 0.0, dv: float = 0.0,
                               % (off * 1000.0, total * 1000.0)}
         step_len = (total - off) / float(count - 1)
         p0, a0 = at(0.0)
+        try:
+            anc = (float(anchor[0]), float(anchor[1])) if anchor is not None \
+                else (p0[0], p0[1])
+        except (TypeError, IndexError, ValueError):
+            return {"ok": False, "added": 0,
+                    "reason": "锚点无效：%r（用 (u, v)）" % (anchor,)}
         for k in range(1, count):
             pk, ak = at(off + step_len * k)
             ca, sa = math.cos(ak - a0), math.sin(ak - a0)
             fns.append(lambda u, v, pk=pk, ca=ca, sa=sa: (
-                pk[0] + (u - p0[0]) * ca - (v - p0[1]) * sa,
-                pk[1] + (u - p0[0]) * sa + (v - p0[1]) * ca))
+                pk[0] + (u - anc[0]) * ca - (v - anc[1]) * sa,
+                pk[1] + (u - anc[0]) * sa + (v - anc[1]) * ca))
     else:
         return {"ok": False, "added": 0,
                 "reason": "未知阵列方式：%s（linear / circular / along）" % mode}
@@ -841,6 +849,7 @@ def pattern_curves(sk, count: int, du: float = 0.0, dv: float = 0.0,
                    sweep_deg=float(sweep_deg), step_deg=float(sweep) / (count - 1))
     elif kind == "along":
         out.update(path_length=float(total), offset=float(offset or 0.0),
+                   anchor=[float(anc[0]), float(anc[1])],
                    step=(float(total) - float(offset or 0.0)) / (count - 1))
     return out
 

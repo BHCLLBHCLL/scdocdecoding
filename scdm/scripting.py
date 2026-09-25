@@ -1098,7 +1098,10 @@ def op_sketch_pattern(kdoc, opts, scale):
                            center=center, sweep_deg=float(opts.get("sweep_deg",
                                                                   360.0)),
                            path=path,
-                           offset=float(opts.get("offset_mm", 0.0)) / sc)
+                           offset=float(opts.get("offset_mm", 0.0)) / sc,
+                           anchor=([float(opts["anchor_mm"][0]) / sc,
+                                    float(opts["anchor_mm"][1]) / sc]
+                                   if opts.get("anchor_mm") else None))
     if not rep["ok"]:
         raise ValueError("草图阵列失败：%s" % rep["reason"])
     syn = SKM.sync_sketch_bodies(kdoc, sk.id, scale)

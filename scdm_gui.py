@@ -2464,6 +2464,26 @@ else:
                     return w
             return None
 
+        def _selected_sketch_id(self):
+            """The sketch row selected in the tree, as a sketch id (R121/A-3).
+
+            Picking the target in the tree beats typing an index: the user sees
+            which sketch it is, and the id cannot go stale.
+            """
+            tree = getattr(self.left, "tree", None)
+            if tree is None:
+                return None
+            try:
+                items = tree.selectedItems()
+            except Exception:
+                return None
+            for it in items:
+                data = it.data(0, Qt.UserRole)
+                if data and data[0] == "sketch" and len(data) > 1 and data[1] \
+                        and data[1] != "all":
+                    return str(data[1])
+            return None
+
         def _selected_health_ids(self):
             """The ids of the health rows selected in the tree (R120/A-1).
 
@@ -2510,12 +2530,18 @@ else:
                 dry = False
             try:
                 retarget = bool(self.left.is_checked("repair.refs", 1))
-                to = "S%d" % int(self.left.spin_value("repair.refs", 0) or 1)
+                to = self._selected_sketch_id() or \
+                    ("S%d" % int(self.left.spin_value("repair.refs", 0) or 1))
             except Exception:
                 retarget, to = False, None
+            try:
+                skip_sel = bool(self.left.is_checked("repair.refs", 2))
+            except Exception:
+                skip_sel = False
             ids = self._selected_health_ids()
             if dry:
-                plan = HEALTH.repair_plan(ses.kdoc, ses.scale, ids=ids)
+                plan = HEALTH.repair_plan(ses.kdoc, ses.scale, ids=ids,
+                                          exclude=ids if skip_sel else None)
                 self.repair_plan = plan
                 head = "；".join("%s → %s" % (p["id"], p["text"]) for p in plan[:2])
                 more = "" if len(plan) <= 2 else " 等 %d 条" % len(plan)
@@ -2526,6 +2552,18 @@ else:
             # R120/A-2: "retarget the dimensions, drop the rest" in one action
             action = {"dimension": "retarget"} if retarget else "auto"
             self._push_undo()
+            if ids and skip_sel:
+                # R121/A-1: unticking rows in the preview = fix all but those
+                rep = HEALTH.repair_selected(ses.kdoc, None, ses.scale,
+                                             action=action, to=to, exclude=ids)
+                more = ""
+                if rep["skipped"]:
+                    more = "，%d 条跳过（%s）" % (len(rep["skipped"]),
+                                                rep["skipped"][0][1])
+                self._set_status("引用修复：跳过选中的 %d 条，修好 %d 条%s"
+                                 % (len(ids), len(rep["fixed"]), more))
+                self._rebuild()
+                return
             target = self._selected_health_warning() if (ids and len(ids) == 1) \
                 else None
             if target is not None:

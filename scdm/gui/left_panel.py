@@ -279,7 +279,8 @@ class LeftPanel(QWidget):
         checks("measure.dist", [("自动标注", True)])
         # R119/A-2: a destructive one-click step deserves a look first
         check_spin("repair.refs", [("先预览（不改动文档）", False),
-                                   ("尺寸改指向草图序号", False)],
+                                   ("尺寸改指向草图序号", False),
+                                   ("跳过选中的（其余全修）", False)],
                    [("序号", 1.0)])
         checks("insert.cyl", [("创建后进入拉动", True)])
         checks("insert.sphere", [("创建后进入拉动", True)])
