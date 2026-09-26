@@ -273,8 +273,13 @@ class LeftPanel(QWidget):
                         fld.setText(str(text))
 
                 box.currentIndexChanged.connect(_pick)
+            rowbox = QWidget()                 # R127/A-14: one picker per row
+            rowlay = QVBoxLayout(rowbox)
+            rowlay.setContentsMargins(0, 0, 0, 0)
+            rowlay.setSpacing(4)
+            f.addWidget(rowbox)
             f.addStretch(1)
-            self._opt_pages[cmd] = (w, boxes, sp, ct, ch, ed, pk)
+            self._opt_pages[cmd] = (w, boxes, sp, ct, ch, ed, pk, [rowbox])
             self.opt_stack.addWidget(w)
 
         def checks_nyi(cmd, labels, note):
@@ -306,8 +311,11 @@ class LeftPanel(QWidget):
         check_spin("tool.move", [("复制", False), ("到点", False), ("到面", False)],
                    [("距离", 10.0)])
         radios("tool.combine", ["合并", "减去", "相交"])
-        checks("mode.sketch", [("草图网格", True), ("捕捉栅格", True),
-                               ("闭环消失时保留实体（断开参数）", False)])
+        # R127/A-8: 点大小 is a view setting, and the sketch page is where the
+        # point markers matter most (the first option is still 1.0 = unchanged)
+        check_spin("mode.sketch", [("草图网格", True), ("捕捉栅格", True),
+                                   ("闭环消失时保留实体（断开参数）", False)],
+                   [("点大小", 1.0)])
         # R112/A-1: the sketch-only edits (no sketch-entity selection yet, so
         # mirror is about a sketch axis and the pattern is linear)
         checks("sketch.mirror", [("关于水平轴", False), ("保留原曲线", True),
@@ -440,6 +448,55 @@ class LeftPanel(QWidget):
         box.setCurrentIndex(0)
         box.blockSignals(False)
         return n
+
+    def set_row_targets(self, cmd: str, index: int, rows) -> int:
+        """One target picker per selected row (R127/A-14).
+
+        `rows` are (label, entries) pairs, where `entries` is exactly what the
+        single picker gets - so a per-row choice is the same call as typing it,
+        only addressed at one row.  An empty `rows` clears the area.
+        """
+        page = self._opt_pages.get(cmd)
+        if not (page and len(page) > 7 and 0 <= index < len(page[7])):
+            return 0
+        holder = page[7][index]
+        lay = holder.layout()
+        while lay.count():
+            item = lay.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.setParent(None)
+        n = 0
+        for label, entries in rows or ():
+            row = QWidget()
+            h = QHBoxLayout(row)
+            h.setContentsMargins(0, 0, 0, 0)
+            h.addWidget(QLabel(str(label)))
+            cb = QComboBox()
+            cb.addItem("（跟随上面的目标）", None)
+            for e in entries or ():
+                cb.addItem(str(e.get("label") or e.get("to") or ""),
+                           str(e.get("to") or ""))
+            h.addWidget(cb)
+            lay.addWidget(row)
+            n += 1
+        return n
+
+    def row_target_boxes(self, cmd: str, index: int):
+        page = self._opt_pages.get(cmd)
+        if not (page and len(page) > 7 and 0 <= index < len(page[7])):
+            return []
+        return list(page[7][index].findChildren(QComboBox))
+
+    def row_targets(self, cmd: str, index: int):
+        """What each row was pointed at, or None when it follows the single
+        target (R127/A-14)."""
+        return [cb.currentData() for cb in self.row_target_boxes(cmd, index)]
+
+    def set_row_target_index(self, cmd, index, row, which) -> None:
+        boxes = self.row_target_boxes(cmd, index)
+        if 0 <= int(row) < len(boxes):
+            boxes[int(row)].setCurrentIndex(int(which))
 
     def set_target_index(self, cmd: str, index: int, which: int) -> None:
         page = self._opt_pages.get(cmd)

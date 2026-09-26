@@ -134,9 +134,12 @@ class GuiSmokeTests(unittest.TestCase):
         self.assertLess(len(scene._face_actors), before)
         # drag preview: translucent actor appears and clears
         scene.show_preview(K.make_box(0.01, 0.012, 0.01))
-        self.assertIsNotNone(scene._preview_actor)
+        # R127/A-13: a preview is a *list* of actors now (one per body); a single
+        # shape is simply the one-element case, which is what the drag uses
+        self.assertEqual(len(scene._preview_actors), 1)
+        self.assertIsNotNone(scene._preview_actors[0])
         scene.clear_preview()
-        self.assertIsNone(scene._preview_actor)
+        self.assertEqual(scene._preview_actors, [])
         scene.show_pull_handles((0, 0, 0.01), (0, 0, 1), length=0.008, distance_mm=5.0)
         self.assertGreaterEqual(len(scene._handle_actors), 1)
         scene.clear_handles()

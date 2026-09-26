@@ -185,7 +185,8 @@ class Scene:
         self._sketch_pts_actor = None
         self._constraint_actors = []   # P21: constraint glyph labels
         self._preview_actor = None
-        self._preview_hidden = []
+        self._preview_actors = []      # R127/A-13: one actor per previewed body
+        self._point_scale = 1.0        # R127/A-8: the option page's 点大小
         self._highlight = []
         self._origin_actor = None
         self._plane_actors = {}
@@ -430,7 +431,7 @@ class Scene:
                 self._edge_actor = _lines_actor(lines, (0.12, 0.12, 0.15), 1.4)
                 self.renderer.AddActor(self._edge_actor)
             if verts:
-                self._vert_actor = _points_actor(verts, (0.05, 0.05, 0.05), 6)
+                self._vert_actor = _points_actor(verts, (0.05, 0.05, 0.05), self._point_size("vertex"))
                 self.renderer.AddActor(self._vert_actor)
         self.apply_visibility(session)
         self.apply_style(session.style)
@@ -830,7 +831,7 @@ class Scene:
             self.renderer.AddActor(act)
             self._sketch_sel_actors.append(act)
         if pts:
-            act = _points_actor(pts, (1.0, 0.45, 0.05), 12)
+            act = _points_actor(pts, (1.0, 0.45, 0.05), self._point_size("select"))
             self.renderer.AddActor(act)
             self._sketch_sel_actors.append(act)
 
@@ -854,7 +855,7 @@ class Scene:
             self._sketch_actor = _lines_actor(segs, (0.10, 0.30, 0.65), 2.2)
             self.renderer.AddActor(self._sketch_actor)
         if pts:
-            self._sketch_pts_actor = _points_actor(pts, (0.10, 0.30, 0.65), 8)
+            self._sketch_pts_actor = _points_actor(pts, (0.10, 0.30, 0.65), self._point_size("sketch"))
             self.renderer.AddActor(self._sketch_pts_actor)
     def clear_constraint_marks(self):
         """P21: remove the constraint glyph actors."""
@@ -907,7 +908,7 @@ class Scene:
                 self.renderer.AddActor(act)
                 self._conflict_actors.append(act)
             if pts:
-                act = _points_actor(pts, color, 12)
+                act = _points_actor(pts, color, self._point_size("conflict"))
                 self.renderer.AddActor(act)
                 self._conflict_actors.append(act)
         # R118/A-1: connect a repeated row to the one it repeats, so "which one is
@@ -953,7 +954,7 @@ class Scene:
                  for p in pts if p is not None]
         if not world:
             return
-        act = _points_actor(world, self.ANCHOR_COLOR, 16)
+        act = _points_actor(world, self.ANCHOR_COLOR, self._point_size("anchor"))
         self.renderer.AddActor(act)
         self._anchor_actors.append(act)
 
@@ -966,46 +967,79 @@ class Scene:
             self.renderer.AddActor(a)
             self._constraint_actors.append(a)
 
-    def show_preview(self, shape, color=PRE, opacity=0.55, hide_body_id=None):
-        """Show a translucent orange preview of a candidate shape (not committed)."""
-        from scdm.kernel import tessellate_faces
-        if self._preview_actor is not None:
-            self.renderer.RemoveActor(self._preview_actor)
-            self._preview_actor = None
+    #: R127/A-8: how big a point marker is, in pixels, per kind - one table so a
+    #: marker cannot be 16 here and 8 there for no reason
+    POINT_SIZES = {"vertex": 6, "sketch": 8, "select": 12, "conflict": 12,
+                   "anchor": 16}
+
+    def _point_size(self, kind: str) -> int:
+        """The pixel size of a marker kind, scaled by the option page (A-8)."""
+        base = int(self.POINT_SIZES.get(kind, 10))
+        return max(1, int(round(base * getattr(self, "_point_scale", 1.0))))
+
+    def set_point_scale(self, factor) -> float:
+        """Scale every point marker (R127/A-8) - 点大小 in the sketch options."""
         try:
-            faces = tessellate_faces(shape, deflection=0.001)
-        except Exception:
-            return
-        app = vtk.vtkAppendPolyData()
-        for fd in faces:
-            pts = np.array(fd["vertices"], dtype=np.float64)
-            if len(pts) == 0 or not fd["triangles"]:
-                continue
-            app.AddInputData(_polys(pts, fd["triangles"]))
-        if app.GetTotalNumberOfInputConnections() == 0:
-            return
-        app.Update()
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(app.GetOutputPort())
-        act = vtk.vtkActor()
-        act.SetMapper(mapper)
-        act.GetProperty().SetColor(*color)
-        act.GetProperty().SetOpacity(opacity)
-        act.GetProperty().SetDiffuse(0.9)
-        act.GetProperty().SetSpecular(0.2)
-        act.GetProperty().SetAmbient(0.2)
-        self._preview_actor = act
-        self.renderer.AddActor(act)
-        if hide_body_id and not self._preview_hidden:
+            f = float(factor)
+        except (TypeError, ValueError):
+            f = 1.0
+        self._point_scale = min(6.0, max(0.2, f or 1.0))
+        return self._point_scale
+
+    def show_preview(self, shape, color=PRE, opacity=0.55, hide_body_id=None):
+        """Show a translucent preview of one candidate shape (not committed)."""
+        return self.show_previews([] if shape is None else [shape], color=color,
+                                  opacity=opacity, hide_body_ids=(hide_body_id,))
+
+    def show_previews(self, shapes, color=PRE, opacity=0.55, hide_body_ids=()):
+        """Preview several candidate solids at once (R127/A-13/A-15).
+
+        A dimension change can move more than one body; drawing only the first
+        would be a half-truth, so every affected body gets its own translucent
+        actor - and the caller's status lists them all.
+        """
+        from scdm.kernel import tessellate_faces
+        self.clear_preview()
+        hid = [i for i in (hide_body_ids or ()) if i]
+        if hid and not self._preview_hidden:
             hidden = []
             for a in self._face_actors.values():
-                if getattr(a, "_body_id", None) == hide_body_id:
+                if getattr(a, "_body_id", None) in hid:
                     hidden.append((a, a.GetVisibility()))
                     a.SetVisibility(0)
             self._preview_hidden = hidden
+        for shape in list(shapes or ()):
+            try:
+                faces = tessellate_faces(shape, deflection=0.001)
+            except Exception:
+                continue
+            app = vtk.vtkAppendPolyData()
+            for fd in faces:
+                pts = np.array(fd["vertices"], dtype=np.float64)
+                if len(pts) == 0 or not fd["triangles"]:
+                    continue
+                app.AddInputData(_polys(pts, fd["triangles"]))
+            if app.GetTotalNumberOfInputConnections() == 0:
+                continue
+            app.Update()
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputConnection(app.GetOutputPort())
+            act = vtk.vtkActor()
+            act.SetMapper(mapper)
+            act.GetProperty().SetColor(*color)
+            act.GetProperty().SetOpacity(opacity)
+            act.GetProperty().SetDiffuse(0.9)
+            act.GetProperty().SetSpecular(0.2)
+            act.GetProperty().SetAmbient(0.2)
+            self._preview_actors.append(act)
+            self.renderer.AddActor(act)
         self.render()
+        return len(self._preview_actors)
 
     def clear_preview(self):
+        for act in list(getattr(self, "_preview_actors", [])):
+            self.renderer.RemoveActor(act)
+        self._preview_actors = []
         if self._preview_actor is not None:
             self.renderer.RemoveActor(self._preview_actor)
             self._preview_actor = None

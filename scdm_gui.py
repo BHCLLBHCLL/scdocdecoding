@@ -2520,11 +2520,20 @@ else:
             if getattr(ses, "kdoc", None) is None:
                 return 0
             try:
-                n = self.left.set_targets(
-                    "repair.refs", 0, SKM.target_options(ses.kdoc, ses.scale))
+                entries = SKM.target_options(ses.kdoc, ses.scale)
+                n = self.left.set_targets("repair.refs", 0, entries)
             except Exception:
                 return 0
             self.repair_targets = int(n)
+            # R127/A-14: with several health rows selected, each row gets its own
+            # picker - rebuilt only when the selection changes, so a choice the
+            # user already made is not thrown away
+            ids = [str(i) for i in (self._selected_health_ids() or [])]
+            if ids != list(getattr(self, "repair_rows_for", []) or []):
+                self.left.set_row_targets(
+                    "repair.refs", 0,
+                    [(i, entries) for i in ids] if len(ids) > 1 else [])
+                self.repair_rows_for = ids
             return int(n)
 
         def _do_repair_refs(self):
@@ -2596,6 +2605,15 @@ else:
                         "（目标 %d 个，选中 %d 条）" % (len(to), len(ids or [])))
                     return
                 to = {str(i): t for i, t in zip(ids, to)}
+            # R127/A-14: a per-row picker is the more specific input, so it wins
+            # for the row it belongs to; a row left on 「跟随上面的目标」 keeps the
+            # single target
+            choices = list(self.left.row_targets("repair.refs", 0))
+            if ids and len(choices) == len(ids):
+                picked = {str(i): t for i, t in zip(ids, choices) if t}
+                if picked:
+                    single = None if isinstance(to, dict) else to
+                    to = {str(i): picked.get(str(i), single) for i in ids}
             if dry:
                 plan = HEALTH.repair_plan(ses.kdoc, ses.scale, ids=ids,
                                           exclude=ids if skip_sel else None)
@@ -4388,9 +4406,20 @@ else:
                 ses.history.push(ses.kdoc.snapshot())
             return True
 
+        def _apply_point_scale(self) -> float:
+            """R127/A-8: 点大小 from the sketch option page (1.0 = unchanged)."""
+            try:
+                f = float(self.left.spin_value("mode.sketch", 0) or 1.0)
+            except Exception:
+                f = 1.0
+            if self.scene is not None and hasattr(self.scene, "set_point_scale"):
+                return self.scene.set_point_scale(f)
+            return f
+
         def _rebuild(self, msg: str = ""):
             ses = self.session()
             if self.scene:
+                self._apply_point_scale()
                 self.scene.build(ses)
             self.left.populate_tree(ses)
             self._refresh_title()
@@ -4609,14 +4638,15 @@ else:
             rep["sketch_id"] = sketch_id
             rep["index"] = int(index)
             rep["value"] = value
-            first = rep["bodies"][0] if rep["bodies"] else None
-            if self.scene is not None and first is not None:
-                self.scene.show_preview(first["shape"],
-                                        hide_body_id=first["body"])
+            shapes = [b["shape"] for b in rep["bodies"]]
+            if self.scene is not None and shapes:
+                # R127/A-13: every affected body is drawn, not just the first
+                self.scene.show_previews(
+                    shapes, hide_body_ids=[b["body"] for b in rep["bodies"]])
             self.dim_preview = rep
             self._set_status(
-                "预览：体积 %.4g → %.4gmm³（%s）；未提交，取消即不变"
-                % (rep["before"] * 1e9, rep["after"] * 1e9,
+                "预览：体积 %.4g → %.4gmm³（%d 个实体，%s）；未提交，取消即不变"
+                % (rep["before"] * 1e9, rep["after"] * 1e9, len(shapes),
                    ("表达式 " + rep["expr"]) if rep["expr"] else "数值"))
             return rep
 
@@ -4628,6 +4658,9 @@ else:
                 return None
             ses = self.session()
             self._clear_dim_preview()      # the preview is spent either way
+            # R127/A-13: the state *before* the drive goes on the history, so one
+            # undo returns to exactly what the preview showed as "before"
+            self._push_undo()
             out = SKM.set_dimension(ses.kdoc, rep["sketch_id"], rep["index"],
                                     rep["value"], ses.scale)
             if not out["ok"]:

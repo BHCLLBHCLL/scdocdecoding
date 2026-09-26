@@ -28,6 +28,7 @@ tests/test_sketch_expr_r123.py
 tests/test_sketch_anchor_r124.py
 tests/test_sketch_target_r125.py
 tests/test_sketch_preview_r126.py
+tests/test_sketch_points_r127.py
 tests/test_sketch_solver.py
 tests/test_features.py
 tests/test_feature_edit_r102.py
