@@ -1,0 +1,427 @@
+{
+ "batch": "R3_fixes",
+ "cases": [
+  {
+   "actual": {
+    "area_mm2": 3341.624849,
+    "beams": 0,
+    "bodies": 3,
+    "body_list": [
+     {
+      "area_mm2": 3141.592654,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 40.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Wrap_Target_Cyl",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 12566.370614
+     },
+     {
+      "area_mm2": 100.0,
+      "bbox_mm": [
+       [10.0, -5.0, 15.0],
+       [10.0, 5.0, 25.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Wrap_Rect",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 100.032195,
+      "bbox_mm": [
+       [8.775054000000001, -4.795668, 15.0],
+       [10.0, 4.795668, 25.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Wrap_RectWrapped",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4,
+     "Line": 6
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 10,
+    "faces": 5,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 5,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 3
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Sketch",
+    "volume_mm3": 12566.370614
+   },
+   "case_id": "13_wrap_001_rect_onto_cylinder",
+   "category": "13_surface_curve",
+   "commands": ["ProjectToSolid.Execute", "Wrap.Create", "ProjectToSketch.Create", "MoveImprintEdges.Execute"],
+   "data": {
+    "after_wrap": {
+     "bodies": [
+      ["Wrap_Target_Cyl", false, 3],
+      ["Wrap_Rect", true, 1],
+      ["Wrap_RectWrapped", true, 1]
+     ],
+     "curves": 5,
+     "cyl_faces": 3
+    },
+    "auto_renamed": [
+     ["线", "Curve_1"],
+     ["弧", "Curve_2"],
+     ["弧", "Curve_3"],
+     ["线", "Curve_4"],
+     ["弧", "Curve_5"]
+    ],
+    "cyl_faces": 3,
+    "intent_checks": [
+     ["cyl_faces_after_imprint", "3", "[4, 12]", false]
+    ],
+    "wrap_errors": ["no imprint (faces=3)"],
+    "wrap_form": 1,
+    "wrap_opts_members": ["Equals", "Extrude", "GetHashCode", "GetType", "Imprint", "MemberwiseClone", "ReferenceEquals", "ToString"]
+   },
+   "elapsed_s": 9.58,
+   "expect": {},
+   "expect_mismatch": {
+    "intent:cyl_faces_after_imprint": {
+     "actual": 3,
+     "expected": [4, 12]
+    }
+   },
+   "feature": "sc_project_wrap",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T09:15:08+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_wrap_001_rect_onto_cylinder.scdoc",
+   "scdoc_size": "121516",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_wrap_001_rect_onto_cylinder.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T09:14:59+08:00",
+   "status": "mismatch",
+   "title": "Project curves to solid / wrap / imprint: rect_onto_cylinder"
+  },
+  {
+   "actual": {
+    "area_mm2": 18045.308204,
+    "beams": 0,
+    "bodies": 5,
+    "body_list": [
+     {
+      "area_mm2": 5881.061448,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 50.0]
+      ],
+      "closed": true,
+      "edges": 4,
+      "faces": 4,
+      "manifold": true,
+      "name": "Pipe",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 5654.708915
+     },
+     {
+      "area_mm2": 201.06193,
+      "bbox_mm": [
+       [-8.0, -8.0, 0.0],
+       [8.0, 8.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 1,
+      "faces": 1,
+      "manifold": true,
+      "name": "Cap_Bottom",
+      "path": "",
+      "vertices": 1,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 201.06193,
+      "bbox_mm": [
+       [-8.0, -8.0, 50.0],
+       [8.0, 8.0, 50.0]
+      ],
+      "closed": false,
+      "edges": 1,
+      "faces": 1,
+      "manifold": true,
+      "name": "Cap_Top",
+      "path": "",
+      "vertices": 1,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 5881.061448,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 50.0]
+      ],
+      "closed": true,
+      "edges": 4,
+      "faces": 4,
+      "manifold": true,
+      "name": "Body_4",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 5654.708915
+     },
+     {
+      "area_mm2": 5881.061448,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 50.0]
+      ],
+      "closed": true,
+      "edges": 4,
+      "faces": 4,
+      "manifold": true,
+      "name": "Body_5",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 5654.708915
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 14
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 14,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 6,
+     "Plane": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 14,
+    "view_mode": "Sketch",
+    "volume_mm3": 16964.126745
+   },
+   "case_id": "12_prepare_volumeextract_001_pipe",
+   "category": "12_repair_prepare",
+   "commands": ["VolumeExtract.Create", "Enclosure.Create", "Workpiece.Create", "Shrinkwrap.Create"],
+   "data": {
+    "auto_renamed": [
+     ["", "Body_4"],
+     ["实体", "Body_5"]
+    ],
+    "bore_faces": 1,
+    "intent_checks": [
+     ["pipe_volume_mm3", "5654.7", "5654.9", true]
+    ],
+    "volume_extract_errors": ["无法创建体积体 - 并未封闭所有端部。", "未将对象引用设置到对象的实例。", "无法创建体积体 - 并未封闭所有端部。", "未将对象引用设置到对象的实例。"]
+   },
+   "elapsed_s": 0.95999999999999996,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_volumeextract_001_pipe.py\", line 47, in build\n    first_ok(ctx, \"volume_extract\", [v1, v2, v3, v4])\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 833, in first_ok\n    raise Exception(\"%s: all %d forms failed: %s\" % (key, len(fns), errs))\nException: volume_extract: all 4 forms failed: [u'\\u65e0\\u6cd5\\u521b\\u5efa\\u4f53\\u79ef\\u4f53 - \\u5e76\\u672a\\u5c01\\u95ed\\u6240\\u6709\\u7aef\\u90e8\\u3002', u'\\u672a\\u5c06\\u5bf9\\u8c61\\u5f15\\u7528\\u8bbe\\u7f6e\\u5230\\u5bf9\\u8c61\\u7684\\u5b9e\\u4f8b\\u3002', u'\\u65e0\\u6cd5\\u521b\\u5efa\\u4f53\\u79ef\\u4f53 - \\u5e76\\u672a\\u5c01\\u95ed\\u6240\\u6709\\u7aef\\u90e8\\u3002', u'\\u672a\\u5c06\\u5bf9\\u8c61\\u5f15\\u7528\\u8bbe\\u7f6e\\u5230\\u5bf9\\u8c61\\u7684\\u5b9e\\u4f8b\\u3002']\n",
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "rp_volume_extract",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T09:15:11+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {
+    "base": "shelled cylinder with capping faces"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_volumeextract_001_pipe.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T09:15:10+08:00",
+   "status": "failed",
+   "title": "Volume extract / enclosure / workpiece / shrinkwrap: 001_pipe"
+  },
+  {
+   "actual": {
+    "area_mm2": 3341.624849,
+    "beams": 0,
+    "bodies": 3,
+    "body_list": [
+     {
+      "area_mm2": 3141.592654,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 40.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Wrap_Cyl",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 12566.370614
+     },
+     {
+      "area_mm2": 100.0,
+      "bbox_mm": [
+       [10.0, -5.0, 15.0],
+       [10.0, 5.0, 25.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Wrap_Rect",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 100.032195,
+      "bbox_mm": [
+       [8.775054000000001, -4.795668, 15.0],
+       [10.0, 4.795668, 25.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Wrap_RectWrapped",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4,
+     "Line": 6
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 10,
+    "faces": 5,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 5,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 3
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Sketch",
+    "volume_mm3": 12566.370614
+   },
+   "case_id": "20_combo_wrap_026_cylinder_wrap_text_pull",
+   "category": "20_combo",
+   "commands": ["sc_project_wrap", "pull_face_offset"],
+   "data": {
+    "after_wrap": {
+     "bodies": [
+      ["Wrap_Cyl", false, 3],
+      ["Wrap_Rect", true, 1],
+      ["Wrap_RectWrapped", true, 1]
+     ],
+     "curves": 5,
+     "cyl_faces": 3
+    },
+    "auto_renamed": [
+     ["线", "Curve_1"],
+     ["弧", "Curve_2"],
+     ["弧", "Curve_3"],
+     ["线", "Curve_4"],
+     ["弧", "Curve_5"]
+    ],
+    "intent_checks": [],
+    "wrap_errors": ["no imprint (faces=3)", "no imprint (faces=3)", "The Wrap command must include a Curve, Face, or Edge secondarySelection"],
+    "wrap_opts_members": ["Equals", "Extrude", "GetHashCode", "GetType", "Imprint", "MemberwiseClone", "ReferenceEquals", "ToString"]
+   },
+   "elapsed_s": 0.68000000000000005,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_wrap_026_cylinder_wrap_text_pull.py\", line 44, in build\n    nf = wrap_rect(ctx, cy, sh, strict=True)\n  File \"D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_wrap_026_cylinder_wrap_text_pull.py\", line 39, in wrap_rect\n    first_ok(ctx, \"wrap\", [w1, w2, w3])\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 833, in first_ok\n    raise Exception(\"%s: all %d forms failed: %s\" % (key, len(fns), errs))\nException: wrap: all 3 forms failed: ['no imprint (faces=3)', 'no imprint (faces=3)', 'The Wrap command must include a Curve, Face, or Edge secondarySelection']\n",
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {
+    "bodies": {
+     "actual": 3,
+     "expected": 1
+    }
+   },
+   "feature": "combo",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T09:15:12+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\20_combo",
+   "params": {},
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_wrap_026_cylinder_wrap_text_pull.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T09:15:11+08:00",
+   "status": "failed",
+   "title": "Cylinder with wrapped rectangle imprint pulled 1mm"
+  }
+ ],
+ "elapsed_s": 13.93,
+ "finished_at": "2026-09-26T09:15:12+08:00",
+ "framework": "1.3",
+ "mode": "headless",
+ "spaceclaim_version": "2019.3.38912",
+ "stage": "done",
+ "started_at": "2026-09-26T09:14:58+08:00",
+ "summary": {
+  "failed": 2,
+  "mismatch": 1
+ }
+}

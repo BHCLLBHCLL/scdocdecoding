@@ -1,0 +1,1916 @@
+{
+ "batch": "B03_pull",
+ "cases": [
+  {
+   "actual": {
+    "area_mm2": 2800.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2800.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 20.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Extrude_Rect",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Sketch",
+    "volume_mm3": 8000.0
+   },
+   "case_id": "03_pull_extrude_001_rect_40x20_h10",
+   "category": "03_pull",
+   "commands": ["ExtrudeFaces.Execute(sel, Direction, distance, ExtrudeFaceOptions)"],
+   "data": {},
+   "elapsed_s": 4.31,
+   "expect": {
+    "bodies": 1,
+    "faces": 6,
+    "volume_mm3": 8000.0
+   },
+   "expect_mismatch": {},
+   "feature": "pull_extrude_face",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:33+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "h_mm": 10,
+    "profile": "rect 40x20"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_extrude_001_rect_40x20_h10.scdoc",
+   "scdoc_size": "82188",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_extrude_001_rect_40x20_h10.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:28+08:00",
+   "status": "ok",
+   "title": "Extrude (pull) sketch region to solid: 001_rect_40x20_h10"
+  },
+  {
+   "actual": {
+    "area_mm2": 2199.114858,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2199.114858,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 25.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Extrude_Circle",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 7853.981634
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 7853.981634
+   },
+   "case_id": "03_pull_extrude_002_circle_r10_h25",
+   "category": "03_pull",
+   "commands": ["ExtrudeFaces.Execute(sel, Direction, distance, ExtrudeFaceOptions)"],
+   "data": {},
+   "elapsed_s": 0.25,
+   "expect": {
+    "bodies": 1,
+    "faces": 3,
+    "volume_mm3": 7853.981634
+   },
+   "expect_mismatch": {},
+   "feature": "pull_extrude_face",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:33+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "h_mm": 25,
+    "profile": "circle r10"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_extrude_002_circle_r10_h25.scdoc",
+   "scdoc_size": "106189",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_extrude_002_circle_r10_h25.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:33+08:00",
+   "status": "ok",
+   "title": "Extrude (pull) sketch region to solid: 002_circle_r10_h25"
+  },
+  {
+   "actual": {
+    "area_mm2": 2075.798151,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2075.798151,
+      "bbox_mm": [
+       [-2.496949, -7.618801, 0.0],
+       [40.865313, 24.180195, 5.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Extrude_Spline",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 3924.051246
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "NurbsCurve": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 2,
+     "ProceduralSurface": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 3924.051246
+   },
+   "case_id": "03_pull_extrude_003_spline_profile_h5",
+   "category": "03_pull",
+   "commands": ["ExtrudeFaces.Execute(sel, Direction, distance, ExtrudeFaceOptions)"],
+   "data": {},
+   "elapsed_s": 0.23000000000000001,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "pull_extrude_face",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:33+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "h_mm": 5,
+    "profile": "closed spline"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_extrude_003_spline_profile_h5.scdoc",
+   "scdoc_size": "96397",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_extrude_003_spline_profile_h5.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:33+08:00",
+   "status": "ok",
+   "title": "Extrude (pull) sketch region to solid: 003_spline_profile_h5"
+  },
+  {
+   "actual": {
+    "area_mm2": 4000.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 4000.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Extrude_Symmetric",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 16000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Sketch",
+    "volume_mm3": 16000.0
+   },
+   "case_id": "03_pull_extrude_004_symmetric_h20",
+   "category": "03_pull",
+   "commands": ["ExtrudeFaces.Execute(sel, Direction, distance, ExtrudeFaceOptions)"],
+   "data": {
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [40.0, 20.0, 20.0]
+    ]
+   },
+   "elapsed_s": 0.14999999999999999,
+   "expect": {
+    "bodies": 1,
+    "faces": 6
+   },
+   "expect_mismatch": {},
+   "feature": "pull_extrude_face",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:34+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "PullSymmetric": true,
+    "h_mm": 20,
+    "profile": "rect"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_extrude_004_symmetric_h20.scdoc",
+   "scdoc_size": "89314",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_extrude_004_symmetric_h20.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:34+08:00",
+   "status": "ok",
+   "title": "Extrude (pull) sketch region to solid: 004_symmetric_h20"
+  },
+  {
+   "actual": {
+    "area_mm2": 6600.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 6600.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 40.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 24,
+      "faces": 11,
+      "manifold": true,
+      "name": "Pocket_Block",
+      "path": "",
+      "vertices": 16,
+      "volume_mm3": 31500.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 11,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 11
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 31500.0
+   },
+   "case_id": "03_pull_cut_001_pocket_rect_depth5",
+   "category": "03_pull",
+   "commands": ["ExtrudeFaces.Execute ExtrudeType.Cut", "ExtrudeFaces.UpTo"],
+   "data": {
+    "deleted_sheets": 0
+   },
+   "elapsed_s": 0.34999999999999998,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 31500.0
+   },
+   "expect_mismatch": {},
+   "feature": "pull_extrude_cut",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:34+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "base": "block 40x40x20",
+    "pocket": "rect 10x10 depth 5"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_cut_001_pocket_rect_depth5.scdoc",
+   "scdoc_size": "37400",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_cut_001_pocket_rect_depth5.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:34+08:00",
+   "status": "ok",
+   "title": "Extrude cut (pocket / through hole): 001_pocket_rect_depth5"
+  },
+  {
+   "actual": {
+    "area_mm2": 6802.12386,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 6802.12386,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 40.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 14,
+      "faces": 7,
+      "manifold": true,
+      "name": "Hole_Block",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 30994.690351
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 7,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 30994.690351
+   },
+   "case_id": "03_pull_cut_002_through_hole_r4",
+   "category": "03_pull",
+   "commands": ["ExtrudeFaces.Execute ExtrudeType.Cut", "ExtrudeFaces.UpTo"],
+   "data": {
+    "deleted_sheets": 0
+   },
+   "elapsed_s": 0.23000000000000001,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 30994.690351
+   },
+   "expect_mismatch": {},
+   "feature": "pull_extrude_cut",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:35+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "base": "block 40x40x20",
+    "hole_r_mm": 4,
+    "through": true
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_cut_002_through_hole_r4.scdoc",
+   "scdoc_size": "37137",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_cut_002_through_hole_r4.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:34+08:00",
+   "status": "ok",
+   "title": "Extrude cut (pocket / through hole): 002_through_hole_r4"
+  },
+  {
+   "actual": {
+    "area_mm2": 9271.238898,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 9271.238898,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 40.0, 35.0]
+      ],
+      "closed": true,
+      "edges": 26,
+      "faces": 13,
+      "manifold": true,
+      "name": "UpTo_Plate",
+      "path": "",
+      "vertices": 18,
+      "volume_mm3": 25570.796327
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 26,
+    "faces": 13,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 18,
+    "view_mode": "Solid",
+    "volume_mm3": 25570.796327
+   },
+   "case_id": "03_pull_cut_003_upto_face",
+   "category": "03_pull",
+   "commands": ["ExtrudeFaces.Execute ExtrudeType.Cut", "ExtrudeFaces.UpTo"],
+   "data": {
+    "bodies_after": [
+     [
+      "UpTo_Plate",
+      25570.796327,
+      [
+       [0.0, 0.0, 0.0],
+       [40.0, 40.0, 35.0]
+      ]
+     ]
+    ],
+    "upto_form": 0
+   },
+   "elapsed_s": 0.38,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "pull_extrude_cut",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:35+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "mode": "UpTo"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_cut_003_upto_face.scdoc",
+   "scdoc_size": "46601",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_cut_003_upto_face.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:35+08:00",
+   "status": "ok",
+   "title": "Extrude cut (pocket / through hole): 003_upto_face"
+  },
+  {
+   "actual": {
+    "area_mm2": 6600.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 6600.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Block_TopPulled",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 36000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 36000.0
+   },
+   "case_id": "03_pull_face_001_block_top_plus10",
+   "category": "03_pull",
+   "commands": ["ExtrudeFaces.Execute on body face"],
+   "data": {},
+   "elapsed_s": 0.34000000000000002,
+   "expect": {
+    "bodies": 1,
+    "faces": 6,
+    "volume_mm3": 36000.0
+   },
+   "expect_mismatch": {},
+   "feature": "pull_face_offset",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:36+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "d_mm": 10,
+    "face": "+Z"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_face_001_block_top_plus10.scdoc",
+   "scdoc_size": "27716",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_face_001_block_top_plus10.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:35+08:00",
+   "status": "ok",
+   "title": "Pull existing face (grow/shrink body): 001_block_top_plus10"
+  },
+  {
+   "actual": {
+    "area_mm2": 4900.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 4900.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [37.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Block_SidePushed",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 22200.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 22200.0
+   },
+   "case_id": "03_pull_face_002_block_side_minus3",
+   "category": "03_pull",
+   "commands": ["ExtrudeFaces.Execute on body face"],
+   "data": {},
+   "elapsed_s": 0.14000000000000001,
+   "expect": {
+    "bodies": 1,
+    "faces": 6,
+    "volume_mm3": 22200.0
+   },
+   "expect_mismatch": {},
+   "feature": "pull_face_offset",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:36+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "d_mm": -3,
+    "face": "+X"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_face_002_block_side_minus3.scdoc",
+   "scdoc_size": "27559",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_face_002_block_side_minus3.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:36+08:00",
+   "status": "ok",
+   "title": "Pull existing face (grow/shrink body): 002_block_side_minus3"
+  },
+  {
+   "actual": {
+    "area_mm2": 800.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 800.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 0.0, 20.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Sheet_From_Line",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "03_pull_extrudeedge_001_line_to_sheet",
+   "category": "03_pull",
+   "commands": ["ExtrudeEdges.Execute"],
+   "data": {
+    "extrude_edge_form": 0
+   },
+   "elapsed_s": 0.45000000000000001,
+   "expect": {
+    "area_mm2": 800.0,
+    "bodies": 1,
+    "faces": 1
+   },
+   "expect_mismatch": {},
+   "feature": "pull_extrude_edges",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:37+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "curve": "line 40",
+    "d_mm": 20
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_extrudeedge_001_line_to_sheet.scdoc",
+   "scdoc_size": "91940",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_extrudeedge_001_line_to_sheet.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:36+08:00",
+   "status": "ok",
+   "title": "Extrude edges/curves to surface: 001_line_to_sheet"
+  },
+  {
+   "actual": {
+    "area_mm2": 628.318531,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 628.318531,
+      "bbox_mm": [
+       [-20.0, 0.0, 0.0],
+       [20.0, 20.0, 10.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Sheet_From_Arc",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {
+     "Cylinder": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "03_pull_extrudeedge_002_arc_to_sheet",
+   "category": "03_pull",
+   "commands": ["ExtrudeEdges.Execute"],
+   "data": {
+    "extrude_edge_form": 0
+   },
+   "elapsed_s": 0.17000000000000001,
+   "expect": {
+    "area_mm2": 628.318531,
+    "bodies": 1,
+    "faces": 1
+   },
+   "expect_mismatch": {},
+   "feature": "pull_extrude_edges",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:37+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "curve": "arc R20 180deg",
+    "d_mm": 10
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_extrudeedge_002_arc_to_sheet.scdoc",
+   "scdoc_size": "76875",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_extrudeedge_002_arc_to_sheet.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:37+08:00",
+   "status": "ok",
+   "title": "Extrude edges/curves to surface: 002_arc_to_sheet"
+  },
+  {
+   "actual": {
+    "area_mm2": 3769.911184,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 3769.911184,
+      "bbox_mm": [
+       [-15.0, -15.0, 0.0],
+       [15.0, 15.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 4,
+      "faces": 4,
+      "manifold": true,
+      "name": "Revolve_Ring",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 12565.944387
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 4,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Sketch",
+    "volume_mm3": 12565.944387
+   },
+   "case_id": "03_pull_revolve_001_rect_360",
+   "category": "03_pull",
+   "commands": ["RevolveFaces.Execute(sel, Line axis, angle, RevolveFaceOptions)", "RevolveEdges.Execute"],
+   "data": {},
+   "elapsed_s": 0.40999999999999998,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 12566.370614
+   },
+   "expect_mismatch": {},
+   "feature": "pull_revolve",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:38+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "angle_deg": 360,
+    "profile": "rect 10x20 offset 5 from axis"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_revolve_001_rect_360.scdoc",
+   "scdoc_size": "126002",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_revolve_001_rect_360.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:38+08:00",
+   "status": "ok",
+   "title": "Revolve: 001_rect_360"
+  },
+  {
+   "actual": {
+    "area_mm2": 1342.477796,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1342.477796,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [15.0, 15.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Revolve_Quarter",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 3141.597713
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4,
+     "Line": 8
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 4
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Sketch",
+    "volume_mm3": 3141.597713
+   },
+   "case_id": "03_pull_revolve_002_rect_90",
+   "category": "03_pull",
+   "commands": ["RevolveFaces.Execute(sel, Line axis, angle, RevolveFaceOptions)", "RevolveEdges.Execute"],
+   "data": {},
+   "elapsed_s": 0.14999999999999999,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 3141.592654
+   },
+   "expect_mismatch": {},
+   "feature": "pull_revolve",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:39+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "angle_deg": 90
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_revolve_002_rect_90.scdoc",
+   "scdoc_size": "84791",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_revolve_002_rect_90.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:38+08:00",
+   "status": "ok",
+   "title": "Revolve: 002_rect_90"
+  },
+  {
+   "actual": {
+    "area_mm2": 2079.877068,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2079.877068,
+      "bbox_mm": [
+       [-14.463739, -14.463739, 0.0],
+       [14.463739, 14.463739, 20.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 2,
+      "manifold": true,
+      "name": "Revolve_Spline",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 4213.99272
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 2,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "ProceduralSurface": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 4213.99272
+   },
+   "case_id": "03_pull_revolve_003_spline_profile_360",
+   "category": "03_pull",
+   "commands": ["RevolveFaces.Execute(sel, Line axis, angle, RevolveFaceOptions)", "RevolveEdges.Execute"],
+   "data": {},
+   "elapsed_s": 0.38,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "pull_revolve",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:40+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "angle_deg": 360,
+    "profile": "spline+line closed"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_revolve_003_spline_profile_360.scdoc",
+   "scdoc_size": "241038",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_revolve_003_spline_profile_360.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:39+08:00",
+   "status": "ok",
+   "title": "Revolve: 003_spline_profile_360"
+  },
+  {
+   "actual": {
+    "area_mm2": 1587.923181,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1587.923181,
+      "bbox_mm": [
+       [-11.778068, -11.778068, -1.117773],
+       [11.778068, 11.778068, 21.117773]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Helix_Coil",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 789.568352
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 2,
+     "ProceduralSurface": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 789.568352
+   },
+   "case_id": "03_pull_helix_001_circle_r1_pitch5_h20",
+   "category": "03_pull",
+   "commands": ["RevolveFaces.ByHelix", "RevolveEdges.ByHelix"],
+   "data": {},
+   "elapsed_s": 1.26,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "pull_helix",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:41+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "h_mm": 20,
+    "pitch_mm": 5,
+    "profile": "circle r1 at R10"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_helix_001_circle_r1_pitch5_h20.scdoc",
+   "scdoc_size": "703395",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_helix_001_circle_r1_pitch5_h20.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:40+08:00",
+   "status": "ok",
+   "title": "Revolve by helix (spring/thread): 001_circle_r1_pitch5_h20"
+  },
+  {
+   "actual": {
+    "area_mm2": 1725.486239,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1725.486239,
+      "bbox_mm": [
+       [-12.977781, -13.089988, -1.117773],
+       [12.867546, 12.865574, 21.117696]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Helix_Tapered",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 858.231111
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 2,
+     "ProceduralSurface": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 858.231111
+   },
+   "case_id": "03_pull_helix_002_tapered_5deg",
+   "category": "03_pull",
+   "commands": ["RevolveFaces.ByHelix", "RevolveEdges.ByHelix"],
+   "data": {},
+   "elapsed_s": 1.67,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "pull_helix",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:43+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "taper_deg": 5
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_helix_002_tapered_5deg.scdoc",
+   "scdoc_size": "708726",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_helix_002_tapered_5deg.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:42+08:00",
+   "status": "ok",
+   "title": "Revolve by helix (spring/thread): 002_tapered_5deg"
+  },
+  {
+   "actual": {
+    "area_mm2": 1240.901196,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1240.901196,
+      "bbox_mm": [
+       [0.0, 0.0, -3.0],
+       [43.0, 43.0, 3.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Sweep_Arc",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 1776.528792
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 2,
+     "Torus": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 1776.528792
+   },
+   "case_id": "03_pull_sweep_001_circle_along_arc",
+   "category": "03_pull",
+   "commands": ["Sweep.Execute(sel, trajectories, SweepCommandOptions)"],
+   "data": {
+    "volume_pappus_mm3": 1776.528792
+   },
+   "elapsed_s": 0.26000000000000001,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "pull_sweep",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:44+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "path": "arc R40 90deg",
+    "profile": "circle r3"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_sweep_001_circle_along_arc.scdoc",
+   "scdoc_size": "109713",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_sweep_001_circle_along_arc.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:44+08:00",
+   "status": "ok",
+   "title": "Sweep profile along trajectory: 001_circle_along_arc"
+  },
+  {
+   "actual": {
+    "area_mm2": 527.240425,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 527.240425,
+      "bbox_mm": [
+       [-0.78167600000000004, -7.027149, -1.743467],
+       [31.166845, 7.31052, 26.12926]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Sweep_Spline",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 340.795696
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 8,
+     "ProceduralCurve": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 2,
+     "ProceduralSurface": 4
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Sketch",
+    "volume_mm3": 340.795696
+   },
+   "case_id": "03_pull_sweep_002_rect_along_spline",
+   "category": "03_pull",
+   "commands": ["Sweep.Execute(sel, trajectories, SweepCommandOptions)"],
+   "data": {},
+   "elapsed_s": 0.27000000000000002,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "pull_sweep",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:45+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "path": "3D spline",
+    "profile": "rect 4x2"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_sweep_002_rect_along_spline.scdoc",
+   "scdoc_size": "130194",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_sweep_002_rect_along_spline.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:45+08:00",
+   "status": "ok",
+   "title": "Sweep profile along trajectory: 002_rect_along_spline"
+  },
+  {
+   "actual": {
+    "area_mm2": 653.451272,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 653.451272,
+      "bbox_mm": [
+       [-2.0, -2.0, 0.0],
+       [20.0, 2.0, 32.0]
+      ],
+      "closed": true,
+      "edges": 4,
+      "faces": 4,
+      "manifold": true,
+      "name": "Sweep_L",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 628.318531
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Ellipse": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 4,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 2,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Sketch",
+    "volume_mm3": 628.318531
+   },
+   "case_id": "03_pull_sweep_003_along_polyline",
+   "category": "03_pull",
+   "commands": ["Sweep.Execute(sel, trajectories, SweepCommandOptions)"],
+   "data": {},
+   "elapsed_s": 0.16,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "pull_sweep",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:46+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "path": "L-shaped line chain"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_sweep_003_along_polyline.scdoc",
+   "scdoc_size": "90332",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_sweep_003_along_polyline.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:45+08:00",
+   "status": "ok",
+   "title": "Sweep profile along trajectory: 003_along_polyline"
+  },
+  {
+   "actual": {
+    "area_mm2": 2534.732513,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2534.732513,
+      "bbox_mm": [
+       [-10.002494, -10.002494, -0.0024940000000000001],
+       [10.002494, 10.002494, 30.002494]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Loft_RectCircle",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 8891.563744
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4,
+     "Line": 8
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 2,
+     "ProceduralSurface": 4
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Sketch",
+    "volume_mm3": 8891.563744
+   },
+   "case_id": "03_pull_loft_001_rect_to_circle",
+   "category": "03_pull",
+   "commands": ["Loft.Create(blendSelection, guideSelection, LoftOptions)", "Loft.CreateCenterLine"],
+   "data": {},
+   "elapsed_s": 0.66000000000000003,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "pull_loft",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:47+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "profiles": ["rect 20x20 z=0", "circle r8 z=30"]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_loft_001_rect_to_circle.scdoc",
+   "scdoc_size": "154317",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_loft_001_rect_to_circle.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:46+08:00",
+   "status": "ok",
+   "title": "Loft / blend between profiles: 001_rect_to_circle"
+  },
+  {
+   "actual": {
+    "area_mm2": 2653.018564,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2653.018564,
+      "bbox_mm": [
+       [-12.003741, -12.003741, -0.003741],
+       [12.003741, 12.003741, 40.003741]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Loft_3Circles",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 6594.217104
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 2,
+     "ProceduralSurface": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 6594.217104
+   },
+   "case_id": "03_pull_loft_002_three_circles",
+   "category": "03_pull",
+   "commands": ["Loft.Create(blendSelection, guideSelection, LoftOptions)", "Loft.CreateCenterLine"],
+   "data": {},
+   "elapsed_s": 0.39000000000000001,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "pull_loft",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:48+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "profiles": ["r10 z0", "r5 z20", "r12 z40"]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_loft_002_three_circles.scdoc",
+   "scdoc_size": "306919",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_loft_002_three_circles.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:47+08:00",
+   "status": "ok",
+   "title": "Loft / blend between profiles: 002_three_circles"
+  },
+  {
+   "actual": {
+    "area_mm2": 1736.931688,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1736.931688,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Loft_Ruled",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 4666.666667
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Sketch",
+    "volume_mm3": 4666.666667
+   },
+   "case_id": "03_pull_loft_003_ruled",
+   "category": "03_pull",
+   "commands": ["Loft.Create(blendSelection, guideSelection, LoftOptions)", "Loft.CreateCenterLine"],
+   "data": {},
+   "elapsed_s": 0.17999999999999999,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 4666.666667
+   },
+   "expect_mismatch": {},
+   "feature": "pull_loft",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:49+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "ruled": true
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_loft_003_ruled.scdoc",
+   "scdoc_size": "100294",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_loft_003_ruled.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:48+08:00",
+   "status": "ok",
+   "title": "Loft / blend between profiles: 003_ruled"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "03_pull_profile_001_rect_30x10_h5",
+   "category": "03_pull",
+   "commands": ["ExtrudeProfile.Execute(Profile, distance, parent, name)"],
+   "data": {},
+   "elapsed_s": 0.40000000000000002,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 785, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_profile_001_rect_30x10_h5.py\", line 17, in build\n    prof = RectangleProfile(Plane.PlaneXY, MM(30), MM(10))\nNameError: global name 'RectangleProfile' is not defined\n",
+   "expect": {
+    "bodies": 1,
+    "faces": 6,
+    "volume_mm3": 1500.0
+   },
+   "expect_mismatch": {
+    "bodies": {
+     "actual": 0,
+     "expected": 1
+    },
+    "faces": {
+     "actual": 0,
+     "expected": 6
+    },
+    "volume_mm3": {
+     "actual": 0.0,
+     "expected": 1500.0
+    }
+   },
+   "feature": "pull_extrude_profile",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:50+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "h_mm": 5,
+    "profile": "RectangleProfile 30x10"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_profile_001_rect_30x10_h5.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:49+08:00",
+   "status": "failed",
+   "title": "Extrude API Profile directly: 001_rect_30x10_h5"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "03_pull_profile_002_circle_r6_h12",
+   "category": "03_pull",
+   "commands": ["ExtrudeProfile.Execute(Profile, distance, parent, name)"],
+   "data": {},
+   "elapsed_s": 0.089999999999999997,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 785, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_profile_002_circle_r6_h12.py\", line 17, in build\n    prof = CircleProfile(Plane.PlaneXY, MM(6))\nNameError: global name 'CircleProfile' is not defined\n",
+   "expect": {
+    "bodies": 1,
+    "faces": 3,
+    "volume_mm3": 1357.168026
+   },
+   "expect_mismatch": {
+    "bodies": {
+     "actual": 0,
+     "expected": 1
+    },
+    "faces": {
+     "actual": 0,
+     "expected": 3
+    },
+    "volume_mm3": {
+     "actual": 0.0,
+     "expected": 1357.168026
+    }
+   },
+   "feature": "pull_extrude_profile",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:52:50+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "h_mm": 12,
+    "profile": "CircleProfile r6"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_profile_002_circle_r6_h12.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:52:50+08:00",
+   "status": "failed",
+   "title": "Extrude API Profile directly: 002_circle_r6_h12"
+  }
+ ],
+ "elapsed_s": 22.87,
+ "finished_at": "2026-09-26T07:52:51+08:00",
+ "framework": "1.2.2",
+ "mode": "headless",
+ "spaceclaim_version": "2019.3.38912",
+ "stage": "done",
+ "started_at": "2026-09-26T07:52:28+08:00",
+ "summary": {
+  "failed": 2,
+  "ok": 22
+ }
+}

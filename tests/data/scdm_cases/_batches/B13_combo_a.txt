@@ -1,0 +1,16 @@
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_bracket_001_sketch_pull_round_hole.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_flange_002_revolve_pattern_chamfer.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_plate_003_linear_pattern_holes_round.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_housing_004_block_shell_round.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_bool_005_block_cyl_sphere.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_shaft_006_revolve_chamfer_keyway.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_spline_007_spline_extrude_round.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_loft_008_loft_shell.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_sweep_009_pipe_bend.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_mirror_010_half_model_mirror_merge.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_split_011_split_multi_body_names_colors.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_doc_012_layers_colors_named_selections.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_doc_013_datums_named_selection_on_edges.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_asm_014_two_components.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_asm_015_instances_pattern.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_asm_016_nested_3levels_colors_layers.py

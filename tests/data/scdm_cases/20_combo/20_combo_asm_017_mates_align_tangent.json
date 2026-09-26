@@ -1,0 +1,118 @@
+{
+ "actual": {
+  "area_mm2": 7805.309649,
+  "beams": 0,
+  "bodies": 2,
+  "body_list": [
+   {
+    "area_mm2": 6950.796447,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [60.0, 40.0, 10.0]
+    ],
+    "closed": true,
+    "edges": 14,
+    "faces": 7,
+    "manifold": true,
+    "name": "Plate_Body",
+    "path": "Component_1",
+    "vertices": 10,
+    "volume_mm3": 23497.345175
+   },
+   {
+    "area_mm2": 854.513202,
+    "bbox_mm": [
+     [96.0, 16.0, 5.0],
+     [104.0, 24.0, 35.0]
+    ],
+    "closed": true,
+    "edges": 2,
+    "faces": 3,
+    "manifold": true,
+    "name": "Pin_Body",
+    "path": "Component_2",
+    "vertices": 2,
+    "volume_mm3": 1507.964474
+   }
+  ],
+  "body_materials": {},
+  "component_list": [
+   {
+    "name": "Component_1",
+    "path": ""
+   },
+   {
+    "name": "Component_2",
+    "path": ""
+   }
+  ],
+  "components": 2,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Circle": 4,
+   "Line": 12
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 16,
+  "faces": 10,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 2,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 2,
+  "root_curves": 0,
+  "surface_types": {
+   "Cylinder": 2,
+   "Plane": 8
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 12,
+  "view_mode": "Solid",
+  "volume_mm3": 25005.309649
+ },
+ "case_id": "20_combo_asm_017_mates_align_tangent",
+ "category": "20_combo",
+ "commands": ["asm_component", "asm_conditions"],
+ "data": {
+  "auto_renamed": [
+   ["", "Component_1"],
+   ["", "Component_2"]
+  ],
+  "intent_checks": [],
+  "regions_after_intersect": [
+   ["Plate_Body", 23497.345175],
+   ["Hole_Cutter", 1005.309649],
+   ["实体", 502.654825]
+  ]
+ },
+ "elapsed_s": 0.44,
+ "expect": {
+  "components": 2,
+  "mating_conditions": 2
+ },
+ "expect_mismatch": {},
+ "feature": "combo",
+ "framework": "1.3",
+ "generated_at": "2026-09-26T08:38:57+08:00",
+ "items": {
+  "RemoveRegions": {
+   "ok": true,
+   "result": "True",
+   "s": 0.0
+  }
+ },
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\20_combo",
+ "params": {},
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_asm_017_mates_align_tangent.scdoc",
+ "scdoc_size": "49369",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_asm_017_mates_align_tangent.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:38:56+08:00",
+ "status": "ok",
+ "title": "2-component assembly with align + tangent conditions"
+}

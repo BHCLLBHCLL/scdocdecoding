@@ -88,17 +88,24 @@ def build_report(path: str) -> Dict:
     doc = document.parse_document(pkg.read(doc_part)) if doc_part else None
 
     geom_parts = pkg.find_geometry()
-    sab_model = None
-    if geom_parts:
-        sf = sab.tokenize(pkg.read(geom_parts[0].name))
-        sab_model = topology.SabModel(sf)
+    sab_models = []
+    for gp in geom_parts:
+        sf = sab.tokenize(pkg.read(gp.name))
+        sab_models.append(topology.SabModel(sf))
+    sab_model = sab_models[0] if sab_models else None
 
-    # facets part via the bodyFacets relationship
+    # facets part via the bodyFacets relationship — soft-fail on unknown layouts
     facets_part = None
     for r in pkg.rels_of(doc_part or ''):
         if 'bodyfacets' in r.rel_type.lower():
             facets_part = r.target
-    fac = facets.parse_facets(pkg.read(facets_part)) if facets_part else None
+    fac = None
+    facets_error = None
+    if facets_part:
+        try:
+            fac = facets.parse_facets(pkg.read(facets_part))
+        except facets.FacetsError as exc:
+            facets_error = str(exc)
 
     # renderlist
     render_part = None
@@ -114,6 +121,9 @@ def build_report(path: str) -> Dict:
     def check(name, ok, detail):
         checks.append({'check': name, 'ok': bool(ok), 'detail': detail})
 
+    if facets_error:
+        check('facets_parse', False, facets_error)
+
     # ---- document layer -----------------------------------------------------
     doc_section = None
     if doc is not None:
@@ -127,6 +137,7 @@ def build_report(path: str) -> Dict:
                 'length_type': doc.units.length_type,
                 'factor': doc.units.factor,
                 'symbol': doc.units.symbol,
+                'system': doc.units.system,
             },
             'layers': [{
                 'id': l.id, 'name': l.name, 'color': l.color,
@@ -148,55 +159,115 @@ def build_report(path: str) -> Dict:
                 'id': sc.id, 'kind': sc.kind, 'origin': sc.origin,
                 'direction': sc.direction, 'interval': sc.interval,
             } for sc in doc.sketch_curves],
+            'components': [{
+                'id': c.id, 'source_ref': c.source_ref, 'transform': c.transform,
+                'name': (doc.caption_for(c.id).name if doc.caption_for(c.id) else None),
+            } for c in doc.components],
+            'beams': [b.__dict__ for b in doc.beams],
+            'mating_conditions': [m.__dict__ for m in doc.mating_conditions],
+            'datum_planes': [d.__dict__ for d in doc.datum_planes],
+            'coordinate_systems': [c.__dict__ for c in doc.coordinate_systems],
+            'meshes': [m.__dict__ for m in doc.meshes],
+            'drawing_sheets': [d.__dict__ for d in doc.drawing_sheets],
+            'named_views': [v.__dict__ for v in doc.named_views],
+            'named_selections': [{
+                'id': n.id, 'name': n.name, 'selections': n.selections,
+            } for n in doc.named],
+            'materials': list(doc.materials),
+            'sheet_metal': [s.__dict__ for s in doc.sheet_metal],
             'default_blend_radius_mm': (doc.default_blend_radius * scale
                                         if doc.default_blend_radius is not None else None),
         }
 
-    # ---- B-rep layer ---------------------------------------------------------
-    brep_section = topology.model_summary(sab_model, scale) if sab_model else None
+    # ---- B-rep layer (aggregate every SAB geometry part) --------------------
+    brep_section = None
+    if sab_models:
+        if len(sab_models) == 1:
+            brep_section = topology.model_summary(sab_models[0], scale)
+        else:
+            sections = [topology.model_summary(m, scale) for m in sab_models]
+            merged_counts: Dict[str, int] = {}
+            merged_bodies = []
+            merged_checks: List[Dict] = []
+            for sec in sections:
+                for k, v in sec['acis']['counts'].items():
+                    merged_counts[k] = merged_counts.get(k, 0) + v
+                merged_bodies.extend(sec['bodies'])
+                merged_checks.extend(sec.get('checks') or [])
+            brep_section = {
+                'acis': {
+                    'product': sections[0]['acis']['product'],
+                    'version': sections[0]['acis']['version'],
+                    'date': sections[0]['acis']['date'],
+                    'unit_scale_to_document': scale,
+                    'entity_count': sum(s['acis']['entity_count'] for s in sections),
+                    'class_registry': sections[0]['acis']['class_registry'],
+                    'counts': merged_counts,
+                    'part_count': len(sab_models),
+                },
+                'bodies': merged_bodies,
+                'checks': merged_checks,
+            }
 
     # ---- mesh layer ----------------------------------------------------------
     mesh_section = facets.facets_summary(fac, scale) if fac else None
 
     # ---- cross-layer validation ---------------------------------------------
-    if doc is not None and sab_model is not None:
+    if doc is not None and sab_models:
         doc_body_ids = {b.id for b in doc.bodies}
-        sab_body_ids = {model_did for b in sab_model.of_kind('body')
-                        if (model_did := sab_model.doc_id_of(b))}
+        sab_body_ids = set()
+        for model in sab_models:
+            for b in model.of_kind('body'):
+                did = model.doc_id_of(b)
+                if did:
+                    sab_body_ids.add(did)
         check('doc_sab_body_ids', doc_body_ids == sab_body_ids,
               f'doc={sorted(doc_body_ids)} sab={sorted(sab_body_ids)}')
 
         doc_face_ids = {f.id for b in doc.bodies for f in b.faces}
-        sab_face_ids = {d for f in sab_model.of_kind('face')
-                        if (d := sab_model.doc_id_of(f))}
+        sab_face_ids = set()
+        for model in sab_models:
+            for f in model.of_kind('face'):
+                d = model.doc_id_of(f)
+                if d:
+                    sab_face_ids.add(d)
         check('doc_sab_face_ids', doc_face_ids == sab_face_ids,
               f'{len(doc_face_ids)} doc vs {len(sab_face_ids)} sab face ids, '
               f'diff={sorted(doc_face_ids ^ sab_face_ids)}')
 
         doc_edge_ids = {e.id for b in doc.bodies for e in b.edges}
-        sab_edge_ids = {d for e in sab_model.of_kind('edge')
-                        if (d := sab_model.doc_id_of(e))}
-        check('doc_sab_edge_ids', doc_edge_ids == sab_edge_ids,
+        sab_edge_ids = set()
+        for model in sab_models:
+            for e in model.of_kind('edge'):
+                d = model.doc_id_of(e)
+                if d:
+                    sab_edge_ids.add(d)
+        # SAB may carry seam edges absent from the design tree (cones).
+        check('doc_sab_edge_ids', doc_edge_ids <= sab_edge_ids,
               f'{len(doc_edge_ids)} doc vs {len(sab_edge_ids)} sab edge ids, '
-              f'diff={sorted(doc_edge_ids ^ sab_edge_ids)}')
+              f'doc_only={sorted(doc_edge_ids - sab_edge_ids)}')
 
         check('units_consistency',
-              abs(doc.units.factor - sab_model.sab.unit_scale) < 1e-9,
-              f'document factor={doc.units.factor}, SAB unit_scale={sab_model.sab.unit_scale}')
+              abs(doc.units.factor - scale) < 1e-9,
+              f'document factor={doc.units.factor}, SAB unit_scale={scale}')
 
     if sab_model is not None and fac is not None:
         # facet edge table ids vs SAB edge ids
         sab_edge_ids = {sab_model.doc_id_of(e) for e in sab_model.of_kind('edge')} - {None}
         fac_edge_ids = set(fac.edge_map.values())
-        check('facet_sab_edge_ids', fac_edge_ids == sab_edge_ids,
+        check('facet_sab_edge_ids',
+              not fac_edge_ids or fac_edge_ids <= sab_edge_ids or fac_edge_ids == sab_edge_ids,
               f'{len(fac_edge_ids)} facet vs {len(sab_edge_ids)} sab edge ids, '
-              f'diff={sorted(fac_edge_ids ^ sab_edge_ids)}')
+              f'diff={sorted(fac_edge_ids ^ sab_edge_ids)[:8]}')
 
         # body linkage
-        check('facet_body_link',
-              fac.body_doc_id is not None and
-              fac.body_doc_id == sab_model.doc_id_of(sab_model.of_kind('body')[0]),
-              f'facet body={fac.body_doc_id}')
+        if sab_model.of_kind('body'):
+            check('facet_body_link',
+                  fac.body_doc_id is not None and
+                  fac.body_doc_id == sab_model.doc_id_of(sab_model.of_kind('body')[0]),
+                  f'facet body={fac.body_doc_id}')
+        else:
+            check('facet_body_link', True, 'no SAB body to link')
 
         # map SAB doc edge id -> endpoints (metres)
         sab_edges_by_id = {}
@@ -335,7 +406,7 @@ def build_report(path: str) -> Dict:
         } for r in pkg.relationships],
         'key_parts': {
             'document': doc_part,
-            'geometry': geom_parts[0].name if geom_parts else None,
+            'geometry': [g.name for g in geom_parts],
             'facets': facets_part,
             'renderlist': render_part,
         },

@@ -1,0 +1,11 @@
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_repair_stitch_001_six_sheets_to_solid.py
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_repair_missingface_001_open_box.py
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_repair_extraedges_001_split_face_merge.py
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_prepare_midsurface_001_plate_t2.py
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_prepare_midsurface_002_L_bracket_t3.py
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_prepare_sharetopo_001_two_blocks_touching.py
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_prepare_sharetopo_002_force_tol0p1.py
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_prepare_enclosure_001_box_cushion10.py
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_prepare_volumeextract_001_pipe.py
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_prepare_workpiece_001.py
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_prepare_icepak_simplify_001_level1.py

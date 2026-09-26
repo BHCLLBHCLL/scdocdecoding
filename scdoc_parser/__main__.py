@@ -16,6 +16,21 @@ import sys
 from . import opc, report, sab
 
 
+def _configure_stdio() -> None:
+    """Force UTF-8 on stdio so non-ASCII body names (e.g. 实体) never crash.
+
+    Mirrors ``PYTHONIOENCODING=utf-8`` so the text summary works on Windows
+    code pages and ASCII-forced pipes without requiring an env var.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconf = getattr(stream, 'reconfigure', None)
+        if callable(reconf):
+            try:
+                reconf(encoding='utf-8', errors='replace')
+            except Exception:
+                pass
+
+
 def _print_summary(rep: dict) -> None:
     v = rep['validation']
     print(f"file: {rep['file']}")
@@ -41,7 +56,8 @@ def _print_summary(rep: dict) -> None:
             print(f"  body {b['doc_id']}: volume={b['volume_mm3']}mm3 "
                   f"area={b['surface_area_mm2']}mm2 faces={len(b['faces'])}")
             for f in b['faces']:
-                plane = f['plane']['description'] if f['plane'] else '?'
+                plane = f['plane']['description'] if f.get('plane') else (
+                    f.get('surface_kind') or '?')
                 print(f"    face {f['doc_id']}: area={f['area_mm2']}mm2 plane={plane}")
             for e in b['edges'][:4]:
                 print(f"    edge {e['doc_id']}: length={e['length_mm']}mm")
@@ -65,6 +81,7 @@ def _print_summary(rep: dict) -> None:
 
 
 def main(argv=None) -> int:
+    _configure_stdio()
     ap = argparse.ArgumentParser(
         prog='scdoc_parser',
         description='Reverse-engineered SpaceClaim .scdoc project file parser')

@@ -1,0 +1,17 @@
+D:\training\caedecoder\scdm_cases\13_surface_curve\13_surface_circular_001_r20.py
+D:\training\caedecoder\scdm_cases\13_surface_curve\13_surface_rect_001_30x10.py
+D:\training\caedecoder\scdm_cases\13_surface_curve\13_surface_body_001_cylinder_patch.py
+D:\training\caedecoder\scdm_cases\13_surface_curve\13_fill_001_cap_open_box.py
+D:\training\caedecoder\scdm_cases\13_surface_curve\13_fill_002_patch_4_splines.py
+D:\training\caedecoder\scdm_cases\13_surface_curve\13_splitface_001_block_top_two_points.py
+D:\training\caedecoder\scdm_cases\13_surface_curve\13_splitedge_001_by_count3.py
+D:\training\caedecoder\scdm_cases\13_surface_curve\13_project_001_circle_onto_block_top.py
+D:\training\caedecoder\scdm_cases\13_surface_curve\13_wrap_001_rect_onto_cylinder.py
+D:\training\caedecoder\scdm_cases\13_surface_curve\13_convertsolid_001_closed_sheets.py
+D:\training\caedecoder\scdm_cases\14_holes_threads\14_hole_simple_001_d6_depth10.py
+D:\training\caedecoder\scdm_cases\14_holes_threads\14_hole_cbore_001_M6.py
+D:\training\caedecoder\scdm_cases\14_holes_threads\14_hole_csink_001_90deg.py
+D:\training\caedecoder\scdm_cases\14_holes_threads\14_hole_tapped_001_M8_cosmetic.py
+D:\training\caedecoder\scdm_cases\15_mesh_facet\15_mesh_convert_001_block.py
+D:\training\caedecoder\scdm_cases\15_mesh_facet\15_mesh_stl_import_001.py
+D:\training\caedecoder\scdm_cases\15_mesh_facet\15_mesh_reduce_001_50pct.py

@@ -1,0 +1,85 @@
+{
+    "case_id":  "00_smoke_box_001_20x20x20",
+    "category":  "00_smoke",
+    "feature":  "box (BlockBody / sketch rectangle + extrude fallback)",
+    "description":  "Smoke test: 20x20x20 mm solid block at origin, single body",
+    "params":  {
+                   "length_mm":  20,
+                   "width_mm":  20,
+                   "height_mm":  20,
+                   "corner1_mm":  [
+                                      0,
+                                      0,
+                                      0
+                                  ],
+                   "corner2_mm":  [
+                                      20,
+                                      20,
+                                      20
+                                  ],
+                   "extrude_type":  "ForceIndependent"
+               },
+    "script_api":  "SpaceClaim V19 recording-style scripting (RunScript host namespace)",
+    "script_commands":  [
+                            "DocumentHelper.CreateNewDocument",
+                            "BlockBody.Create",
+                            "SketchRectangle.Create+ExtrudeFaces.Execute (fallback)",
+                            "DocumentSave.Execute",
+                            "Document.SaveAs (fallback)"
+                        ],
+    "expected":  {
+                     "bodies":  1,
+                     "faces":  6,
+                     "edges":  12,
+                     "vertices":  8,
+                     "volume_mm3":  8000,
+                     "surface_types":  [
+                                           "plane"
+                                       ],
+                     "curve_types":  [
+                                         "straight"
+                                     ]
+                 },
+    "files":  {
+                  "script":  "00_smoke_box_001_20x20x20.py",
+                  "scdoc":  "00_smoke_box_001_20x20x20.scdoc",
+                  "result":  "00_smoke_result.json"
+              },
+    "spaceclaim":  {
+                       "product":  "ANSYS SpaceClaim 2019 R3",
+                       "version":  "2019.3.38912",
+                       "exe":  "C:\\Program Files\\ANSYS Inc\\v195\\SCDM\\SpaceClaim.exe"
+                   },
+    "runs":  [
+                 {
+                     "tag":  "headless",
+                     "cmd":  "\"C:\\Program Files\\ANSYS Inc\\v195\\SCDM\\SpaceClaim.exe\" /RunScript=\"D:\\training\\caedecoder\\scdm_cases\\00_smoke\\00_smoke_box_001_20x20x20.py\" /ExitAfterScript=True /Splash=False /Welcome=False /Headless=True",
+                     "wall_s":  144.3,
+                     "exit":  0,
+                     "killed":  null,
+                     "ok":  true,
+                     "windows":  [
+
+                                 ]
+                 }
+             ],
+    "working_command":  "\"C:\\Program Files\\ANSYS Inc\\v195\\SCDM\\SpaceClaim.exe\" /RunScript=\"D:\\training\\caedecoder\\scdm_cases\\00_smoke\\00_smoke_box_001_20x20x20.py\" /ExitAfterScript=True /Splash=False /Welcome=False /Headless=True",
+    "scdoc_entries":  [
+                          "SpaceClaim/Schemas/package.xsd",
+                          "docProps/app.xml",
+                          "_rels/.rels",
+                          "SpaceClaim/document.xml",
+                          "SpaceClaim/versions.xml",
+                          "SpaceClaim/_rels/document.xml.rels",
+                          "SpaceClaim/Geometry/part1bodies.sab",
+                          "SpaceClaim/Graphics/facets.bin",
+                          "SpaceClaim/Graphics/renderlist.xml",
+                          "SpaceClaim/UI/windows.xml",
+                          "docProps/thumbnail.png",
+                          "SpaceClaim/checksums.bin",
+                          "SpaceClaim/_rels/checksums.bin.rels",
+                          "package/services/metadata/core-properties/cd226055bcf340449cd6eaf421eb4889.psmdcp",
+                          "[Content_Types].xml"
+                      ],
+    "generated_at":  "2026-09-26T01:16:18+08:00"
+}

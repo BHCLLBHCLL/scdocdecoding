@@ -1,0 +1,11 @@
+D:\training\caedecoder\scdm_cases\07_shell_offset\07_shell_open_001_block_top_t2.py
+D:\training\caedecoder\scdm_cases\07_shell_offset\07_shell_closed_002_hollow_sphere_t1.py
+D:\training\caedecoder\scdm_cases\07_shell_offset\07_shell_open_003_cyl_top_t1p5.py
+D:\training\caedecoder\scdm_cases\07_shell_offset\07_offset_001_block_top_plus3.py
+D:\training\caedecoder\scdm_cases\07_shell_offset\07_offset_002_cyl_face_minus1.py
+D:\training\caedecoder\scdm_cases\07_shell_offset\07_thicken_001_planar_t2.py
+D:\training\caedecoder\scdm_cases\07_shell_offset\07_thicken_002_cyl_sheet_t1.py
+D:\training\caedecoder\scdm_cases\07_shell_offset\07_draft_001_block_4sides_5deg.py
+D:\training\caedecoder\scdm_cases\07_shell_offset\07_draft_002_cyl_side_3deg.py
+D:\training\caedecoder\scdm_cases\07_shell_offset\07_replaceface_001_block_top_to_plane.py
+D:\training\caedecoder\scdm_cases\07_shell_offset\07_detach_001_block_top.py

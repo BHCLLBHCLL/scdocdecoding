@@ -1,0 +1,88 @@
+{
+ "actual": {
+  "area_mm2": 800.0,
+  "beams": 0,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 800.0,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [40.0, 20.0, 0.0]
+    ],
+    "closed": false,
+    "edges": 4,
+    "faces": 1,
+    "manifold": true,
+    "name": "Rect_40x20",
+    "path": "",
+    "vertices": 4,
+    "volume_mm3": 0.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Line": 4
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 4,
+  "faces": 1,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Plane": 1
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 4,
+  "view_mode": "Solid",
+  "volume_mm3": 0.0
+ },
+ "case_id": "02_sketch_rect_001_40x20",
+ "category": "02_sketch",
+ "commands": ["SketchRectangle.Create(p1,p2,p3)"],
+ "data": {
+  "sketch_result": {
+   "curve_types": [],
+   "new_bodies": 1,
+   "root_curves": 0
+  }
+ },
+ "elapsed_s": 0.13,
+ "expect": {
+  "area_mm2": 800.0,
+  "bodies": 1,
+  "faces": 1
+ },
+ "expect_mismatch": {},
+ "feature": "sk_rect",
+ "framework": "1.2.2",
+ "generated_at": "2026-09-26T07:55:15+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+ "params": {
+  "p": [
+   [0, 0],
+   [40, 0],
+   [40, 20]
+  ]
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_rect_001_40x20.scdoc",
+ "scdoc_size": "17614",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_rect_001_40x20.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T07:55:14+08:00",
+ "status": "ok",
+ "title": "Sketch rectangle: 001_40x20"
+}

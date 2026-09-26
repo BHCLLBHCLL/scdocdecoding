@@ -1,0 +1,12 @@
+{
+    "batch":  "B05_boolean",
+    "mode":  "headless",
+    "licence_retries":  0,
+    "cmd":  "\"C:\\Program Files\\ANSYS Inc\\v195\\SCDM\\SpaceClaim.exe\" /RunScript=\"D:\\training\\caedecoder\\scdm_cases\\_batches\\B05_boolean_headless_driver.py\" /ExitAfterScript=True /Splash=False /Welcome=False /Headless=True",
+    "started":  "2026-09-26T07:40:54+08:00",
+    "wall_s":  111,
+    "exit":  0,
+    "killed":  null,
+    "sentinel_done_at_s":  105.8029572,
+    "result":  "D:\\training\\caedecoder\\scdm_cases\\_batches\\B05_boolean_headless_result.json"
+}

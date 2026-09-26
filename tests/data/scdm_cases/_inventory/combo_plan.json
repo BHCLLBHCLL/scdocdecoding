@@ -1,0 +1,600 @@
+{
+ "schema": "scdm_cases/combo_plan v1",
+ "generated_at": "2026-09-26T01:40:00+08:00",
+ "folder": "20_combo",
+ "count": 32,
+ "combos": [
+  {
+   "case_key": "20_combo_bracket_001_sketch_pull_round_hole",
+   "title": "L-bracket: sketch L profile, pull 30, round inner edge r5, 2 through holes r3",
+   "steps": [
+    "sketch L chain 60x40 t8",
+    "extrude 30",
+    "ConstantRound inner edge r5",
+    "cut 2 holes r3"
+   ],
+   "features": [
+    "sk_line",
+    "pull_extrude_face",
+    "edge_round",
+    "pull_extrude_cut"
+   ],
+   "expect": {
+    "bodies": 1
+   },
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_flange_002_revolve_pattern_chamfer",
+   "title": "Pipe flange: revolve profile, circular pattern of 6 bolt holes, chamfer outer edge",
+   "steps": [
+    "revolve flange section",
+    "cut hole r5 at R40",
+    "circular pattern 6",
+    "chamfer 1mm"
+   ],
+   "features": [
+    "pull_revolve",
+    "pull_extrude_cut",
+    "mp_pattern_circular",
+    "edge_chamfer"
+   ],
+   "expect": {
+    "bodies": 1
+   },
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_plate_003_linear_pattern_holes_round",
+   "title": "Plate 100x60x5 with 3x4 hole pattern and all-edge rounds",
+   "steps": [
+    "block",
+    "hole r2",
+    "linear pattern 3x4",
+    "round r1 outer edges"
+   ],
+   "features": [
+    "prim_block",
+    "pull_extrude_cut",
+    "mp_pattern_linear",
+    "edge_round"
+   ],
+   "expect": {
+    "bodies": 1
+   },
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_housing_004_block_shell_round",
+   "title": "Housing: block, round vertical edges r8, shell open top t2",
+   "steps": [
+    "block 80x60x40",
+    "round 4 vertical edges r8",
+    "shell remove top t2"
+   ],
+   "features": [
+    "prim_block",
+    "edge_round",
+    "so_shell"
+   ],
+   "expect": {
+    "bodies": 1
+   },
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_bool_005_block_cyl_sphere",
+   "title": "Boolean chain: block + cylinder boss merge, subtract sphere, intersect with cylinder",
+   "steps": [
+    "block",
+    "cyl merge",
+    "sphere subtract",
+    "intersect with big cyl"
+   ],
+   "features": [
+    "bool_merge",
+    "bool_subtract",
+    "bool_intersect"
+   ],
+   "expect": {
+    "bodies": 1
+   },
+   "priority": "P0",
+   "headless_feasibility": "yes"
+  },
+  {
+   "case_key": "20_combo_shaft_006_revolve_chamfer_keyway",
+   "title": "Stepped shaft: revolve 3 diameters, chamfer ends, keyway pocket",
+   "steps": [
+    "revolve stepped profile",
+    "chamfer both ends 1mm",
+    "keyway pocket 6x30 depth 3"
+   ],
+   "features": [
+    "pull_revolve",
+    "edge_chamfer",
+    "pull_extrude_cut"
+   ],
+   "expect": {
+    "bodies": 1
+   },
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_spline_007_spline_extrude_round",
+   "title": "Spline cam: closed spline profile extruded 10, rounded r1",
+   "steps": [
+    "sketch periodic spline",
+    "extrude 10",
+    "round top edge r1"
+   ],
+   "features": [
+    "sk_spline",
+    "pull_extrude_face",
+    "edge_round"
+   ],
+   "expect": {
+    "bodies": 1
+   },
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_loft_008_loft_shell",
+   "title": "Bottle: loft rect->circle->circle, shell open top 1mm",
+   "steps": [
+    "3 profiles",
+    "loft",
+    "shell"
+   ],
+   "features": [
+    "pull_loft",
+    "so_shell"
+   ],
+   "expect": {
+    "bodies": 1
+   },
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_sweep_009_pipe_bend",
+   "title": "Bent pipe: sweep circle along line-arc-line path, shell both ends",
+   "steps": [
+    "path chain",
+    "sweep circle r10",
+    "shell remove 2 end faces t1"
+   ],
+   "features": [
+    "pull_sweep",
+    "so_shell"
+   ],
+   "expect": {
+    "bodies": 1
+   },
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_mirror_010_half_model_mirror_merge",
+   "title": "Half model mirrored about YZ and merged",
+   "steps": [
+    "half bracket",
+    "mirror YZ merge"
+   ],
+   "features": [
+    "mp_mirror",
+    "bool_merge"
+   ],
+   "expect": {
+    "bodies": 1
+   },
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_split_011_split_multi_body_names_colors",
+   "title": "Block split into 3 bodies by 2 planes, each renamed + colored",
+   "steps": [
+    "block",
+    "split z=10",
+    "split z=20",
+    "rename Part_A..C",
+    "colors"
+   ],
+   "features": [
+    "bool_split_body",
+    "doc_rename",
+    "doc_colors"
+   ],
+   "expect": {
+    "bodies": 3
+   },
+   "priority": "P0",
+   "headless_feasibility": "yes"
+  },
+  {
+   "case_key": "20_combo_doc_012_layers_colors_named_selections",
+   "title": "Doc attributes: 3 bodies on 2 layers, face colors, 3 named selections (inlet/outlet/wall)",
+   "steps": [
+    "3 primitives",
+    "2 layers",
+    "face colors",
+    "NamedSelection x3"
+   ],
+   "features": [
+    "doc_layers",
+    "doc_colors",
+    "doc_named_selection",
+    "doc_rename"
+   ],
+   "expect": {
+    "bodies": 3,
+    "named_selections": 3,
+    "layers": 3
+   },
+   "priority": "P0",
+   "headless_feasibility": "yes"
+  },
+  {
+   "case_key": "20_combo_doc_013_datums_named_selection_on_edges",
+   "title": "Datum plane + axis + named selection of edges on filleted block",
+   "steps": [
+    "block",
+    "round",
+    "datum plane z=5",
+    "datum axis",
+    "NS of round faces"
+   ],
+   "features": [
+    "doc_datum",
+    "edge_round",
+    "doc_named_selection"
+   ],
+   "expect": {},
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_asm_014_two_components",
+   "title": "2-component assembly: plate + boss in separate components, renamed",
+   "steps": [
+    "block in comp Plate",
+    "cyl in comp Boss",
+    "SetName"
+   ],
+   "features": [
+    "asm_component",
+    "doc_rename"
+   ],
+   "expect": {
+    "components": 2,
+    "bodies": 2
+   },
+   "priority": "P0",
+   "headless_feasibility": "yes"
+  },
+  {
+   "case_key": "20_combo_asm_015_instances_pattern",
+   "title": "Assembly with 1 part definition instanced 4x (translated + rotated)",
+   "steps": [
+    "comp Bolt",
+    "copy/paste 3x",
+    "move/rotate instances"
+   ],
+   "features": [
+    "asm_component",
+    "asm_instance",
+    "mp_translate",
+    "mp_rotate"
+   ],
+   "expect": {
+    "components": 4,
+    "part_defs": 2
+   },
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_asm_016_nested_3levels_colors_layers",
+   "title": "Nested assembly 3 levels, bodies colored + layered",
+   "steps": [
+    "root/sub/subsub comps",
+    "bodies in each",
+    "layers/colors"
+   ],
+   "features": [
+    "asm_component",
+    "doc_layers",
+    "doc_colors"
+   ],
+   "expect": {
+    "components": 3
+   },
+   "priority": "P1",
+   "headless_feasibility": "yes"
+  },
+  {
+   "case_key": "20_combo_asm_017_mates_align_tangent",
+   "title": "2-component assembly with align + tangent conditions",
+   "steps": [
+    "plate + pin comps",
+    "align axis",
+    "tangent faces"
+   ],
+   "features": [
+    "asm_component",
+    "asm_conditions"
+   ],
+   "expect": {
+    "conditions": 2
+   },
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup (raw API conditions, verify)"
+  },
+  {
+   "case_key": "20_combo_sm_018_sheetmetal_bracket",
+   "title": "Sheet metal bracket: convert plate, 2 flanges, relief, unfold",
+   "steps": [
+    "plate 100x50x2",
+    "convert to sheet metal",
+    "flange 90deg x2",
+    "unfold"
+   ],
+   "features": [
+    "sm_all"
+   ],
+   "expect": {},
+   "priority": "P1",
+   "headless_feasibility": "GUI-only"
+  },
+  {
+   "case_key": "20_combo_beam_019_frame_with_profiles",
+   "title": "Beam frame: rectangular frame of 4 lines + 2 diagonals, I profile + rect tube",
+   "steps": [
+    "6 design curves",
+    "BeamProfile I & Rect",
+    "Beam.Create",
+    "orientation"
+   ],
+   "features": [
+    "beam_profile",
+    "beam_create",
+    "sk_datum_curve"
+   ],
+   "expect": {
+    "beams": 6
+   },
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_prep_020_midsurface_share_topology",
+   "title": "Plate assembly midsurfaced and topology shared",
+   "steps": [
+    "2 plates T-joint",
+    "Midsurface",
+    "ShareTopology"
+   ],
+   "features": [
+    "rp_midsurface",
+    "rp_share_topology"
+   ],
+   "expect": {},
+   "priority": "P1",
+   "headless_feasibility": "yes"
+  },
+  {
+   "case_key": "20_combo_prep_021_enclosure_named_selection",
+   "title": "CFD prep: body + box enclosure (cushion 20) + named selections inlet/outlet",
+   "steps": [
+    "body",
+    "Enclosure",
+    "NamedSelection faces"
+   ],
+   "features": [
+    "rp_volume_extract",
+    "doc_named_selection"
+   ],
+   "expect": {},
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_hole_022_holes_pattern_plate",
+   "title": "Plate with counterbored M6 hole circular-patterned 4x",
+   "steps": [
+    "plate",
+    "StandardHoles cbore M6",
+    "circular pattern 4"
+   ],
+   "features": [
+    "hole_standard",
+    "mp_pattern_circular"
+   ],
+   "expect": {},
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_helix_023_spring_ends_ground",
+   "title": "Spring: helix sweep of circle, ends cut flat by split planes",
+   "steps": [
+    "revolve by helix",
+    "split body by 2 planes",
+    "delete ends"
+   ],
+   "features": [
+    "pull_helix",
+    "bool_split_body"
+   ],
+   "expect": {},
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_draft_024_molded_part",
+   "title": "Molded box: extrude, draft 3deg, round r2, shell t1.5",
+   "steps": [
+    "block",
+    "draft 4 sides",
+    "round",
+    "shell"
+   ],
+   "features": [
+    "so_draft",
+    "edge_round",
+    "so_shell"
+   ],
+   "expect": {},
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_surface_025_sheets_stitch_thicken",
+   "title": "Sheets: 2 planar + 1 cylindrical surface stitched, thickened 2mm",
+   "steps": [
+    "planar bodies",
+    "surface body",
+    "StitchFaces",
+    "Thicken"
+   ],
+   "features": [
+    "prim_planar_body",
+    "sc_surfaces",
+    "rp_fix",
+    "so_thicken"
+   ],
+   "expect": {},
+   "priority": "P2",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_wrap_026_cylinder_wrap_text_pull",
+   "title": "Cylinder with wrapped rectangle imprint pulled 1mm",
+   "steps": [
+    "cyl",
+    "sketch rect",
+    "Wrap",
+    "pull imprint"
+   ],
+   "features": [
+    "sc_project_wrap",
+    "pull_face_offset"
+   ],
+   "expect": {},
+   "priority": "P2",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_units_027_inch_doc_primitives",
+   "title": "Inch document with block+cylinder (unit factor check)",
+   "steps": [
+    "set units IN",
+    "block 1x2x3 in",
+    "cyl"
+   ],
+   "features": [
+    "doc_units",
+    "prim_block",
+    "prim_cylinder"
+   ],
+   "expect": {},
+   "priority": "P1",
+   "headless_feasibility": "unknown (units setter)"
+  },
+  {
+   "case_key": "20_combo_multi_028_many_bodies_8",
+   "title": "8 bodies (mixed primitives) in root, each named/colored - id allocation stress",
+   "steps": [
+    "8 primitives",
+    "rename",
+    "colors"
+   ],
+   "features": [
+    "prim_block",
+    "prim_cylinder",
+    "prim_sphere",
+    "doc_rename",
+    "doc_colors"
+   ],
+   "expect": {
+    "bodies": 8
+   },
+   "priority": "P0",
+   "headless_feasibility": "yes"
+  },
+  {
+   "case_key": "20_combo_multi_029_many_components_8",
+   "title": "8 components each with one body (IMPROVEMENT_PRIORITIES P0-1 id collision scenario)",
+   "steps": [
+    "8 comps x 1 body"
+   ],
+   "features": [
+    "asm_component"
+   ],
+   "expect": {
+    "components": 8,
+    "bodies": 8
+   },
+   "priority": "P0",
+   "headless_feasibility": "yes"
+  },
+  {
+   "case_key": "20_combo_edit_030_pull_after_pattern",
+   "title": "Pattern of bosses then pull base face + round (pattern relation survives edit)",
+   "steps": [
+    "plate",
+    "boss",
+    "linear pattern 4",
+    "pull base -2",
+    "round bosses r1"
+   ],
+   "features": [
+    "mp_pattern_linear",
+    "pull_face_offset",
+    "edge_round"
+   ],
+   "expect": {},
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup"
+  },
+  {
+   "case_key": "20_combo_view_031_named_views_section",
+   "title": "Named views + section plane on assembly",
+   "steps": [
+    "assembly from 014",
+    "CreateNamedView x2",
+    "SetSectionPlane"
+   ],
+   "features": [
+    "doc_named_view",
+    "asm_component"
+   ],
+   "expect": {},
+   "priority": "P1",
+   "headless_feasibility": "needs GUI window? (test)"
+  },
+  {
+   "case_key": "20_combo_mesh_032_mesh_plus_solid",
+   "title": "Document with solid body + facet body converted from a copy",
+   "steps": [
+    "cyl",
+    "copy",
+    "FacetConvert"
+   ],
+   "features": [
+    "mesh_facet",
+    "prim_cylinder"
+   ],
+   "expect": {},
+   "priority": "P2",
+   "headless_feasibility": "yes"
+  }
+ ]
+}

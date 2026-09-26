@@ -1,0 +1,154 @@
+{
+ "actual": {
+  "area_mm2": 512.0,
+  "beams": 0,
+  "bodies": 4,
+  "body_list": [
+   {
+    "area_mm2": 128.0,
+    "bbox_mm": [
+     [20.0, -2.0, 0.0],
+     [26.0, 2.0, 4.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Circ_Block",
+    "path": "Component_1/Component_2",
+    "vertices": 8,
+    "volume_mm3": 96.0
+   },
+   {
+    "area_mm2": 128.0,
+    "bbox_mm": [
+     [8.267949, 16.320508, 0.0],
+     [14.732051, 23.51666, 4.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Circ_Block",
+    "path": "Component_1/Component_3",
+    "vertices": 8,
+    "volume_mm3": 96.0
+   },
+   {
+    "area_mm2": 128.0,
+    "bbox_mm": [
+     [-14.732051, 16.320508, 0.0],
+     [-8.267949, 23.51666, 4.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Circ_Block",
+    "path": "Component_1/Component_4",
+    "vertices": 8,
+    "volume_mm3": 96.0
+   },
+   {
+    "area_mm2": 128.0,
+    "bbox_mm": [
+     [-26.0, -2.0, 0.0],
+     [-20.0, 2.0, 4.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Circ_Block",
+    "path": "Component_1/Component_5",
+    "vertices": 8,
+    "volume_mm3": 96.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [
+   {
+    "name": "Component_1",
+    "path": ""
+   },
+   {
+    "name": "Component_2",
+    "path": "Component_1"
+   },
+   {
+    "name": "Component_3",
+    "path": "Component_1"
+   },
+   {
+    "name": "Component_4",
+    "path": "Component_1"
+   },
+   {
+    "name": "Component_5",
+    "path": "Component_1"
+   }
+  ],
+  "components": 5,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Line": 48
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 48,
+  "faces": 24,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 2,
+  "root_curves": 1,
+  "surface_types": {
+   "Plane": 24
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 32,
+  "view_mode": "Solid",
+  "volume_mm3": 384.0
+ },
+ "case_id": "06_pattern_circular_002_bodies_4_180",
+ "category": "06_move_pattern",
+ "commands": ["Pattern.CreateCircular(sel, CircularPatternData)"],
+ "data": {
+  "auto_renamed": [
+   ["", "Component_1"],
+   ["", "Component_2"],
+   ["", "Component_3"],
+   ["", "Component_4"],
+   ["", "Component_5"]
+  ],
+  "block_centres_mm": [],
+  "circular_members": ["CircularAngle", "CircularAxis", "CircularCount", "Equals", "GetHashCode", "GetType", "LinearCount", "LinearPitch", "MemberwiseClone", "PatternDimension", "RadialDirection", "ReferenceEquals", "ToString"],
+  "pattern_success": true
+ },
+ "elapsed_s": 0.14999999999999999,
+ "expect": {
+  "bodies": 4
+ },
+ "expect_mismatch": {},
+ "feature": "mp_pattern_circular",
+ "framework": "1.2.3",
+ "generated_at": "2026-09-26T08:06:01+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+ "params": {
+  "angle_deg": 180,
+  "count": 4
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_circular_002_bodies_4_180.scdoc",
+ "scdoc_size": "29017",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_circular_002_bodies_4_180.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:06:01+08:00",
+ "status": "ok",
+ "title": "Circular pattern: 002_bodies_4_180"
+}

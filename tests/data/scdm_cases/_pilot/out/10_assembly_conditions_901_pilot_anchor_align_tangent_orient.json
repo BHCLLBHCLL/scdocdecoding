@@ -1,0 +1,136 @@
+{
+ "actual": {
+  "area_mm2": 7654.513202,
+  "beams": 0,
+  "bodies": 2,
+  "body_list": [
+   {
+    "area_mm2": 6800.0,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [60.0, 40.0, 10.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Plate_Body",
+    "path": "",
+    "vertices": 8,
+    "volume_mm3": 24000.0
+   },
+   {
+    "area_mm2": 854.513202,
+    "bbox_mm": [
+     [96.0, 16.0, 5.0],
+     [104.0, 24.0, 35.0]
+    ],
+    "closed": true,
+    "edges": 2,
+    "faces": 3,
+    "manifold": true,
+    "name": "Pin_Body",
+    "path": "",
+    "vertices": 2,
+    "volume_mm3": 1507.964474
+   }
+  ],
+  "body_materials": {},
+  "component_list": [
+   {
+    "name": "",
+    "path": ""
+   },
+   {
+    "name": "",
+    "path": ""
+   }
+  ],
+  "components": 2,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Circle": 2,
+   "Line": 12
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 14,
+  "faces": 9,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 4,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 2,
+  "root_curves": 0,
+  "surface_types": {
+   "Cylinder": 1,
+   "Plane": 8
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 10,
+  "view_mode": "Solid",
+  "volume_mm3": 25507.964474
+ },
+ "case_id": "10_assembly_conditions_901_pilot_anchor_align_tangent_orient",
+ "category": "10_assembly",
+ "commands": ["AnchorCondition.Create", "AlignCondition.Create", "TangentCondition.Create", "OrientCondition.Create"],
+ "data": {
+  "mating_conditions": ["AnchorCondition", "AlignCondition", "TangentCondition", "OrientCondition"],
+  "pin_bbox_after": [
+   [96.0, 16.0, 5.0],
+   [104.0, 24.0, 35.0]
+  ],
+  "pin_bbox_before": [
+   [96.0, 16.0, 5.0],
+   [104.0, 24.0, 35.0]
+  ]
+ },
+ "elapsed_s": 0.5,
+ "expect": {
+  "components": 2,
+  "mating_conditions": 4
+ },
+ "expect_mismatch": {},
+ "feature": "asm_conditions",
+ "framework": "1.1",
+ "generated_at": "2026-09-26T07:25:56+08:00",
+ "items": {
+  "align_plane_plane": {
+   "ok": true,
+   "result": "<SpaceClaim.Api.V18.AlignCondition object at 0x0000000000000030 [SpaceClaim.Api.V18.AlignCondition]>",
+   "s": 0.10000000000000001
+  },
+  "anchor": {
+   "ok": true,
+   "result": "<SpaceClaim.Api.V18.AnchorCondition object at 0x000000000000002F [SpaceClaim.Api.V18.AnchorCondition]>",
+   "s": 0.01
+  },
+  "orient_plane_plane": {
+   "ok": true,
+   "result": "<SpaceClaim.Api.V18.OrientCondition object at 0x0000000000000032 [SpaceClaim.Api.V18.OrientCondition]>",
+   "s": 0.0
+  },
+  "tangent_cyl_plane": {
+   "ok": true,
+   "result": "<SpaceClaim.Api.V18.TangentCondition object at 0x0000000000000031 [SpaceClaim.Api.V18.TangentCondition]>",
+   "s": 0.01
+  }
+ },
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\_pilot\\out",
+ "params": {
+  "Pin": "cyl r4 h30 at (100,20)",
+  "Plate": "block 60x40x10",
+  "conditions": ["anchor Plate", "align Plate top / Pin bottom", "tangent Pin cyl / Plate +X face", "orient Plate top / Pin top"]
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\_pilot\\out\\10_assembly_conditions_901_pilot_anchor_align_tangent_orient.scdoc",
+ "scdoc_size": "40429",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\_pilot\\cases\\10_assembly_conditions_901_pilot_anchor_align_tangent_orient.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T07:25:56+08:00",
+ "status": "ok",
+ "title": "Raw-API assembly conditions between two components"
+}

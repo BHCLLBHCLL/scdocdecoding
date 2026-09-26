@@ -1,0 +1,80 @@
+{
+ "actual": {
+  "area_mm2": 2131.000513,
+  "beams": 0,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 2131.000513,
+    "bbox_mm": [
+     [-25.0, 0.0, -5.0],
+     [25.0, 25.0, 5.0]
+    ],
+    "closed": true,
+    "edges": 2,
+    "faces": 3,
+    "manifold": true,
+    "name": "Torus_Half",
+    "path": "",
+    "vertices": 2,
+    "volume_mm3": 4934.802201
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Circle": 2
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 2,
+  "faces": 3,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Plane": 2,
+   "Torus": 1
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 2,
+  "view_mode": "Sketch",
+  "volume_mm3": 4934.802201
+ },
+ "case_id": "01_primitives_torus_002_partial_180deg",
+ "category": "01_primitives",
+ "commands": ["CircularSurface.Create", "RevolveFaces.Execute(180deg about Z)"],
+ "data": {},
+ "elapsed_s": 0.22,
+ "expect": {
+  "bodies": 1,
+  "volume_mm3": 4934.802201
+ },
+ "expect_mismatch": {},
+ "feature": "prim_torus_revolve",
+ "framework": "1.2.3",
+ "generated_at": "2026-09-26T08:05:41+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\01_primitives",
+ "params": {
+  "angle_deg": 180,
+  "major_r_mm": 20,
+  "minor_r_mm": 5
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_torus_002_partial_180deg.scdoc",
+ "scdoc_size": "168766",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_torus_002_partial_180deg.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:05:41+08:00",
+ "status": "ok",
+ "title": "Torus (revolve of circle): 002_partial_180deg"
+}

@@ -1,0 +1,9 @@
+D:\training\caedecoder\scdm_cases\04_edge\04_edge_round_001_block_1edge_r3.py
+D:\training\caedecoder\scdm_cases\04_edge\04_edge_round_002_block_all12_r2.py
+D:\training\caedecoder\scdm_cases\04_edge\04_edge_round_003_cyl_top_r2.py
+D:\training\caedecoder\scdm_cases\04_edge\04_edge_round_004_vertex_blend_3edges_r4.py
+D:\training\caedecoder\scdm_cases\04_edge\04_edge_fullround_001_rib_3faces.py
+D:\training\caedecoder\scdm_cases\04_edge\04_edge_chamfer_001_block_1edge_d2.py
+D:\training\caedecoder\scdm_cases\04_edge\04_edge_chamfer_002_block_4edges_d1_d3.py
+D:\training\caedecoder\scdm_cases\04_edge\04_edge_chamfer_003_cyl_top_d1.py
+D:\training\caedecoder\scdm_cases\04_edge\04_edge_splitround_001.py

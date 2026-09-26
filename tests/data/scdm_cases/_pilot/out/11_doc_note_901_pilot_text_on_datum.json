@@ -1,0 +1,91 @@
+{
+ "actual": {
+  "area_mm2": 5200.0,
+  "beams": 0,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 5200.0,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [40.0, 30.0, 20.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Note_Block",
+    "path": "",
+    "vertices": 8,
+    "volume_mm3": 24000.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Line": 12
+  },
+  "datum_planes": 1,
+  "drawing_sheets": 0,
+  "edges": 12,
+  "faces": 6,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Plane": 6
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 8,
+  "view_mode": "Solid",
+  "volume_mm3": 24000.0
+ },
+ "case_id": "11_doc_note_901_pilot_text_on_datum",
+ "category": "11_doc_attrs",
+ "commands": ["DatumPlane.Create (raw)", "Note.Create (raw)"],
+ "data": {
+  "datum_notes": 1
+ },
+ "elapsed_s": 1.04,
+ "expect": {
+  "bodies": 1,
+  "datum_planes": 1
+ },
+ "expect_mismatch": {},
+ "feature": "doc_notes",
+ "framework": "1.1",
+ "generated_at": "2026-09-26T07:25:59+08:00",
+ "items": {
+  "note_on_datum": {
+   "ok": true,
+   "result": "<SpaceClaim.Api.V18.Note object at 0x0000000000000033 [SpaceClaim.Api.V18.Note]>",
+   "s": 0.17000000000000001
+  },
+  "note_on_face": {
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 569, in attempt\n    r = fn()\n  File \"D:\\training\\caedecoder\\scdm_cases\\_pilot\\cases\\11_doc_note_901_pilot_text_on_datum.py\", line 19, in <lambda$379>\n    ctx.attempt(\"note_on_face\", lambda: raw(\"note2\", lambda: Note.Create(top_face(b), PointUV.Create(0, 0), lp, MM(3), \"FACE_NOTE\")))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 445, in raw\n    return fn()\n  File \"D:\\training\\caedecoder\\scdm_cases\\_pilot\\cases\\11_doc_note_901_pilot_text_on_datum.py\", line 19, in <lambda$380>\n    ctx.attempt(\"note_on_face\", lambda: raw(\"note2\", lambda: Note.Create(top_face(b), PointUV.Create(0, 0), lp, MM(3), \"FACE_NOTE\")))\nTypeError: expected IAnnotationParentMaster, got DesignFace\n",
+   "ok": false,
+   "s": 0.40000000000000002
+  }
+ },
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\_pilot\\out",
+ "params": {
+  "font_size_mm": 5,
+  "text": "HELLO_NOTE"
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\_pilot\\out\\11_doc_note_901_pilot_text_on_datum.scdoc",
+ "scdoc_size": "32587",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\_pilot\\cases\\11_doc_note_901_pilot_text_on_datum.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T07:25:58+08:00",
+ "status": "ok",
+ "title": "Note.Create on a datum plane and on a face"
+}

@@ -1,0 +1,12 @@
+D:\training\caedecoder\scdm_cases\10_assembly\10_assembly_component_001_two_bodies_two_comps.py
+D:\training\caedecoder\scdm_cases\10_assembly\10_assembly_component_002_nested_2levels.py
+D:\training\caedecoder\scdm_cases\10_assembly\10_assembly_component_003_separate_components_4.py
+D:\training\caedecoder\scdm_cases\10_assembly\10_assembly_instance_001_3_instances_translated.py
+D:\training\caedecoder\scdm_cases\10_assembly\10_assembly_instance_002_rotated_instance.py
+D:\training\caedecoder\scdm_cases\10_assembly\10_assembly_instance_003_make_independent.py
+D:\training\caedecoder\scdm_cases\10_assembly\10_assembly_mirrorcomp_001.py
+D:\training\caedecoder\scdm_cases\10_assembly\10_assembly_align_001_axis_axis.py
+D:\training\caedecoder\scdm_cases\10_assembly\10_assembly_tangent_001_face_face.py
+D:\training\caedecoder\scdm_cases\10_assembly\10_assembly_anchor_001_plate.py
+D:\training\caedecoder\scdm_cases\10_assembly\10_assembly_rigid_001.py
+D:\training\caedecoder\scdm_cases\10_assembly\10_assembly_insert_001_step_block.py

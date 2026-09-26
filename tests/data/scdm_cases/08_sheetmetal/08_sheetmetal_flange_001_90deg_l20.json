@@ -1,0 +1,89 @@
+{
+ "actual": {
+  "area_mm2": 12590.725636,
+  "beams": 0,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 12590.725636,
+    "bbox_mm": [
+     [0.0, 0.0, -0.0],
+     [100.0, 50.0, 22.0]
+    ],
+    "closed": true,
+    "edges": 24,
+    "faces": 10,
+    "manifold": true,
+    "name": "Flange_Part",
+    "path": "",
+    "vertices": 16,
+    "volume_mm3": 11914.165902
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Circle": 4,
+   "Line": 20
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 24,
+  "faces": 10,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Cylinder": 2,
+   "Plane": 8
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 16,
+  "view_mode": "Solid",
+  "volume_mm3": 11914.165902
+ },
+ "case_id": "08_sheetmetal_flange_001_90deg_l20",
+ "category": "08_sheetmetal",
+ "commands": ["NONE in SpaceClaim.Api.V19.Scripting; raw API SheetMetalAspect/Bend are read-only (no Create)"],
+ "data": {
+  "aspect_members": ["Beads", "BendTable", "Bends", "Corners", "CreateBends", "CreateHem", "CreateInternalBead", "CreateJoggle", "CreateMarker", "CreateMissingBends", "CreateObjRef", "CreatePartitionBead", "CreateRips", "CrossBreaks", "Delete", "Equals", "ExecuteCommand", "Forms", "GetCreaseEdges", "GetFeature", "GetHashCode", "GetLifetimeService", "GetOppositeFace", "GetType", "Gussets", "Hems", "IdentifyForms", "InitializeLifetimeService", "InnerRadius", "InnerRadiusDefinition", "KFactor", "LifetimeLease", "LightweightNotes", "Markers", "MemberwiseClone", "Owner", "ReferenceEquals", "RepairBends", "Thickness", "ToString", "TryApplyNote", "Unfold"],
+  "bends_form": 0,
+  "ctors_BendSpecification": [],
+  "faces_after": 10,
+  "intent_checks": [
+   ["faces_after_bend", "10", "10", true],
+   ["volume_mm3", "11914.17", "11914.17", true]
+  ]
+ },
+ "elapsed_s": 1.81,
+ "expect": {
+  "bodies": 1
+ },
+ "expect_mismatch": {},
+ "feature": "sm_all",
+ "framework": "1.3",
+ "generated_at": "2026-09-26T08:44:27+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal",
+ "params": {
+  "angle_deg": 90,
+  "bend_r_mm": 1,
+  "length_mm": 20
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal\\08_sheetmetal_flange_001_90deg_l20.scdoc",
+ "scdoc_size": "39631",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal\\08_sheetmetal_flange_001_90deg_l20.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:44:25+08:00",
+ "status": "ok",
+ "title": "Sheet metal (convert, flange, bend, unfold, junction, relief): 001_90deg_l20"
+}

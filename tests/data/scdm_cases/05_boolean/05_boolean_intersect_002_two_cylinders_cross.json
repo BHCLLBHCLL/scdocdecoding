@@ -1,0 +1,115 @@
+{
+ "actual": {
+  "area_mm2": 1600.013273,
+  "beams": 0,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 1600.013273,
+    "bbox_mm": [
+     [-10.0, -10.0, -10.0],
+     [10.0, 10.0, 10.0]
+    ],
+    "closed": true,
+    "edges": 4,
+    "faces": 4,
+    "manifold": true,
+    "name": "Steinmetz",
+    "path": "",
+    "vertices": 2,
+    "volume_mm3": 5333.320022
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Ellipse": 4
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 4,
+  "faces": 4,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Cylinder": 4
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 2,
+  "view_mode": "Sketch",
+  "volume_mm3": 5333.320022
+ },
+ "case_id": "05_boolean_intersect_002_two_cylinders_cross",
+ "category": "05_boolean",
+ "commands": ["Combine.Intersect + RemoveRegions"],
+ "data": {
+  "regions_after_intersect": [
+   [
+    [0.0, 0.0, 0.0],
+    18849.555922,
+    true,
+    [-8.333333333333334, -25.0, -5.0],
+    null
+   ],
+   [
+    [0.0, 0.0, 0.0],
+    5333.320022,
+    false,
+    [-8.333333333333334, -8.333333333333334, -5.0],
+    true
+   ],
+   [
+    [-15.0, 0.0, 0.0],
+    6757.345534,
+    false,
+    [-27.5, -8.333333333333334, -5.0],
+    false
+   ],
+   [
+    [15.0, 0.0, 0.0],
+    6757.627831,
+    false,
+    [7.5, -5.0, -8.333333333333334],
+    false
+   ]
+  ]
+ },
+ "elapsed_s": 0.20999999999999999,
+ "expect": {
+  "bodies": 1,
+  "volume_mm3": 5333.333333
+ },
+ "expect_mismatch": {},
+ "feature": "bool_intersect",
+ "framework": "1.2.3",
+ "generated_at": "2026-09-26T08:05:47+08:00",
+ "items": {
+  "RemoveRegions": {
+   "ok": true,
+   "result": "True",
+   "s": 0.0
+  }
+ },
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\05_boolean",
+ "params": {
+  "a": "cyl X r10",
+  "b": "cyl Y r10"
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_intersect_002_two_cylinders_cross.scdoc",
+ "scdoc_size": "118786",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_intersect_002_two_cylinders_cross.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:05:46+08:00",
+ "status": "ok",
+ "title": "Combine - intersect (common): 002_two_cylinders_cross"
+}

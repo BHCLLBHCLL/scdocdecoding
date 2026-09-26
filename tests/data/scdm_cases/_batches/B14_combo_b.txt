@@ -1,0 +1,16 @@
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_asm_017_mates_align_tangent.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_sm_018_sheetmetal_bracket.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_beam_019_frame_with_profiles.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_prep_020_midsurface_share_topology.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_prep_021_enclosure_named_selection.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_hole_022_holes_pattern_plate.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_helix_023_spring_ends_ground.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_draft_024_molded_part.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_surface_025_sheets_stitch_thicken.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_wrap_026_cylinder_wrap_text_pull.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_units_027_inch_doc_primitives.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_multi_028_many_bodies_8.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_multi_029_many_components_8.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_edit_030_pull_after_pattern.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_view_031_named_views_section.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_mesh_032_mesh_plus_solid.py

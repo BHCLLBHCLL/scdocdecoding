@@ -1,0 +1,92 @@
+{
+ "actual": {
+  "area_mm2": 7600.0,
+  "beams": 0,
+  "bodies": 2,
+  "body_list": [
+   {
+    "area_mm2": 3800.0,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [40.0, 30.0, 10.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Split_Lower",
+    "path": "",
+    "vertices": 8,
+    "volume_mm3": 12000.0
+   },
+   {
+    "area_mm2": 3800.0,
+    "bbox_mm": [
+     [0.0, 0.0, 10.0],
+     [40.0, 30.0, 20.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Split_Upper",
+    "path": "",
+    "vertices": 8,
+    "volume_mm3": 12000.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Line": 24
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 24,
+  "faces": 12,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Plane": 12
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 16,
+  "view_mode": "Solid",
+  "volume_mm3": 24000.0
+ },
+ "case_id": "05_boolean_splitbody_001_block_by_plane_mid",
+ "category": "05_boolean",
+ "commands": ["SplitBody.ByCutter(body, Plane)", "SplitBody.ByCutter(body, toolFaces, extend)"],
+ "data": {},
+ "elapsed_s": 0.19,
+ "expect": {
+  "bodies": 2,
+  "volume_mm3": 24000.0
+ },
+ "expect_mismatch": {},
+ "feature": "bool_split_body",
+ "framework": "1.2.1",
+ "generated_at": "2026-09-26T07:42:36+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\05_boolean",
+ "params": {
+  "plane": "z=10"
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_splitbody_001_block_by_plane_mid.scdoc",
+ "scdoc_size": "38172",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_splitbody_001_block_by_plane_mid.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T07:42:36+08:00",
+ "status": "ok",
+ "title": "Split body by plane / face / body: 001_block_by_plane_mid"
+}

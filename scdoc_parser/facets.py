@@ -365,6 +365,8 @@ def facets_summary(fac: FacetsFile, scale: float = 1000.0) -> Dict:
             for r in f.edge_refs:
                 if r.edge_id == eid:
                     seg = f.edge_segment(r)
+                    if seg is None:
+                        continue
                     segs.append({'face_index': fi,
                                  'segment_m': [list(seg[0]), list(seg[1])]})
         edges.append({'edge_id': eid, 'doc_id': fac.edge_map[eid],

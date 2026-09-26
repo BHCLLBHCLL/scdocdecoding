@@ -1,0 +1,154 @@
+{
+ "actual": {
+  "area_mm2": 3418.052808,
+  "beams": 0,
+  "bodies": 4,
+  "body_list": [
+   {
+    "area_mm2": 854.513202,
+    "bbox_mm": [
+     [-4.0, -4.0, 0.0],
+     [4.0, 4.0, 30.0]
+    ],
+    "closed": true,
+    "edges": 2,
+    "faces": 3,
+    "manifold": true,
+    "name": "Bolt_Body",
+    "path": "Component_1",
+    "vertices": 2,
+    "volume_mm3": 1507.964474
+   },
+   {
+    "area_mm2": 854.513202,
+    "bbox_mm": [
+     [26.0, -4.0, 0.0],
+     [34.0, 4.0, 30.0]
+    ],
+    "closed": true,
+    "edges": 2,
+    "faces": 3,
+    "manifold": true,
+    "name": "Bolt_Body",
+    "path": "Component_2",
+    "vertices": 2,
+    "volume_mm3": 1507.964474
+   },
+   {
+    "area_mm2": 854.513202,
+    "bbox_mm": [
+     [56.0, -4.0, 0.0],
+     [64.0, 4.0, 30.0]
+    ],
+    "closed": true,
+    "edges": 2,
+    "faces": 3,
+    "manifold": true,
+    "name": "Bolt_Body",
+    "path": "Component_3",
+    "vertices": 2,
+    "volume_mm3": 1507.964474
+   },
+   {
+    "area_mm2": 854.513202,
+    "bbox_mm": [
+     [86.0, -30.0, -4.0],
+     [94.0, 0.0, 4.0]
+    ],
+    "closed": true,
+    "edges": 2,
+    "faces": 3,
+    "manifold": true,
+    "name": "Bolt_Body",
+    "path": "Component_4",
+    "vertices": 2,
+    "volume_mm3": 1507.964474
+   }
+  ],
+  "body_materials": {},
+  "component_list": [
+   {
+    "name": "Component_1",
+    "path": ""
+   },
+   {
+    "name": "Component_2",
+    "path": ""
+   },
+   {
+    "name": "Component_3",
+    "path": ""
+   },
+   {
+    "name": "Component_4",
+    "path": ""
+   }
+  ],
+  "components": 4,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Circle": 8
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 8,
+  "faces": 12,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 1,
+  "root_curves": 0,
+  "surface_types": {
+   "Cylinder": 4,
+   "Plane": 8
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 8,
+  "view_mode": "Solid",
+  "volume_mm3": 6031.857896
+ },
+ "case_id": "20_combo_asm_015_instances_pattern",
+ "category": "20_combo",
+ "commands": ["asm_component", "asm_instance", "mp_translate", "mp_rotate"],
+ "data": {
+  "auto_renamed": [
+   ["", "Component_1"],
+   ["", "Component_2"],
+   ["", "Component_3"],
+   ["", "Component_4"]
+  ],
+  "copy_1_errors": ["paste created no component"],
+  "copy_1_form": 1,
+  "copy_2_errors": ["paste created no component"],
+  "copy_2_form": 1,
+  "copy_3_errors": ["paste created no component"],
+  "copy_3_form": 1,
+  "intent_checks": [
+   ["bodies", "4", "4", true]
+  ],
+  "part_defs": 1
+ },
+ "elapsed_s": 32.79,
+ "expect": {
+  "components": 4
+ },
+ "expect_mismatch": {},
+ "feature": "combo",
+ "framework": "1.3",
+ "generated_at": "2026-09-26T08:38:55+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\20_combo",
+ "params": {},
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_asm_015_instances_pattern.scdoc",
+ "scdoc_size": "30680",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_asm_015_instances_pattern.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:38:22+08:00",
+ "status": "ok",
+ "title": "Assembly with 1 part definition instanced 4x (translated + rotated)"
+}

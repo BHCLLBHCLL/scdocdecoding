@@ -1,0 +1,14 @@
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_prepare_midsurface_001_plate_t2.py
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_prepare_midsurface_002_L_bracket_t3.py
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_prepare_volumeextract_001_pipe.py
+D:\training\caedecoder\scdm_cases\13_surface_curve\13_wrap_001_rect_onto_cylinder.py
+D:\training\caedecoder\scdm_cases\13_surface_curve\13_convertsolid_001_closed_sheets.py
+D:\training\caedecoder\scdm_cases\14_holes_threads\14_hole_cbore_001_M6.py
+D:\training\caedecoder\scdm_cases\14_holes_threads\14_hole_tapped_001_M8_cosmetic.py
+D:\training\caedecoder\scdm_cases\15_mesh_facet\15_mesh_stl_import_001.py
+D:\training\caedecoder\scdm_cases\15_mesh_facet\15_mesh_reduce_001_50pct.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_asm_014_two_components.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_helix_023_spring_ends_ground.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_wrap_026_cylinder_wrap_text_pull.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_edit_030_pull_after_pattern.py
+D:\training\caedecoder\scdm_cases\20_combo\20_combo_mesh_032_mesh_plus_solid.py

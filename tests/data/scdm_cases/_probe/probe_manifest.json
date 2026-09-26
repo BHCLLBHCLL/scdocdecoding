@@ -1,0 +1,35 @@
+{
+ "schema": "scdm_cases/manifest v1",
+ "spaceclaim_version": "2019.3.38912",
+ "cases": [
+  {
+   "case_id": "probe_signatures_001",
+   "category": "_probe",
+   "feature": "probe",
+   "status": "ok",
+   "mode": "headless",
+   "batch": "probe",
+   "generated_at": "2026-09-26T08:11:43+08:00",
+   "script": "_probe/probe_signatures_001.py",
+   "phase": "probe",
+   "meta": "_probe/probe_signatures_001.json",
+   "scdoc": "_probe/probe_signatures_001.scdoc",
+   "size": 27648,
+   "sha256": "42964b38e96bfc186a3a514c2cafca27b6d7f85877c57a420753d88535beb5a8",
+   "zip_ok": true,
+   "has_document_xml": true,
+   "counts": {
+    "bodies": 1,
+    "faces": 6,
+    "edges": 12,
+    "vertices": 8,
+    "components": 0,
+    "part_defs": 0
+   },
+   "volume_mm3": 1000.0,
+   "items_ok": [],
+   "items_failed": []
+  }
+ ],
+ "updated_at": "2026-09-26T08:11:50+08:00"
+}

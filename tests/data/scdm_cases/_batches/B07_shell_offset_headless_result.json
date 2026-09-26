@@ -1,0 +1,938 @@
+{
+ "batch": "B07_shell_offset",
+ "cases": [
+  {
+   "actual": {
+    "area_mm2": 7432.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 7432.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 24,
+      "faces": 11,
+      "manifold": true,
+      "name": "Housing",
+      "path": "",
+      "vertices": 16,
+      "volume_mm3": 7152.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 11,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 11
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 7152.0
+   },
+   "case_id": "07_shell_open_001_block_top_t2",
+   "category": "07_shell_offset",
+   "commands": ["Shell.RemoveFaces(sel faces, thickness)", "Shell.ShellBodies(sel bodies, thickness)"],
+   "data": {
+    "bbox_after_mm": [
+     [0.0, 0.0, 0.0],
+     [40.0, 30.0, 20.0]
+    ]
+   },
+   "elapsed_s": 4.54,
+   "expect": {
+    "bodies": 1,
+    "faces": 11,
+    "volume_mm3": 7152.0
+   },
+   "expect_mismatch": {},
+   "feature": "so_shell",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:47:58+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+   "params": {
+    "base": "block 40x30x20",
+    "remove": "+Z",
+    "t_mm": 2
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_shell_open_001_block_top_t2.scdoc",
+   "scdoc_size": "38639",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_shell_open_001_block_top_t2.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:47:54+08:00",
+   "status": "ok",
+   "title": "Shell (remove faces / hollow): 001_block_top_t2"
+  },
+  {
+   "actual": {
+    "area_mm2": 2274.513081,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2274.513081,
+      "bbox_mm": [
+       [-10.0, -10.0, -10.0],
+       [10.0, 10.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 0,
+      "faces": 2,
+      "manifold": true,
+      "name": "Hollow_Sphere",
+      "path": "",
+      "vertices": 0,
+      "volume_mm3": 1135.162145
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 2,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Sphere": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Sketch",
+    "volume_mm3": 1135.162145
+   },
+   "case_id": "07_shell_closed_002_hollow_sphere_t1",
+   "category": "07_shell_offset",
+   "commands": ["Shell.RemoveFaces(sel faces, thickness)", "Shell.ShellBodies(sel bodies, thickness)"],
+   "data": {
+    "shell_body_form": 0,
+    "volume_after_mm3": 1135.162145
+   },
+   "elapsed_s": 1.06,
+   "expect": {
+    "bodies": 1,
+    "faces": 2,
+    "volume_mm3": 1135.162145
+   },
+   "expect_mismatch": {},
+   "feature": "so_shell",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:48:00+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+   "params": {
+    "base": "sphere r10",
+    "t_mm": 1
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_shell_closed_002_hollow_sphere_t1.scdoc",
+   "scdoc_size": "346572",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_shell_closed_002_hollow_sphere_t1.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:47:59+08:00",
+   "status": "ok",
+   "title": "Shell (remove faces / hollow): 002_hollow_sphere_t1"
+  },
+  {
+   "actual": {
+    "area_mm2": 4035.375764,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 4035.375764,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 4,
+      "faces": 5,
+      "manifold": true,
+      "name": "Cup",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 2955.656554
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 5,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 3
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Sketch",
+    "volume_mm3": 2955.656554
+   },
+   "case_id": "07_shell_open_003_cyl_top_t1p5",
+   "category": "07_shell_offset",
+   "commands": ["Shell.RemoveFaces(sel faces, thickness)", "Shell.ShellBodies(sel bodies, thickness)"],
+   "data": {},
+   "elapsed_s": 0.72999999999999998,
+   "expect": {
+    "bodies": 1,
+    "faces": 5,
+    "volume_mm3": 2955.845988
+   },
+   "expect_mismatch": {},
+   "feature": "so_shell",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:48:01+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+   "params": {
+    "base": "cyl r10 h30",
+    "remove": "top",
+    "t_mm": 1.5
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_shell_open_003_cyl_top_t1p5.scdoc",
+   "scdoc_size": "130122",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_shell_open_003_cyl_top_t1p5.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:48:00+08:00",
+   "status": "ok",
+   "title": "Shell (remove faces / hollow): 003_cyl_top_t1p5"
+  },
+  {
+   "actual": {
+    "area_mm2": 5620.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5620.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 23.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Offset_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 27600.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 27600.0
+   },
+   "case_id": "07_offset_001_block_top_plus3",
+   "category": "07_shell_offset",
+   "commands": ["OffsetFaces.Execute(sel, offset, OffsetFaceOptions)", "OffsetRelation.ChangeOffset"],
+   "data": {},
+   "elapsed_s": 0.5,
+   "expect": {
+    "bodies": 1,
+    "faces": 6,
+    "volume_mm3": 27600.0
+   },
+   "expect_mismatch": {},
+   "feature": "so_offset",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:48:02+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+   "params": {
+    "d_mm": 3
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_offset_001_block_top_plus3.scdoc",
+   "scdoc_size": "27612",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_offset_001_block_top_plus3.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:48:01+08:00",
+   "status": "ok",
+   "title": "Offset faces: block_top_plus3"
+  },
+  {
+   "actual": {
+    "area_mm2": 1639.911365,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1639.911365,
+      "bbox_mm": [
+       [-9.0, -9.0, 0.0],
+       [9.0, 9.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Offset_Cyl",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 5089.380099
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 5089.380099
+   },
+   "case_id": "07_offset_002_cyl_face_minus1",
+   "category": "07_shell_offset",
+   "commands": ["OffsetFaces.Execute(sel, offset, OffsetFaceOptions)", "OffsetRelation.ChangeOffset"],
+   "data": {
+    "r9_volume_mm3": 5089.380099,
+    "volume_after_mm3": 5089.380099
+   },
+   "elapsed_s": 0.19,
+   "expect": {
+    "bodies": 1,
+    "faces": 3
+   },
+   "expect_mismatch": {},
+   "feature": "so_offset",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:48:02+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+   "params": {
+    "d_mm": -1
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_offset_002_cyl_face_minus1.scdoc",
+   "scdoc_size": "95123",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_offset_002_cyl_face_minus1.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:48:02+08:00",
+   "status": "ok",
+   "title": "Offset faces: cyl_face_minus1"
+  },
+  {
+   "actual": {
+    "area_mm2": 1840.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1840.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 20.0, 2.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Thickened_Plate",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 1600.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Sketch",
+    "volume_mm3": 1600.0
+   },
+   "case_id": "07_thicken_001_planar_t2",
+   "category": "07_shell_offset",
+   "commands": ["ThickenFaces.Execute(sel, Direction, value, ThickenFaceOptions)"],
+   "data": {},
+   "elapsed_s": 0.56000000000000005,
+   "expect": {
+    "bodies": 1,
+    "faces": 6,
+    "volume_mm3": 1600.0
+   },
+   "expect_mismatch": {},
+   "feature": "so_thicken",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:48:03+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+   "params": {
+    "base": "planar rect 40x20",
+    "t_mm": 2
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_thicken_001_planar_t2.scdoc",
+   "scdoc_size": "73800",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_thicken_001_planar_t2.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:48:02+08:00",
+   "status": "ok",
+   "title": "Thicken surface to solid: planar_t2"
+  },
+  {
+   "actual": {
+    "area_mm2": 4052.964263,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 4052.964263,
+      "bbox_mm": [
+       [-21.0, 0.0, 0.0],
+       [21.0, 21.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "HalfCyl_Thick",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 1932.001814
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4,
+     "Line": 8
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 4
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Sketch",
+    "volume_mm3": 1932.001814
+   },
+   "case_id": "07_thicken_002_cyl_sheet_t1",
+   "category": "07_shell_offset",
+   "commands": ["ThickenFaces.Execute(sel, Direction, value, ThickenFaceOptions)"],
+   "data": {
+    "sheets": 1,
+    "volume_outward_mm3": 1932.079482
+   },
+   "elapsed_s": 0.72999999999999998,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "so_thicken",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:48:04+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+   "params": {
+    "base": "half-cylinder sheet r20",
+    "t_mm": 1
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_thicken_002_cyl_sheet_t1.scdoc",
+   "scdoc_size": "85841",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_thicken_002_cyl_sheet_t1.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:48:03+08:00",
+   "status": "ok",
+   "title": "Thicken surface to solid: cyl_sheet_t1"
+  },
+  {
+   "actual": {
+    "area_mm2": 5608.427199,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5608.427199,
+      "bbox_mm": [
+       [-1.749773, -1.749773, -0.0],
+       [41.749773, 31.749773, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Draft_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 26531.328085
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 26531.328085
+   },
+   "case_id": "07_draft_001_block_4sides_5deg",
+   "category": "07_shell_offset",
+   "commands": ["DraftFaces.Execute(sel, refFaces, DraftSide, angle, ExtrudeType, DraftOptions)"],
+   "data": {
+    "bbox_after_mm": [
+     [-1.749773, -1.749773, -0.0],
+     [41.749773, 31.749773, 20.0]
+    ],
+    "draft_form": 0,
+    "volume_after_mm3": 26531.328085
+   },
+   "elapsed_s": 0.45000000000000001,
+   "expect": {
+    "bodies": 1,
+    "faces": 6
+   },
+   "expect_mismatch": {},
+   "feature": "so_draft",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:48:05+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+   "params": {
+    "angle_deg": 5,
+    "neutral": "-Z"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_draft_001_block_4sides_5deg.scdoc",
+   "scdoc_size": "27453",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_draft_001_block_4sides_5deg.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:48:04+08:00",
+   "status": "ok",
+   "title": "Draft faces: block_4sides_5deg"
+  },
+  {
+   "actual": {
+    "area_mm2": 2021.937076,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2021.937076,
+      "bbox_mm": [
+       [-11.048156, -11.048156, 0.0],
+       [11.048156, 11.048156, 20.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Draft_Cyl",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 6964.623355
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cone": 1,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 6964.623355
+   },
+   "case_id": "07_draft_002_cyl_side_3deg",
+   "category": "07_shell_offset",
+   "commands": ["DraftFaces.Execute(sel, refFaces, DraftSide, angle, ExtrudeType, DraftOptions)"],
+   "data": {
+    "draft_form": 0,
+    "surface_types_after": ["Cone", "Plane", "Plane"]
+   },
+   "elapsed_s": 0.22,
+   "expect": {
+    "bodies": 1,
+    "faces": 3
+   },
+   "expect_mismatch": {},
+   "feature": "so_draft",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:48:05+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+   "params": {
+    "angle_deg": 3,
+    "base": "cyl"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_draft_002_cyl_side_3deg.scdoc",
+   "scdoc_size": "106610",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_draft_002_cyl_side_3deg.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:48:05+08:00",
+   "status": "ok",
+   "title": "Draft faces: cyl_side_3deg"
+  },
+  {
+   "actual": {
+    "area_mm2": 8200.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Replace_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     },
+     {
+      "area_mm2": 3000.0,
+      "bbox_mm": [
+       [-10.0, -10.0, 25.0],
+       [50.0, 40.0, 25.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Replace_Target",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 16
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 16,
+    "faces": 7,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 7
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 12,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "07_replaceface_001_block_top_to_plane",
+   "category": "07_shell_offset",
+   "commands": ["ReplaceFacesWithFace.Execute", "DetachFaces.Execute"],
+   "data": {
+    "block_bbox_after_mm": [
+     [0.0, 0.0, 0.0],
+     [40.0, 30.0, 20.0]
+    ],
+    "replace_form": 0
+   },
+   "elapsed_s": 1.52,
+   "expect": {
+    "volume_mm3": 30000.0
+   },
+   "expect_mismatch": {
+    "volume_mm3": {
+     "actual": 24000.0,
+     "expected": 30000.0
+    }
+   },
+   "feature": "so_replace_detach",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:48:07+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_replaceface_001_block_top_to_plane.scdoc",
+   "scdoc_size": "31532",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_replaceface_001_block_top_to_plane.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:48:06+08:00",
+   "status": "mismatch",
+   "title": "Replace faces / detach faces: block_top_to_plane"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 4000.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": false,
+      "edges": 12,
+      "faces": 5,
+      "manifold": true,
+      "name": "Detached_Top_Face",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 1200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 20.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Detach_Block",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 16
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 16,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 12,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "07_detach_001_block_top",
+   "category": "07_shell_offset",
+   "commands": ["ReplaceFacesWithFace.Execute", "DetachFaces.Execute"],
+   "data": {},
+   "elapsed_s": 0.26000000000000001,
+   "expect": {
+    "bodies": 2
+   },
+   "expect_mismatch": {},
+   "feature": "so_replace_detach",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:48:08+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_detach_001_block_top.scdoc",
+   "scdoc_size": "30474",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_detach_001_block_top.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:48:07+08:00",
+   "status": "ok",
+   "title": "Replace faces / detach faces: block_top"
+  }
+ ],
+ "elapsed_s": 14.63,
+ "finished_at": "2026-09-26T07:48:08+08:00",
+ "framework": "1.2.1",
+ "mode": "headless",
+ "spaceclaim_version": "2019.3.38912",
+ "stage": "done",
+ "started_at": "2026-09-26T07:47:54+08:00",
+ "summary": {
+  "mismatch": 1,
+  "ok": 10
+ }
+}

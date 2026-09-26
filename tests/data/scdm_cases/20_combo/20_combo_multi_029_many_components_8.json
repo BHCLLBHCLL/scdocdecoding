@@ -1,0 +1,225 @@
+{
+ "actual": {
+  "area_mm2": 17280.0,
+  "beams": 0,
+  "bodies": 8,
+  "body_list": [
+   {
+    "area_mm2": 1600.0,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [20.0, 20.0, 10.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Comp_1_Body",
+    "path": "Component_1",
+    "vertices": 8,
+    "volume_mm3": 4000.0
+   },
+   {
+    "area_mm2": 1760.0,
+    "bbox_mm": [
+     [30.0, 0.0, 0.0],
+     [50.0, 20.0, 12.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Comp_2_Body",
+    "path": "Component_2",
+    "vertices": 8,
+    "volume_mm3": 4800.0
+   },
+   {
+    "area_mm2": 1920.0,
+    "bbox_mm": [
+     [60.0, 0.0, 0.0],
+     [80.0, 20.0, 14.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Comp_3_Body",
+    "path": "Component_3",
+    "vertices": 8,
+    "volume_mm3": 5600.0
+   },
+   {
+    "area_mm2": 2080.0,
+    "bbox_mm": [
+     [90.0, 0.0, 0.0],
+     [110.0, 20.0, 16.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Comp_4_Body",
+    "path": "Component_4",
+    "vertices": 8,
+    "volume_mm3": 6400.0
+   },
+   {
+    "area_mm2": 2240.0,
+    "bbox_mm": [
+     [120.0, 0.0, 0.0],
+     [140.0, 20.0, 18.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Comp_5_Body",
+    "path": "Component_5",
+    "vertices": 8,
+    "volume_mm3": 7200.0
+   },
+   {
+    "area_mm2": 2400.0,
+    "bbox_mm": [
+     [150.0, 0.0, 0.0],
+     [170.0, 20.0, 20.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Comp_6_Body",
+    "path": "Component_6",
+    "vertices": 8,
+    "volume_mm3": 8000.0
+   },
+   {
+    "area_mm2": 2560.0,
+    "bbox_mm": [
+     [180.0, 0.0, 0.0],
+     [200.0, 20.0, 22.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Comp_7_Body",
+    "path": "Component_7",
+    "vertices": 8,
+    "volume_mm3": 8800.0
+   },
+   {
+    "area_mm2": 2720.0,
+    "bbox_mm": [
+     [210.0, 0.0, 0.0],
+     [230.0, 20.0, 24.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Comp_8_Body",
+    "path": "Component_8",
+    "vertices": 8,
+    "volume_mm3": 9600.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [
+   {
+    "name": "Component_1",
+    "path": ""
+   },
+   {
+    "name": "Component_2",
+    "path": ""
+   },
+   {
+    "name": "Component_3",
+    "path": ""
+   },
+   {
+    "name": "Component_4",
+    "path": ""
+   },
+   {
+    "name": "Component_5",
+    "path": ""
+   },
+   {
+    "name": "Component_6",
+    "path": ""
+   },
+   {
+    "name": "Component_7",
+    "path": ""
+   },
+   {
+    "name": "Component_8",
+    "path": ""
+   }
+  ],
+  "components": 8,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Line": 96
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 96,
+  "faces": 48,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 8,
+  "root_curves": 0,
+  "surface_types": {
+   "Plane": 48
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 64,
+  "view_mode": "Solid",
+  "volume_mm3": 54400.0
+ },
+ "case_id": "20_combo_multi_029_many_components_8",
+ "category": "20_combo",
+ "commands": ["asm_component"],
+ "data": {
+  "auto_renamed": [
+   ["", "Component_1"],
+   ["", "Component_2"],
+   ["", "Component_3"],
+   ["", "Component_4"],
+   ["", "Component_5"],
+   ["", "Component_6"],
+   ["", "Component_7"],
+   ["", "Component_8"]
+  ],
+  "intent_checks": []
+ },
+ "elapsed_s": 0.27000000000000002,
+ "expect": {
+  "bodies": 8,
+  "components": 8
+ },
+ "expect_mismatch": {},
+ "feature": "combo",
+ "framework": "1.3",
+ "generated_at": "2026-09-26T08:39:17+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\20_combo",
+ "params": {},
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_multi_029_many_components_8.scdoc",
+ "scdoc_size": "104713",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_multi_029_many_components_8.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:39:16+08:00",
+ "status": "ok",
+ "title": "8 components each with one body (IMPROVEMENT_PRIORITIES P0-1 id collision scenario)"
+}

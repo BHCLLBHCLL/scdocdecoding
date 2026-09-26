@@ -1,0 +1,86 @@
+{
+ "actual": {
+  "area_mm2": 235.619449,
+  "beams": 0,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 235.619449,
+    "bbox_mm": [
+     [-11.18034, -11.18034, 0.0],
+     [11.18034, 11.18034, 0.0]
+    ],
+    "closed": false,
+    "edges": 1,
+    "faces": 1,
+    "manifold": true,
+    "name": "Ellipse_Rot45",
+    "path": "",
+    "vertices": 1,
+    "volume_mm3": 0.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Ellipse": 1
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 1,
+  "faces": 1,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Plane": 1
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 1,
+  "view_mode": "Solid",
+  "volume_mm3": 0.0
+ },
+ "case_id": "02_sketch_ellipse_002_rotated_45",
+ "category": "02_sketch",
+ "commands": ["SketchEllipse.Create"],
+ "data": {
+  "sketch_result": {
+   "curve_types": [],
+   "new_bodies": 1,
+   "root_curves": 0
+  }
+ },
+ "elapsed_s": 0.12,
+ "expect": {
+  "area_mm2": 235.619449,
+  "bodies": 1,
+  "faces": 1
+ },
+ "expect_mismatch": {},
+ "feature": "sk_ellipse",
+ "framework": "1.2.2",
+ "generated_at": "2026-09-26T07:55:18+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+ "params": {
+  "a_mm": 15,
+  "b_mm": 5,
+  "major_dir_deg": 45
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_ellipse_002_rotated_45.scdoc",
+ "scdoc_size": "22784",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_ellipse_002_rotated_45.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T07:55:17+08:00",
+ "status": "ok",
+ "title": "Sketch ellipse: 002_rotated_45"
+}

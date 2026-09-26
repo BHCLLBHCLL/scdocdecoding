@@ -1,0 +1,3161 @@
+{
+ "schema": "scdm_cases/feature_inventory v1",
+ "generated_at": "2026-09-26T01:40:00+08:00",
+ "spaceclaim": {
+  "product": "ANSYS SpaceClaim 2019 R3",
+  "version": "2019.3.38912",
+  "scripting_api": "SpaceClaim.Api.V19.Scripting (RunScript host namespace)"
+ },
+ "sources": [
+  "SpaceClaim.Api.V19.dll reflection (850 types; *Condition.Create, Hole.Create, DocumentMaterial.Create, Note.Create, DrawingSheet.Create, CoordinateSystem.Create present; SheetMetal* read-only)",
+  "SpaceClaim.Api.V19.Scripting.dll reflection (852 exported types, 171 in Commands namespace, 154 command classes with static entry points) -> _inventory/raw/v19_scripting_reflection.txt",
+  "Scripting/LoadSCDMAPITypesV19.py",
+  "Snippets/V19 (21 snippets)",
+  "repo: scdm_api_types.md, function_gap_analysis.md, docs/NYI_INVENTORY.md, docs/IMPROVEMENT_PRIORITIES.md, scdoc_parser/*"
+ ],
+ "categories": {
+  "00_smoke": "Smoke / pipeline checks",
+  "01_primitives": "Primitive solids (block, cylinder, sphere, tube, cone/torus via revolve)",
+  "02_sketch": "Sketch curves, sketch constraints & dimensions (DesignCurve / SketchCurveDef)",
+  "03_pull": "Pull-family solid creation: extrude, cut, revolve, sweep, loft, helix",
+  "04_edge": "Edge treatments: constant round, full round, chamfer",
+  "05_boolean": "Combine/split: merge, subtract, intersect, split body/face",
+  "06_move_pattern": "Move/rotate/scale/mirror/pattern",
+  "07_shell_offset": "Shell, offset, thicken, draft, replace/detach faces",
+  "08_sheetmetal": "Sheet metal (no V19 scripting command -> GUI/API only)",
+  "09_beam": "Beams & beam profiles",
+  "10_assembly": "Components, instances, mirror components, assembly conditions",
+  "11_doc_attrs": "Document attributes: names, layers, colors, named selections, datums, views, units",
+  "12_repair_prepare": "NEW: Repair (Fix*) and Prepare (midsurface, share topology, volume extract, enclosure...)",
+  "13_surface_curve": "NEW: Surface/sheet bodies, fill/patch, project/wrap, split face, 3D curves",
+  "14_holes_threads": "NEW: Standard holes (counterbore/countersink/tapped)",
+  "15_mesh_facet": "NEW: Facet/mesh bodies (DesignMesh)",
+  "20_combo": "Combination cases (see combo_plan.json)"
+ },
+ "status_legend": {
+  "supported": "decoder already parses the resulting geometry/doc entries (evidence given)",
+  "partial": "geometry partly decoded or doc entries only partly parsed",
+  "none": "no decoding of the resulting doc entries/geometry kind"
+ },
+ "priority_legend": {
+  "P0": "core geometry/doc constructs every real file contains or explicit repo TODO gaps",
+  "P1": "common features with new doc entries or geometry kinds",
+  "P2": "niche / low decoder value"
+ },
+ "feasibility_legend": {
+  "yes": "runs from points/values only",
+  "needs selection setup": "script must locate faces/edges/curves by geometry before the command",
+  "GUI-only": "no scripting entry point in V19"
+ },
+ "features": [
+  {
+   "id": "smoke_box",
+   "category": "00_smoke",
+   "name_en": "Block (smoke)",
+   "name_zh": "方块（冒烟）",
+   "v19_api": [
+    "BlockBody.Create"
+   ],
+   "key_options": [
+    "ExtrudeType.ForceIndependent"
+   ],
+   "variants": [
+    {
+     "case_key": "00_smoke_box_001_20x20x20",
+     "params": {
+      "p0_mm": [
+       0,
+       0,
+       0
+      ],
+      "p1_mm": [
+       20,
+       20,
+       20
+      ]
+     },
+     "expect": {
+      "bodies": 1,
+      "faces": 6,
+      "edges": 12
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "DONE 2026-09-26: 00_smoke run headless OK",
+   "priority": "P0",
+   "headless_feasibility": "yes",
+   "notes": "already generated"
+  },
+  {
+   "id": "prim_block",
+   "category": "01_primitives",
+   "name_en": "Block",
+   "name_zh": "方块",
+   "v19_api": [
+    "BlockBody.Create(Point,Point,ExtrudeType)"
+   ],
+   "key_options": [
+    "ExtrudeType: ForceIndependent/ForceAdd/ForceCut"
+   ],
+   "variants": [
+    {
+     "case_key": "01_primitives_block_001_10x20x30",
+     "params": {
+      "p0_mm": [
+       0,
+       0,
+       0
+      ],
+      "p1_mm": [
+       10,
+       20,
+       30
+      ]
+     },
+     "expect": {
+      "faces": 6,
+      "edges": 12,
+      "volume_mm3": 6000
+     }
+    },
+    {
+     "case_key": "01_primitives_block_002_offset_neg",
+     "params": {
+      "p0_mm": [
+       -15,
+       -5,
+       -2.5
+      ],
+      "p1_mm": [
+       15,
+       5,
+       2.5
+      ]
+     },
+     "expect": {
+      "volume_mm3": 1500
+     }
+    },
+    {
+     "case_key": "01_primitives_block_003_thin_100x100x0p5",
+     "params": {
+      "p0_mm": [
+       0,
+       0,
+       0
+      ],
+      "p1_mm": [
+       100,
+       100,
+       0.5
+      ]
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "scdoc_parser decodes plane/straight; official box opens (00_smoke parser 29/33, only 10mm-hardcoded checks fail)",
+   "priority": "P0",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "prim_cylinder",
+   "category": "01_primitives",
+   "name_en": "Cylinder",
+   "name_zh": "圆柱",
+   "v19_api": [
+    "CylinderBody.Create(center,start,end,ExtrudeType)"
+   ],
+   "key_options": [
+    "axis by 3 points",
+    "ExtrudeType"
+   ],
+   "variants": [
+    {
+     "case_key": "01_primitives_cylinder_001_r10_h20_z",
+     "params": {
+      "axis": "Z",
+      "r_mm": 10,
+      "h_mm": 20
+     },
+     "expect": {
+      "faces": 3,
+      "edges": 3
+     }
+    },
+    {
+     "case_key": "01_primitives_cylinder_002_r5_h50_x",
+     "params": {
+      "axis": "X",
+      "r_mm": 5,
+      "h_mm": 50
+     }
+    },
+    {
+     "case_key": "01_primitives_cylinder_003_r2_h1_oblique",
+     "params": {
+      "axis": [
+       1,
+       1,
+       1
+      ],
+      "r_mm": 2,
+      "h_mm": 1
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "topology.py decodes cone/sphere/torus/ellipse; golden cyl.scdoc; gap §2.1 (22 SAB classes); golden cyl.scdoc; official-open cyl bodies=1",
+   "priority": "P0",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "prim_sphere",
+   "category": "01_primitives",
+   "name_en": "Sphere",
+   "name_zh": "球",
+   "v19_api": [
+    "SphereBody.Create(center,endPoint,ExtrudeType)"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "01_primitives_sphere_001_r10",
+     "params": {
+      "c_mm": [
+       0,
+       0,
+       0
+      ],
+      "r_mm": 10
+     },
+     "expect": {
+      "faces": 1
+     }
+    },
+    {
+     "case_key": "01_primitives_sphere_002_r3_offcenter",
+     "params": {
+      "c_mm": [
+       5,
+       -7,
+       2
+      ],
+      "r_mm": 3
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "topology.py decodes cone/sphere/torus/ellipse; golden cyl.scdoc; gap §2.1 (22 SAB classes); interop_matrix sphere row",
+   "priority": "P0",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "prim_tube",
+   "category": "01_primitives",
+   "name_en": "Tube around curve",
+   "name_zh": "管道",
+   "v19_api": [
+    "TubeBody.Create(ISelection curve, radius, ExtrudeType)"
+   ],
+   "key_options": [
+    "needs a DesignCurve (line/arc/spline) selection"
+   ],
+   "variants": [
+    {
+     "case_key": "01_primitives_tube_001_line_r2_l50",
+     "params": {
+      "path": "line 50mm",
+      "r_mm": 2
+     }
+    },
+    {
+     "case_key": "01_primitives_tube_002_arc_r3",
+     "params": {
+      "path": "arc R30 90deg",
+      "r_mm": 3
+     }
+    },
+    {
+     "case_key": "01_primitives_tube_003_spline_r1",
+     "params": {
+      "path": "3D spline 4pts",
+      "r_mm": 1
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "partial",
+   "repo_evidence": "topology.py decodes cone/sphere/torus/ellipse; golden cyl.scdoc; gap §2.1 (22 SAB classes); spline path -> sweep surface: topology.py decodes nubs/nurbs knots+poles; procedural classes (skinsur/sweepsur/offsur/intcurve) keep sense flag only; golden loft/spline/splineedge.scdoc",
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup (create DesignCurve first)",
+   "notes": ""
+  },
+  {
+   "id": "prim_cone_revolve",
+   "category": "01_primitives",
+   "name_en": "Cone / frustum (revolve of triangle/trapezoid)",
+   "name_zh": "圆锥/圆台",
+   "v19_api": [
+    "SketchLine.CreateChain",
+    "RevolveFaces.Execute(face, Line axis, angle, RevolveFaceOptions)"
+   ],
+   "key_options": [
+    "angle 2pi"
+   ],
+   "variants": [
+    {
+     "case_key": "01_primitives_cone_001_r10_h20",
+     "params": {
+      "r_base_mm": 10,
+      "h_mm": 20
+     }
+    },
+    {
+     "case_key": "01_primitives_cone_002_frustum_r10_r5_h15",
+     "params": {
+      "r1_mm": 10,
+      "r2_mm": 5,
+      "h_mm": 15
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "topology.py decodes cone/sphere/torus/ellipse; golden cyl.scdoc; gap §2.1 (22 SAB classes); P0-2 frustum written+official-open",
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup (sketch->solidify->face)",
+   "notes": ""
+  },
+  {
+   "id": "prim_torus_revolve",
+   "category": "01_primitives",
+   "name_en": "Torus (revolve of circle)",
+   "name_zh": "圆环",
+   "v19_api": [
+    "SketchCircle.Create",
+    "RevolveFaces.Execute"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "01_primitives_torus_001_R20_r5",
+     "params": {
+      "major_r_mm": 20,
+      "minor_r_mm": 5
+     }
+    },
+    {
+     "case_key": "01_primitives_torus_002_partial_180deg",
+     "params": {
+      "major_r_mm": 20,
+      "minor_r_mm": 5,
+      "angle_deg": 180
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "topology.py decodes cone/sphere/torus/ellipse; golden cyl.scdoc; gap §2.1 (22 SAB classes); interop_matrix torus row",
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "prim_planar_body",
+   "category": "01_primitives",
+   "name_en": "Planar (sheet) body from curves",
+   "name_zh": "平面体",
+   "v19_api": [
+    "PlanarBody.Create(Plane, curves, parent, name)"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "01_primitives_planar_001_rect_40x20",
+     "params": {
+      "plane": "XY",
+      "rect_mm": [
+       40,
+       20
+      ]
+     },
+     "expect": {
+      "faces": 1,
+      "sheet": true
+     }
+    },
+    {
+     "case_key": "01_primitives_planar_002_circle_r15",
+     "params": {
+      "plane": "XY",
+      "r_mm": 15
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "partial",
+   "repo_evidence": "single-sided sheet bodies: face sense/sheet shell decoding not covered by golden samples",
+   "priority": "P1",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "sk_line",
+   "category": "02_sketch",
+   "name_en": "Sketch line / polyline",
+   "name_zh": "直线",
+   "v19_api": [
+    "SketchLine.Create",
+    "SketchLine.CreateChain"
+   ],
+   "key_options": [
+    "isConstruction",
+    "centerline"
+   ],
+   "variants": [
+    {
+     "case_key": "02_sketch_line_001_single_50",
+     "params": {
+      "p0": [
+       0,
+       0
+      ],
+      "p1": [
+       50,
+       0
+      ]
+     }
+    },
+    {
+     "case_key": "02_sketch_line_002_chain_closed_tri",
+     "params": {
+      "pts": [
+       [
+        0,
+        0
+       ],
+       [
+        40,
+        0
+       ],
+       [
+        20,
+        30
+       ]
+      ],
+      "close": true
+     }
+    },
+    {
+     "case_key": "02_sketch_line_003_construction",
+     "params": {
+      "p0": [
+       0,
+       0
+      ],
+      "p1": [
+       0,
+       40
+      ],
+      "isConstruction": true
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (SketchCurveDef in PartSketchCurveContainerDef (document.xml) + wire geometry)",
+   "repo_support": "partial",
+   "repo_evidence": "document.py parses SketchCurveDef origin/dir/start/end only (lines); construction flag not read",
+   "priority": "P0",
+   "headless_feasibility": "yes (ViewHelper.SetSketchPlane + create; leave in sketch mode or SetViewMode(Solid) to solidify)",
+   "notes": ""
+  },
+  {
+   "id": "sk_rect",
+   "category": "02_sketch",
+   "name_en": "Sketch rectangle",
+   "name_zh": "矩形",
+   "v19_api": [
+    "SketchRectangle.Create(p1,p2,p3)"
+   ],
+   "key_options": [
+    "3-point / rotated"
+   ],
+   "variants": [
+    {
+     "case_key": "02_sketch_rect_001_40x20",
+     "params": {
+      "p": [
+       [
+        0,
+        0
+       ],
+       [
+        40,
+        0
+       ],
+       [
+        40,
+        20
+       ]
+      ]
+     }
+    },
+    {
+     "case_key": "02_sketch_rect_002_rotated_30deg",
+     "params": {
+      "p": "3-point rotated 30deg"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (4 line SketchCurveDef)",
+   "repo_support": "partial",
+   "repo_evidence": "lines parsed; rectangle grouping not",
+   "priority": "P1",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "sk_circle",
+   "category": "02_sketch",
+   "name_en": "Sketch circle",
+   "name_zh": "圆",
+   "v19_api": [
+    "SketchCircle.Create(Point2D,radius)"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "02_sketch_circle_001_r10",
+     "params": {
+      "c": [
+       0,
+       0
+      ],
+      "r_mm": 10
+     }
+    },
+    {
+     "case_key": "02_sketch_circle_002_two_concentric_r5_r10",
+     "params": {
+      "r_mm": [
+       5,
+       10
+      ]
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (circle SketchCurveDef)",
+   "repo_support": "partial",
+   "repo_evidence": "document.py SketchCurve kind defaults to 'line'; circle params (radius/frame) not decoded",
+   "priority": "P0",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "sk_arc",
+   "category": "02_sketch",
+   "name_en": "Sketch arc (center/3-point/tangent/sweep)",
+   "name_zh": "圆弧",
+   "v19_api": [
+    "SketchArc.Create",
+    "SketchArc.Create3PointArc",
+    "SketchArc.CreateSweepArc",
+    "SketchArc.CreateTangentArc"
+   ],
+   "key_options": [
+    "sense"
+   ],
+   "variants": [
+    {
+     "case_key": "02_sketch_arc_001_center_r20_90deg",
+     "params": {
+      "c": [
+       0,
+       0
+      ],
+      "start": [
+       20,
+       0
+      ],
+      "end": [
+       0,
+       20
+      ]
+     }
+    },
+    {
+     "case_key": "02_sketch_arc_002_3point",
+     "params": {
+      "pts": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        5
+       ],
+       [
+        20,
+        0
+       ]
+      ]
+     }
+    },
+    {
+     "case_key": "02_sketch_arc_003_tangent_after_line",
+     "params": {
+      "line": [
+       [
+        0,
+        0
+       ],
+       [
+        20,
+        0
+       ]
+      ],
+      "end": [
+       30,
+       10
+      ]
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (arc SketchCurveDef with interval)",
+   "repo_support": "partial",
+   "repo_evidence": "interval read generically; arc geometry not typed",
+   "priority": "P0",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "sk_ellipse",
+   "category": "02_sketch",
+   "name_en": "Sketch ellipse",
+   "name_zh": "椭圆",
+   "v19_api": [
+    "SketchEllipse.Create"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "02_sketch_ellipse_001_a20_b10",
+     "params": {
+      "a_mm": 20,
+      "b_mm": 10
+     }
+    },
+    {
+     "case_key": "02_sketch_ellipse_002_rotated_45",
+     "params": {
+      "a_mm": 15,
+      "b_mm": 5,
+      "major_dir_deg": 45
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry)",
+   "repo_support": "partial",
+   "repo_evidence": "ellipse SAB curve decoded; sketch ellipse doc entry not",
+   "priority": "P1",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "sk_polygon",
+   "category": "02_sketch",
+   "name_en": "Sketch polygon",
+   "name_zh": "多边形",
+   "v19_api": [
+    "SketchPolygon.Create(Point2D,dirX,dirY,internalRadius,n)"
+   ],
+   "key_options": [
+    "n sides"
+   ],
+   "variants": [
+    {
+     "case_key": "02_sketch_polygon_001_hex_r10",
+     "params": {
+      "n": 6,
+      "r_mm": 10
+     }
+    },
+    {
+     "case_key": "02_sketch_polygon_002_pent_r8",
+     "params": {
+      "n": 5,
+      "r_mm": 8
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry)",
+   "repo_support": "partial",
+   "repo_evidence": "lines parsed individually",
+   "priority": "P2",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "sk_spline",
+   "category": "02_sketch",
+   "name_en": "Sketch spline (NURBS through points)",
+   "name_zh": "样条",
+   "v19_api": [
+    "SketchNurbs.CreateFrom2DPoints(periodic, points)"
+   ],
+   "key_options": [
+    "periodic",
+    "end tangents"
+   ],
+   "variants": [
+    {
+     "case_key": "02_sketch_spline_001_open_5pts",
+     "params": {
+      "pts": [
+       [
+        0,
+        0
+       ],
+       [
+        10,
+        8
+       ],
+       [
+        20,
+        -4
+       ],
+       [
+        30,
+        6
+       ],
+       [
+        40,
+        0
+       ]
+      ],
+      "periodic": false
+     }
+    },
+    {
+     "case_key": "02_sketch_spline_002_periodic_6pts",
+     "params": {
+      "periodic": true,
+      "n": 6
+     }
+    },
+    {
+     "case_key": "02_sketch_spline_003_end_tangents",
+     "params": {
+      "n": 4,
+      "startVector": [
+       1,
+       1
+      ],
+      "endVector": [
+       1,
+       -1
+      ]
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (NurbsCurve serialized in document.xml)",
+   "repo_support": "none",
+   "repo_evidence": "document.py has no NURBS sketch curve decoding",
+   "priority": "P0",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "sk_point_offset",
+   "category": "02_sketch",
+   "name_en": "Sketch point / offset curve / corner / 2D round / trim / split",
+   "name_zh": "点/偏移/倒角/修剪",
+   "v19_api": [
+    "SketchPoint.Create",
+    "SketchOffsetCurve.Create",
+    "SketchCorner.Create",
+    "Sketch2DRound.Create",
+    "TrimSketchCurve.Execute",
+    "SplitSketchCurve.Execute"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "02_sketch_point_001",
+     "params": {
+      "p": [
+       5,
+       5
+      ]
+     }
+    },
+    {
+     "case_key": "02_sketch_offset_001_rect_offset3",
+     "params": {
+      "rect": [
+       40,
+       20
+      ],
+      "offset_mm": 3
+     }
+    },
+    {
+     "case_key": "02_sketch_round2d_001_rect_corner_r4",
+     "params": {
+      "rect": [
+       40,
+       20
+      ],
+      "r_mm": 4
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry)",
+   "repo_support": "partial",
+   "repo_evidence": "points/offsets not decoded",
+   "priority": "P2",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "sk_constraints",
+   "category": "02_sketch",
+   "name_en": "Sketch constraints (horizontal, vertical, coincident, tangent, parallel, perpendicular, concentric, equal, midpoint, symmetric, fixed)",
+   "name_zh": "草图约束",
+   "v19_api": [
+    "Constraint.Create*",
+    "SketchHelper.StartConstraintSketching",
+    "ConstraintHelper.ModelWellDefined"
+   ],
+   "key_options": [
+    "constraint-based sketch mode"
+   ],
+   "variants": [
+    {
+     "case_key": "02_sketch_constraint_001_hv_rect",
+     "params": {
+      "constraints": [
+       "Horizontal",
+       "Vertical"
+      ]
+     }
+    },
+    {
+     "case_key": "02_sketch_constraint_002_tangent_line_arc",
+     "params": {
+      "constraints": [
+       "Tangent"
+      ]
+     }
+    },
+    {
+     "case_key": "02_sketch_constraint_003_concentric_equal",
+     "params": {
+      "constraints": [
+       "Concentric",
+       "EqualRadius"
+      ]
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (constraint objects in sketch)",
+   "repo_support": "none",
+   "repo_evidence": "repo has its own sketch_solver.py (internal model) but no scdoc decoding of official constraint XML",
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup (SelectionPoint on curves); may require constraint sketching mode - verify headless",
+   "notes": ""
+  },
+  {
+   "id": "sk_dimensions",
+   "category": "02_sketch",
+   "name_en": "Sketch dimensions (length/radial/diameter/angle/distance)",
+   "name_zh": "尺寸",
+   "v19_api": [
+    "Dimension.CreateLength",
+    "Dimension.CreateRadial",
+    "Dimension.CreateDiameter",
+    "Dimension.CreateAngle",
+    "Dimension.CreateDistance",
+    "Dimension.Modify"
+   ],
+   "key_options": [
+    "DimensionAlignment"
+   ],
+   "variants": [
+    {
+     "case_key": "02_sketch_dim_001_length_40",
+     "params": {
+      "value_mm": 40
+     }
+    },
+    {
+     "case_key": "02_sketch_dim_002_radius_10",
+     "params": {
+      "value_mm": 10
+     }
+    },
+    {
+     "case_key": "02_sketch_dim_003_angle_30",
+     "params": {
+      "value_deg": 30
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry)",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element",
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup; verify headless",
+   "notes": ""
+  },
+  {
+   "id": "sk_datum_curve",
+   "category": "02_sketch",
+   "name_en": "3D design curve (line/arc/spline outside sketch)",
+   "name_zh": "3D曲线",
+   "v19_api": [
+    "DesignCurve.Create (API)",
+    "SketchCurve.Create",
+    "ProjectToSketch.Create"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "02_sketch_designcurve_001_3d_line",
+     "params": {
+      "p0": [
+       0,
+       0,
+       0
+      ],
+      "p1": [
+       10,
+       20,
+       30
+      ]
+     }
+    },
+    {
+     "case_key": "02_sketch_designcurve_002_helix_spline",
+     "params": {
+      "type": "NurbsCurve.CreateThroughPoints helix 3 turns"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries",
+   "repo_support": "partial",
+   "repo_evidence": "DesignCurve stored as curve geometry + DesignCurveDef; not decoded by parser",
+   "priority": "P1",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "pull_extrude_face",
+   "category": "03_pull",
+   "name_en": "Extrude (pull) sketch region to solid",
+   "name_zh": "拉动-拉伸",
+   "v19_api": [
+    "ExtrudeFaces.Execute(sel, Direction, distance, ExtrudeFaceOptions)"
+   ],
+   "key_options": [
+    "ExtrudeType Add/Cut/ForceIndependent",
+    "PullSymmetric",
+    "draft"
+   ],
+   "variants": [
+    {
+     "case_key": "03_pull_extrude_001_rect_40x20_h10",
+     "params": {
+      "profile": "rect 40x20",
+      "h_mm": 10
+     }
+    },
+    {
+     "case_key": "03_pull_extrude_002_circle_r10_h25",
+     "params": {
+      "profile": "circle r10",
+      "h_mm": 25
+     }
+    },
+    {
+     "case_key": "03_pull_extrude_003_spline_profile_h5",
+     "params": {
+      "profile": "closed spline",
+      "h_mm": 5
+     }
+    },
+    {
+     "case_key": "03_pull_extrude_004_symmetric_h20",
+     "params": {
+      "profile": "rect",
+      "h_mm": 20,
+      "PullSymmetric": true
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "scdoc_parser decodes plane/straight; official box opens (00_smoke parser 29/33, only 10mm-hardcoded checks fail); spline profile -> spline side faces: topology.py decodes nubs/nurbs knots+poles; procedural classes (skinsur/sweepsur/offsur/intcurve) keep sense flag only; golden loft/spline/splineedge.scdoc",
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup (face from solidified sketch)",
+   "notes": ""
+  },
+  {
+   "id": "pull_extrude_cut",
+   "category": "03_pull",
+   "name_en": "Extrude cut (pocket / through hole)",
+   "name_zh": "拉动-切除",
+   "v19_api": [
+    "ExtrudeFaces.Execute ExtrudeType.Cut",
+    "ExtrudeFaces.UpTo"
+   ],
+   "key_options": [
+    "Cut",
+    "UpTo face"
+   ],
+   "variants": [
+    {
+     "case_key": "03_pull_cut_001_pocket_rect_depth5",
+     "params": {
+      "base": "block 40x40x20",
+      "pocket": "rect 10x10 depth 5"
+     }
+    },
+    {
+     "case_key": "03_pull_cut_002_through_hole_r4",
+     "params": {
+      "base": "block 40x40x20",
+      "hole_r_mm": 4,
+      "through": true
+     }
+    },
+    {
+     "case_key": "03_pull_cut_003_upto_face",
+     "params": {
+      "mode": "UpTo"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "cylinder inner faces decoded; P0-2 drilled-box written+official",
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "pull_face_offset",
+   "category": "03_pull",
+   "name_en": "Pull existing face (grow/shrink body)",
+   "name_zh": "拉动面",
+   "v19_api": [
+    "ExtrudeFaces.Execute on body face"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "03_pull_face_001_block_top_plus10",
+     "params": {
+      "face": "+Z",
+      "d_mm": 10
+     }
+    },
+    {
+     "case_key": "03_pull_face_002_block_side_minus3",
+     "params": {
+      "face": "+X",
+      "d_mm": -3
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "scdoc_parser decodes plane/straight; official box opens (00_smoke parser 29/33, only 10mm-hardcoded checks fail)",
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup (pick face by normal)",
+   "notes": ""
+  },
+  {
+   "id": "pull_extrude_edges",
+   "category": "03_pull",
+   "name_en": "Extrude edges/curves to surface",
+   "name_zh": "拉伸边",
+   "v19_api": [
+    "ExtrudeEdges.Execute"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "03_pull_extrudeedge_001_line_to_sheet",
+     "params": {
+      "curve": "line 40",
+      "d_mm": 20
+     }
+    },
+    {
+     "case_key": "03_pull_extrudeedge_002_arc_to_sheet",
+     "params": {
+      "curve": "arc R20 180deg",
+      "d_mm": 10
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "partial",
+   "repo_evidence": "sheet bodies (single face, open shell) not in golden set",
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "pull_revolve",
+   "category": "03_pull",
+   "name_en": "Revolve",
+   "name_zh": "旋转",
+   "v19_api": [
+    "RevolveFaces.Execute(sel, Line axis, angle, RevolveFaceOptions)",
+    "RevolveEdges.Execute"
+   ],
+   "key_options": [
+    "angle",
+    "ExtrudeType"
+   ],
+   "variants": [
+    {
+     "case_key": "03_pull_revolve_001_rect_360",
+     "params": {
+      "profile": "rect 10x20 offset 5 from axis",
+      "angle_deg": 360
+     }
+    },
+    {
+     "case_key": "03_pull_revolve_002_rect_90",
+     "params": {
+      "angle_deg": 90
+     }
+    },
+    {
+     "case_key": "03_pull_revolve_003_spline_profile_360",
+     "params": {
+      "profile": "spline+line closed",
+      "angle_deg": 360
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "topology.py decodes cone/sphere/torus/ellipse; golden cyl.scdoc; gap §2.1 (22 SAB classes); spline revolve -> rotsur (procedural) topology.py decodes nubs/nurbs knots+poles; procedural classes (skinsur/sweepsur/offsur/intcurve) keep sense flag only; golden loft/spline/splineedge.scdoc",
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "pull_helix",
+   "category": "03_pull",
+   "name_en": "Revolve by helix (spring/thread)",
+   "name_zh": "螺旋",
+   "v19_api": [
+    "RevolveFaces.ByHelix",
+    "RevolveEdges.ByHelix"
+   ],
+   "key_options": [
+    "pitch",
+    "height",
+    "taper",
+    "rightHanded"
+   ],
+   "variants": [
+    {
+     "case_key": "03_pull_helix_001_circle_r1_pitch5_h20",
+     "params": {
+      "profile": "circle r1 at R10",
+      "pitch_mm": 5,
+      "h_mm": 20
+     }
+    },
+    {
+     "case_key": "03_pull_helix_002_tapered_5deg",
+     "params": {
+      "taper_deg": 5
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "partial",
+   "repo_evidence": "topology.py decodes nubs/nurbs knots+poles; procedural classes (skinsur/sweepsur/offsur/intcurve) keep sense flag only; golden loft/spline/splineedge.scdoc (helix sweep -> sweepsur/intcurve procedural)",
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "pull_sweep",
+   "category": "03_pull",
+   "name_en": "Sweep profile along trajectory",
+   "name_zh": "扫掠",
+   "v19_api": [
+    "Sweep.Execute(sel, trajectories, SweepCommandOptions)"
+   ],
+   "key_options": [
+    "keep normal / twist"
+   ],
+   "variants": [
+    {
+     "case_key": "03_pull_sweep_001_circle_along_arc",
+     "params": {
+      "profile": "circle r3",
+      "path": "arc R40 90deg"
+     }
+    },
+    {
+     "case_key": "03_pull_sweep_002_rect_along_spline",
+     "params": {
+      "profile": "rect 4x2",
+      "path": "3D spline"
+     }
+    },
+    {
+     "case_key": "03_pull_sweep_003_along_polyline",
+     "params": {
+      "path": "L-shaped line chain"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "partial",
+   "repo_evidence": "topology.py decodes nubs/nurbs knots+poles; procedural classes (skinsur/sweepsur/offsur/intcurve) keep sense flag only; golden loft/spline/splineedge.scdoc",
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup (profile face + trajectory curve)",
+   "notes": ""
+  },
+  {
+   "id": "pull_loft",
+   "category": "03_pull",
+   "name_en": "Loft / blend between profiles",
+   "name_zh": "放样/混合",
+   "v19_api": [
+    "Loft.Create(blendSelection, guideSelection, LoftOptions)",
+    "Loft.CreateCenterLine"
+   ],
+   "key_options": [
+    "ruled",
+    "guides"
+   ],
+   "variants": [
+    {
+     "case_key": "03_pull_loft_001_rect_to_circle",
+     "params": {
+      "profiles": [
+       "rect 20x20 z=0",
+       "circle r8 z=30"
+      ]
+     }
+    },
+    {
+     "case_key": "03_pull_loft_002_three_circles",
+     "params": {
+      "profiles": [
+       "r10 z0",
+       "r5 z20",
+       "r12 z40"
+      ]
+     }
+    },
+    {
+     "case_key": "03_pull_loft_003_ruled",
+     "params": {
+      "ruled": true
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "partial",
+   "repo_evidence": "topology.py decodes nubs/nurbs knots+poles; procedural classes (skinsur/sweepsur/offsur/intcurve) keep sense flag only; golden loft/spline/splineedge.scdoc; golden loft.scdoc",
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "pull_extrude_profile",
+   "category": "03_pull",
+   "name_en": "Extrude API Profile directly",
+   "name_zh": "轮廓拉伸",
+   "v19_api": [
+    "ExtrudeProfile.Execute(Profile, distance, parent, name)"
+   ],
+   "key_options": [
+    "RectangleProfile/CircleProfile/PolygonProfile (API)"
+   ],
+   "variants": [
+    {
+     "case_key": "03_pull_profile_001_rect_30x10_h5",
+     "params": {
+      "profile": "RectangleProfile 30x10",
+      "h_mm": 5
+     }
+    },
+    {
+     "case_key": "03_pull_profile_002_circle_r6_h12",
+     "params": {
+      "profile": "CircleProfile r6",
+      "h_mm": 12
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "scdoc_parser decodes plane/straight; official box opens (00_smoke parser 29/33, only 10mm-hardcoded checks fail)",
+   "priority": "P2",
+   "headless_feasibility": "yes (no selection needed; also allows body naming)",
+   "notes": ""
+  },
+  {
+   "id": "edge_round",
+   "category": "04_edge",
+   "name_en": "Constant radius round (fillet)",
+   "name_zh": "倒圆角",
+   "v19_api": [
+    "ConstantRound.Execute(sel edges, radius, ConstantRoundOptions)"
+   ],
+   "key_options": [
+    "edges: single / all / tangent chain"
+   ],
+   "variants": [
+    {
+     "case_key": "04_edge_round_001_block_1edge_r3",
+     "params": {
+      "base": "block 40x30x20",
+      "edges": 1,
+      "r_mm": 3
+     }
+    },
+    {
+     "case_key": "04_edge_round_002_block_all12_r2",
+     "params": {
+      "edges": 12,
+      "r_mm": 2
+     }
+    },
+    {
+     "case_key": "04_edge_round_003_cyl_top_r2",
+     "params": {
+      "base": "cyl r10 h20",
+      "edges": "top circle",
+      "r_mm": 2
+     }
+    },
+    {
+     "case_key": "04_edge_round_004_vertex_blend_3edges_r4",
+     "params": {
+      "edges": "3 edges meeting at vertex",
+      "r_mm": 4
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB) (+ RoundInfo/round face attributes in document.xml)",
+   "repo_support": "partial",
+   "repo_evidence": "cyl/torus round faces decoded; vertex blends are spline/rb_blend procedural (topology.py decodes nubs/nurbs knots+poles; procedural classes (skinsur/sweepsur/offsur/intcurve) keep sense flag only; golden loft/spline/splineedge.scdoc); P0-2 filleted box official-open",
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup (edges by geometry)",
+   "notes": ""
+  },
+  {
+   "id": "edge_full_round",
+   "category": "04_edge",
+   "name_en": "Full round",
+   "name_zh": "全圆角",
+   "v19_api": [
+    "FullRound.Execute(selFaces)"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "04_edge_fullround_001_rib_3faces",
+     "params": {
+      "base": "block 40x5x10",
+      "faces": "side-top-side"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "partial",
+   "repo_evidence": "same as round",
+   "priority": "P2",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "edge_chamfer",
+   "category": "04_edge",
+   "name_en": "Chamfer (equal/unequal)",
+   "name_zh": "倒角",
+   "v19_api": [
+    "Chamfer.Execute(sel, distance)",
+    "Chamfer.Execute(sel, d1, d2)"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "04_edge_chamfer_001_block_1edge_d2",
+     "params": {
+      "d_mm": 2
+     }
+    },
+    {
+     "case_key": "04_edge_chamfer_002_block_4edges_d1_d3",
+     "params": {
+      "d1_mm": 1,
+      "d2_mm": 3
+     }
+    },
+    {
+     "case_key": "04_edge_chamfer_003_cyl_top_d1",
+     "params": {
+      "base": "cyl r10 h20",
+      "d_mm": 1
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "scdoc_parser decodes plane/straight; official box opens (00_smoke parser 29/33, only 10mm-hardcoded checks fail) (planar chamfer faces) / cone for cylinder chamfer",
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "edge_split_round",
+   "category": "04_edge",
+   "name_en": "Round utilities (split round, restore rounds)",
+   "name_zh": "圆角工具",
+   "v19_api": [
+    "SplitRound.Execute",
+    "NamedSelection.RestoreRounds",
+    "RoundInfo.Create"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "04_edge_splitround_001",
+     "params": {
+      "base": "block+round r3"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element",
+   "priority": "P2",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "bool_merge",
+   "category": "05_boolean",
+   "name_en": "Combine - merge (union)",
+   "name_zh": "组合-合并",
+   "v19_api": [
+    "Combine.Merge(target, tool)",
+    "MergeBodies.Execute"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "05_boolean_merge_001_two_blocks_overlap",
+     "params": {
+      "a": "block 0..20",
+      "b": "block 10..30"
+     }
+    },
+    {
+     "case_key": "05_boolean_merge_002_block_plus_cyl",
+     "params": {
+      "a": "block 40x40x10",
+      "b": "cyl r8 h30 at center"
+     }
+    },
+    {
+     "case_key": "05_boolean_merge_003_touching_faces",
+     "params": {
+      "a": "block",
+      "b": "block sharing a face"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "scdoc_parser decodes plane/straight; official box opens (00_smoke parser 29/33, only 10mm-hardcoded checks fail); topology.py decodes cone/sphere/torus/ellipse; golden cyl.scdoc; gap §2.1 (22 SAB classes)",
+   "priority": "P0",
+   "headless_feasibility": "yes (bodies from GetRootPart().Bodies)",
+   "notes": ""
+  },
+  {
+   "id": "bool_subtract",
+   "category": "05_boolean",
+   "name_en": "Combine - subtract (cut body with tool, RemoveRegions)",
+   "name_zh": "组合-减",
+   "v19_api": [
+    "Combine.Intersect(target, tool, MakeSolidsOptions)",
+    "Combine.RemoveRegions"
+   ],
+   "key_options": [
+    "keep cutter"
+   ],
+   "variants": [
+    {
+     "case_key": "05_boolean_subtract_001_block_minus_cyl",
+     "params": {
+      "a": "block 40x40x20",
+      "b": "cyl r5 through"
+     }
+    },
+    {
+     "case_key": "05_boolean_subtract_002_block_minus_sphere",
+     "params": {
+      "a": "block 40",
+      "b": "sphere r15 at corner"
+     }
+    },
+    {
+     "case_key": "05_boolean_subtract_003_keep_cutter",
+     "params": {
+      "keepCutter": true
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "topology.py decodes cone/sphere/torus/ellipse; golden cyl.scdoc; gap §2.1 (22 SAB classes)",
+   "priority": "P0",
+   "headless_feasibility": "yes (verify region-selection step for subtract; SpaceClaim subtract = Intersect + RemoveRegions)",
+   "notes": ""
+  },
+  {
+   "id": "bool_intersect",
+   "category": "05_boolean",
+   "name_en": "Combine - intersect (common)",
+   "name_zh": "组合-相交",
+   "v19_api": [
+    "Combine.Intersect + RemoveRegions"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "05_boolean_intersect_001_block_sphere",
+     "params": {
+      "a": "block 20",
+      "b": "sphere r14 centered"
+     }
+    },
+    {
+     "case_key": "05_boolean_intersect_002_two_cylinders_cross",
+     "params": {
+      "a": "cyl X r10",
+      "b": "cyl Y r10"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "partial",
+   "repo_evidence": "Steinmetz intersection edges are intcurve (procedural): topology.py decodes nubs/nurbs knots+poles; procedural classes (skinsur/sweepsur/offsur/intcurve) keep sense flag only; golden loft/spline/splineedge.scdoc",
+   "priority": "P0",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "bool_split_body",
+   "category": "05_boolean",
+   "name_en": "Split body by plane / face / body",
+   "name_zh": "拆分主体",
+   "v19_api": [
+    "SplitBody.ByCutter(body, Plane)",
+    "SplitBody.ByCutter(body, toolFaces, extend)"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "05_boolean_splitbody_001_block_by_plane_mid",
+     "params": {
+      "plane": "z=10"
+     }
+    },
+    {
+     "case_key": "05_boolean_splitbody_002_cyl_by_oblique_plane",
+     "params": {
+      "plane": "normal (1,0,1)"
+     }
+    },
+    {
+     "case_key": "05_boolean_splitbody_003_by_face",
+     "params": {
+      "tool": "face of other body"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "scdoc_parser decodes plane/straight; official box opens (00_smoke parser 29/33, only 10mm-hardcoded checks fail); oblique cut of cylinder -> ellipse edges decoded",
+   "priority": "P0",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "bool_imprint",
+   "category": "05_boolean",
+   "name_en": "Imprint / intersect to curves",
+   "name_zh": "压印",
+   "v19_api": [
+    "Combine.Intersect(target, tool, MakeCurvesOptions)",
+    "FixImprint"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "05_boolean_imprint_001_block_cyl_curves",
+     "params": {
+      "mode": "MakeCurves"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "partial",
+   "repo_evidence": "imprinted edges split faces; OK for analytic",
+   "priority": "P1",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "mp_translate",
+   "category": "06_move_pattern",
+   "name_en": "Move - translate",
+   "name_zh": "移动-平移",
+   "v19_api": [
+    "Move.Translate(sel, Direction, distance, MoveOptions)"
+   ],
+   "key_options": [
+    "Copy on/off"
+   ],
+   "variants": [
+    {
+     "case_key": "06_move_translate_001_block_x25",
+     "params": {
+      "d_mm": 25,
+      "dir": "X"
+     }
+    },
+    {
+     "case_key": "06_move_translate_002_copy_y30",
+     "params": {
+      "d_mm": 30,
+      "dir": "Y",
+      "copy": true
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "scdoc_parser decodes plane/straight; official box opens (00_smoke parser 29/33, only 10mm-hardcoded checks fail)",
+   "priority": "P1",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "mp_rotate",
+   "category": "06_move_pattern",
+   "name_en": "Move - rotate",
+   "name_zh": "移动-旋转",
+   "v19_api": [
+    "Move.Rotate(sel, Line axis, angle, MoveOptions)"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "06_move_rotate_001_block_z45",
+     "params": {
+      "axis": "Z",
+      "deg": 45
+     }
+    },
+    {
+     "case_key": "06_move_rotate_002_cyl_x90_copy",
+     "params": {
+      "axis": "X",
+      "deg": 90,
+      "copy": true
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "scdoc_parser decodes plane/straight; official box opens (00_smoke parser 29/33, only 10mm-hardcoded checks fail)",
+   "priority": "P1",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "mp_scale",
+   "category": "06_move_pattern",
+   "name_en": "Scale body (uniform / non-uniform)",
+   "name_zh": "缩放",
+   "v19_api": [
+    "Scale.Execute(sel, origin, scale)",
+    "Scale.Execute(sel, frame, Vector scale)"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "06_move_scale_001_uniform_2x",
+     "params": {
+      "s": 2
+     }
+    },
+    {
+     "case_key": "06_move_scale_002_nonuniform_1x2x0p5",
+     "params": {
+      "s": [
+       1,
+       2,
+       0.5
+      ]
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "non-uniform scale of cylinder -> ellipse/spline",
+   "priority": "P2",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "mp_mirror",
+   "category": "06_move_pattern",
+   "name_en": "Mirror body (and mirror relationship)",
+   "name_zh": "镜像",
+   "v19_api": [
+    "Mirror.Execute(sel, mirrorPlane, MirrorOptions)",
+    "DatumPlaneCreator.Create"
+   ],
+   "key_options": [
+    "merge",
+    "keep relation"
+   ],
+   "variants": [
+    {
+     "case_key": "06_move_mirror_001_block_about_yz",
+     "params": {
+      "plane": "YZ"
+     }
+    },
+    {
+     "case_key": "06_move_mirror_002_merge_halves",
+     "params": {
+      "merge": true
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries (mirror plane datum; possible MirrorRelation)",
+   "repo_support": "partial",
+   "repo_evidence": "geometry supported; mirror relation doc entry not decoded",
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup (datum plane or face as mirror plane)",
+   "notes": ""
+  },
+  {
+   "id": "mp_pattern_linear",
+   "category": "06_move_pattern",
+   "name_en": "Linear pattern",
+   "name_zh": "线性阵列",
+   "v19_api": [
+    "Pattern.CreateLinear(sel, LinearPatternData)",
+    "Pattern.ModifyLinear"
+   ],
+   "key_options": [
+    "count X/Y, pitch, 1D/2D"
+   ],
+   "variants": [
+    {
+     "case_key": "06_pattern_linear_001_cyl_1d_5x10",
+     "params": {
+      "count": 5,
+      "pitch_mm": 10
+     }
+    },
+    {
+     "case_key": "06_pattern_linear_002_hole_2d_3x4",
+     "params": {
+      "count": [
+       3,
+       4
+      ],
+      "pitch_mm": [
+       12,
+       10
+      ],
+      "member": "through hole in plate"
+     }
+    },
+    {
+     "case_key": "06_pattern_linear_003_body_copy_3",
+     "params": {
+      "count": 3,
+      "pitch_mm": 25
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries (PatternDef/pattern relationship entries)",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element (pattern relationship); geometry parts supported",
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup (face group or body)",
+   "notes": ""
+  },
+  {
+   "id": "mp_pattern_circular",
+   "category": "06_move_pattern",
+   "name_en": "Circular pattern",
+   "name_zh": "圆形阵列",
+   "v19_api": [
+    "Pattern.CreateCircular(sel, CircularPatternData)"
+   ],
+   "key_options": [
+    "count, angle, axis"
+   ],
+   "variants": [
+    {
+     "case_key": "06_pattern_circular_001_holes_6_360",
+     "params": {
+      "count": 6,
+      "angle_deg": 360,
+      "member": "hole r3 on disk r40"
+     }
+    },
+    {
+     "case_key": "06_pattern_circular_002_bodies_4_180",
+     "params": {
+      "count": 4,
+      "angle_deg": 180
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element",
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "mp_pattern_fill",
+   "category": "06_move_pattern",
+   "name_en": "Fill pattern",
+   "name_zh": "填充阵列",
+   "v19_api": [
+    "Pattern.CreateFill(sel, FillPatternData)"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "06_pattern_fill_001_holes_in_plate",
+     "params": {
+      "member": "hole r2",
+      "region": "plate face 80x60"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element",
+   "priority": "P2",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "mp_along_trajectory",
+   "category": "06_move_pattern",
+   "name_en": "Move along trajectory / orient",
+   "name_zh": "沿轨迹移动",
+   "v19_api": [
+    "Move.AlongTrajectory",
+    "Move.OrientTo",
+    "Move.ToCoordinate"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "06_move_trajectory_001_block_along_arc",
+     "params": {
+      "path": "arc R50 90deg"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "scdoc_parser decodes plane/straight; official box opens (00_smoke parser 29/33, only 10mm-hardcoded checks fail)",
+   "priority": "P2",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "so_shell",
+   "category": "07_shell_offset",
+   "name_en": "Shell (remove faces / hollow)",
+   "name_zh": "抽壳",
+   "v19_api": [
+    "Shell.RemoveFaces(sel faces, thickness)",
+    "Shell.ShellBodies(sel bodies, thickness)"
+   ],
+   "key_options": [
+    "inside/outside by sign"
+   ],
+   "variants": [
+    {
+     "case_key": "07_shell_open_001_block_top_t2",
+     "params": {
+      "base": "block 40x30x20",
+      "remove": "+Z",
+      "t_mm": 2
+     }
+    },
+    {
+     "case_key": "07_shell_closed_002_hollow_sphere_t1",
+     "params": {
+      "base": "sphere r10",
+      "t_mm": 1
+     }
+    },
+    {
+     "case_key": "07_shell_open_003_cyl_top_t1p5",
+     "params": {
+      "base": "cyl r10 h30",
+      "remove": "top",
+      "t_mm": 1.5
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "scdoc_parser decodes plane/straight; official box opens (00_smoke parser 29/33, only 10mm-hardcoded checks fail); hollow = 2 shells (void) - verify multi-shell lump decode",
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "so_offset",
+   "category": "07_shell_offset",
+   "name_en": "Offset faces",
+   "name_zh": "偏移面",
+   "v19_api": [
+    "OffsetFaces.Execute(sel, offset, OffsetFaceOptions)",
+    "OffsetRelation.ChangeOffset"
+   ],
+   "key_options": [
+    "offset relationship"
+   ],
+   "variants": [
+    {
+     "case_key": "07_offset_001_block_top_plus3",
+     "params": {
+      "d_mm": 3
+     }
+    },
+    {
+     "case_key": "07_offset_002_cyl_face_minus1",
+     "params": {
+      "d_mm": -1
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries (possible OffsetRelation)",
+   "repo_support": "partial",
+   "repo_evidence": "geometry supported; offset relation not decoded",
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "so_thicken",
+   "category": "07_shell_offset",
+   "name_en": "Thicken surface to solid",
+   "name_zh": "加厚",
+   "v19_api": [
+    "ThickenFaces.Execute(sel, Direction, value, ThickenFaceOptions)"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "07_thicken_001_planar_t2",
+     "params": {
+      "base": "planar rect 40x20",
+      "t_mm": 2
+     }
+    },
+    {
+     "case_key": "07_thicken_002_cyl_sheet_t1",
+     "params": {
+      "base": "half-cylinder sheet r20",
+      "t_mm": 1
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "scdoc_parser decodes plane/straight; official box opens (00_smoke parser 29/33, only 10mm-hardcoded checks fail)",
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "so_draft",
+   "category": "07_shell_offset",
+   "name_en": "Draft faces",
+   "name_zh": "拔模",
+   "v19_api": [
+    "DraftFaces.Execute(sel, refFaces, DraftSide, angle, ExtrudeType, DraftOptions)"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "07_draft_001_block_4sides_5deg",
+     "params": {
+      "neutral": "-Z",
+      "angle_deg": 5
+     }
+    },
+    {
+     "case_key": "07_draft_002_cyl_side_3deg",
+     "params": {
+      "base": "cyl",
+      "angle_deg": 3
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "planes / cone decoded",
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "so_replace_detach",
+   "category": "07_shell_offset",
+   "name_en": "Replace faces / detach faces",
+   "name_zh": "替换面/分离面",
+   "v19_api": [
+    "ReplaceFacesWithFace.Execute",
+    "DetachFaces.Execute"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "07_replaceface_001_block_top_to_plane",
+     "params": {}
+    },
+    {
+     "case_key": "07_detach_001_block_top",
+     "params": {}
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "scdoc_parser decodes plane/straight; official box opens (00_smoke parser 29/33, only 10mm-hardcoded checks fail)",
+   "priority": "P2",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "sm_all",
+   "category": "08_sheetmetal",
+   "name_en": "Sheet metal (convert, flange, bend, unfold, junction, relief)",
+   "name_zh": "钣金",
+   "v19_api": [
+    "NONE in SpaceClaim.Api.V19.Scripting; raw API SheetMetalAspect/Bend are read-only (no Create)"
+   ],
+   "key_options": [
+    "would need GUI journaling or V19 non-scripting API"
+   ],
+   "variants": [
+    {
+     "case_key": "08_sheetmetal_convert_001_block_t2",
+     "params": {
+      "base": "block 100x50x2",
+      "thickness_mm": 2
+     }
+    },
+    {
+     "case_key": "08_sheetmetal_flange_001_90deg_l20",
+     "params": {
+      "angle_deg": 90,
+      "length_mm": 20,
+      "bend_r_mm": 1
+     }
+    },
+    {
+     "case_key": "08_sheetmetal_unfold_001",
+     "params": {}
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries (sheet metal part attributes, bends)",
+   "repo_support": "none",
+   "repo_evidence": "repo sheetmetal.py is an internal OCCT model; no scdoc decode of official sheet-metal XML",
+   "priority": "P1",
+   "headless_feasibility": "GUI-only (user builds in GUI once with recording on; saves into 08_sheetmetal)",
+   "notes": ""
+  },
+  {
+   "id": "beam_profile",
+   "category": "09_beam",
+   "name_en": "Beam profile creation (I/L/T/channel/rect/circular/...)",
+   "name_zh": "梁截面",
+   "v19_api": [
+    "BeamProfile.CreateI/CreateL/CreateT/CreateChannel/CreateRectangular/CreateCircular/CreateDisk/CreateFlatBar/CreateHat/CreateZ/CreateCustom",
+    "BeamProfile.CreateFromLibrary"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "09_beam_profile_001_I_100x50",
+     "params": {
+      "type": "I",
+      "baseWidth": 50,
+      "depth": 100,
+      "tf": 8,
+      "tw": 5
+     }
+    },
+    {
+     "case_key": "09_beam_profile_002_rect_tube_60x40x3",
+     "params": {
+      "type": "Rectangular",
+      "t": 3,
+      "w": 60,
+      "d": 40
+     }
+    },
+    {
+     "case_key": "09_beam_profile_003_circular_d40_d34",
+     "params": {
+      "type": "Circular",
+      "od": 40,
+      "id": 34
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries (profile component + beam section properties)",
+   "repo_support": "none",
+   "repo_evidence": "BeamProfiles library .scdoc used only for named-selection format; beams.py is internal model",
+   "priority": "P1",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "beam_create",
+   "category": "09_beam",
+   "name_en": "Beam along curve",
+   "name_zh": "创建梁",
+   "v19_api": [
+    "Beam.Create(sel curves, profile)",
+    "Beam.SetOrientation/SetPosition/SetType/ReverseBeam",
+    "Beam.ExtractProfile"
+   ],
+   "key_options": [
+    "Beam/Cable/Truss/Spring type",
+    "anchor"
+   ],
+   "variants": [
+    {
+     "case_key": "09_beam_create_001_line_I",
+     "params": {
+      "curve": "line 1000mm",
+      "profile": "I"
+     }
+    },
+    {
+     "case_key": "09_beam_create_002_frame_4lines_rect",
+     "params": {
+      "curve": "rect frame 1000x500",
+      "profile": "Rectangular"
+     }
+    },
+    {
+     "case_key": "09_beam_create_003_orient30_centroid",
+     "params": {
+      "orientation_deg": 30,
+      "anchor": "Centroid"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element",
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup (DesignCurve + profile)",
+   "notes": ""
+  },
+  {
+   "id": "asm_component",
+   "category": "10_assembly",
+   "name_en": "Create component / move bodies to component",
+   "name_zh": "组件",
+   "v19_api": [
+    "ComponentHelper.CreateAtRoot",
+    "ComponentHelper.MoveBodiesToComponent",
+    "ComponentHelper.CreateSeparateComponents",
+    "ComponentHelper.SetName"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "10_assembly_component_001_two_bodies_two_comps",
+     "params": {
+      "bodies": [
+       "block",
+       "cyl"
+      ]
+     }
+    },
+    {
+     "case_key": "10_assembly_component_002_nested_2levels",
+     "params": {
+      "levels": 2
+     }
+    },
+    {
+     "case_key": "10_assembly_component_003_separate_components_4",
+     "params": {
+      "bodies": 4
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries (ComponentDef/PartDef, per-part SAB, moniker rels)",
+   "repo_support": "partial",
+   "repo_evidence": "writer mirrors official ComponentDef/refId/trans (TODO-9 bodies=2); scdoc_parser/document.py only lists PartDef ids; golden assembly_sample.scdoc",
+   "priority": "P0",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "asm_instance",
+   "category": "10_assembly",
+   "name_en": "Component instances (copy/paste component, transform)",
+   "name_zh": "组件实例",
+   "v19_api": [
+    "Copy.ToClipboard/Paste.FromClipboard",
+    "ComponentHelper.CopyToComponent",
+    "Move.Translate on component",
+    "ComponentHelper.MakeIndependent"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "10_assembly_instance_001_3_instances_translated",
+     "params": {
+      "n": 3,
+      "pitch_mm": 50
+     }
+    },
+    {
+     "case_key": "10_assembly_instance_002_rotated_instance",
+     "params": {
+      "deg": 90
+     }
+    },
+    {
+     "case_key": "10_assembly_instance_003_make_independent",
+     "params": {}
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries (instances share one PartDef; <trans> matrix)",
+   "repo_support": "partial",
+   "repo_evidence": "trans matrix handled by writer; parser does not expose instances",
+   "priority": "P0",
+   "headless_feasibility": "yes (clipboard in headless: verify)",
+   "notes": ""
+  },
+  {
+   "id": "asm_mirror_components",
+   "category": "10_assembly",
+   "name_en": "Mirror components",
+   "name_zh": "镜像组件",
+   "v19_api": [
+    "MirrorComponents.Execute"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "10_assembly_mirrorcomp_001",
+     "params": {
+      "plane": "YZ"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element",
+   "priority": "P2",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "asm_conditions",
+   "category": "10_assembly",
+   "name_en": "Assembly conditions (align, tangent, orient, anchor, rigid, gear)",
+   "name_zh": "装配约束",
+   "v19_api": [
+    "(raw API) AlignCondition.Create / TangentCondition.Create / OrientCondition.Create / AnchorCondition.Create / RigidCondition.Create / GearCondition.Create (SpaceClaim.Api.V19)"
+   ],
+   "key_options": [
+    "no Scripting command; Constraint.* are sketch constraints"
+   ],
+   "variants": [
+    {
+     "case_key": "10_assembly_align_001_axis_axis",
+     "params": {
+      "a": "plate hole axis",
+      "b": "pin axis"
+     }
+    },
+    {
+     "case_key": "10_assembly_tangent_001_face_face",
+     "params": {}
+    },
+    {
+     "case_key": "10_assembly_anchor_001_plate",
+     "params": {}
+    },
+    {
+     "case_key": "10_assembly_rigid_001",
+     "params": {}
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries (condition entries)",
+   "repo_support": "none",
+   "repo_evidence": "repo mates.py is internal; NYI TODO-1 asks for official assembly+mate sample",
+   "priority": "P0",
+   "headless_feasibility": "needs selection setup (raw API on component faces/axes; verify signatures in API_Class_Library.chm)",
+   "notes": ""
+  },
+  {
+   "id": "asm_insert_file",
+   "category": "10_assembly",
+   "name_en": "Insert external file as component",
+   "name_zh": "插入文件",
+   "v19_api": [
+    "DocumentInsert.Execute(filename)"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "10_assembly_insert_001_step_block",
+     "params": {
+      "file": "STEP generated in 01_primitives"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries (external reference / import source)",
+   "repo_support": "partial",
+   "repo_evidence": "importSource/importPath parsed",
+   "priority": "P2",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "doc_rename",
+   "category": "11_doc_attrs",
+   "name_en": "Rename body/component (captions)",
+   "name_zh": "重命名",
+   "v19_api": [
+    "RenameObject.Execute(sel, name)",
+    "HasNameExtensions.SetName"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "11_doc_rename_001_body_Block_A",
+     "params": {
+      "name": "Block_A"
+     }
+    },
+    {
+     "case_key": "11_doc_rename_002_unicode_name",
+     "params": {
+      "name": "主体_测试"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (CaptionDef)",
+   "repo_support": "supported",
+   "repo_evidence": "document.py parses RootCaptionDef/CaptionDef",
+   "priority": "P0",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "doc_layers",
+   "category": "11_doc_attrs",
+   "name_en": "Layers (create, assign, color, visibility, lock)",
+   "name_zh": "图层",
+   "v19_api": [
+    "Layers.Create/AssignLayer/SetColor/SetVisibility/SetLock/Rename"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "11_doc_layers_001_two_layers_assign",
+     "params": {
+      "layers": [
+       "L_red",
+       "L_blue"
+      ]
+     }
+    },
+    {
+     "case_key": "11_doc_layers_002_hidden_locked",
+     "params": {
+      "visible": false,
+      "locked": true
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (LayerDef)",
+   "repo_support": "supported",
+   "repo_evidence": "document.py parses LayerDef name/color/visible/locked",
+   "priority": "P0",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "doc_colors",
+   "category": "11_doc_attrs",
+   "name_en": "Body / face color, fill style",
+   "name_zh": "颜色",
+   "v19_api": [
+    "ColorHelper.SetColor(sel, SetColorOptions, Color)",
+    "ColorHelper.SetFillStyle"
+   ],
+   "key_options": [
+    "FaceColorTarget/EdgeColorTarget"
+   ],
+   "variants": [
+    {
+     "case_key": "11_doc_color_001_body_red",
+     "params": {
+      "target": "body",
+      "rgb": [
+       255,
+       0,
+       0
+      ]
+     }
+    },
+    {
+     "case_key": "11_doc_color_002_face_green",
+     "params": {
+      "target": "face +Z",
+      "rgb": [
+       0,
+       200,
+       0
+      ]
+     }
+    },
+    {
+     "case_key": "11_doc_color_003_transparent_50",
+     "params": {
+      "alpha": 128
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries (NominalBodyDef color; SAB rgb_color attrib)",
+   "repo_support": "partial",
+   "repo_evidence": "body color parsed; face color / transparency not",
+   "priority": "P0",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "doc_named_selection",
+   "category": "11_doc_attrs",
+   "name_en": "Named selections (groups)",
+   "name_zh": "命名选择/组",
+   "v19_api": [
+    "NamedSelection.Create(primary, secondary)",
+    "NamedSelection.Rename/Replace/Delete"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "11_doc_ns_001_faces_top_bottom",
+     "params": {
+      "members": "2 faces"
+     }
+    },
+    {
+     "case_key": "11_doc_ns_002_edges_and_body",
+     "params": {
+      "members": "4 edges + body"
+     }
+    },
+    {
+     "case_key": "11_doc_ns_003_renamed",
+     "params": {
+      "rename": [
+       "Group1",
+       "Inlet"
+      ]
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (NamedSelectionDef/StoredSelectionTableDef + monikers)",
+   "repo_support": "partial",
+   "repo_evidence": "names parsed; member monikers not bound (NYI TODO-6)",
+   "priority": "P0",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "doc_datum",
+   "category": "11_doc_attrs",
+   "name_en": "Datum plane / axis / point / origin (coordinate system)",
+   "name_zh": "基准面/轴/点/坐标系",
+   "v19_api": [
+    "DatumPlaneCreator.Create",
+    "DatumLineCreator.Create",
+    "DatumPointCreator.Create",
+    "DatumOriginCreator.Create"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "11_doc_datum_001_plane_offset_z10",
+     "params": {
+      "origin": [
+       0,
+       0,
+       10
+      ],
+      "normal": [
+       0,
+       0,
+       1
+      ]
+     }
+    },
+    {
+     "case_key": "11_doc_datum_002_axis_and_point",
+     "params": {}
+    },
+    {
+     "case_key": "11_doc_datum_003_origin_rotated",
+     "params": {
+      "rot_deg": 30
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (DatumPlaneDef/DatumLineDef/DatumPointDef/CoordinateSystemDef)",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element",
+   "priority": "P1",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "doc_named_view",
+   "category": "11_doc_attrs",
+   "name_en": "Named views / section plane",
+   "name_zh": "命名视图",
+   "v19_api": [
+    "ViewHelper.CreateNamedView",
+    "ViewHelper.SetProjection",
+    "ViewHelper.SetSectionPlane"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "11_doc_view_001_named_iso",
+     "params": {
+      "name": "Iso1"
+     }
+    },
+    {
+     "case_key": "11_doc_view_002_two_views",
+     "params": {
+      "names": [
+       "Front",
+       "Top"
+      ]
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (SavedViewsDef / windows.xml)",
+   "repo_support": "none",
+   "repo_evidence": "NYI TODO-7: no official sample; unlock via RunScript",
+   "priority": "P1",
+   "headless_feasibility": "needs GUI window? (headless has no view) - test both modes",
+   "notes": ""
+  },
+  {
+   "id": "doc_coordsys",
+   "category": "11_doc_attrs",
+   "name_en": "Coordinate system",
+   "name_zh": "坐标系",
+   "v19_api": [
+    "(raw API) CoordinateSystem.Create",
+    "DatumOriginCreator.Create"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "11_doc_coordsys_001_translated_rotated",
+     "params": {
+      "origin": [
+       10,
+       0,
+       0
+      ],
+      "rot_deg": 30
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry)",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element",
+   "priority": "P2",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "doc_notes",
+   "category": "11_doc_attrs",
+   "name_en": "3D notes / annotations",
+   "name_zh": "注释",
+   "v19_api": [
+    "(raw API) Note.Create"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "11_doc_note_001_text_on_face",
+     "params": {
+      "text": "HELLO"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (annotation plane + note)",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element",
+   "priority": "P2",
+   "headless_feasibility": "needs selection setup (raw API, verify)",
+   "notes": ""
+  },
+  {
+   "id": "doc_drawing_sheet",
+   "category": "11_doc_attrs",
+   "name_en": "Drawing sheet with general/projected views",
+   "name_zh": "工程图纸",
+   "v19_api": [
+    "(raw API) DrawingSheet.Create",
+    "DrawingView.CreateGeneralView/CreateProjectedView"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "11_doc_drawing_001_A3_3views",
+     "params": {
+      "format": "A3",
+      "views": [
+       "front",
+       "top",
+       "right"
+      ]
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (DrawingSheetDef, views)",
+   "repo_support": "none",
+   "repo_evidence": "repo writes its own DrawingSheetDef template (P2-3) but parser does not read official drawing sheets",
+   "priority": "P2",
+   "headless_feasibility": "unknown (drawing windows in headless - verify)",
+   "notes": ""
+  },
+  {
+   "id": "doc_visibility",
+   "category": "11_doc_attrs",
+   "name_en": "Visibility / suppress for physics / lock",
+   "name_zh": "可见性/抑制/锁定",
+   "v19_api": [
+    "ViewHelper.SetObjectVisibility",
+    "ViewHelper.SetSuppressForPhysics",
+    "ViewHelper.LockBodies"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "11_doc_visibility_001_hidden_body",
+     "params": {}
+    },
+    {
+     "case_key": "11_doc_suppress_001",
+     "params": {}
+    },
+    {
+     "case_key": "11_doc_lock_001",
+     "params": {}
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry)",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element",
+   "priority": "P2",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "doc_material",
+   "category": "11_doc_attrs",
+   "name_en": "Material assignment",
+   "name_zh": "材料",
+   "v19_api": [
+    "(raw API) DocumentMaterial.Create / LibraryMaterial -> DesignBody.Material"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "11_doc_material_001_steel",
+     "params": {
+      "material": "Steel"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (DocumentMaterial / MaterialLibrary)",
+   "repo_support": "none",
+   "repo_evidence": "materials.py internal only",
+   "priority": "P2",
+   "headless_feasibility": "yes (raw API, verify)",
+   "notes": ""
+  },
+  {
+   "id": "doc_units",
+   "category": "11_doc_attrs",
+   "name_en": "Document units (mm / m / inch)",
+   "name_zh": "单位",
+   "v19_api": [
+    "(raw API) Units / Document units setter (to locate); UnitsHelper.GetDocumentUnits is read-only"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "11_doc_units_001_inch",
+     "params": {
+      "units": "IN"
+     }
+    },
+    {
+     "case_key": "11_doc_units_002_meter",
+     "params": {
+      "units": "M"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "document.xml only (no new geometry) (DocumentUnitsDef)",
+   "repo_support": "supported",
+   "repo_evidence": "document.py parses DocumentUnitsDef",
+   "priority": "P1",
+   "headless_feasibility": "unknown - no scripting setter found; may need API/GUI",
+   "notes": ""
+  },
+  {
+   "id": "rp_fix",
+   "category": "12_repair_prepare",
+   "name_en": "Repair: stitch, gaps, missing faces, split edges, extra edges, small faces, short edges, duplicates, merge faces",
+   "name_zh": "修复",
+   "v19_api": [
+    "StitchFaces/FixGaps/FixMissingFaces/FixSplitEdges/FixExtraEdges/FixSmallFaces/FixShortEdges/FixDuplicateFaces/FixCurveGaps/FixDuplicateCurves/FixExtendableSurfaces/FixInterference .FindAndFix"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "12_repair_stitch_001_six_sheets_to_solid",
+     "params": {
+      "setup": "6 planar sheets forming cube"
+     }
+    },
+    {
+     "case_key": "12_repair_missingface_001_open_box",
+     "params": {
+      "setup": "box with deleted face"
+     }
+    },
+    {
+     "case_key": "12_repair_extraedges_001_split_face_merge",
+     "params": {}
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "results are ordinary B-rep; decoder value is in the defective inputs",
+   "priority": "P2",
+   "headless_feasibility": "yes (need crafted defective inputs)",
+   "notes": ""
+  },
+  {
+   "id": "rp_midsurface",
+   "category": "12_repair_prepare",
+   "name_en": "Midsurface",
+   "name_zh": "中面",
+   "v19_api": [
+    "Midsurface.Convert(bodies, thickness)",
+    "MidsurfaceOffsetFaces.Create",
+    "MidsurfaceAspectExtensions.SetThickness"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "12_prepare_midsurface_001_plate_t2",
+     "params": {
+      "base": "plate 100x50x2"
+     }
+    },
+    {
+     "case_key": "12_prepare_midsurface_002_L_bracket_t3",
+     "params": {}
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries (sheet body + MidSurfaceAspect thickness)",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element",
+   "priority": "P1",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "rp_share_topology",
+   "category": "12_repair_prepare",
+   "name_en": "Share topology",
+   "name_zh": "共享拓扑",
+   "v19_api": [
+    "ShareTopology.FindAndFix",
+    "ForceShareTopology.Execute",
+    "UnShareTopology.Execute",
+    "SharePrep.Execute"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "12_prepare_sharetopo_001_two_blocks_touching",
+     "params": {}
+    },
+    {
+     "case_key": "12_prepare_sharetopo_002_force_tol0p1",
+     "params": {
+      "tol_mm": 0.1
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element",
+   "priority": "P1",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "rp_volume_extract",
+   "category": "12_repair_prepare",
+   "name_en": "Volume extract / enclosure / workpiece / shrinkwrap",
+   "name_zh": "体积抽取/包围",
+   "v19_api": [
+    "VolumeExtract.Create",
+    "Enclosure.Create",
+    "Workpiece.Create",
+    "Shrinkwrap.Create"
+   ],
+   "key_options": [
+    "Box/Cylinder/Sphere cushion"
+   ],
+   "variants": [
+    {
+     "case_key": "12_prepare_enclosure_001_box_cushion10",
+     "params": {
+      "cushion_mm": 10
+     }
+    },
+    {
+     "case_key": "12_prepare_volumeextract_001_pipe",
+     "params": {
+      "base": "shelled cylinder with capping faces"
+     }
+    },
+    {
+     "case_key": "12_prepare_workpiece_001",
+     "params": {}
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries (EnclosureAspect/VolumeExtractionAspect)",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element",
+   "priority": "P2",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "rp_icepak",
+   "category": "12_repair_prepare",
+   "name_en": "Icepak objects (enclosure, fan, grille, opening, simplify)",
+   "name_zh": "Icepak 对象",
+   "v19_api": [
+    "IcepakEnclosure/IcepakFan/IcepakGrille/IcepakOpening/IcepakSimplify"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "12_prepare_icepak_simplify_001_level1",
+     "params": {}
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries",
+   "repo_support": "none",
+   "repo_evidence": "no parser handler in scdoc_parser/document.py for this element",
+   "priority": "P2",
+   "headless_feasibility": "yes (niche)",
+   "notes": ""
+  },
+  {
+   "id": "sc_surfaces",
+   "category": "13_surface_curve",
+   "name_en": "Surface bodies: circular/rectangular surface, SurfaceBody from API surface",
+   "name_zh": "曲面体",
+   "v19_api": [
+    "CircularSurface.Create",
+    "RectangularSurface.Create",
+    "SurfaceBody.Create(Surface, BoxUV)"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "13_surface_circular_001_r20",
+     "params": {
+      "r_mm": 20
+     }
+    },
+    {
+     "case_key": "13_surface_rect_001_30x10",
+     "params": {}
+    },
+    {
+     "case_key": "13_surface_body_001_cylinder_patch",
+     "params": {
+      "surface": "Cylinder r10",
+      "uv": "0..pi x 0..20"
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "partial",
+   "repo_evidence": "sheet bodies not in golden set",
+   "priority": "P1",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "sc_fill",
+   "category": "13_surface_curve",
+   "name_en": "Fill / patch (cap holes, N-sided patch)",
+   "name_zh": "填充",
+   "v19_api": [
+    "Fill.Execute(sel, secondary, FillOptions, FillMode)"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "13_fill_001_cap_open_box",
+     "params": {}
+    },
+    {
+     "case_key": "13_fill_002_patch_4_splines",
+     "params": {}
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "partial",
+   "repo_evidence": "topology.py decodes nubs/nurbs knots+poles; procedural classes (skinsur/sweepsur/offsur/intcurve) keep sense flag only; golden loft/spline/splineedge.scdoc",
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "sc_split_face",
+   "category": "13_surface_curve",
+   "name_en": "Split face (by curves/cutter/two points/parametric), split edge",
+   "name_zh": "拆分面/边",
+   "v19_api": [
+    "SplitFace.ByTwoPoints/ByCutter/ByParametric/ByCurves",
+    "SplitEdge.ByCount/ByLength/ByProportion"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "13_splitface_001_block_top_two_points",
+     "params": {}
+    },
+    {
+     "case_key": "13_splitedge_001_by_count3",
+     "params": {
+      "n": 3
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "supported",
+   "repo_evidence": "scdoc_parser decodes plane/straight; official box opens (00_smoke parser 29/33, only 10mm-hardcoded checks fail)",
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "sc_project_wrap",
+   "category": "13_surface_curve",
+   "name_en": "Project curves to solid / wrap / imprint",
+   "name_zh": "投影/缠绕",
+   "v19_api": [
+    "ProjectToSolid.Execute",
+    "Wrap.Create",
+    "ProjectToSketch.Create",
+    "MoveImprintEdges.Execute"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "13_project_001_circle_onto_block_top",
+     "params": {}
+    },
+    {
+     "case_key": "13_wrap_001_rect_onto_cylinder",
+     "params": {}
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "partial",
+   "repo_evidence": "wrapped edges on cylinder are intcurve: topology.py decodes nubs/nurbs knots+poles; procedural classes (skinsur/sweepsur/offsur/intcurve) keep sense flag only; golden loft/spline/splineedge.scdoc",
+   "priority": "P2",
+   "headless_feasibility": "needs selection setup",
+   "notes": ""
+  },
+  {
+   "id": "sc_convert_solid",
+   "category": "13_surface_curve",
+   "name_en": "Convert to solid / auto-skin / skin from height field",
+   "name_zh": "转换为实体",
+   "v19_api": [
+    "ConvertToSolid.Execute",
+    "AutoSkin.Execute"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "13_convertsolid_001_closed_sheets",
+     "params": {}
+    }
+   ],
+   "expected_scdoc_impact": "geometry-only (SAB)",
+   "repo_support": "partial",
+   "repo_evidence": "",
+   "priority": "P2",
+   "headless_feasibility": "yes",
+   "notes": ""
+  },
+  {
+   "id": "hole_standard",
+   "category": "14_holes_threads",
+   "name_en": "Standard holes (simple, counterbore, countersink, tapped, cosmetic thread)",
+   "name_zh": "标准孔/螺纹",
+   "v19_api": [
+    "StandardHoles.Create(nomFaceToLocations, StandardHolesOptions)",
+    "StandardHoles.Modify*",
+    "StandardHoles.Find/Convert",
+    "(raw API) Hole.Create"
+   ],
+   "key_options": [
+    "drill size, depth, cbore/csink, tap, cosmetic thread"
+   ],
+   "variants": [
+    {
+     "case_key": "14_hole_simple_001_d6_depth10",
+     "params": {
+      "d_mm": 6,
+      "depth_mm": 10
+     }
+    },
+    {
+     "case_key": "14_hole_cbore_001_M6",
+     "params": {
+      "series": "ISO",
+      "fastener": "M6",
+      "counterbore": true
+     }
+    },
+    {
+     "case_key": "14_hole_csink_001_90deg",
+     "params": {
+      "csink_angle_deg": 90
+     }
+    },
+    {
+     "case_key": "14_hole_tapped_001_M8_cosmetic",
+     "params": {
+      "tap": true,
+      "cosmetic": true
+     }
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries (hole feature data + cylinder/cone faces)",
+   "repo_support": "partial",
+   "repo_evidence": "cylinder/cone geometry decoded; hole feature XML not",
+   "priority": "P1",
+   "headless_feasibility": "needs selection setup (face + location map) - StandardHolesOptions API to verify",
+   "notes": ""
+  },
+  {
+   "id": "mesh_facet",
+   "category": "15_mesh_facet",
+   "name_en": "Facet (mesh) bodies: convert solid->mesh, reduce, smooth, thicken, boolean",
+   "name_zh": "网格体",
+   "v19_api": [
+    "FacetConvert.Create",
+    "FacetReduce/FacetSmooth/FacetRemesh/FacetMerge/FacetSubtract/FacetThicken",
+    "STLFile.Import/Insert"
+   ],
+   "key_options": [],
+   "variants": [
+    {
+     "case_key": "15_mesh_convert_001_block",
+     "params": {}
+    },
+    {
+     "case_key": "15_mesh_stl_import_001",
+     "params": {
+      "file": "exported STL of cylinder"
+     }
+    },
+    {
+     "case_key": "15_mesh_reduce_001_50pct",
+     "params": {}
+    }
+   ],
+   "expected_scdoc_impact": "geometry (SAB) + document.xml tree entries (DesignMesh storage)",
+   "repo_support": "none",
+   "repo_evidence": "repo reads STL via OCCT; no scdoc DesignMesh decode",
+   "priority": "P2",
+   "headless_feasibility": "yes",
+   "notes": ""
+  }
+ ]
+}
