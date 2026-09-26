@@ -1,0 +1,4 @@
+D:\training\caedecoder\scdm_cases\12_repair_prepare\12_prepare_volumeextract_001_pipe.py
+D:\training\caedecoder\scdm_cases\13_surface_curve\13_convertsolid_001_closed_sheets.py
+D:\training\caedecoder\scdm_cases\14_holes_threads\14_hole_cbore_001_M6.py
+D:\training\caedecoder\scdm_cases\14_holes_threads\14_hole_tapped_001_M8_cosmetic.py

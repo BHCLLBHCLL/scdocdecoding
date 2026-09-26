@@ -1,0 +1,82 @@
+{
+ "actual": {
+  "area_mm2": 700.0,
+  "beams": 0,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 700.0,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [10.0, 20.0, 5.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Scaled_NonUniform",
+    "path": "",
+    "vertices": 8,
+    "volume_mm3": 1000.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Line": 12
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 12,
+  "faces": 6,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Plane": 6
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 8,
+  "view_mode": "Solid",
+  "volume_mm3": 1000.0
+ },
+ "case_id": "06_move_scale_002_nonuniform_1x2x0p5",
+ "category": "06_move_pattern",
+ "commands": ["Scale.Execute(sel, origin, scale)", "Scale.Execute(sel, frame, Vector scale)"],
+ "data": {
+  "bbox_after_mm": [
+   [0.0, 0.0, 0.0],
+   [10.0, 20.0, 5.0]
+  ]
+ },
+ "elapsed_s": 0.16,
+ "expect": {
+  "bodies": 1,
+  "volume_mm3": 1000.0
+ },
+ "expect_mismatch": {},
+ "feature": "mp_scale",
+ "framework": "1.2.2",
+ "generated_at": "2026-09-26T07:57:54+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+ "params": {
+  "s": [1, 2, 0.5]
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_scale_002_nonuniform_1x2x0p5.scdoc",
+ "scdoc_size": "27237",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_scale_002_nonuniform_1x2x0p5.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T07:57:54+08:00",
+ "status": "ok",
+ "title": "Scale body (uniform / non-uniform): 002_nonuniform_1x2x0p5"
+}

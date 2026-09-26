@@ -1,0 +1,768 @@
+{
+ "batch": "B04_edge",
+ "cases": [
+  {
+   "actual": {
+    "area_mm2": 5144.632726,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5144.632726,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 15,
+      "faces": 7,
+      "manifold": true,
+      "name": "Round_Block_1Edge",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 23922.750307
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 13
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 15,
+    "faces": 7,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 23922.750307
+   },
+   "case_id": "04_edge_round_001_block_1edge_r3",
+   "category": "04_edge",
+   "commands": ["ConstantRound.Execute(sel edges, radius, ConstantRoundOptions)"],
+   "data": {
+    "edge_mid_mm": [20.0, 30.0, 20.0]
+   },
+   "elapsed_s": 4.78,
+   "expect": {
+    "bodies": 1,
+    "faces": 7,
+    "volume_mm3": 23922.750307
+   },
+   "expect_mismatch": {},
+   "feature": "edge_round",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:45:00+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\04_edge",
+   "params": {
+    "base": "block 40x30x20",
+    "edges": 1,
+    "r_mm": 3
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_round_001_block_1edge_r3.scdoc",
+   "scdoc_size": "33720",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_round_001_block_1edge_r3.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:44:55+08:00",
+   "status": "ok",
+   "title": "Constant radius round (fillet): 001_block_1edge_r3"
+  },
+  {
+   "actual": {
+    "area_mm2": 4886.442416,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 4886.442416,
+      "bbox_mm": [
+       [-0.0, -0.0, -0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 48,
+      "faces": 26,
+      "manifold": true,
+      "name": "Round_Block_All",
+      "path": "",
+      "vertices": 24,
+      "volume_mm3": 23701.753258
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 24,
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 48,
+    "faces": 26,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 12,
+     "Plane": 6,
+     "Sphere": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 24,
+    "view_mode": "Solid",
+    "volume_mm3": 23701.753258
+   },
+   "case_id": "04_edge_round_002_block_all12_r2",
+   "category": "04_edge",
+   "commands": ["ConstantRound.Execute(sel edges, radius, ConstantRoundOptions)"],
+   "data": {},
+   "elapsed_s": 0.34999999999999998,
+   "expect": {
+    "bodies": 1,
+    "faces": 26
+   },
+   "expect_mismatch": {},
+   "feature": "edge_round",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:45:02+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\04_edge",
+   "params": {
+    "edges": 12,
+    "r_mm": 2
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_round_002_block_all12_r2.scdoc",
+   "scdoc_size": "104338",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_round_002_block_all12_r2.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:45:01+08:00",
+   "status": "ok",
+   "title": "Constant radius round (fillet): 002_block_all12_r2"
+  },
+  {
+   "actual": {
+    "area_mm2": 1829.240962,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1829.240962,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 3,
+      "faces": 4,
+      "manifold": true,
+      "name": "Round_Cyl_Top",
+      "path": "",
+      "vertices": 3,
+      "volume_mm3": 6231.596323
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 3
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 3,
+    "faces": 4,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 2,
+     "Torus": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 3,
+    "view_mode": "Sketch",
+    "volume_mm3": 6231.596323
+   },
+   "case_id": "04_edge_round_003_cyl_top_r2",
+   "category": "04_edge",
+   "commands": ["ConstantRound.Execute(sel edges, radius, ConstantRoundOptions)"],
+   "data": {
+    "top_edges": 1
+   },
+   "elapsed_s": 1.0,
+   "expect": {
+    "bodies": 1,
+    "faces": 4
+   },
+   "expect_mismatch": {},
+   "feature": "edge_round",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:45:03+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\04_edge",
+   "params": {
+    "base": "cyl r10 h20",
+    "edges": "top circle",
+    "r_mm": 2
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_round_003_cyl_top_r2.scdoc",
+   "scdoc_size": "141695",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_round_003_cyl_top_r2.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:45:02+08:00",
+   "status": "ok",
+   "title": "Constant radius round (fillet): 003_cyl_top_r2"
+  },
+  {
+   "actual": {
+    "area_mm2": 5032.92032,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5032.92032,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 21,
+      "faces": 10,
+      "manifold": true,
+      "name": "Round_Vertex_Blend",
+      "path": "",
+      "vertices": 13,
+      "volume_mm3": 23701.719423
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 6,
+     "Line": 15
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 21,
+    "faces": 10,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 3,
+     "Plane": 6,
+     "Sphere": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 13,
+    "view_mode": "Solid",
+    "volume_mm3": 23701.719423
+   },
+   "case_id": "04_edge_round_004_vertex_blend_3edges_r4",
+   "category": "04_edge",
+   "commands": ["ConstantRound.Execute(sel edges, radius, ConstantRoundOptions)"],
+   "data": {
+    "edge_mids_mm": [
+     [20.0, 30.0, 20.0],
+     [40.0, 15.0, 20.0],
+     [40.0, 30.0, 10.0]
+    ]
+   },
+   "elapsed_s": 0.22,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "edge_round",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:45:03+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\04_edge",
+   "params": {
+    "edges": "3 edges meeting at vertex",
+    "r_mm": 4
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_round_004_vertex_blend_3edges_r4.scdoc",
+   "scdoc_size": "51105",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_round_004_vertex_blend_3edges_r4.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:45:03+08:00",
+   "status": "ok",
+   "title": "Constant radius round (fillet): 004_vertex_blend_3edges_r4"
+  },
+  {
+   "actual": {
+    "area_mm2": 1208.794219,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1208.794219,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 5.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 14,
+      "faces": 6,
+      "manifold": true,
+      "name": "Rib",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 1892.703229
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4,
+     "Line": 10
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 5
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 1892.703229
+   },
+   "case_id": "04_edge_fullround_001_rib_3faces",
+   "category": "04_edge",
+   "commands": ["FullRound.Execute(selFaces)"],
+   "data": {
+    "cylinder_faces": 1,
+    "fullround_form": 0
+   },
+   "elapsed_s": 0.38,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "edge_full_round",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:45:04+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\04_edge",
+   "params": {
+    "base": "block 40x5x10",
+    "faces": "side-top-side"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_fullround_001_rib_3faces.scdoc",
+   "scdoc_size": "34747",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_fullround_001_rib_3faces.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:45:03+08:00",
+   "status": "ok",
+   "title": "Full round: 001_rib_3faces"
+  },
+  {
+   "actual": {
+    "area_mm2": 5149.137085,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5149.137085,
+      "bbox_mm": [
+       [-0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 15,
+      "faces": 7,
+      "manifold": true,
+      "name": "Chamfer_Block_1Edge",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 23920.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 15
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 15,
+    "faces": 7,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 7
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 23920.0
+   },
+   "case_id": "04_edge_chamfer_001_block_1edge_d2",
+   "category": "04_edge",
+   "commands": ["Chamfer.Execute(sel, distance)", "Chamfer.Execute(sel, d1, d2)"],
+   "data": {},
+   "elapsed_s": 0.40000000000000002,
+   "expect": {
+    "bodies": 1,
+    "faces": 7,
+    "volume_mm3": 23920.0
+   },
+   "expect_mismatch": {},
+   "feature": "edge_chamfer",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:45:04+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\04_edge",
+   "params": {
+    "d_mm": 2
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_chamfer_001_block_1edge_d2.scdoc",
+   "scdoc_size": "30150",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_chamfer_001_block_1edge_d2.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:45:04+08:00",
+   "status": "ok",
+   "title": "Chamfer (equal/unequal): 001_block_1edge_d2"
+  },
+  {
+   "actual": {
+    "area_mm2": 5080.771541,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5080.771541,
+      "bbox_mm": [
+       [-0.0, -0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 20,
+      "faces": 10,
+      "manifold": true,
+      "name": "Chamfer_Block_4Edges",
+      "path": "",
+      "vertices": 12,
+      "volume_mm3": 23802.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 20
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 20,
+    "faces": 10,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 10
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 12,
+    "view_mode": "Solid",
+    "volume_mm3": 23802.0
+   },
+   "case_id": "04_edge_chamfer_002_block_4edges_d1_d3",
+   "category": "04_edge",
+   "commands": ["Chamfer.Execute(sel, distance)", "Chamfer.Execute(sel, d1, d2)"],
+   "data": {
+    "top_edges": 4
+   },
+   "elapsed_s": 0.23000000000000001,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "edge_chamfer",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:45:05+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\04_edge",
+   "params": {
+    "d1_mm": 1,
+    "d2_mm": 3
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_chamfer_002_block_4edges_d1_d3.scdoc",
+   "scdoc_size": "35613",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_chamfer_002_block_4edges_d1_d3.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:45:05+08:00",
+   "status": "ok",
+   "title": "Chamfer (equal/unequal): 002_block_4edges_d1_d3"
+  },
+  {
+   "actual": {
+    "area_mm2": 1846.848254,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1846.848254,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 3,
+      "faces": 4,
+      "manifold": true,
+      "name": "Chamfer_Cyl_Top",
+      "path": "",
+      "vertices": 3,
+      "volume_mm3": 6252.72786
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 3
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 3,
+    "faces": 4,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cone": 1,
+     "Cylinder": 1,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 3,
+    "view_mode": "Sketch",
+    "volume_mm3": 6252.72786
+   },
+   "case_id": "04_edge_chamfer_003_cyl_top_d1",
+   "category": "04_edge",
+   "commands": ["Chamfer.Execute(sel, distance)", "Chamfer.Execute(sel, d1, d2)"],
+   "data": {},
+   "elapsed_s": 0.17999999999999999,
+   "expect": {
+    "bodies": 1,
+    "faces": 4
+   },
+   "expect_mismatch": {},
+   "feature": "edge_chamfer",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:45:05+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\04_edge",
+   "params": {
+    "base": "cyl r10 h20",
+    "d_mm": 1
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_chamfer_003_cyl_top_d1.scdoc",
+   "scdoc_size": "111114",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_chamfer_003_cyl_top_d1.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:45:05+08:00",
+   "status": "ok",
+   "title": "Chamfer (equal/unequal): 003_cyl_top_d1"
+  },
+  {
+   "actual": {
+    "area_mm2": 5144.632726,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5144.632726,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 15,
+      "faces": 7,
+      "manifold": true,
+      "name": "SplitRound_Block",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 23922.750307
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 13
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 15,
+    "faces": 7,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 23922.750307
+   },
+   "case_id": "04_edge_splitround_001",
+   "category": "04_edge",
+   "commands": ["SplitRound.Execute", "NamedSelection.RestoreRounds", "RoundInfo.Create"],
+   "data": {
+    "round_face_edges": [
+     [
+      "Circle",
+      [40.0, 28.5, 18.5]
+     ],
+     [
+      "Line",
+      [20.0, 30.0, 17.0]
+     ],
+     [
+      "Circle",
+      [0.0, 28.5, 18.5]
+     ],
+     [
+      "Line",
+      [20.0, 27.0, 20.0]
+     ]
+    ],
+    "splitround_errors": ["Only one edge to be selected", "The SplitRound command must include a single Edge selection", "Only one edge to be selected"]
+   },
+   "elapsed_s": 0.76000000000000001,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 785, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_splitround_001.py\", line 25, in build\n    first_ok(ctx, \"splitround\", [\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 833, in first_ok\n    raise Exception(\"%s: all %d forms failed: %s\" % (key, len(fns), errs))\nException: splitround: all 3 forms failed: ['Only one edge to be selected', 'The SplitRound command must include a single Edge selection', 'Only one edge to be selected']\n",
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "edge_split_round",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:45:07+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\04_edge",
+   "params": {
+    "base": "block+round r3"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\04_edge\\04_edge_splitround_001.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:45:06+08:00",
+   "status": "failed",
+   "title": "Round utilities (split round, restore rounds): 001"
+  }
+ ],
+ "elapsed_s": 11.9,
+ "finished_at": "2026-09-26T07:45:07+08:00",
+ "framework": "1.2.1",
+ "mode": "headless",
+ "spaceclaim_version": "2019.3.38912",
+ "stage": "done",
+ "started_at": "2026-09-26T07:44:55+08:00",
+ "summary": {
+  "failed": 1,
+  "ok": 8
+ }
+}

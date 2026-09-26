@@ -1,0 +1,104 @@
+{
+ "actual": {
+  "area_mm2": 5200.0,
+  "beams": 0,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 5200.0,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [40.0, 30.0, 20.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Attr_Block",
+    "path": "",
+    "vertices": 8,
+    "volume_mm3": 24000.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Line": 12
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 12,
+  "faces": 6,
+  "layers": ["图层0", "L_red"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": ["Top_Bottom"],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Plane": 6
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 8,
+  "view_mode": "Solid",
+  "volume_mm3": 24000.0
+ },
+ "case_id": "11_doc_attrs_901_pilot_ns_layer_color",
+ "category": "11_doc_attrs",
+ "commands": ["NamedSelection.Create", "NamedSelection.Rename", "Layers.Create", "Layers.AssignLayer", "Layers.SetColor", "ColorHelper.SetColor"],
+ "data": {},
+ "elapsed_s": 0.33000000000000002,
+ "expect": {
+  "bodies": 1
+ },
+ "expect_mismatch": {},
+ "feature": "doc_named_selection",
+ "framework": "1.1",
+ "generated_at": "2026-09-26T07:26:11+08:00",
+ "items": {
+  "face_color": {
+   "ok": true,
+   "result": "True",
+   "s": 0.029999999999999999
+  },
+  "layer_assign": {
+   "ok": true,
+   "result": "True",
+   "s": 0.01
+  },
+  "layer_color": {
+   "ok": true,
+   "result": "True",
+   "s": 0.01
+  },
+  "layer_create": {
+   "ok": true,
+   "result": "True",
+   "s": 0.029999999999999999
+  },
+  "named_selection": {
+   "ok": true,
+   "result": "组1",
+   "s": 0.080000000000000002
+  }
+ },
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\_pilot\\out",
+ "params": {
+  "face_color": [0, 200, 0],
+  "layer": "L_red",
+  "named_selection": "Top_Bottom"
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\_pilot\\out\\11_doc_attrs_901_pilot_ns_layer_color.scdoc",
+ "scdoc_size": "27569",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\_pilot\\cases\\11_doc_attrs_901_pilot_ns_layer_color.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T07:26:10+08:00",
+ "status": "ok",
+ "title": "Named selection (2 faces) + layer + body/face colors"
+}

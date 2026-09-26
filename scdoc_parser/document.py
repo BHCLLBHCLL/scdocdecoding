@@ -130,6 +130,24 @@ class Units:
     factor: float = 1000.0
     symbol: str = 'mm'
     decimal_places: int = 2
+    system: str = 'Metric'   # Metric | Imperial (SpaceClaim Document.Units)
+
+
+@dataclass
+class ComponentRef:
+    id: str
+    source_ref: Optional[str] = None
+    transform: Optional[str] = None
+    parent_part_id: Optional[str] = None
+
+
+@dataclass
+class DocItem:
+    """Generic design-tree item (beam, datum, CS, mesh, drawing sheet, mate)."""
+    id: str
+    kind: str
+    name: Optional[str] = None
+    props: Dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -148,6 +166,18 @@ class DesignDocument:
     named: List[NamedSelection] = field(default_factory=list)
     units: Units = field(default_factory=Units)
     default_blend_radius: Optional[float] = None
+    components: List[ComponentRef] = field(default_factory=list)
+    beams: List[DocItem] = field(default_factory=list)
+    mating_conditions: List[DocItem] = field(default_factory=list)
+    datum_planes: List[DocItem] = field(default_factory=list)
+    coordinate_systems: List[DocItem] = field(default_factory=list)
+    meshes: List[DocItem] = field(default_factory=list)
+    drawing_sheets: List[DocItem] = field(default_factory=list)
+    named_views: List[DocItem] = field(default_factory=list)
+    materials: List[str] = field(default_factory=list)
+    sheet_metal: List[DocItem] = field(default_factory=list)
+    # PartDef id -> NominalBodyDef ids living directly under that part
+    part_body_ids: Dict[str, List[str]] = field(default_factory=dict)
 
     # -- lookup helpers -----------------------------------------------------
     def caption_for(self, subject_id: str) -> Optional[Caption]:
@@ -161,6 +191,56 @@ class DesignDocument:
             if b.id == doc_id:
                 return b
         return None
+
+    @property
+    def part_def_count(self) -> int:
+        """Non-root PartDef count (matches SpaceClaim part-template tally)."""
+        return max(0, len(self.parts) - 1)
+
+    @property
+    def coordinate_system_count(self) -> int:
+        """SpaceClaim always exposes the default CS; beam 'Reference' frames
+        are serialised as CoordinateSystemDef but not returned by
+        GetCoordinateSystems(), so only captioned non-Reference systems
+        count as extras.
+        """
+        extra = 0
+        for cs in self.coordinate_systems:
+            cap = self.caption_for(cs.id)
+            if cap is None:
+                continue
+            if (cap.name or '') in ('Reference', ''):
+                continue
+            extra += 1
+        return 1 + extra
+
+
+def _find_local(el: ET.Element, local_name: str) -> Optional[ET.Element]:
+    for child in el:
+        if _local(child.tag) == local_name:
+            return child
+    return None
+
+
+def _units_system(length_type: str) -> str:
+    t = (length_type or '').upper()
+    if t in ('INCHES', 'INCH', 'FEET', 'FOOT', 'MILS', 'MICROINCHES'):
+        return 'Imperial'
+    return 'Metric'
+
+
+def _units_length_symbol(length_type: str, symbol: Optional[str]) -> str:
+    """Map SpaceClaim length type / symbol to the corpus `units_length` token."""
+    if symbol:
+        return symbol
+    t = (length_type or '').upper()
+    return {
+        'MM': 'mm', 'MILLIMETERS': 'mm', 'MILLIMETRE': 'mm', 'MILLIMETRES': 'mm',
+        'CM': 'cm', 'CENTIMETERS': 'cm',
+        'M': 'm', 'METERS': 'm', 'METRES': 'm',
+        'INCHES': 'in', 'INCH': 'in',
+        'FEET': 'ft', 'FOOT': 'ft',
+    }.get(t, (length_type or 'mm').lower())
 
 
 def parse_document(xml_bytes: bytes) -> DesignDocument:
@@ -208,7 +288,13 @@ def parse_document(xml_bytes: bytes) -> DesignDocument:
     for el in root.iter():
         tag = _local(el.tag)
         if tag == 'PartDef':
-            doc.parts.append(el.get('Id', ''))
+            pid = el.get('Id', '')
+            doc.parts.append(pid)
+            body_ids = []
+            for child in el:
+                if _local(child.tag) == 'NominalBodyDef':
+                    body_ids.append(child.get('Id', ''))
+            doc.part_body_ids[pid] = body_ids
         elif tag == 'LayerDef':
             doc.layers.append(Layer(
                 id=el.get('Id', ''),
@@ -261,12 +347,67 @@ def parse_document(xml_bytes: bytes) -> DesignDocument:
                 color=_text(el, 'color'),
             ))
         elif tag == 'DocumentUnitsDef':
-            lp = el.find('units/lengthProperties')
+            units_el = _find_local(el, 'units')
+            lp = _find_local(units_el, 'lengthProperties') if units_el is not None else None
+            if lp is None:
+                # namespace-tolerant deep search
+                for sub in el.iter():
+                    if _local(sub.tag) == 'lengthProperties':
+                        lp = sub
+                        break
             if lp is not None:
+                length_type = _text(lp, 'type') or 'MM'
+                symbol = _text(lp, 'symbol') or 'mm'
                 doc.units = Units(
-                    length_type=_text(lp, 'type') or 'MM',
+                    length_type=length_type,
                     factor=float(_text(lp, 'factor') or 1000),
-                    symbol=_text(lp, 'symbol') or 'mm',
+                    symbol=symbol,
                     decimal_places=int(_text(lp, 'decimalPlaces') or 2),
+                    system=_units_system(length_type),
                 )
+        elif tag == 'ComponentDef':
+            source = None
+            for sub in el:
+                if _local(sub.tag) == 'source':
+                    source = sub.get('refId')
+                    break
+            doc.components.append(ComponentRef(
+                id=el.get('Id', ''),
+                source_ref=source,
+                transform=_text(el, 'trans'),
+            ))
+        elif tag == 'BeamDef':
+            doc.beams.append(DocItem(id=el.get('Id', ''), kind='beam',
+                                     name=_text(el, 'name')))
+        elif tag == 'MatingConditionDef':
+            doc.mating_conditions.append(DocItem(
+                id=el.get('Id', ''), kind='mate',
+                name=_text(el, 'name') or _text(el, 'type')))
+        elif tag == 'DatumDef':
+            doc.datum_planes.append(DocItem(
+                id=el.get('Id', ''), kind='datum',
+                name=_text(el, 'name')))
+        elif tag == 'CoordinateSystemDef':
+            doc.coordinate_systems.append(DocItem(
+                id=el.get('Id', ''), kind='coordsys',
+                name=_text(el, 'name')))
+        elif tag == 'MeshDef':
+            doc.meshes.append(DocItem(
+                id=el.get('Id', ''), kind='mesh',
+                name=_text(el, 'name')))
+        elif tag == 'DrawingSheetDef':
+            doc.drawing_sheets.append(DocItem(
+                id=el.get('Id', ''), kind='drawing_sheet',
+                name=_text(el, 'name')))
+        elif tag == 'NamedViewDef':
+            doc.named_views.append(DocItem(
+                id=el.get('Id', ''), kind='named_view',
+                name=_text(el, 'name')))
+        elif tag == 'SheetMetalBehaviorDef':
+            doc.sheet_metal.append(DocItem(
+                id=el.get('Id', ''), kind='sheet_metal'))
+        elif tag in ('MaterialDef', 'MaterialDatabaseMaterialDef'):
+            name = _text(el, 'name') or _text(el, 'displayName')
+            if name and name not in doc.materials:
+                doc.materials.append(name)
     return doc

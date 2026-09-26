@@ -1,0 +1,133 @@
+{
+ "actual": {
+  "area_mm2": 1800.0,
+  "beams": 0,
+  "bodies": 3,
+  "body_list": [
+   {
+    "area_mm2": 600.0,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [10.0, 10.0, 10.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Pattern_Block",
+    "path": "Component_1/Component_2",
+    "vertices": 8,
+    "volume_mm3": 1000.0
+   },
+   {
+    "area_mm2": 600.0,
+    "bbox_mm": [
+     [25.0, 0.0, 0.0],
+     [35.0, 10.0, 10.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Pattern_Block",
+    "path": "Component_1/Component_3",
+    "vertices": 8,
+    "volume_mm3": 1000.0
+   },
+   {
+    "area_mm2": 600.0,
+    "bbox_mm": [
+     [50.0, 0.0, 0.0],
+     [60.0, 10.0, 10.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Pattern_Block",
+    "path": "Component_1/Component_4",
+    "vertices": 8,
+    "volume_mm3": 1000.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [
+   {
+    "name": "Component_1",
+    "path": ""
+   },
+   {
+    "name": "Component_2",
+    "path": "Component_1"
+   },
+   {
+    "name": "Component_3",
+    "path": "Component_1"
+   },
+   {
+    "name": "Component_4",
+    "path": "Component_1"
+   }
+  ],
+  "components": 4,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Line": 36
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 36,
+  "faces": 18,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 2,
+  "root_curves": 0,
+  "surface_types": {
+   "Plane": 18
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 24,
+  "view_mode": "Solid",
+  "volume_mm3": 3000.0
+ },
+ "case_id": "06_pattern_linear_003_body_copy_3",
+ "category": "06_move_pattern",
+ "commands": ["Pattern.CreateLinear(sel, LinearPatternData)", "Pattern.ModifyLinear"],
+ "data": {
+  "auto_renamed": [
+   ["", "Component_1"],
+   ["", "Component_2"],
+   ["", "Component_3"],
+   ["", "Component_4"]
+  ],
+  "linear_members": ["CountX", "CountY", "Equals", "GetHashCode", "GetType", "LinearDirection", "MemberwiseClone", "PatternDimension", "PitchX", "PitchY", "ReferenceEquals", "ToString"],
+  "pattern_success": true
+ },
+ "elapsed_s": 0.16,
+ "expect": {
+  "bodies": 3
+ },
+ "expect_mismatch": {},
+ "feature": "mp_pattern_linear",
+ "framework": "1.2.3",
+ "generated_at": "2026-09-26T08:05:59+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+ "params": {
+  "count": 3,
+  "pitch_mm": 25
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_linear_003_body_copy_3.scdoc",
+ "scdoc_size": "27985",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_linear_003_body_copy_3.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:05:59+08:00",
+ "status": "ok",
+ "title": "Linear pattern: 003_body_copy_3"
+}

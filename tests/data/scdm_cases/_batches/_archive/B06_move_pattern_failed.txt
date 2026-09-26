@@ -1,0 +1,6 @@
+D:\training\caedecoder\scdm_cases\06_move_pattern\06_pattern_linear_001_cyl_1d_5x10.py
+D:\training\caedecoder\scdm_cases\06_move_pattern\06_pattern_linear_002_hole_2d_3x4.py
+D:\training\caedecoder\scdm_cases\06_move_pattern\06_pattern_linear_003_body_copy_3.py
+D:\training\caedecoder\scdm_cases\06_move_pattern\06_pattern_circular_001_holes_6_360.py
+D:\training\caedecoder\scdm_cases\06_move_pattern\06_pattern_circular_002_bodies_4_180.py
+D:\training\caedecoder\scdm_cases\06_move_pattern\06_pattern_fill_001_holes_in_plate.py

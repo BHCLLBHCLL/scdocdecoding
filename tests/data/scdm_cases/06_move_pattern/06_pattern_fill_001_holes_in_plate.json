@@ -1,0 +1,95 @@
+{
+ "actual": {
+  "area_mm2": 11904.778684,
+  "beams": 0,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 11904.778684,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [80.0, 60.0, 5.0]
+    ],
+    "closed": true,
+    "edges": 60,
+    "faces": 30,
+    "manifold": true,
+    "name": "Plate_Fill",
+    "path": "",
+    "vertices": 56,
+    "volume_mm3": 22492.035526
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Circle": 48,
+   "Line": 12
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 60,
+  "faces": 30,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Cylinder": 24,
+   "Plane": 6
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 56,
+  "view_mode": "Solid",
+  "volume_mm3": 22492.035526
+ },
+ "case_id": "06_pattern_fill_001_holes_in_plate",
+ "category": "06_move_pattern",
+ "commands": ["Pattern.CreateFill(sel, FillPatternData)"],
+ "data": {
+  "fill_errors": ["未将对象引用设置到对象的实例。"],
+  "fill_form": 1,
+  "fill_members": ["ColumnXOffset", "ColumnYOffset", "Equals", "FillPatternType", "GetHashCode", "GetType", "LinearDirection", "Margin", "MemberwiseClone", "ReferenceEquals", "RowXOffset", "RowYOffset", "ToString", "XSpacing", "YSpacing"],
+  "hole_faces": 24,
+  "regions_after_intersect": [
+   ["Plate_Fill", 23937.168147],
+   ["Hole_Cutter", 87.964594],
+   ["实体", 62.831853]
+  ]
+ },
+ "elapsed_s": 0.69999999999999996,
+ "expect": {
+  "bodies": 1
+ },
+ "expect_mismatch": {},
+ "feature": "mp_pattern_fill",
+ "framework": "1.2.3",
+ "generated_at": "2026-09-26T08:06:03+08:00",
+ "items": {
+  "RemoveRegions": {
+   "ok": true,
+   "result": "True",
+   "s": 0.0
+  }
+ },
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+ "params": {
+  "member": "hole r2",
+  "region": "plate face 80x60"
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_fill_001_holes_in_plate.scdoc",
+ "scdoc_size": "227104",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_fill_001_holes_in_plate.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:06:02+08:00",
+ "status": "ok",
+ "title": "Fill pattern: 001_holes_in_plate"
+}

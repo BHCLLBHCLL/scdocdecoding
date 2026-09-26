@@ -1,0 +1,1213 @@
+{
+ "batch": "B05_boolean",
+ "cases": [
+  {
+   "actual": {
+    "area_mm2": 4800.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 2400.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [20.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Merge_A",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     },
+     {
+      "area_mm2": 2400.0,
+      "bbox_mm": [
+       [10.0, 10.0, 10.0],
+       [30.0, 30.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Merge_B",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 16000.0
+   },
+   "case_id": "05_boolean_merge_001_two_blocks_overlap",
+   "category": "05_boolean",
+   "commands": ["Combine.Merge(target, tool)", "MergeBodies.Execute"],
+   "data": {},
+   "elapsed_s": 3.04,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 785, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_merge_001_two_blocks_overlap.py\", line 19, in build\n    Combine.Merge(sel(a), sel(b))\nValueError: The Merge command must include at least two Body selections\n",
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 15000.0
+   },
+   "expect_mismatch": {
+    "bodies": {
+     "actual": 2,
+     "expected": 1
+    },
+    "volume_mm3": {
+     "actual": 16000.0,
+     "expected": 15000.0
+    }
+   },
+   "feature": "bool_merge",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:42:28+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\05_boolean",
+   "params": {
+    "a": "block 0..20",
+    "b": "block 10..30"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_merge_001_two_blocks_overlap.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:42:25+08:00",
+   "status": "failed",
+   "title": "Combine - merge (union): 001_two_blocks_overlap"
+  },
+  {
+   "actual": {
+    "area_mm2": 6710.088333,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 4800.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 40.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Merge_Base",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 16000.0
+     },
+     {
+      "area_mm2": 1910.088333,
+      "bbox_mm": [
+       [12.0, 12.0, 0.0],
+       [28.0, 28.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Merge_Boss",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 6031.857895
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 9,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 22031.857895
+   },
+   "case_id": "05_boolean_merge_002_block_plus_cyl",
+   "category": "05_boolean",
+   "commands": ["Combine.Merge(target, tool)", "MergeBodies.Execute"],
+   "data": {},
+   "elapsed_s": 0.58999999999999997,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 785, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_merge_002_block_plus_cyl.py\", line 19, in build\n    Combine.Merge(sel(a), sel(b))\nValueError: The Merge command must include at least two Body selections\n",
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 20021.238597
+   },
+   "expect_mismatch": {
+    "bodies": {
+     "actual": 2,
+     "expected": 1
+    },
+    "volume_mm3": {
+     "actual": 22031.857895,
+     "expected": 20021.238597
+    }
+   },
+   "feature": "bool_merge",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:42:30+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\05_boolean",
+   "params": {
+    "a": "block 40x40x10",
+    "b": "cyl r8 h30 at center"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_merge_002_block_plus_cyl.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:42:30+08:00",
+   "status": "failed",
+   "title": "Combine - merge (union): 002_block_plus_cyl"
+  },
+  {
+   "actual": {
+    "area_mm2": 4800.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 2400.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [20.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Touch_A",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     },
+     {
+      "area_mm2": 2400.0,
+      "bbox_mm": [
+       [20.0, 0.0, 0.0],
+       [40.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Touch_B",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 16000.0
+   },
+   "case_id": "05_boolean_merge_003_touching_faces",
+   "category": "05_boolean",
+   "commands": ["Combine.Merge(target, tool)", "MergeBodies.Execute"],
+   "data": {},
+   "elapsed_s": 0.13,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 785, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_merge_003_touching_faces.py\", line 19, in build\n    Combine.Merge(sel(a), sel(b))\nValueError: The Merge command must include at least two Body selections\n",
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 16000.0
+   },
+   "expect_mismatch": {
+    "bodies": {
+     "actual": 2,
+     "expected": 1
+    }
+   },
+   "feature": "bool_merge",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:42:31+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\05_boolean",
+   "params": {
+    "a": "block",
+    "b": "block sharing a face"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_merge_003_touching_faces.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:42:31+08:00",
+   "status": "failed",
+   "title": "Combine - merge (union): 003_touching_faces"
+  },
+  {
+   "actual": {
+    "area_mm2": 6871.238898,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 6871.238898,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 40.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 14,
+      "faces": 7,
+      "manifold": true,
+      "name": "Plate_With_Hole",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 30429.203673
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 7,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 30429.203673
+   },
+   "case_id": "05_boolean_subtract_001_block_minus_cyl",
+   "category": "05_boolean",
+   "commands": ["Combine.Intersect(target, tool, MakeSolidsOptions)", "Combine.RemoveRegions"],
+   "data": {
+    "regions_after_intersect": [
+     ["Plate", 30429.203673],
+     ["Cutter", 2356.19449],
+     ["实体", 1570.796327]
+    ]
+   },
+   "elapsed_s": 2.27,
+   "expect": {
+    "bodies": 1,
+    "faces": 7,
+    "volume_mm3": 30429.203673
+   },
+   "expect_mismatch": {},
+   "feature": "bool_subtract",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:42:33+08:00",
+   "items": {
+    "RemoveRegions": {
+     "ok": true,
+     "result": "True",
+     "s": 0.02
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\05_boolean",
+   "params": {
+    "a": "block 40x40x20",
+    "b": "cyl r5 through"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_subtract_001_block_minus_cyl.scdoc",
+   "scdoc_size": "38193",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_subtract_001_block_minus_cyl.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:42:31+08:00",
+   "status": "ok",
+   "title": "Combine - subtract (cut body with tool, RemoveRegions): 001_block_minus_cyl"
+  },
+  {
+   "actual": {
+    "area_mm2": 9423.285596,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 9423.285596,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 40.0, 40.0]
+      ],
+      "closed": true,
+      "edges": 15,
+      "faces": 7,
+      "manifold": true,
+      "name": "Cube_Corner_Cut",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 62232.863377
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 3,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 15,
+    "faces": 7,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6,
+     "Sphere": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 62232.863377
+   },
+   "case_id": "05_boolean_subtract_002_block_minus_sphere",
+   "category": "05_boolean",
+   "commands": ["Combine.Intersect(target, tool, MakeSolidsOptions)", "Combine.RemoveRegions"],
+   "data": {
+    "regions_after_intersect": [
+     ["Cube", 62232.863377],
+     ["Corner_Sphere", 14137.166941],
+     ["实体", 1765.973353]
+    ]
+   },
+   "elapsed_s": 0.27000000000000002,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 62232.854132
+   },
+   "expect_mismatch": {},
+   "feature": "bool_subtract",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:42:34+08:00",
+   "items": {
+    "RemoveRegions": {
+     "ok": true,
+     "result": "True",
+     "s": 0.0
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\05_boolean",
+   "params": {
+    "a": "block 40",
+    "b": "sphere r15 at corner"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_subtract_002_block_minus_sphere.scdoc",
+   "scdoc_size": "52182",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_subtract_002_block_minus_sphere.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:42:33+08:00",
+   "status": "ok",
+   "title": "Combine - subtract (cut body with tool, RemoveRegions): 002_block_minus_sphere"
+  },
+  {
+   "actual": {
+    "area_mm2": 7970.796327,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 6871.238898,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 40.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 14,
+      "faces": 7,
+      "manifold": true,
+      "name": "Plate_With_Hole",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 30429.203673
+     },
+     {
+      "area_mm2": 1099.557429,
+      "bbox_mm": [
+       [15.0, 15.0, -5.0],
+       [25.0, 25.0, 25.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Cutter_Kept",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 2356.19449
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 16,
+    "faces": 10,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 12,
+    "view_mode": "Solid",
+    "volume_mm3": 32785.398163
+   },
+   "case_id": "05_boolean_subtract_003_keep_cutter",
+   "category": "05_boolean",
+   "commands": ["Combine.Intersect(target, tool, MakeSolidsOptions)", "Combine.RemoveRegions"],
+   "data": {
+    "regions_after_intersect": [
+     ["Plate", 30429.203673],
+     ["Cutter", 2356.19449],
+     ["实体", 1570.796327]
+    ]
+   },
+   "elapsed_s": 0.19,
+   "expect": {
+    "bodies": 2
+   },
+   "expect_mismatch": {},
+   "feature": "bool_subtract",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:42:34+08:00",
+   "items": {
+    "RemoveRegions": {
+     "ok": true,
+     "result": "True",
+     "s": 0.0
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\05_boolean",
+   "params": {
+    "keepCutter": true
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_subtract_003_keep_cutter.scdoc",
+   "scdoc_size": "50850",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_subtract_003_keep_cutter.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:42:34+08:00",
+   "status": "ok",
+   "title": "Combine - subtract (cut body with tool, RemoveRegions): 003_keep_cutter"
+  },
+  {
+   "actual": {
+    "area_mm2": 942.301899,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 942.301899,
+      "bbox_mm": [
+       [-10.0, -10.0, -10.0],
+       [10.0, 10.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 18,
+      "faces": 7,
+      "manifold": true,
+      "name": "Cube_Sphere_Common",
+      "path": "",
+      "vertices": 14,
+      "volume_mm3": 326.146037
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 6,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 18,
+    "faces": 7,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6,
+     "Sphere": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 14,
+    "view_mode": "Solid",
+    "volume_mm3": 326.146037
+   },
+   "case_id": "05_boolean_intersect_001_block_sphere",
+   "category": "05_boolean",
+   "commands": ["Combine.Intersect + RemoveRegions"],
+   "data": {
+    "regions_after_intersect": [
+     [
+      [0.0, 0.0, 0.0],
+      326.146037
+     ],
+     [
+      [0.0, 0.0, 0.0],
+      11494.040322
+     ],
+     [
+      [0.0, 0.0, 0.0],
+      7673.942599
+     ]
+    ]
+   },
+   "elapsed_s": 0.27000000000000002,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "bool_intersect",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:42:35+08:00",
+   "items": {
+    "RemoveRegions": {
+     "ok": true,
+     "result": "True",
+     "s": 0.01
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\05_boolean",
+   "params": {
+    "a": "block 20",
+    "b": "sphere r14 centered"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_intersect_001_block_sphere.scdoc",
+   "scdoc_size": "100427",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_intersect_001_block_sphere.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:42:34+08:00",
+   "status": "ok",
+   "title": "Combine - intersect (common): 001_block_sphere"
+  },
+  {
+   "actual": {
+    "area_mm2": 4398.229715,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 4398.229715,
+      "bbox_mm": [
+       [-10.0, -30.0, -10.0],
+       [10.0, 30.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Steinmetz",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 18849.555922
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 18849.555922
+   },
+   "case_id": "05_boolean_intersect_002_two_cylinders_cross",
+   "category": "05_boolean",
+   "commands": ["Combine.Intersect + RemoveRegions"],
+   "data": {
+    "regions_after_intersect": [
+     [
+      [0.0, 0.0, 0.0],
+      18849.555922
+     ],
+     [
+      [0.0, 0.0, 0.0],
+      5333.320022
+     ],
+     [
+      [-15.0, 0.0, 0.0],
+      6757.345534
+     ],
+     [
+      [15.0, 0.0, 0.0],
+      6757.627831
+     ]
+    ]
+   },
+   "elapsed_s": 0.51000000000000001,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 5333.333333
+   },
+   "expect_mismatch": {
+    "volume_mm3": {
+     "actual": 18849.555922,
+     "expected": 5333.333333
+    }
+   },
+   "feature": "bool_intersect",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:42:35+08:00",
+   "items": {
+    "RemoveRegions": {
+     "ok": true,
+     "result": "True",
+     "s": 0.0
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\05_boolean",
+   "params": {
+    "a": "cyl X r10",
+    "b": "cyl Y r10"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_intersect_002_two_cylinders_cross.scdoc",
+   "scdoc_size": "80969",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_intersect_002_two_cylinders_cross.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:42:35+08:00",
+   "status": "mismatch",
+   "title": "Combine - intersect (common): 002_two_cylinders_cross"
+  },
+  {
+   "actual": {
+    "area_mm2": 7600.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 3800.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Split_Lower",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 12000.0
+     },
+     {
+      "area_mm2": 3800.0,
+      "bbox_mm": [
+       [0.0, 0.0, 10.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Split_Upper",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 12000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "05_boolean_splitbody_001_block_by_plane_mid",
+   "category": "05_boolean",
+   "commands": ["SplitBody.ByCutter(body, Plane)", "SplitBody.ByCutter(body, toolFaces, extend)"],
+   "data": {},
+   "elapsed_s": 0.19,
+   "expect": {
+    "bodies": 2,
+    "volume_mm3": 24000.0
+   },
+   "expect_mismatch": {},
+   "feature": "bool_split_body",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:42:36+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\05_boolean",
+   "params": {
+    "plane": "z=10"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_splitbody_001_block_by_plane_mid.scdoc",
+   "scdoc_size": "38172",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_splitbody_001_block_by_plane_mid.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:42:36+08:00",
+   "status": "ok",
+   "title": "Split body by plane / face / body: 001_block_by_plane_mid"
+  },
+  {
+   "actual": {
+    "area_mm2": 4030.169242,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 2015.084621,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Split_Cyl_Lower",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 6283.185307
+     },
+     {
+      "area_mm2": 2015.084621,
+      "bbox_mm": [
+       [-10.0, -10.0, 10.0],
+       [10.0, 10.0, 40.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Split_Cyl_Upper",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 6283.185307
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Ellipse": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 4
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Sketch",
+    "volume_mm3": 12566.370614
+   },
+   "case_id": "05_boolean_splitbody_002_cyl_by_oblique_plane",
+   "category": "05_boolean",
+   "commands": ["SplitBody.ByCutter(body, Plane)", "SplitBody.ByCutter(body, toolFaces, extend)"],
+   "data": {},
+   "elapsed_s": 0.25,
+   "expect": {
+    "bodies": 2,
+    "volume_mm3": 12566.370614
+   },
+   "expect_mismatch": {},
+   "feature": "bool_split_body",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:42:37+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\05_boolean",
+   "params": {
+    "plane": "normal (1,0,1)"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_splitbody_002_cyl_by_oblique_plane.scdoc",
+   "scdoc_size": "139190",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_splitbody_002_cyl_by_oblique_plane.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:42:36+08:00",
+   "status": "ok",
+   "title": "Split body by plane / face / body: 002_cyl_by_oblique_plane"
+  },
+  {
+   "actual": {
+    "area_mm2": 10600.0,
+    "beams": 0,
+    "bodies": 3,
+    "body_list": [
+     {
+      "area_mm2": 3520.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 8.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Split_By_Face_Lower",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 9600.0
+     },
+     {
+      "area_mm2": 3000.0,
+      "bbox_mm": [
+       [-10.0, -10.0, 8.0],
+       [50.0, 40.0, 8.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Split_Tool_Sheet",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 4080.0,
+      "bbox_mm": [
+       [0.0, 0.0, 8.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Split_By_Face_Upper",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 14400.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 28
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 28,
+    "faces": 13,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 13
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 20,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "05_boolean_splitbody_003_by_face",
+   "category": "05_boolean",
+   "commands": ["SplitBody.ByCutter(body, Plane)", "SplitBody.ByCutter(body, toolFaces, extend)"],
+   "data": {},
+   "elapsed_s": 0.38,
+   "expect": {
+    "bodies": 3
+   },
+   "expect_mismatch": {},
+   "feature": "bool_split_body",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:42:37+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\05_boolean",
+   "params": {
+    "tool": "face of other body"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_splitbody_003_by_face.scdoc",
+   "scdoc_size": "41788",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_splitbody_003_by_face.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:42:37+08:00",
+   "status": "ok",
+   "title": "Split body by plane / face / body: 003_by_face"
+  },
+  {
+   "actual": {
+    "area_mm2": 7499.557429,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 6400.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 40.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Imprint_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 32000.0
+     },
+     {
+      "area_mm2": 1099.557429,
+      "bbox_mm": [
+       [15.0, 15.0, 10.0],
+       [25.0, 25.0, 40.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Imprint_Tool",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 2356.19449
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 9,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 34356.19449
+   },
+   "case_id": "05_boolean_imprint_001_block_cyl_curves",
+   "category": "05_boolean",
+   "commands": ["Combine.Intersect(target, tool, MakeCurvesOptions)", "FixImprint"],
+   "data": {
+    "auto_renamed": [
+     ["圆", "Curve_1"]
+    ],
+    "block_faces_before_after": [6, 6]
+   },
+   "elapsed_s": 0.45000000000000001,
+   "expect": {
+    "bodies": 2
+   },
+   "expect_mismatch": {},
+   "feature": "bool_imprint",
+   "framework": "1.2.1",
+   "generated_at": "2026-09-26T07:42:38+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\05_boolean",
+   "params": {
+    "mode": "MakeCurves"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_imprint_001_block_cyl_curves.scdoc",
+   "scdoc_size": "43435",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\05_boolean\\05_boolean_imprint_001_block_cyl_curves.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:42:37+08:00",
+   "status": "ok",
+   "title": "Imprint / intersect to curves: 001_block_cyl_curves"
+  }
+ ],
+ "elapsed_s": 13.36,
+ "finished_at": "2026-09-26T07:42:38+08:00",
+ "framework": "1.2.1",
+ "mode": "headless",
+ "spaceclaim_version": "2019.3.38912",
+ "stage": "done",
+ "started_at": "2026-09-26T07:42:25+08:00",
+ "summary": {
+  "failed": 3,
+  "mismatch": 1,
+  "ok": 8
+ }
+}

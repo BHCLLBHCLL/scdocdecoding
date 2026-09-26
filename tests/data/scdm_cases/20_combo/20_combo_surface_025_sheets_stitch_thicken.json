@@ -1,0 +1,108 @@
+{
+ "actual": {
+  "area_mm2": 1835.079633,
+  "beams": 0,
+  "bodies": 2,
+  "body_list": [
+   {
+    "area_mm2": 1678.0,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [20.0, 20.0, 20.0]
+    ],
+    "closed": true,
+    "edges": 18,
+    "faces": 8,
+    "manifold": true,
+    "name": "Sheet_Floor",
+    "path": "",
+    "vertices": 12,
+    "volume_mm3": 780.0
+   },
+   {
+    "area_mm2": 157.079633,
+    "bbox_mm": [
+     [-5.0, 0.0, 30.0],
+     [5.0, 5.0, 40.0]
+    ],
+    "closed": false,
+    "edges": 4,
+    "faces": 1,
+    "manifold": true,
+    "name": "Cyl_Patch",
+    "path": "",
+    "vertices": 4,
+    "volume_mm3": 0.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Circle": 2,
+   "Line": 20
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 22,
+  "faces": 9,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Cylinder": 1,
+   "Plane": 8
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 16,
+  "view_mode": "Sketch",
+  "volume_mm3": 780.0
+ },
+ "case_id": "20_combo_surface_025_sheets_stitch_thicken",
+ "category": "20_combo",
+ "commands": ["prim_planar_body", "sc_surfaces", "rp_fix", "so_thicken"],
+ "data": {
+  "bodies_after": [
+   ["Sheet_Floor", false, 780.0],
+   ["Cyl_Patch", true, 0.0]
+  ],
+  "intent_checks": [
+   ["stitched_two_face_sheet", "1", "1", true],
+   ["has_solid", "True", "True", true]
+  ],
+  "stitch_form": 0,
+  "stitched": 1,
+  "thicken_errors": ["Execute() takes at least 4 arguments (3 given)"],
+  "thicken_form": 1
+ },
+ "elapsed_s": 0.40999999999999998,
+ "expect": {},
+ "expect_mismatch": {},
+ "feature": "combo",
+ "framework": "1.3",
+ "generated_at": "2026-09-26T08:39:12+08:00",
+ "items": {
+  "surface_body": {
+   "ok": true,
+   "result": "True",
+   "s": 0.02
+  }
+ },
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\20_combo",
+ "params": {},
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_surface_025_sheets_stitch_thicken.scdoc",
+ "scdoc_size": "103181",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_surface_025_sheets_stitch_thicken.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:39:11+08:00",
+ "status": "ok",
+ "title": "Sheets: 2 planar + 1 cylindrical surface stitched, thickened 2mm"
+}

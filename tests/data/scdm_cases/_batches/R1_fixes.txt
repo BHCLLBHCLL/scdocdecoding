@@ -1,0 +1,8 @@
+D:\training\caedecoder\scdm_cases\03_pull\03_pull_profile_001_rect_30x10_h5.py
+D:\training\caedecoder\scdm_cases\03_pull\03_pull_profile_002_circle_r6_h12.py
+D:\training\caedecoder\scdm_cases\02_sketch\02_sketch_round2d_001_rect_corner_r4.py
+D:\training\caedecoder\scdm_cases\07_shell_offset\07_replaceface_001_block_top_to_plane.py
+D:\training\caedecoder\scdm_cases\06_move_pattern\06_pattern_linear_002_hole_2d_3x4.py
+D:\training\caedecoder\scdm_cases\03_pull\03_pull_cut_003_upto_face.py
+D:\training\caedecoder\scdm_cases\07_shell_offset\07_draft_001_block_4sides_5deg.py
+D:\training\caedecoder\scdm_cases\07_shell_offset\07_draft_002_cyl_side_3deg.py

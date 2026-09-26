@@ -1,0 +1,3129 @@
+{
+ "batch": "R2_combined",
+ "cases": [
+  {
+   "actual": {
+    "area_mm2": 7805.309649,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 6950.796447,
+      "bbox_mm": [
+       [34.944885, 0.011383000000000001, 0.0],
+       [95.055624, 40.177684, 10.0]
+      ],
+      "closed": true,
+      "edges": 14,
+      "faces": 7,
+      "manifold": true,
+      "name": "Plate_Body",
+      "path": "Component_1",
+      "vertices": 10,
+      "volume_mm3": 23497.345175
+     },
+     {
+      "area_mm2": 854.513202,
+      "bbox_mm": [
+       [60.989372, 16.08365, 5.0],
+       [69.011138, 24.105416, 35.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Pin_Body",
+      "path": "Component_2",
+      "vertices": 2,
+      "volume_mm3": 1507.964474
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     },
+     {
+      "name": "Component_2",
+      "path": ""
+     }
+    ],
+    "components": 2,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 16,
+    "faces": 10,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 1,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 2,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 12,
+    "view_mode": "Solid",
+    "volume_mm3": 25005.309649
+   },
+   "case_id": "10_assembly_align_001_axis_axis",
+   "category": "10_assembly",
+   "commands": ["(raw API) AlignCondition.Create / TangentCondition.Create / OrientCondition.Create / AnchorCondition.Create / RigidCondition.Create / GearCondition.Create (SpaceClaim.Api.V19)"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"],
+     ["", "Component_2"]
+    ],
+    "intent_checks": [],
+    "pin_bbox_after": [
+     [96.0, 16.0, 5.0],
+     [104.0, 24.0, 35.0]
+    ],
+    "regions_after_intersect": [
+     ["Plate_Body", 23497.345175],
+     ["Hole_Cutter", 1005.309649],
+     ["实体", 502.654825]
+    ]
+   },
+   "elapsed_s": 4.34,
+   "expect": {
+    "components": 2,
+    "mating_conditions": 1
+   },
+   "expect_mismatch": {},
+   "feature": "asm_conditions",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:21+08:00",
+   "items": {
+    "RemoveRegions": {
+     "ok": true,
+     "result": "True",
+     "s": 0.01
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\10_assembly",
+   "params": {
+    "a": "plate hole axis",
+    "b": "pin axis"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_align_001_axis_axis.scdoc",
+   "scdoc_size": "48953",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_align_001_axis_axis.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:16+08:00",
+   "status": "ok",
+   "title": "Assembly conditions (align, tangent, orient, anchor, rigid, gear): 001_axis_axis"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Datum_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 2,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_datum_003_origin_rotated",
+   "category": "11_doc_attrs",
+   "commands": ["DatumPlaneCreator.Create", "DatumLineCreator.Create", "DatumPointCreator.Create", "DatumOriginCreator.Create"],
+   "data": {
+    "intent_checks": [
+     ["coordinate_systems", "2", "[1, 2]", true]
+    ]
+   },
+   "elapsed_s": 0.25,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_datum",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:21+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "rot_deg": 30
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_datum_003_origin_rotated.scdoc",
+   "scdoc_size": "28624",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_datum_003_origin_rotated.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:21+08:00",
+   "status": "ok",
+   "title": "Datum plane / axis / point / origin (coordinate system): 003_origin_rotated"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "CS_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 2,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_coordsys_001_translated_rotated",
+   "category": "11_doc_attrs",
+   "commands": ["(raw API) CoordinateSystem.Create", "DatumOriginCreator.Create"],
+   "data": {
+    "coordsys_form": 0,
+    "intent_checks": [
+     ["coordinate_systems", "2", "[1, 2]", true]
+    ]
+   },
+   "elapsed_s": 0.19,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_coordsys",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:21+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "origin": [10, 0, 0],
+    "rot_deg": 30
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_coordsys_001_translated_rotated.scdoc",
+   "scdoc_size": "29146",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_coordsys_001_translated_rotated.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:21+08:00",
+   "status": "ok",
+   "title": "Coordinate system: 001_translated_rotated"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Steel_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {
+     "Steel_Block": "Steel"
+    },
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料", "Steel"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_material_001_steel",
+   "category": "11_doc_attrs",
+   "commands": ["(raw API) DocumentMaterial.Create / LibraryMaterial -> DesignBody.Material"],
+   "data": {
+    "intent_checks": [
+     ["body_material", "Steel", "Steel", true]
+    ],
+    "mass_props": null,
+    "material_density": null
+   },
+   "elapsed_s": 0.17999999999999999,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_material",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:22+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "material": "Steel"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_material_001_steel.scdoc",
+   "scdoc_size": "27462",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_material_001_steel.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:21+08:00",
+   "status": "ok",
+   "title": "Material assignment: 001_steel"
+  },
+  {
+   "actual": {
+    "area_mm2": 41440.0,
+    "beams": 1,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 41440.0,
+      "bbox_mm": [
+       [-25.0, 0.0, -100.0],
+       [25.0, 100.0, 0.0]
+      ],
+      "closed": true,
+      "edges": 36,
+      "faces": 14,
+      "manifold": true,
+      "name": "Body_1",
+      "path": "Component_1",
+      "vertices": 24,
+      "volume_mm3": 122000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 36
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 36,
+    "faces": 14,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 14
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 24,
+    "view_mode": "Sketch",
+    "volume_mm3": 122000.0
+   },
+   "case_id": "09_beam_profile_001_I_100x50",
+   "category": "09_beam",
+   "commands": ["BeamProfile.CreateI/CreateL/CreateT/CreateChannel/CreateRectangular/CreateCircular/CreateDisk/CreateFlatBar/CreateHat/CreateZ/CreateCustom", "BeamProfile.CreateFromLibrary"],
+   "data": {
+    "auto_renamed": [
+     ["实体", "Body_1"],
+     ["", "Component_1"]
+    ],
+    "beam_form": 0,
+    "intent_checks": [
+     ["beams", "1", "1", true]
+    ],
+    "profile": ["I_100x50_I", "Part"],
+    "profile_part_errors": ["None"],
+    "profile_part_form": 1,
+    "profile_result_members": ["CreatedProfile", "Equals", "GetCreated", "GetHashCode", "GetModified", "GetType", "IsActiveDoc", "MemberwiseClone", "ReferenceEquals", "Success", "ToString"]
+   },
+   "elapsed_s": 0.73999999999999999,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "beam_profile",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:23+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\09_beam",
+   "params": {
+    "baseWidth": 50,
+    "depth": 100,
+    "tf": 8,
+    "tw": 5,
+    "type": "I"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_profile_001_I_100x50.scdoc",
+   "scdoc_size": "88790",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_profile_001_I_100x50.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:22+08:00",
+   "status": "ok",
+   "title": "Beam profile creation (I/L/T/channel/rect/circular/...): 001_I_100x50"
+  },
+  {
+   "actual": {
+    "area_mm2": 38728.0,
+    "beams": 1,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 38728.0,
+      "bbox_mm": [
+       [-60.0, 0.0, -100.0],
+       [0.0, 40.0, 0.0]
+      ],
+      "closed": true,
+      "edges": 24,
+      "faces": 10,
+      "manifold": true,
+      "name": "Body_1",
+      "path": "Component_1",
+      "vertices": 16,
+      "volume_mm3": 56400.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 10,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 10
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Sketch",
+    "volume_mm3": 56400.0
+   },
+   "case_id": "09_beam_profile_002_rect_tube_60x40x3",
+   "category": "09_beam",
+   "commands": ["BeamProfile.CreateI/CreateL/CreateT/CreateChannel/CreateRectangular/CreateCircular/CreateDisk/CreateFlatBar/CreateHat/CreateZ/CreateCustom", "BeamProfile.CreateFromLibrary"],
+   "data": {
+    "auto_renamed": [
+     ["实体", "Body_1"],
+     ["", "Component_1"]
+    ],
+    "beam_form": 0,
+    "intent_checks": [
+     ["beams", "1", "1", true]
+    ],
+    "profile_part_errors": ["None"],
+    "profile_part_form": 1,
+    "profile_result_members": ["CreatedProfile", "Equals", "GetCreated", "GetHashCode", "GetModified", "GetType", "IsActiveDoc", "MemberwiseClone", "ReferenceEquals", "Success", "ToString"]
+   },
+   "elapsed_s": 0.19,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "beam_profile",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:23+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\09_beam",
+   "params": {
+    "d": 40,
+    "t": 3,
+    "type": "Rectangular",
+    "w": 60
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_profile_002_rect_tube_60x40x3.scdoc",
+   "scdoc_size": "56159",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_profile_002_rect_tube_60x40x3.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:23+08:00",
+   "status": "ok",
+   "title": "Beam profile creation (I/L/T/channel/rect/circular/...): 002_rect_tube_60x40x3"
+  },
+  {
+   "actual": {
+    "area_mm2": 23945.219206,
+    "beams": 1,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 23945.219206,
+      "bbox_mm": [
+       [-20.0, -20.0, -100.0],
+       [20.0, 20.0, 0.0]
+      ],
+      "closed": true,
+      "edges": 4,
+      "faces": 4,
+      "manifold": true,
+      "name": "Body_1",
+      "path": "Component_1",
+      "vertices": 4,
+      "volume_mm3": 34870.41556
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 4,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 1,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Sketch",
+    "volume_mm3": 34870.41556
+   },
+   "case_id": "09_beam_profile_003_circular_d40_d34",
+   "category": "09_beam",
+   "commands": ["BeamProfile.CreateI/CreateL/CreateT/CreateChannel/CreateRectangular/CreateCircular/CreateDisk/CreateFlatBar/CreateHat/CreateZ/CreateCustom", "BeamProfile.CreateFromLibrary"],
+   "data": {
+    "auto_renamed": [
+     ["实体", "Body_1"],
+     ["", "Component_1"]
+    ],
+    "beam_form": 0,
+    "intent_checks": [
+     ["beams", "1", "1", true]
+    ],
+    "profile_part_errors": ["None"],
+    "profile_part_form": 1,
+    "profile_result_members": ["CreatedProfile", "Equals", "GetCreated", "GetHashCode", "GetModified", "GetType", "IsActiveDoc", "MemberwiseClone", "ReferenceEquals", "Success", "ToString"]
+   },
+   "elapsed_s": 0.20000000000000001,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "beam_profile",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:23+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\09_beam",
+   "params": {
+    "id": 34,
+    "od": 40,
+    "type": "Circular"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_profile_003_circular_d40_d34.scdoc",
+   "scdoc_size": "43177",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_profile_003_circular_d40_d34.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:23+08:00",
+   "status": "ok",
+   "title": "Beam profile creation (I/L/T/channel/rect/circular/...): 003_circular_d40_d34"
+  },
+  {
+   "actual": {
+    "area_mm2": 41440.0,
+    "beams": 1,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 41440.0,
+      "bbox_mm": [
+       [-25.0, 0.0, -100.0],
+       [25.0, 100.0, 0.0]
+      ],
+      "closed": true,
+      "edges": 36,
+      "faces": 14,
+      "manifold": true,
+      "name": "Body_1",
+      "path": "Component_1",
+      "vertices": 24,
+      "volume_mm3": 122000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 36
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 36,
+    "faces": 14,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 14
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 24,
+    "view_mode": "Sketch",
+    "volume_mm3": 122000.0
+   },
+   "case_id": "09_beam_create_001_line_I",
+   "category": "09_beam",
+   "commands": ["Beam.Create(sel curves, profile)", "Beam.SetOrientation/SetPosition/SetType/ReverseBeam", "Beam.ExtractProfile"],
+   "data": {
+    "auto_renamed": [
+     ["实体", "Body_1"],
+     ["", "Component_1"]
+    ],
+    "beam_form": 0,
+    "intent_checks": [],
+    "profile_part_errors": ["None"],
+    "profile_part_form": 1,
+    "profile_result_members": ["CreatedProfile", "Equals", "GetCreated", "GetHashCode", "GetModified", "GetType", "IsActiveDoc", "MemberwiseClone", "ReferenceEquals", "Success", "ToString"]
+   },
+   "elapsed_s": 0.17000000000000001,
+   "expect": {
+    "beams": 1
+   },
+   "expect_mismatch": {},
+   "feature": "beam_create",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:24+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\09_beam",
+   "params": {
+    "curve": "line 1000mm",
+    "profile": "I"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_create_001_line_I.scdoc",
+   "scdoc_size": "60058",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_create_001_line_I.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:24+08:00",
+   "status": "ok",
+   "title": "Beam along curve: 001_line_I"
+  },
+  {
+   "actual": {
+    "area_mm2": 38728.0,
+    "beams": 4,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 38728.0,
+      "bbox_mm": [
+       [-60.0, 0.0, -100.0],
+       [0.0, 40.0, 0.0]
+      ],
+      "closed": true,
+      "edges": 24,
+      "faces": 10,
+      "manifold": true,
+      "name": "Body_1",
+      "path": "Component_1",
+      "vertices": 16,
+      "volume_mm3": 56400.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 10,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 4,
+    "surface_types": {
+     "Plane": 10
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Sketch",
+    "volume_mm3": 56400.0
+   },
+   "case_id": "09_beam_create_002_frame_4lines_rect",
+   "category": "09_beam",
+   "commands": ["Beam.Create(sel curves, profile)", "Beam.SetOrientation/SetPosition/SetType/ReverseBeam", "Beam.ExtractProfile"],
+   "data": {
+    "auto_renamed": [
+     ["实体", "Body_1"],
+     ["", "Component_1"]
+    ],
+    "beam_form": 0,
+    "intent_checks": [],
+    "profile_part_errors": ["None"],
+    "profile_part_form": 1,
+    "profile_result_members": ["CreatedProfile", "Equals", "GetCreated", "GetHashCode", "GetModified", "GetType", "IsActiveDoc", "MemberwiseClone", "ReferenceEquals", "Success", "ToString"]
+   },
+   "elapsed_s": 0.26000000000000001,
+   "expect": {
+    "beams": 4
+   },
+   "expect_mismatch": {},
+   "feature": "beam_create",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:24+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\09_beam",
+   "params": {
+    "curve": "rect frame 1000x500",
+    "profile": "Rectangular"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_create_002_frame_4lines_rect.scdoc",
+   "scdoc_size": "53678",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_create_002_frame_4lines_rect.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:24+08:00",
+   "status": "ok",
+   "title": "Beam along curve: 002_frame_4lines_rect"
+  },
+  {
+   "actual": {
+    "area_mm2": 41440.0,
+    "beams": 1,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 41440.0,
+      "bbox_mm": [
+       [-25.0, 0.0, -100.0],
+       [25.0, 100.0, 0.0]
+      ],
+      "closed": true,
+      "edges": 36,
+      "faces": 14,
+      "manifold": true,
+      "name": "Body_1",
+      "path": "Component_1",
+      "vertices": 24,
+      "volume_mm3": 122000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 36
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 36,
+    "faces": 14,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 14
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 24,
+    "view_mode": "Sketch",
+    "volume_mm3": 122000.0
+   },
+   "case_id": "09_beam_create_003_orient30_centroid",
+   "category": "09_beam",
+   "commands": ["Beam.Create(sel curves, profile)", "Beam.SetOrientation/SetPosition/SetType/ReverseBeam", "Beam.ExtractProfile"],
+   "data": {
+    "auto_renamed": [
+     ["实体", "Body_1"],
+     ["", "Component_1"]
+    ],
+    "beam_form": 0,
+    "beam_state": null,
+    "intent_checks": [],
+    "orientation_form": 0,
+    "position_form": 0,
+    "profile_part_errors": ["None"],
+    "profile_part_form": 1,
+    "profile_result_members": ["CreatedProfile", "Equals", "GetCreated", "GetHashCode", "GetModified", "GetType", "IsActiveDoc", "MemberwiseClone", "ReferenceEquals", "Success", "ToString"]
+   },
+   "elapsed_s": 0.20000000000000001,
+   "expect": {
+    "beams": 1
+   },
+   "expect_mismatch": {},
+   "feature": "beam_create",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:25+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\09_beam",
+   "params": {
+    "anchor": "Centroid",
+    "orientation_deg": 30
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_create_003_orient30_centroid.scdoc",
+   "scdoc_size": "60077",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_create_003_orient30_centroid.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:25+08:00",
+   "status": "ok",
+   "title": "Beam along curve: 003_orient30_centroid"
+  },
+  {
+   "actual": {
+    "area_mm2": 12590.725636,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 12590.725636,
+      "bbox_mm": [
+       [0.0, 0.0, -0.0],
+       [100.0, 50.0, 22.0]
+      ],
+      "closed": true,
+      "edges": 24,
+      "faces": 10,
+      "manifold": true,
+      "name": "Flange_Part",
+      "path": "",
+      "vertices": 16,
+      "volume_mm3": 11914.165902
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4,
+     "Line": 20
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 10,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 11914.165902
+   },
+   "case_id": "08_sheetmetal_flange_001_90deg_l20",
+   "category": "08_sheetmetal",
+   "commands": ["NONE in SpaceClaim.Api.V19.Scripting; raw API SheetMetalAspect/Bend are read-only (no Create)"],
+   "data": {
+    "aspect_members": ["Beads", "BendTable", "Bends", "Corners", "CreateBends", "CreateHem", "CreateInternalBead", "CreateJoggle", "CreateMarker", "CreateMissingBends", "CreateObjRef", "CreatePartitionBead", "CreateRips", "CrossBreaks", "Delete", "Equals", "ExecuteCommand", "Forms", "GetCreaseEdges", "GetFeature", "GetHashCode", "GetLifetimeService", "GetOppositeFace", "GetType", "Gussets", "Hems", "IdentifyForms", "InitializeLifetimeService", "InnerRadius", "InnerRadiusDefinition", "KFactor", "LifetimeLease", "LightweightNotes", "Markers", "MemberwiseClone", "Owner", "ReferenceEquals", "RepairBends", "Thickness", "ToString", "TryApplyNote", "Unfold"],
+    "bends_form": 0,
+    "ctors_BendSpecification": [],
+    "faces_after": 10,
+    "intent_checks": [
+     ["faces_after_bend", "10", "10", true],
+     ["volume_mm3", "11914.17", "11914.17", true]
+    ]
+   },
+   "elapsed_s": 1.81,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sm_all",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:27+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal",
+   "params": {
+    "angle_deg": 90,
+    "bend_r_mm": 1,
+    "length_mm": 20
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal\\08_sheetmetal_flange_001_90deg_l20.scdoc",
+   "scdoc_size": "39631",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal\\08_sheetmetal_flange_001_90deg_l20.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:25+08:00",
+   "status": "ok",
+   "title": "Sheet metal (convert, flange, bend, unfold, junction, relief): 001_90deg_l20"
+  },
+  {
+   "actual": {
+    "area_mm2": 1000.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1000.0,
+      "bbox_mm": [
+       [-15.0, -5.0, 0.0],
+       [15.0, 5.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Profile_Rect",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 1500.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Sketch",
+    "volume_mm3": 1500.0
+   },
+   "case_id": "03_pull_profile_001_rect_30x10_h5",
+   "category": "03_pull",
+   "commands": ["ExtrudeProfile.Execute(Profile, distance, parent, name)"],
+   "data": {
+    "ctors_RectangleProfile": ["(Plane plane, Double width, Double height, PointUV location, Double angle)", "(Plane plane, IRectangle rectangle, IHasPlanarPlacement placement)"],
+    "extrude_profile_form": 0,
+    "intent_checks": [],
+    "type_RectangleProfile": ["SpaceClaim.Api.V18.Geometry.RectangleProfile", "SpaceClaim.Api.V19.Geometry.RectangleProfile", "SpaceClaim.Api.V11.Geometry.RectangleProfile", "SpaceClaim.Api.V12.Geometry.RectangleProfile", "SpaceClaim.Api.V13.Geometry.RectangleProfile", "SpaceClaim.Api.V14.Geometry.RectangleProfile", "SpaceClaim.Api.V15.Geometry.RectangleProfile", "SpaceClaim.Api.V16.Geometry.RectangleProfile", "SpaceClaim.Api.V17.Geometry.RectangleProfile"]
+   },
+   "elapsed_s": 2.09,
+   "expect": {
+    "bodies": 1,
+    "faces": 6,
+    "volume_mm3": 1500.0
+   },
+   "expect_mismatch": {},
+   "feature": "pull_extrude_profile",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:30+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "h_mm": 5,
+    "profile": "RectangleProfile 30x10"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_profile_001_rect_30x10_h5.scdoc",
+   "scdoc_size": "86264",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_profile_001_rect_30x10_h5.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:28+08:00",
+   "status": "ok",
+   "title": "Extrude API Profile directly: 001_rect_30x10_h5"
+  },
+  {
+   "actual": {
+    "area_mm2": 678.584013,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 678.584013,
+      "bbox_mm": [
+       [-6.0, -6.0, 0.0],
+       [6.0, 6.0, 12.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Profile_Circle",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 1357.168026
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 1357.168026
+   },
+   "case_id": "03_pull_profile_002_circle_r6_h12",
+   "category": "03_pull",
+   "commands": ["ExtrudeProfile.Execute(Profile, distance, parent, name)"],
+   "data": {
+    "ctors_CircleProfile": ["(Plane plane, Double radius, PointUV location, Double angle)", "(Plane plane, ICircle circle, IHasPlanarPlacement placement)"],
+    "extrude_profile_form": 0,
+    "intent_checks": [],
+    "type_CircleProfile": ["SpaceClaim.Api.V18.Geometry.CircleProfile", "SpaceClaim.Api.V19.Geometry.CircleProfile", "SpaceClaim.Api.V11.Geometry.CircleProfile", "SpaceClaim.Api.V12.Geometry.CircleProfile", "SpaceClaim.Api.V13.Geometry.CircleProfile", "SpaceClaim.Api.V14.Geometry.CircleProfile", "SpaceClaim.Api.V15.Geometry.CircleProfile", "SpaceClaim.Api.V16.Geometry.CircleProfile", "SpaceClaim.Api.V17.Geometry.CircleProfile"]
+   },
+   "elapsed_s": 0.46999999999999997,
+   "expect": {
+    "bodies": 1,
+    "faces": 3,
+    "volume_mm3": 1357.168026
+   },
+   "expect_mismatch": {},
+   "feature": "pull_extrude_profile",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:31+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "h_mm": 12,
+    "profile": "CircleProfile r6"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_profile_002_circle_r6_h12.scdoc",
+   "scdoc_size": "79078",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_profile_002_circle_r6_h12.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:30+08:00",
+   "status": "ok",
+   "title": "Extrude API Profile directly: 002_circle_r6_h12"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 4,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_round2d_001_rect_corner_r4",
+   "category": "02_sketch",
+   "commands": ["SketchPoint.Create", "SketchOffsetCurve.Create", "SketchCorner.Create", "Sketch2DRound.Create", "TrimSketchCurve.Execute", "SplitSketchCurve.Execute"],
+   "data": {
+    "auto_renamed": [
+     ["线", "Curve_1"],
+     ["线", "Curve_2"],
+     ["线", "Curve_3"],
+     ["线", "Curve_4"]
+    ],
+    "curves_before": 4,
+    "intent_checks": [],
+    "round2d_errors": ["未将对象引用设置到对象的实例。", "未将对象引用设置到对象的实例。", "未将对象引用设置到对象的实例。", "未将对象引用设置到对象的实例。"],
+    "u": [0.0030000000000000001, 0.017000000000000001]
+   },
+   "elapsed_s": 0.67000000000000004,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_round2d_001_rect_corner_r4.py\", line 59, in build\n    not_feasible_if_all_fail(ctx, \"round2d\", [f1, f2, f3, f4], \"Sketch2DRound with SelectionPoint not usable headless\")\n  File \"D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_round2d_001_rect_corner_r4.py\", line 29, in not_feasible_if_all_fail\n    raise NotFeasible(reason + \" | last error: \" + unicode(e)[-300:])\nNotFeasible: Sketch2DRound with SelectionPoint not usable headless | last error: e\\u4f8b\\u3002', u'\\u672a\\u5c06\\u5bf9\\u8c61\\u5f15\\u7528\\u8bbe\\u7f6e\\u5230\\u5bf9\\u8c61\\u7684\\u5b9e\\u4f8b\\u3002', u'\\u672a\\u5c06\\u5bf9\\u8c61\\u5f15\\u7528\\u8bbe\\u7f6e\\u5230\\u5bf9\\u8c61\\u7684\\u5b9e\\u4f8b\\u3002', u'\\u672a\\u5c06\\u5bf9\\u8c61\\u5f15\\u7528\\u8bbe\\u7f6e\\u5230\\u5bf9\\u8c61\\u7684\\u5b9e\\u4f8b\\u3002']\n",
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sk_point_offset",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:32+08:00",
+   "items": {},
+   "mode": "headless",
+   "not_feasible_reason": "NotFeasible: Sketch2DRound with SelectionPoint not usable headless | last error: e\\u4f8b\\u3002', u'\\u672a\\u5c06\\u5bf9\\u8c61\\u5f15\\u7528\\u8bbe\\u7f6e\\u5230\\u5bf9\\u8c61\\u7684\\u5b9e\\u4f8b\\u3002', u'\\u672a\\u5c06\\u5bf9\\u8c61\\u5f15\\u7528\\u8bbe\\u7f6e\\u5230\\u5bf9\\u8c61\\u7684\\u5b9e\\u4f8b\\u3002', u'\\u672a\\u5c06\\u5bf9\\u8c61\\u5f15\\u7528\\u8bbe\\u7f6e\\u5230\\u5bf9\\u8c61\\u7684\\u5b9e\\u4f8b\\u3002']",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "r_mm": 4,
+    "rect": [40, 20]
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_round2d_001_rect_corner_r4.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:31+08:00",
+   "status": "not_feasible",
+   "title": "Sketch point / offset curve / corner / 2D round / trim / split: 001_rect_corner_r4"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Replace_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "07_replaceface_001_block_top_to_plane",
+   "category": "07_shell_offset",
+   "commands": ["ReplaceFacesWithFace.Execute", "DetachFaces.Execute"],
+   "data": {
+    "faces_before": 7,
+    "intent_checks": [],
+    "replace_form": 0,
+    "top_halves": 2
+   },
+   "elapsed_s": 0.42999999999999999,
+   "expect": {
+    "bodies": 1,
+    "faces": 6,
+    "volume_mm3": 24000.0
+   },
+   "expect_mismatch": {},
+   "feature": "so_replace_detach",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:33+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_replaceface_001_block_top_to_plane.scdoc",
+   "scdoc_size": "27439",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_replaceface_001_block_top_to_plane.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:33+08:00",
+   "status": "ok",
+   "title": "Replace faces / detach faces: block_top_to_plane"
+  },
+  {
+   "actual": {
+    "area_mm2": 14852.389342,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 14852.389342,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [80.0, 80.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 36,
+      "faces": 18,
+      "manifold": true,
+      "name": "Plate_Holes",
+      "path": "",
+      "vertices": 32,
+      "volume_mm3": 31246.017763
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 24,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 36,
+    "faces": 18,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 12,
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 32,
+    "view_mode": "Solid",
+    "volume_mm3": 31246.017763
+   },
+   "case_id": "06_pattern_linear_002_hole_2d_3x4",
+   "category": "06_move_pattern",
+   "commands": ["Pattern.CreateLinear(sel, LinearPatternData)", "Pattern.ModifyLinear"],
+   "data": {
+    "hole_centres_mm": [
+     [34.0, 10.0],
+     [34.0, 20.0],
+     [34.0, 30.0],
+     [34.0, 40.0],
+     [46.0, 10.0],
+     [46.0, 20.0],
+     [46.0, 30.0],
+     [46.0, 40.0],
+     [58.0, 10.0],
+     [58.0, 20.0],
+     [58.0, 30.0],
+     [58.0, 40.0]
+    ],
+    "intent_checks": [
+     ["hole_faces", "12", "12", true],
+     ["volume_mm3", "31246.02", "31246.02", true]
+    ],
+    "linear_members": ["CountX", "CountY", "Equals", "GetHashCode", "GetType", "LinearDirection", "MemberwiseClone", "PatternDimension", "PitchX", "PitchY", "ReferenceEquals", "ToString"],
+    "pattern_success": true,
+    "regions_after_intersect": [
+     ["Plate_Holes", 31937.168147],
+     ["Hole_Cutter", 87.964594],
+     ["实体", 62.831853]
+    ]
+   },
+   "elapsed_s": 0.40000000000000002,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "mp_pattern_linear",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:34+08:00",
+   "items": {
+    "RemoveRegions": {
+     "ok": true,
+     "result": "True",
+     "s": 0.0
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "count": [3, 4],
+    "member": "through hole in plate",
+    "pitch_mm": [12, 10]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_linear_002_hole_2d_3x4.scdoc",
+   "scdoc_size": "126812",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_linear_002_hole_2d_3x4.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:33+08:00",
+   "status": "ok",
+   "title": "Linear pattern: 002_hole_2d_3x4"
+  },
+  {
+   "actual": {
+    "area_mm2": 9428.318531,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 5428.318531,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 40.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 14,
+      "faces": 8,
+      "manifold": true,
+      "name": "UpTo_Plate",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 17570.796327
+     },
+     {
+      "area_mm2": 4000.0,
+      "bbox_mm": [
+       [0.0, 0.0, 30.0],
+       [40.0, 40.0, 35.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "UpTo_Ceiling",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 26,
+    "faces": 14,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 13
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 18,
+    "view_mode": "Solid",
+    "volume_mm3": 25570.796327
+   },
+   "case_id": "03_pull_cut_003_upto_face",
+   "category": "03_pull",
+   "commands": ["ExtrudeFaces.Execute ExtrudeType.Cut", "ExtrudeFaces.UpTo"],
+   "data": {
+    "bodies_after": [
+     [
+      "UpTo_Plate",
+      17570.796327,
+      [
+       [0.0, 0.0, 0.0],
+       [40.0, 40.0, 30.0]
+      ]
+     ],
+     [
+      "UpTo_Ceiling",
+      8000.0,
+      [
+       [0.0, 0.0, 30.0],
+       [40.0, 40.0, 35.0]
+      ]
+     ]
+    ],
+    "boss_found": 1,
+    "intent_checks": [
+     ["ceiling_volume_mm3", "8000.0", "8000.0", true],
+     ["plate_boss_volume_mm3", "17570.8", "17570.8", true]
+    ],
+    "upto_form": 0
+   },
+   "elapsed_s": 0.46999999999999997,
+   "expect": {
+    "bodies": 2
+   },
+   "expect_mismatch": {},
+   "feature": "pull_extrude_cut",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:35+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\03_pull",
+   "params": {
+    "mode": "UpTo"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_cut_003_upto_face.scdoc",
+   "scdoc_size": "47406",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\03_pull\\03_pull_cut_003_upto_face.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:34+08:00",
+   "status": "ok",
+   "title": "Extrude cut (pocket / through hole): 003_upto_face"
+  },
+  {
+   "actual": {
+    "area_mm2": 4837.457544,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 4837.457544,
+      "bbox_mm": [
+       [0.0, -0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Draft_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 21631.962928
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 21631.962928
+   },
+   "case_id": "07_draft_001_block_4sides_5deg",
+   "category": "07_shell_offset",
+   "commands": ["DraftFaces.Execute(sel, refFaces, DraftSide, angle, ExtrudeType, DraftOptions)"],
+   "data": {
+    "bbox_after_mm": [
+     [0.0, -0.0, 0.0],
+     [40.0, 30.0, 20.0]
+    ],
+    "draft_form": ["This", -5],
+    "draft_log": [
+     [
+      "This",
+      -5,
+      21631.962928,
+      [
+       [0.0, -0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ]
+     ]
+    ],
+    "intent_checks": [
+     ["top_face_x_span_mm", "36.500454", "[36.0, 39.9]", true],
+     ["volume_mm3", "21631.962928", "[20000, 23999]", true]
+    ],
+    "volume_after_mm3": 21631.962928
+   },
+   "elapsed_s": 0.33000000000000002,
+   "expect": {
+    "bodies": 1,
+    "faces": 6
+   },
+   "expect_mismatch": {},
+   "feature": "so_draft",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:36+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+   "params": {
+    "angle_deg": 5,
+    "neutral": "-Z"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_draft_001_block_4sides_5deg.scdoc",
+   "scdoc_size": "27560",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_draft_001_block_4sides_5deg.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:35+08:00",
+   "status": "ok",
+   "title": "Draft faces: block_4sides_5deg"
+  },
+  {
+   "actual": {
+    "area_mm2": 1758.326086,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1758.326086,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Draft_Cyl",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 5647.53094
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cone": 1,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 5647.53094
+   },
+   "case_id": "07_draft_002_cyl_side_3deg",
+   "category": "07_shell_offset",
+   "commands": ["DraftFaces.Execute(sel, refFaces, DraftSide, angle, ExtrudeType, DraftOptions)"],
+   "data": {
+    "draft_form": ["This", -3],
+    "draft_log": [
+     [
+      "This",
+      -3,
+      5647.53094,
+      [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 20.0]
+      ]
+     ]
+    ],
+    "intent_checks": [
+     ["volume_mm3", "5647.5", "5647.6", true]
+    ],
+    "surface_types_after": ["Cone", "Plane", "Plane"]
+   },
+   "elapsed_s": 0.23999999999999999,
+   "expect": {
+    "bodies": 1,
+    "faces": 3
+   },
+   "expect_mismatch": {},
+   "feature": "so_draft",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:37+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+   "params": {
+    "angle_deg": 3,
+    "base": "cyl"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_draft_002_cyl_side_3deg.scdoc",
+   "scdoc_size": "102315",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_draft_002_cyl_side_3deg.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:36+08:00",
+   "status": "ok",
+   "title": "Draft faces: cyl_side_3deg"
+  },
+  {
+   "actual": {
+    "area_mm2": 15600.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 10600.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [100.0, 50.0, 2.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Plate_T2",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 10000.0
+     },
+     {
+      "area_mm2": 5000.0,
+      "bbox_mm": [
+       [0.0, 0.0, 1.0],
+       [100.0, 50.0, 1.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Body_2",
+      "path": "Component_1",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 16
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 16,
+    "faces": 7,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 7
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 12,
+    "view_mode": "Solid",
+    "volume_mm3": 10000.0
+   },
+   "case_id": "12_prepare_midsurface_001_plate_t2",
+   "category": "12_repair_prepare",
+   "commands": ["Midsurface.Convert(bodies, thickness)", "MidsurfaceOffsetFaces.Create", "MidsurfaceAspectExtensions.SetThickness"],
+   "data": {
+    "auto_renamed": [
+     ["中间面1", "Body_2"],
+     ["", "Component_1"]
+    ],
+    "bodies_after": [
+     ["Plate_T2", false],
+     ["中间面1", true]
+    ],
+    "intent_checks": [
+     ["has_sheet", "True", "True", true],
+     ["sheet_z_mm", "1.0", "1.0", true]
+    ],
+    "midsurface_form": 0
+   },
+   "elapsed_s": 0.46000000000000002,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "rp_midsurface",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:38+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {
+    "base": "plate 100x50x2"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_midsurface_001_plate_t2.scdoc",
+   "scdoc_size": "28894",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_midsurface_001_plate_t2.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:37+08:00",
+   "status": "ok",
+   "title": "Midsurface: 001_plate_t2"
+  },
+  {
+   "actual": {
+    "area_mm2": 12462.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 8582.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [60.0, 40.0, 40.0]
+      ],
+      "closed": true,
+      "edges": 18,
+      "faces": 8,
+      "manifold": true,
+      "name": "L_Bracket",
+      "path": "",
+      "vertices": 12,
+      "volume_mm3": 11640.0
+     },
+     {
+      "area_mm2": 3880.0,
+      "bbox_mm": [
+       [1.5, 0.0, 1.5],
+       [60.0, 40.0, 40.0]
+      ],
+      "closed": false,
+      "edges": 7,
+      "faces": 2,
+      "manifold": true,
+      "name": "Body_2",
+      "path": "Component_1",
+      "vertices": 6,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 25
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 25,
+    "faces": 10,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 10
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 18,
+    "view_mode": "Solid",
+    "volume_mm3": 11640.0
+   },
+   "case_id": "12_prepare_midsurface_002_L_bracket_t3",
+   "category": "12_repair_prepare",
+   "commands": ["Midsurface.Convert(bodies, thickness)", "MidsurfaceOffsetFaces.Create", "MidsurfaceAspectExtensions.SetThickness"],
+   "data": {
+    "auto_renamed": [
+     ["中间面1", "Body_2"],
+     ["", "Component_1"]
+    ],
+    "bodies_after": [
+     ["L_Bracket", false],
+     ["中间面1", true]
+    ],
+    "intent_checks": [
+     ["has_sheet", "True", "True", true]
+    ],
+    "midsurface_form": 0
+   },
+   "elapsed_s": 0.28000000000000003,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "rp_midsurface",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:40+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_midsurface_002_L_bracket_t3.scdoc",
+   "scdoc_size": "37188",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_midsurface_002_L_bracket_t3.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:39+08:00",
+   "status": "ok",
+   "title": "Midsurface: 002_L_bracket_t3"
+  },
+  {
+   "actual": {
+    "area_mm2": 18045.308204,
+    "beams": 0,
+    "bodies": 5,
+    "body_list": [
+     {
+      "area_mm2": 5881.061448,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 50.0]
+      ],
+      "closed": true,
+      "edges": 4,
+      "faces": 4,
+      "manifold": true,
+      "name": "Pipe",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 5654.708915
+     },
+     {
+      "area_mm2": 201.06193,
+      "bbox_mm": [
+       [-8.0, -8.0, 0.0],
+       [8.0, 8.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 1,
+      "faces": 1,
+      "manifold": true,
+      "name": "Cap_Bottom",
+      "path": "",
+      "vertices": 1,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 201.06193,
+      "bbox_mm": [
+       [-8.0, -8.0, 50.0],
+       [8.0, 8.0, 50.0]
+      ],
+      "closed": false,
+      "edges": 1,
+      "faces": 1,
+      "manifold": true,
+      "name": "Cap_Top",
+      "path": "",
+      "vertices": 1,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 5881.061448,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 50.0]
+      ],
+      "closed": true,
+      "edges": 4,
+      "faces": 4,
+      "manifold": true,
+      "name": "Body_4",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 5654.708915
+     },
+     {
+      "area_mm2": 5881.061448,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 50.0]
+      ],
+      "closed": true,
+      "edges": 4,
+      "faces": 4,
+      "manifold": true,
+      "name": "Body_5",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 5654.708915
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 14
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 14,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 6,
+     "Plane": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 14,
+    "view_mode": "Sketch",
+    "volume_mm3": 16964.126745
+   },
+   "case_id": "12_prepare_volumeextract_001_pipe",
+   "category": "12_repair_prepare",
+   "commands": ["VolumeExtract.Create", "Enclosure.Create", "Workpiece.Create", "Shrinkwrap.Create"],
+   "data": {
+    "auto_renamed": [
+     ["", "Body_4"],
+     ["实体", "Body_5"]
+    ],
+    "bore_faces": 1,
+    "intent_checks": [
+     ["pipe_volume_mm3", "5654.7", "5654.9", true]
+    ],
+    "volume_extract_errors": ["无法创建体积体 - 并未封闭所有端部。", "无法创建体积体 - 并未封闭所有端部。", "无法在合并的主体上找到矢量面。"]
+   },
+   "elapsed_s": 0.27000000000000002,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_volumeextract_001_pipe.py\", line 45, in build\n    first_ok(ctx, \"volume_extract\", [v1, v2, v3])\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 833, in first_ok\n    raise Exception(\"%s: all %d forms failed: %s\" % (key, len(fns), errs))\nException: volume_extract: all 3 forms failed: [u'\\u65e0\\u6cd5\\u521b\\u5efa\\u4f53\\u79ef\\u4f53 - \\u5e76\\u672a\\u5c01\\u95ed\\u6240\\u6709\\u7aef\\u90e8\\u3002', u'\\u65e0\\u6cd5\\u521b\\u5efa\\u4f53\\u79ef\\u4f53 - \\u5e76\\u672a\\u5c01\\u95ed\\u6240\\u6709\\u7aef\\u90e8\\u3002', u'\\u65e0\\u6cd5\\u5728\\u5408\\u5e76\\u7684\\u4e3b\\u4f53\\u4e0a\\u627e\\u5230\\u77e2\\u91cf\\u9762\\u3002']\n",
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "rp_volume_extract",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:40+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {
+    "base": "shelled cylinder with capping faces"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_volumeextract_001_pipe.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:40+08:00",
+   "status": "failed",
+   "title": "Volume extract / enclosure / workpiece / shrinkwrap: 001_pipe"
+  },
+  {
+   "actual": {
+    "area_mm2": 3241.592654,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 3141.592654,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 40.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Wrap_Target_Cyl",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 12566.370614
+     },
+     {
+      "area_mm2": 100.0,
+      "bbox_mm": [
+       [10.0, -5.0, 15.0],
+       [10.0, 5.0, 25.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Wrap_Rect",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 6,
+    "faces": 4,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 3
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 6,
+    "view_mode": "Sketch",
+    "volume_mm3": 12566.370614
+   },
+   "case_id": "13_wrap_001_rect_onto_cylinder",
+   "category": "13_surface_curve",
+   "commands": ["ProjectToSolid.Execute", "Wrap.Create", "ProjectToSketch.Create", "MoveImprintEdges.Execute"],
+   "data": {
+    "intent_checks": [],
+    "wrap_errors": ["The Wrap command must include a Curve, Face, or Edge secondarySelection", "no imprint (faces=3)", "The Wrap command must include a Curve, Face, or Edge secondarySelection", "The Wrap command must include a single Body selection"],
+    "wrap_opts_members": ["Equals", "Extrude", "GetHashCode", "GetType", "Imprint", "MemberwiseClone", "ReferenceEquals", "ToString"]
+   },
+   "elapsed_s": 0.20000000000000001,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_wrap_001_rect_onto_cylinder.py\", line 49, in build\n    first_ok(ctx, \"wrap\", [w1, w2, w3, w4])\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 833, in first_ok\n    raise Exception(\"%s: all %d forms failed: %s\" % (key, len(fns), errs))\nException: wrap: all 4 forms failed: ['The Wrap command must include a Curve, Face, or Edge secondarySelection', 'no imprint (faces=3)', 'The Wrap command must include a Curve, Face, or Edge secondarySelection', 'The Wrap command must include a single Body selection']\n",
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sc_project_wrap",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:42+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve",
+   "params": {},
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_wrap_001_rect_onto_cylinder.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:41+08:00",
+   "status": "failed",
+   "title": "Project curves to solid / wrap / imprint: rect_onto_cylinder"
+  },
+  {
+   "actual": {
+    "area_mm2": 2399.999893,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2399.999893,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [20.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Converted_Solid",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 7999.999464
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 7999.999464
+   },
+   "case_id": "13_convertsolid_001_closed_sheets",
+   "category": "13_surface_curve",
+   "commands": ["ConvertToSolid.Execute", "AutoSkin.Execute"],
+   "data": {
+    "bodies_after": [
+     ["Converted_Solid", false, 8000.0, 6]
+    ],
+    "convert_form": 0,
+    "intent_checks": [
+     ["solid_8000", "True", "True", true]
+    ],
+    "meshes_before": 1
+   },
+   "elapsed_s": 0.35999999999999999,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sc_convert_solid",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:43+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_convertsolid_001_closed_sheets.scdoc",
+   "scdoc_size": "27550",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_convertsolid_001_closed_sheets.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:42+08:00",
+   "status": "ok",
+   "title": "Convert to solid / auto-skin / skin from height field: closed_sheets"
+  },
+  {
+   "actual": {
+    "area_mm2": 5595.526515,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5595.526515,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 16,
+      "faces": 10,
+      "manifold": true,
+      "name": "Cbore_Block",
+      "path": "",
+      "vertices": 12,
+      "volume_mm3": 23108.84012
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 16,
+    "faces": 10,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 12,
+    "view_mode": "Solid",
+    "volume_mm3": 23108.84012
+   },
+   "case_id": "14_hole_cbore_001_M6",
+   "category": "14_holes_threads",
+   "commands": ["StandardHoles.Create(nomFaceToLocations, StandardHolesOptions)", "StandardHoles.Modify*", "StandardHoles.Find/Convert", "(raw API) Hole.Create"],
+   "data": {
+    "HoleLocation_ctor_used": "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)",
+    "HoleLocation_ctors": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "ctors_HoleLocation": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "faces_after": 10,
+    "hole_opts_default": {
+     "DepthMeasurement": "None",
+     "DrillSize": "None",
+     "FastenerName": "None",
+     "HoleDepth": "None",
+     "HoleFit": "None",
+     "HoleRadius": "0.0",
+     "SeriesName": "None",
+     "Tapped": "False"
+    },
+    "hole_opts_members": ["CosmeticThread", "CounterboreDepth", "CounterboreRadius", "CountersinkAngle", "CountersinkRadius", "Default", "DepthMeasurement", "DrillPointAngle", "DrillSize", "Equals", "FastenerName", "GetHashCode", "GetStandardHoleOptions", "GetType", "HoleDepth", "HoleFit", "HoleRadius", "MemberwiseClone", "ReferenceEquals", "SeriesName", "TapDepth", "Tapped", "ToString"],
+    "hole_result": ["CreatedEdges", "CreatedFaces", "CreatedHoles", "Equals", "GetCreated", "GetHashCode", "GetModified", "GetType", "IsActiveDoc", "MemberwiseClone", "ReferenceEquals", "Success", "ToString"],
+    "intent_checks": [
+     ["volume_removed_mm3", "891.159880000", "[100, 2000]", true]
+    ],
+    "standard_hole_form": 0,
+    "type_HoleLocation": ["SpaceClaim.Api.V18.Scripting.Commands.HoleLocation", "SpaceClaim.Api.V19.Scripting.Commands.HoleLocation", "SpaceClaim.Api.V17.Scripting.Commands.HoleLocation"]
+   },
+   "elapsed_s": 0.95999999999999996,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "hole_standard",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:45+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads",
+   "params": {
+    "counterbore": true,
+    "fastener": "M6",
+    "series": "ISO"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_cbore_001_M6.scdoc",
+   "scdoc_size": "49256",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_cbore_001_M6.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:43+08:00",
+   "status": "ok",
+   "title": "Standard holes (simple, counterbore, countersink, tapped, cosmetic thread): 001_M6"
+  },
+  {
+   "actual": {
+    "area_mm2": 5520.442451,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5520.442451,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 14,
+      "faces": 8,
+      "manifold": true,
+      "name": "Tapped_Block",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 23455.247834
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 8,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 7
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 23455.247834
+   },
+   "case_id": "14_hole_tapped_001_M8_cosmetic",
+   "category": "14_holes_threads",
+   "commands": ["StandardHoles.Create(nomFaceToLocations, StandardHolesOptions)", "StandardHoles.Modify*", "StandardHoles.Find/Convert", "(raw API) Hole.Create"],
+   "data": {
+    "HoleLocation_ctor_used": "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)",
+    "HoleLocation_ctors": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "ctors_HoleLocation": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "hole_opts_default": {
+     "DepthMeasurement": "None",
+     "DrillSize": "None",
+     "FastenerName": "None",
+     "HoleDepth": "None",
+     "HoleFit": "None",
+     "HoleRadius": "0.0",
+     "SeriesName": "None",
+     "Tapped": "False"
+    },
+    "hole_opts_members": ["CosmeticThread", "CounterboreDepth", "CounterboreRadius", "CountersinkAngle", "CountersinkRadius", "Default", "DepthMeasurement", "DrillPointAngle", "DrillSize", "Equals", "FastenerName", "GetHashCode", "GetStandardHoleOptions", "GetType", "HoleDepth", "HoleFit", "HoleRadius", "MemberwiseClone", "ReferenceEquals", "SeriesName", "TapDepth", "Tapped", "ToString"],
+    "hole_result": ["CreatedEdges", "CreatedFaces", "CreatedHoles", "Equals", "GetCreated", "GetHashCode", "GetModified", "GetType", "IsActiveDoc", "MemberwiseClone", "ReferenceEquals", "Success", "ToString"],
+    "intent_checks": [
+     ["volume_removed_mm3", "544.752166000", "[300, 1500]", true]
+    ],
+    "standard_hole_form": 0,
+    "type_HoleLocation": ["SpaceClaim.Api.V18.Scripting.Commands.HoleLocation", "SpaceClaim.Api.V19.Scripting.Commands.HoleLocation", "SpaceClaim.Api.V17.Scripting.Commands.HoleLocation"]
+   },
+   "elapsed_s": 0.51000000000000001,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "hole_standard",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:46+08:00",
+   "items": {
+    "cosmetic": {
+     "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 569, in attempt\n    r = fn()\n  File \"D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_tapped_001_M8_cosmetic.py\", line 49, in <lambda$683>\n    ctx.attempt(\"cosmetic\", lambda: StandardHoles.ModifyCosmeticThread(sel(faces(largest(), \"Cylinder\")), True))\nValueError: The ModifyCosmeticThread command must include a Hole selection\n",
+     "ok": false,
+     "s": 0.01
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads",
+   "params": {
+    "cosmetic": true,
+    "tap": true
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_tapped_001_M8_cosmetic.scdoc",
+   "scdoc_size": "37389",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_tapped_001_M8_cosmetic.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:45+08:00",
+   "status": "ok",
+   "title": "Standard holes (simple, counterbore, countersink, tapped, cosmetic thread): 001_M8_cosmetic"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 0,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "15_mesh_stl_import_001",
+   "category": "15_mesh_facet",
+   "commands": ["FacetConvert.Create", "FacetReduce/FacetSmooth/FacetRemesh/FacetMerge/FacetSubtract/FacetThicken", "STLFile.Import/Insert"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"]
+    ],
+    "export_stl_form": 0,
+    "insert_stl_form": 0,
+    "intent_checks": [
+     ["meshes_in_doc", "1", "1", true]
+    ],
+    "meshes_found": 1,
+    "stl_bytes": "3484",
+    "stl_opts_members": ["Equals", "GetCurrent", "GetHashCode", "GetType", "ImportStlUnits", "ImportType", "MemberwiseClone", "MergeFaces", "ReferenceEquals", "ToString", "WriteToUserSettings"]
+   },
+   "elapsed_s": 0.81000000000000005,
+   "expect": {
+    "components": 1
+   },
+   "expect_mismatch": {},
+   "feature": "mesh_facet",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:48+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet",
+   "params": {
+    "file": "exported STL of cylinder"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet\\15_mesh_stl_import_001.scdoc",
+   "scdoc_size": "36242",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet\\15_mesh_stl_import_001.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:46+08:00",
+   "status": "ok",
+   "title": "Facet (mesh) bodies: convert solid->mesh, reduce, smooth, thicken, boolean: import_001"
+  },
+  {
+   "actual": {
+    "area_mm2": 8207.433509,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 6800.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [60.0, 40.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Plate_Body",
+      "path": "Component_1",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     },
+     {
+      "area_mm2": 1407.433509,
+      "bbox_mm": [
+       [22.0, 12.0, 10.0],
+       [38.0, 28.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Boss_Body",
+      "path": "Component_2",
+      "vertices": 2,
+      "volume_mm3": 4021.238597
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     },
+     {
+      "name": "Component_2",
+      "path": ""
+     }
+    ],
+    "components": 2,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 9,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 2,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 28021.238597
+   },
+   "case_id": "20_combo_asm_014_two_components",
+   "category": "20_combo",
+   "commands": ["asm_component", "doc_rename"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"],
+     ["", "Component_2"]
+    ],
+    "component_names": [
+     ["", "Base_Plate", "Base_Plate"],
+     ["", "Boss", "Boss"]
+    ],
+    "intent_checks": [
+     ["has_Base_Plate", "True", "True", true]
+    ],
+    "names_before": [
+     ["", "Plate", "Plate"],
+     ["", "Boss", "Boss"]
+    ],
+    "setname_form": 0
+   },
+   "elapsed_s": 0.20000000000000001,
+   "expect": {
+    "bodies": 2,
+    "components": 2
+   },
+   "expect_mismatch": {},
+   "feature": "combo",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:49+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\20_combo",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_asm_014_two_components.scdoc",
+   "scdoc_size": "46798",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_asm_014_two_components.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:48+08:00",
+   "status": "ok",
+   "title": "2-component assembly: plate + boss in separate components, renamed"
+  },
+  {
+   "actual": {
+    "area_mm2": 1344.246004,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1344.246004,
+      "bbox_mm": [
+       [-11.778068, -11.778068, -0.12594900000000001],
+       [11.778068, 11.778068, 20.125102]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Spring",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 620.725168
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "ProceduralCurve": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 2,
+     "ProceduralSurface": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 620.725168
+   },
+   "case_id": "20_combo_helix_023_spring_ends_ground",
+   "category": "20_combo",
+   "commands": ["pull_helix", "bool_split_body"],
+   "data": {
+    "intent_checks": [
+     ["pieces_deleted", "2", "2", true],
+     ["kept_fraction", "0.786157609316", "[0.7, 0.9]", true]
+    ],
+    "piece_volumes": [78.61158, 78.954204, 620.725168],
+    "pieces_deleted": 2,
+    "volume_full_mm3": 789.568352
+   },
+   "elapsed_s": 3.02,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "combo",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:53+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\20_combo",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_helix_023_spring_ends_ground.scdoc",
+   "scdoc_size": "737013",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_helix_023_spring_ends_ground.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:49+08:00",
+   "status": "ok",
+   "title": "Spring: helix sweep of circle, ends cut flat by split planes"
+  },
+  {
+   "actual": {
+    "area_mm2": 3241.592654,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 3141.592654,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 40.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Wrap_Cyl",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 12566.370614
+     },
+     {
+      "area_mm2": 100.0,
+      "bbox_mm": [
+       [10.0, -5.0, 15.0],
+       [10.0, 5.0, 25.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Wrap_Rect",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 6,
+    "faces": 4,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 3
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 6,
+    "view_mode": "Sketch",
+    "volume_mm3": 12566.370614
+   },
+   "case_id": "20_combo_wrap_026_cylinder_wrap_text_pull",
+   "category": "20_combo",
+   "commands": ["sc_project_wrap", "pull_face_offset"],
+   "data": {
+    "intent_checks": [],
+    "wrap_errors": ["The Wrap command must include a Curve, Face, or Edge secondarySelection", "no imprint (faces=3)", "The Wrap command must include a Curve, Face, or Edge secondarySelection", "The Wrap command must include a single Body selection"],
+    "wrap_opts_members": ["Equals", "Extrude", "GetHashCode", "GetType", "Imprint", "MemberwiseClone", "ReferenceEquals", "ToString"]
+   },
+   "elapsed_s": 0.14000000000000001,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_wrap_026_cylinder_wrap_text_pull.py\", line 54, in build\n    nf = wrap_rect(ctx, cy, sh)\n  File \"D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_wrap_026_cylinder_wrap_text_pull.py\", line 49, in wrap_rect\n    first_ok(ctx, \"wrap\", [w1, w2, w3, w4])\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 833, in first_ok\n    raise Exception(\"%s: all %d forms failed: %s\" % (key, len(fns), errs))\nException: wrap: all 4 forms failed: ['The Wrap command must include a Curve, Face, or Edge secondarySelection', 'no imprint (faces=3)', 'The Wrap command must include a Curve, Face, or Edge secondarySelection', 'The Wrap command must include a single Body selection']\n",
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {
+    "bodies": {
+     "actual": 2,
+     "expected": 1
+    }
+   },
+   "feature": "combo",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:54+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\20_combo",
+   "params": {},
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_wrap_026_cylinder_wrap_text_pull.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:53+08:00",
+   "status": "failed",
+   "title": "Cylinder with wrapped rectangle imprint pulled 1mm"
+  },
+  {
+   "actual": {
+    "area_mm2": 6542.850618,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 6542.850618,
+      "bbox_mm": [
+       [0.0, 0.0, -2.0],
+       [60.0, 40.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 24,
+      "faces": 18,
+      "manifold": true,
+      "name": "Base_Plate",
+      "path": "",
+      "vertices": 20,
+      "volume_mm3": 17350.510823
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 12,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 18,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {
+     "Cylinder": 4,
+     "Plane": 10,
+     "Torus": 4
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 20,
+    "view_mode": "Solid",
+    "volume_mm3": 17350.510823
+   },
+   "case_id": "20_combo_edit_030_pull_after_pattern",
+   "category": "20_combo",
+   "commands": ["mp_pattern_linear", "pull_face_offset", "edge_round"],
+   "data": {
+    "boss_faces": 2,
+    "intent_checks": [
+     ["bodies", "1", "1", true],
+     ["boss_top_edges", "4", "4", true],
+     ["volume_mm3", "17350.510823", "[17305.486677, 17365.486677]", true]
+    ],
+    "linear_members": ["CountX", "CountY", "Equals", "GetHashCode", "GetType", "LinearDirection", "MemberwiseClone", "PatternDimension", "PitchX", "PitchY", "ReferenceEquals", "ToString"]
+   },
+   "elapsed_s": 0.56000000000000005,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "combo",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:56+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\20_combo",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_edit_030_pull_after_pattern.scdoc",
+   "scdoc_size": "129131",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_edit_030_pull_after_pattern.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:55+08:00",
+   "status": "ok",
+   "title": "Pattern of bosses then pull base face + round (pattern relation survives edit)"
+  },
+  {
+   "actual": {
+    "area_mm2": 2513.274123,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2513.274123,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Solid_Cyl",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 9424.777961
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 1,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 9424.777961
+   },
+   "case_id": "20_combo_mesh_032_mesh_plus_solid",
+   "category": "20_combo",
+   "commands": ["mesh_facet", "prim_cylinder"],
+   "data": {
+    "intent_checks": [
+     ["solid_volume_mm3", "9424.8", "9424.8", true]
+    ]
+   },
+   "elapsed_s": 0.20000000000000001,
+   "expect": {
+    "bodies": 1,
+    "meshes": 1
+   },
+   "expect_mismatch": {},
+   "feature": "combo",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:44:57+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\20_combo",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_mesh_032_mesh_plus_solid.scdoc",
+   "scdoc_size": "240757",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_mesh_032_mesh_plus_solid.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:56+08:00",
+   "status": "ok",
+   "title": "Document with solid body + facet body converted from a copy"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 1,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "15_mesh_reduce_001_50pct",
+   "category": "15_mesh_facet",
+   "commands": ["FacetConvert.Create", "FacetReduce/FacetSmooth/FacetRemesh/FacetMerge/FacetSubtract/FacetThicken", "STLFile.Import/Insert"],
+   "data": {
+    "facets": [null, null],
+    "fr_defaults": ["0.2", "0.0"],
+    "fr_opts_members": ["DefaultMaxError", "DefaultTriangleReduction", "Equals", "GetHashCode", "GetType", "MaxError", "MemberwiseClone", "ReferenceEquals", "ToString", "TriangleReduction"],
+    "intent_checks": [],
+    "mesh_shape_members": ["ContainsPoint", "CreateObjRef", "Edges", "Equals", "ExecuteCommand", "Faces", "Geometry", "GetBoundingBox", "GetClosestSeparation", "GetCollision", "GetExtremePoint", "GetGeometry", "GetHashCode", "GetLifetimeService", "GetType", "InitializeLifetimeService", "IsClosed", "IsManifold", "IsReversed", "LifetimeLease", "MemberwiseClone", "ProjectPoint", "ReferenceEquals", "SurfaceArea", "ToString", "Vertices", "Volume"],
+    "reduce_form": 0
+   },
+   "elapsed_s": 431.33,
+   "expect": {
+    "meshes": 1
+   },
+   "expect_mismatch": {},
+   "feature": "mesh_facet",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:52:10+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet\\15_mesh_reduce_001_50pct.scdoc",
+   "scdoc_size": "311645482",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet\\15_mesh_reduce_001_50pct.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:44:58+08:00",
+   "status": "ok",
+   "title": "Facet (mesh) bodies: convert solid->mesh, reduce, smooth, thicken, boolean: 001_50pct"
+  }
+ ],
+ "elapsed_s": 474.26,
+ "finished_at": "2026-09-26T08:52:10+08:00",
+ "framework": "1.3",
+ "mode": "headless",
+ "spaceclaim_version": "2019.3.38912",
+ "stage": "done",
+ "started_at": "2026-09-26T08:44:16+08:00",
+ "summary": {
+  "failed": 3,
+  "not_feasible": 1,
+  "ok": 29
+ }
+}

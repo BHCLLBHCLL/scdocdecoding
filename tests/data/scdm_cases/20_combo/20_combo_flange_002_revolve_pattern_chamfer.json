@@ -1,0 +1,93 @@
+{
+ "actual": {
+  "area_mm2": 23376.613375,
+  "beams": 0,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 23376.613375,
+    "bbox_mm": [
+     [-50.0, -50.0, -0.0],
+     [50.0, 50.0, 30.0]
+    ],
+    "closed": true,
+    "edges": 19,
+    "faces": 13,
+    "manifold": true,
+    "name": "Flange",
+    "path": "",
+    "vertices": 19,
+    "volume_mm3": 89380.116245
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Circle": 19
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 19,
+  "faces": 13,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Cone": 1,
+   "Cylinder": 9,
+   "Plane": 3
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 19,
+  "view_mode": "Sketch",
+  "volume_mm3": 89380.116245
+ },
+ "case_id": "20_combo_flange_002_revolve_pattern_chamfer",
+ "category": "20_combo",
+ "commands": ["pull_revolve", "pull_extrude_cut", "mp_pattern_circular", "edge_chamfer"],
+ "data": {
+  "circular_members": ["CircularAngle", "CircularAxis", "CircularCount", "Equals", "GetHashCode", "GetType", "LinearCount", "LinearPitch", "MemberwiseClone", "PatternDimension", "RadialDirection", "ReferenceEquals", "ToString"],
+  "intent_checks": [
+   ["hole_faces", "6", "6", true],
+   ["volume_mm3", "89380.116245", "[89250, 89480]", true]
+  ],
+  "regions_after_intersect": [
+   ["实体", 93460.802826],
+   ["Hole_Cutter", 942.477796],
+   ["实体", 785.398163]
+  ]
+ },
+ "elapsed_s": 0.70999999999999996,
+ "expect": {
+  "bodies": 1
+ },
+ "expect_mismatch": {},
+ "feature": "combo",
+ "framework": "1.3",
+ "generated_at": "2026-09-26T08:38:14+08:00",
+ "items": {
+  "RemoveRegions": {
+   "ok": true,
+   "result": "True",
+   "s": 0.0
+  }
+ },
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\20_combo",
+ "params": {},
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_flange_002_revolve_pattern_chamfer.scdoc",
+ "scdoc_size": "161997",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\20_combo\\20_combo_flange_002_revolve_pattern_chamfer.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:38:13+08:00",
+ "status": "ok",
+ "title": "Pipe flange: revolve profile, circular pattern of 6 bolt holes, chamfer outer edge"
+}

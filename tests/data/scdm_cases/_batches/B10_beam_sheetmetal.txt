@@ -1,0 +1,9 @@
+D:\training\caedecoder\scdm_cases\09_beam\09_beam_profile_001_I_100x50.py
+D:\training\caedecoder\scdm_cases\09_beam\09_beam_profile_002_rect_tube_60x40x3.py
+D:\training\caedecoder\scdm_cases\09_beam\09_beam_profile_003_circular_d40_d34.py
+D:\training\caedecoder\scdm_cases\09_beam\09_beam_create_001_line_I.py
+D:\training\caedecoder\scdm_cases\09_beam\09_beam_create_002_frame_4lines_rect.py
+D:\training\caedecoder\scdm_cases\09_beam\09_beam_create_003_orient30_centroid.py
+D:\training\caedecoder\scdm_cases\08_sheetmetal\08_sheetmetal_convert_001_block_t2.py
+D:\training\caedecoder\scdm_cases\08_sheetmetal\08_sheetmetal_flange_001_90deg_l20.py
+D:\training\caedecoder\scdm_cases\08_sheetmetal\08_sheetmetal_unfold_001.py

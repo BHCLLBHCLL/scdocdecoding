@@ -1,0 +1,5 @@
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_merge_001_two_blocks_overlap.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_merge_002_block_plus_cyl.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_merge_003_touching_faces.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_intersect_001_block_sphere.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_intersect_002_two_cylinders_cross.py

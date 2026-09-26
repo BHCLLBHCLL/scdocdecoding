@@ -1,0 +1,2616 @@
+{
+ "batch": "L2_B11_B12",
+ "cases": [
+  {
+   "actual": {
+    "area_mm2": 2400.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2400.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [20.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Sheet_X0",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Sketch",
+    "volume_mm3": 8000.0
+   },
+   "case_id": "12_repair_stitch_001_six_sheets_to_solid",
+   "category": "12_repair_prepare",
+   "commands": ["StitchFaces/FixGaps/FixMissingFaces/FixSplitEdges/FixExtraEdges/FixSmallFaces/FixShortEdges/FixDuplicateFaces/FixCurveGaps/FixDuplicateCurves/FixExtendableSurfaces/FixInterference .FindAndFix"],
+   "data": {
+    "intent_checks": [
+     ["solid_volume_mm3", "8000.0", "8000.0", true],
+     ["faces", "6", "6", true]
+    ],
+    "sheets_before": 6,
+    "stitch_form": 0
+   },
+   "elapsed_s": 3.97,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "rp_fix",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:31+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {
+    "setup": "6 planar sheets forming cube"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_repair_stitch_001_six_sheets_to_solid.scdoc",
+   "scdoc_size": "86935",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_repair_stitch_001_six_sheets_to_solid.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:27+08:00",
+   "status": "ok",
+   "title": "Repair: stitch, gaps, missing faces, split edges, extra edges, small faces, short edges, duplicates, merge faces: 001_six_sheets_to_solid"
+  },
+  {
+   "actual": {
+    "area_mm2": 2400.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2400.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [20.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Open_Box",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 8000.0
+   },
+   "case_id": "12_repair_missingface_001_open_box",
+   "category": "12_repair_prepare",
+   "commands": ["StitchFaces/FixGaps/FixMissingFaces/FixSplitEdges/FixExtraEdges/FixSmallFaces/FixShortEdges/FixDuplicateFaces/FixCurveGaps/FixDuplicateCurves/FixExtendableSurfaces/FixInterference .FindAndFix"],
+   "data": {
+    "faces_open": 5,
+    "fix_missing_form": 0,
+    "intent_checks": [
+     ["faces", "6", "6", true],
+     ["volume_mm3", "8000.0", "8000.0", true]
+    ],
+    "is_sheet_open": true
+   },
+   "elapsed_s": 1.24,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "rp_fix",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:32+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {
+    "setup": "box with deleted face"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_repair_missingface_001_open_box.scdoc",
+   "scdoc_size": "27553",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_repair_missingface_001_open_box.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:31+08:00",
+   "status": "ok",
+   "title": "Repair: stitch, gaps, missing faces, split edges, extra edges, small faces, short edges, duplicates, merge faces: 001_open_box"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Split_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "12_repair_extraedges_001_split_face_merge",
+   "category": "12_repair_prepare",
+   "commands": ["StitchFaces/FixGaps/FixMissingFaces/FixSplitEdges/FixExtraEdges/FixSmallFaces/FixShortEdges/FixDuplicateFaces/FixCurveGaps/FixDuplicateCurves/FixExtendableSurfaces/FixInterference .FindAndFix"],
+   "data": {
+    "faces_split": 7,
+    "fix_extra_form": 0,
+    "intent_checks": [
+     ["faces_before", "7", "7", true],
+     ["faces_after", "6", "6", true]
+    ]
+   },
+   "elapsed_s": 0.34999999999999998,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 24000.0
+   },
+   "expect_mismatch": {},
+   "feature": "rp_fix",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:33+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_repair_extraedges_001_split_face_merge.scdoc",
+   "scdoc_size": "27452",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_repair_extraedges_001_split_face_merge.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:32+08:00",
+   "status": "ok",
+   "title": "Repair: stitch, gaps, missing faces, split edges, extra edges, small faces, short edges, duplicates, merge faces: 001_split_face_merge"
+  },
+  {
+   "actual": {
+    "area_mm2": 10600.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 10600.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [100.0, 50.0, 2.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Plate_T2",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 10000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 10000.0
+   },
+   "case_id": "12_prepare_midsurface_001_plate_t2",
+   "category": "12_repair_prepare",
+   "commands": ["Midsurface.Convert(bodies, thickness)", "MidsurfaceOffsetFaces.Create", "MidsurfaceAspectExtensions.SetThickness"],
+   "data": {
+    "bodies_after": [
+     ["Plate_T2", false]
+    ],
+    "intent_checks": [
+     ["has_sheet", "False", "True", false]
+    ],
+    "midsurface_form": 0
+   },
+   "elapsed_s": 0.17999999999999999,
+   "expect": {},
+   "expect_mismatch": {
+    "intent:has_sheet": {
+     "actual": false,
+     "expected": true
+    }
+   },
+   "feature": "rp_midsurface",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:33+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {
+    "base": "plate 100x50x2"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_midsurface_001_plate_t2.scdoc",
+   "scdoc_size": "25759",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_midsurface_001_plate_t2.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:33+08:00",
+   "status": "mismatch",
+   "title": "Midsurface: 001_plate_t2"
+  },
+  {
+   "actual": {
+    "area_mm2": 8582.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 8582.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [60.0, 40.0, 40.0]
+      ],
+      "closed": true,
+      "edges": 18,
+      "faces": 8,
+      "manifold": true,
+      "name": "L_Bracket",
+      "path": "",
+      "vertices": 12,
+      "volume_mm3": 11640.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 18
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 18,
+    "faces": 8,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 12,
+    "view_mode": "Solid",
+    "volume_mm3": 11640.0
+   },
+   "case_id": "12_prepare_midsurface_002_L_bracket_t3",
+   "category": "12_repair_prepare",
+   "commands": ["Midsurface.Convert(bodies, thickness)", "MidsurfaceOffsetFaces.Create", "MidsurfaceAspectExtensions.SetThickness"],
+   "data": {
+    "bodies_after": [
+     ["L_Bracket", false]
+    ],
+    "intent_checks": [
+     ["has_sheet", "False", "True", false]
+    ],
+    "midsurface_form": 0
+   },
+   "elapsed_s": 0.20999999999999999,
+   "expect": {},
+   "expect_mismatch": {
+    "intent:has_sheet": {
+     "actual": false,
+     "expected": true
+    }
+   },
+   "feature": "rp_midsurface",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:34+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_midsurface_002_L_bracket_t3.scdoc",
+   "scdoc_size": "31781",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_midsurface_002_L_bracket_t3.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:33+08:00",
+   "status": "mismatch",
+   "title": "Midsurface: 002_L_bracket_t3"
+  },
+  {
+   "actual": {
+    "area_mm2": 4800.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 2400.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [20.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Left_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     },
+     {
+      "area_mm2": 2400.0,
+      "bbox_mm": [
+       [20.0, 0.0, 0.0],
+       [40.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Right_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 16000.0
+   },
+   "case_id": "12_prepare_sharetopo_001_two_blocks_touching",
+   "category": "12_repair_prepare",
+   "commands": ["ShareTopology.FindAndFix", "ForceShareTopology.Execute", "UnShareTopology.Execute", "SharePrep.Execute"],
+   "data": {
+    "faces_after": 12,
+    "faces_before": 12,
+    "intent_checks": [],
+    "share_form": 0,
+    "share_mode": "Share",
+    "st_opts_members": ["DefaultTolerance", "Equals", "GetHashCode", "GetType", "MemberwiseClone", "PreserveInstances", "ReferenceEquals", "ToString", "Tolerance"]
+   },
+   "elapsed_s": 1.75,
+   "expect": {
+    "bodies": 2
+   },
+   "expect_mismatch": {},
+   "feature": "rp_share_topology",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:35+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_sharetopo_001_two_blocks_touching.scdoc",
+   "scdoc_size": "39904",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_sharetopo_001_two_blocks_touching.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:34+08:00",
+   "status": "ok",
+   "title": "Share topology: 001_two_blocks_touching"
+  },
+  {
+   "actual": {
+    "area_mm2": 4796.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 2400.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [20.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Left_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     },
+     {
+      "area_mm2": 2396.0,
+      "bbox_mm": [
+       [20.05, 0.0, 0.0],
+       [40.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Right_Block_Gap_0p05",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 7980.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 15980.0
+   },
+   "case_id": "12_prepare_sharetopo_002_force_tol0p1",
+   "category": "12_repair_prepare",
+   "commands": ["ShareTopology.FindAndFix", "ForceShareTopology.Execute", "UnShareTopology.Execute", "SharePrep.Execute"],
+   "data": {
+    "faces_after": 12,
+    "faces_before": 12,
+    "force_share_form": 0,
+    "intent_checks": []
+   },
+   "elapsed_s": 0.20999999999999999,
+   "expect": {
+    "bodies": 2
+   },
+   "expect_mismatch": {},
+   "feature": "rp_share_topology",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:36+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {
+    "tol_mm": 0.10000000000000001
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_sharetopo_002_force_tol0p1.scdoc",
+   "scdoc_size": "38260",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_sharetopo_002_force_tol0p1.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:36+08:00",
+   "status": "ok",
+   "title": "Share topology: 002_force_tol0p1"
+  },
+  {
+   "actual": {
+    "area_mm2": 25199.999338,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Enclosed_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     },
+     {
+      "area_mm2": 19999.999338,
+      "bbox_mm": [
+       [-10.0, -10.0, -10.0],
+       [49.999999, 39.999999, 29.999999]
+      ],
+      "closed": true,
+      "edges": 24,
+      "faces": 12,
+      "manifold": true,
+      "name": "Body_2",
+      "path": "Component_1",
+      "vertices": 16,
+      "volume_mm3": 95999.991953
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 36
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 36,
+    "faces": 18,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 18
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 24,
+    "view_mode": "Solid",
+    "volume_mm3": 119999.991953
+   },
+   "case_id": "12_prepare_enclosure_001_box_cushion10",
+   "category": "12_repair_prepare",
+   "commands": ["VolumeExtract.Create", "Enclosure.Create", "Workpiece.Create", "Shrinkwrap.Create"],
+   "data": {
+    "auto_renamed": [
+     ["外壳", "Body_2"],
+     ["", "Component_1"]
+    ],
+    "bboxes": [
+     [
+      [0.0, 0.0, 0.0],
+      [40.0, 30.0, 20.0]
+     ],
+     [
+      [-10.0, -10.0, -10.0],
+      [49.999999, 39.999999, 29.999999]
+     ]
+    ],
+    "cushion_members": ["ConvertFrom", "Equals", "GetHashCode", "GetType", "MemberwiseClone", "ReferenceEquals", "ToString", "XAxis", "YAxis", "ZAxis"],
+    "cushion_set": [],
+    "cushion_type": "SpaceClaim.Api.V18.Scripting.Commands.CommandOptions.BoxEnclosureCushion",
+    "encl_opts_members": ["CreateShareTopology", "CushionProportion", "CustomBody", "EnclosureCushion", "EnclosureType", "Equals", "Frame", "GetHashCode", "GetType", "MemberwiseClone", "ReferenceEquals", "Subtract", "ToString"],
+    "enclosure_form": 0,
+    "intent_checks": [
+     ["enclosure_x_span_mm", "59.999999", "[40.001, 200]", true]
+    ]
+   },
+   "elapsed_s": 0.54000000000000004,
+   "expect": {
+    "bodies": 2
+   },
+   "expect_mismatch": {},
+   "feature": "rp_volume_extract",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:37+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {
+    "cushion_mm": 10
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_enclosure_001_box_cushion10.scdoc",
+   "scdoc_size": "52013",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_enclosure_001_box_cushion10.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:36+08:00",
+   "status": "ok",
+   "title": "Volume extract / enclosure / workpiece / shrinkwrap: 001_box_cushion10"
+  },
+  {
+   "actual": {
+    "area_mm2": 10656.282281,
+    "beams": 0,
+    "bodies": 5,
+    "body_list": [
+     {
+      "area_mm2": 3418.052807,
+      "bbox_mm": [
+       [-8.0, -8.0, -5.0],
+       [8.0, 8.0, 55.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Bore_Cutter",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 12063.71579
+     },
+     {
+      "area_mm2": 201.06193,
+      "bbox_mm": [
+       [-8.0, -8.0, 0.0],
+       [8.0, 8.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 1,
+      "faces": 1,
+      "manifold": true,
+      "name": "Cap_Bottom",
+      "path": "",
+      "vertices": 1,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 201.06193,
+      "bbox_mm": [
+       [-8.0, -8.0, 50.0],
+       [8.0, 8.0, 50.0]
+      ],
+      "closed": false,
+      "edges": 1,
+      "faces": 1,
+      "manifold": true,
+      "name": "Cap_Top",
+      "path": "",
+      "vertices": 1,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 3418.052807,
+      "bbox_mm": [
+       [-8.0, -8.0, -5.0],
+       [8.0, 8.0, 55.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Body_4",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 12063.71579
+     },
+     {
+      "area_mm2": 3418.052807,
+      "bbox_mm": [
+       [-8.0, -8.0, -5.0],
+       [8.0, 8.0, 55.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Body_5",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 12063.71579
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 8
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 8,
+    "faces": 11,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 3,
+     "Plane": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Sketch",
+    "volume_mm3": 36191.14737
+   },
+   "case_id": "12_prepare_volumeextract_001_pipe",
+   "category": "12_repair_prepare",
+   "commands": ["VolumeExtract.Create", "Enclosure.Create", "Workpiece.Create", "Shrinkwrap.Create"],
+   "data": {
+    "auto_renamed": [
+     ["", "Body_4"],
+     ["实体", "Body_5"]
+    ],
+    "bore_faces": 1,
+    "intent_checks": [],
+    "regions_after_intersect": [
+     ["Pipe", 5654.708915],
+     ["Bore_Cutter", 12063.71579],
+     ["实体", 10053.096491]
+    ],
+    "volume_extract_errors": ["无法创建体积体 - 并未封闭所有端部。", "无法在合并的主体上找到矢量面。", "无法创建体积体 - 并未封闭所有端部。"]
+   },
+   "elapsed_s": 0.98999999999999999,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_volumeextract_001_pipe.py\", line 27, in build\n    first_ok(ctx, \"volume_extract\", [lambda: VolumeExtract.Create(sel(caps), sel(bore[0])),\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 833, in first_ok\n    raise Exception(\"%s: all %d forms failed: %s\" % (key, len(fns), errs))\nException: volume_extract: all 3 forms failed: [u'\\u65e0\\u6cd5\\u521b\\u5efa\\u4f53\\u79ef\\u4f53 - \\u5e76\\u672a\\u5c01\\u95ed\\u6240\\u6709\\u7aef\\u90e8\\u3002', u'\\u65e0\\u6cd5\\u5728\\u5408\\u5e76\\u7684\\u4e3b\\u4f53\\u4e0a\\u627e\\u5230\\u77e2\\u91cf\\u9762\\u3002', u'\\u65e0\\u6cd5\\u521b\\u5efa\\u4f53\\u79ef\\u4f53 - \\u5e76\\u672a\\u5c01\\u95ed\\u6240\\u6709\\u7aef\\u90e8\\u3002']\n",
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "rp_volume_extract",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:38+08:00",
+   "items": {
+    "RemoveRegions": {
+     "ok": true,
+     "result": "True",
+     "s": 0.01
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {
+    "base": "shelled cylinder with capping faces"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_volumeextract_001_pipe.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:37+08:00",
+   "status": "failed",
+   "title": "Volume extract / enclosure / workpiece / shrinkwrap: 001_pipe"
+  },
+  {
+   "actual": {
+    "area_mm2": 20599.999338,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 5800.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 24,
+      "faces": 11,
+      "manifold": true,
+      "name": "Part_With_Pocket",
+      "path": "",
+      "vertices": 16,
+      "volume_mm3": 22000.0
+     },
+     {
+      "area_mm2": 14799.999338,
+      "bbox_mm": [
+       [-10.0, -10.0, -10.0],
+       [49.999999, 39.999999, 29.999999]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Body_2",
+      "path": "Component_1",
+      "vertices": 8,
+      "volume_mm3": 119999.991953
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 36
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 36,
+    "faces": 17,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 17
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 24,
+    "view_mode": "Solid",
+    "volume_mm3": 141999.991953
+   },
+   "case_id": "12_prepare_workpiece_001",
+   "category": "12_repair_prepare",
+   "commands": ["VolumeExtract.Create", "Enclosure.Create", "Workpiece.Create", "Shrinkwrap.Create"],
+   "data": {
+    "auto_renamed": [
+     ["工件", "Body_2"],
+     ["", "Component_1"]
+    ],
+    "bodies_after": [
+     ["Part_With_Pocket", 22000.0],
+     ["工件", 120000.0]
+    ],
+    "intent_checks": [
+     ["bodies", "2", "[2, 3]", true]
+    ],
+    "regions_after_intersect": [
+     ["Part_With_Pocket", 22000.0],
+     ["Pocket_Cutter", 3000.0],
+     ["实体", 2000.0]
+    ],
+    "workpiece_form": 0
+   },
+   "elapsed_s": 0.20999999999999999,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "rp_volume_extract",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:39+08:00",
+   "items": {
+    "RemoveRegions": {
+     "ok": true,
+     "result": "True",
+     "s": 0.0
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_workpiece_001.scdoc",
+   "scdoc_size": "52093",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_workpiece_001.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:38+08:00",
+   "status": "ok",
+   "title": "Volume extract / enclosure / workpiece / shrinkwrap: 001"
+  },
+  {
+   "actual": {
+    "area_mm2": 5671.238898,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 471.238898,
+      "bbox_mm": [
+       [15.0, 10.0, 20.0],
+       [25.0, 20.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Icepak_Block",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 785.398163
+     },
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Icepak_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 9,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 24785.398163
+   },
+   "case_id": "12_prepare_icepak_simplify_001_level1",
+   "category": "12_repair_prepare",
+   "commands": ["IcepakEnclosure/IcepakFan/IcepakGrille/IcepakOpening/IcepakSimplify"],
+   "data": {
+    "bodies_after": [
+     ["Icepak_Block", 3, 785.4],
+     ["Icepak_Block", 6, 24000.0]
+    ],
+    "icepak_form": 0,
+    "intent_checks": [],
+    "o0_members": ["Equals", "GetHashCode", "GetType", "MemberwiseClone", "PreserveOriginal", "ReferenceEquals", "ToString"],
+    "o1_members": ["CleanUp", "Equals", "GetHashCode", "GetType", "MemberwiseClone", "RandomizeColors", "ReferenceEquals", "Split", "ToString"]
+   },
+   "elapsed_s": 0.27000000000000002,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "rp_icepak",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:39+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_icepak_simplify_001_level1.scdoc",
+   "scdoc_size": "46766",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_icepak_simplify_001_level1.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:39+08:00",
+   "status": "ok",
+   "title": "Icepak objects (enclosure, fan, grille, opening, simplify): simplify_001_level1"
+  },
+  {
+   "actual": {
+    "area_mm2": 1256.637061,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1256.637061,
+      "bbox_mm": [
+       [-20.0, -20.0, 0.0],
+       [20.0, 20.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 1,
+      "faces": 1,
+      "manifold": true,
+      "name": "Circular_Surface_R20",
+      "path": "",
+      "vertices": 1,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 1
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 1,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 1,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "13_surface_circular_001_r20",
+   "category": "13_surface_curve",
+   "commands": ["CircularSurface.Create", "RectangularSurface.Create", "SurfaceBody.Create(Surface, BoxUV)"],
+   "data": {
+    "circular_form": 0,
+    "intent_checks": [
+     ["area_mm2", "1256.64", "1256.64", true]
+    ]
+   },
+   "elapsed_s": 0.20999999999999999,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sc_surfaces",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:40+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve",
+   "params": {
+    "r_mm": 20
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_surface_circular_001_r20.scdoc",
+   "scdoc_size": "79819",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_surface_circular_001_r20.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:40+08:00",
+   "status": "ok",
+   "title": "Surface bodies: circular/rectangular surface, SurfaceBody from API surface: 001_r20"
+  },
+  {
+   "actual": {
+    "area_mm2": 300.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 300.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [30.0, 10.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Rect_Surface_30x10",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "13_surface_rect_001_30x10",
+   "category": "13_surface_curve",
+   "commands": ["CircularSurface.Create", "RectangularSurface.Create", "SurfaceBody.Create(Surface, BoxUV)"],
+   "data": {
+    "intent_checks": [
+     ["area_mm2", "300.0", "300.0", true]
+    ],
+    "rect_form": 0
+   },
+   "elapsed_s": 0.14999999999999999,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sc_surfaces",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:41+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_surface_rect_001_30x10.scdoc",
+   "scdoc_size": "64618",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_surface_rect_001_30x10.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:40+08:00",
+   "status": "ok",
+   "title": "Surface bodies: circular/rectangular surface, SurfaceBody from API surface: 001_30x10"
+  },
+  {
+   "actual": {
+    "area_mm2": 628.318531,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 628.318531,
+      "bbox_mm": [
+       [-10.0, 0.0, 0.0],
+       [10.0, 10.0, 20.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Cylinder_Patch",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "13_surface_body_001_cylinder_patch",
+   "category": "13_surface_curve",
+   "commands": ["CircularSurface.Create", "RectangularSurface.Create", "SurfaceBody.Create(Surface, BoxUV)"],
+   "data": {
+    "intent_checks": [
+     ["area_mm2", "628.32", "628.32", true]
+    ],
+    "surface_body_form": 0
+   },
+   "elapsed_s": 0.16,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sc_surfaces",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:41+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve",
+   "params": {
+    "surface": "Cylinder r10",
+    "uv": "0..pi x 0..20"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_surface_body_001_cylinder_patch.scdoc",
+   "scdoc_size": "72660",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_surface_body_001_cylinder_patch.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:41+08:00",
+   "status": "ok",
+   "title": "Surface bodies: circular/rectangular surface, SurfaceBody from API surface: 001_cylinder_patch"
+  },
+  {
+   "actual": {
+    "area_mm2": 2400.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2400.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [20.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Capped_Box",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 8000.0
+   },
+   "case_id": "13_fill_001_cap_open_box",
+   "category": "13_surface_curve",
+   "commands": ["Fill.Execute(sel, secondary, FillOptions, FillMode)"],
+   "data": {
+    "fill_form": 0,
+    "fill_opts_failed": [
+     ["FillType", "'FillOptions' object has no attribute 'FillType'"]
+    ],
+    "fill_opts_members": ["AllowMultiFacePatch", "AutoExtendFillArea", "Default", "Equals", "GapAngle", "GapDistance", "GetHashCode", "GetType", "MemberwiseClone", "PatchBlend", "ReferenceEquals", "ToString", "UntrimSingleFace", "ZipLaminarEdges"],
+    "intent_checks": [
+     ["faces", "6", "6", true],
+     ["volume_mm3", "8000.0", "8000.0", true]
+    ]
+   },
+   "elapsed_s": 0.33000000000000002,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sc_fill",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:42+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_fill_001_cap_open_box.scdoc",
+   "scdoc_size": "27542",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_fill_001_cap_open_box.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:42+08:00",
+   "status": "ok",
+   "title": "Fill / patch (cap holes, N-sided patch): cap_open_box"
+  },
+  {
+   "actual": {
+    "area_mm2": 955.382772,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 955.382772,
+      "bbox_mm": [
+       [-0.20047999999999999, -0.198764, -0.036783999999999997],
+       [30.200481, 30.202175, 6.829032]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Spline_Patch",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "NurbsCurve": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 4,
+    "surface_types": {
+     "NurbsSurface": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "13_fill_002_patch_4_splines",
+   "category": "13_surface_curve",
+   "commands": ["Fill.Execute(sel, secondary, FillOptions, FillMode)"],
+   "data": {
+    "fill_form": 0,
+    "intent_checks": [
+     ["sheet_bodies", "1", "1", true],
+     ["area_mm2", "955.382772", "[850, 1100]", true]
+    ]
+   },
+   "elapsed_s": 0.66000000000000003,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sc_fill",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:43+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_fill_002_patch_4_splines.scdoc",
+   "scdoc_size": "117480",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_fill_002_patch_4_splines.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:42+08:00",
+   "status": "ok",
+   "title": "Fill / patch (cap holes, N-sided patch): patch_4_splines"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 15,
+      "faces": 7,
+      "manifold": true,
+      "name": "Split_Block",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 15
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 15,
+    "faces": 7,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 7
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "13_splitface_001_block_top_two_points",
+   "category": "13_surface_curve",
+   "commands": ["SplitFace.ByTwoPoints/ByCutter/ByParametric/ByCurves", "SplitEdge.ByCount/ByLength/ByProportion"],
+   "data": {
+    "intent_checks": []
+   },
+   "elapsed_s": 0.20000000000000001,
+   "expect": {
+    "bodies": 1,
+    "faces": 7,
+    "volume_mm3": 24000.0
+   },
+   "expect_mismatch": {},
+   "feature": "sc_split_face",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:44+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_splitface_001_block_top_two_points.scdoc",
+   "scdoc_size": "29742",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_splitface_001_block_top_two_points.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:44+08:00",
+   "status": "ok",
+   "title": "Split face (by curves/cutter/two points/parametric), split edge: block_top_two_points"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 14,
+      "faces": 6,
+      "manifold": true,
+      "name": "Split_Edge_Block",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 14
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "13_splitedge_001_by_count3",
+   "category": "13_surface_curve",
+   "commands": ["SplitFace.ByTwoPoints/ByCutter/ByParametric/ByCurves", "SplitEdge.ByCount/ByLength/ByProportion"],
+   "data": {
+    "intent_checks": []
+   },
+   "elapsed_s": 0.16,
+   "expect": {
+    "bodies": 1,
+    "edges": 14
+   },
+   "expect_mismatch": {},
+   "feature": "sc_split_face",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:45+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve",
+   "params": {
+    "n": 3
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_splitedge_001_by_count3.scdoc",
+   "scdoc_size": "28527",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_splitedge_001_by_count3.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:44+08:00",
+   "status": "ok",
+   "title": "Split face (by curves/cutter/two points/parametric), split edge: by_count3"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 13,
+      "faces": 7,
+      "manifold": true,
+      "name": "Project_Block",
+      "path": "",
+      "vertices": 9,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 1,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 13,
+    "faces": 7,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 7
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 9,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "13_project_001_circle_onto_block_top",
+   "category": "13_surface_curve",
+   "commands": ["ProjectToSolid.Execute", "Wrap.Create", "ProjectToSketch.Create", "MoveImprintEdges.Execute"],
+   "data": {
+    "intent_checks": [
+     ["faces", "7", "7", true]
+    ],
+    "project_form": 0
+   },
+   "elapsed_s": 0.28999999999999998,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 24000.0
+   },
+   "expect_mismatch": {},
+   "feature": "sc_project_wrap",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:46+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_project_001_circle_onto_block_top.scdoc",
+   "scdoc_size": "33701",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_project_001_circle_onto_block_top.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:45+08:00",
+   "status": "ok",
+   "title": "Project curves to solid / wrap / imprint: circle_onto_block_top"
+  },
+  {
+   "actual": {
+    "area_mm2": 3241.592654,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 3141.592654,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 40.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Wrap_Target_Cyl",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 12566.370614
+     },
+     {
+      "area_mm2": 100.0,
+      "bbox_mm": [
+       [10.0, -5.0, 15.0],
+       [10.0, 5.0, 25.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Wrap_Rect",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 6,
+    "faces": 4,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 3
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 6,
+    "view_mode": "Sketch",
+    "volume_mm3": 12566.370614
+   },
+   "case_id": "13_wrap_001_rect_onto_cylinder",
+   "category": "13_surface_curve",
+   "commands": ["ProjectToSolid.Execute", "Wrap.Create", "ProjectToSketch.Create", "MoveImprintEdges.Execute"],
+   "data": {
+    "cyl_faces": [3],
+    "intent_checks": [
+     ["cyl_faces_after_imprint", "3", "[4, 12]", false]
+    ],
+    "wrap_errors": ["The Wrap command must include a single Body selection"],
+    "wrap_form": 1
+   },
+   "elapsed_s": 0.22,
+   "expect": {},
+   "expect_mismatch": {
+    "intent:cyl_faces_after_imprint": {
+     "actual": 3,
+     "expected": [4, 12]
+    }
+   },
+   "feature": "sc_project_wrap",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:47+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_wrap_001_rect_onto_cylinder.scdoc",
+   "scdoc_size": "115691",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_wrap_001_rect_onto_cylinder.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:46+08:00",
+   "status": "mismatch",
+   "title": "Project curves to solid / wrap / imprint: rect_onto_cylinder"
+  },
+  {
+   "actual": {
+    "area_mm2": 2400.0,
+    "beams": 0,
+    "bodies": 6,
+    "body_list": [
+     {
+      "area_mm2": 400.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [0.0, 20.0, 20.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Sheet_X0",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 400.0,
+      "bbox_mm": [
+       [20.0, 0.0, 0.0],
+       [20.0, 20.0, 20.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Sheet_X1",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 400.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [20.0, 0.0, 20.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Sheet_Y0",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 400.0,
+      "bbox_mm": [
+       [0.0, 20.0, 0.0],
+       [20.0, 20.0, 20.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Sheet_Y1",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 400.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [20.0, 20.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Sheet_Z0",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     },
+     {
+      "area_mm2": 400.0,
+      "bbox_mm": [
+       [0.0, 0.0, 20.0],
+       [20.0, 20.0, 20.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Sheet_Z1",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 24,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "13_convertsolid_001_closed_sheets",
+   "category": "13_surface_curve",
+   "commands": ["ConvertToSolid.Execute", "AutoSkin.Execute"],
+   "data": {
+    "convert_errors": ["The ConvertToSolid command must include a Mesh selection", "The ConvertToSolid command must include a Mesh selection"],
+    "intent_checks": []
+   },
+   "elapsed_s": 0.17000000000000001,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_convertsolid_001_closed_sheets.py\", line 36, in build\n    first_ok(ctx, \"convert\", [lambda: ConvertToSolid.Execute(sel(sh), True), lambda: ConvertToSolid.Execute(sel(sh), False)])\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 833, in first_ok\n    raise Exception(\"%s: all %d forms failed: %s\" % (key, len(fns), errs))\nException: convert: all 2 forms failed: ['The ConvertToSolid command must include a Mesh selection', 'The ConvertToSolid command must include a Mesh selection']\n",
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sc_convert_solid",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:47+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve",
+   "params": {},
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_convertsolid_001_closed_sheets.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:47+08:00",
+   "status": "failed",
+   "title": "Convert to solid / auto-skin / skin from height field: closed_sheets"
+  },
+  {
+   "actual": {
+    "area_mm2": 5388.495559,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5388.495559,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 14,
+      "faces": 8,
+      "manifold": true,
+      "name": "Hole_Block",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 23717.256661
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 8,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 7
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 23717.256661
+   },
+   "case_id": "14_hole_simple_001_d6_depth10",
+   "category": "14_holes_threads",
+   "commands": ["StandardHoles.Create(nomFaceToLocations, StandardHolesOptions)", "StandardHoles.Modify*", "StandardHoles.Find/Convert", "(raw API) Hole.Create"],
+   "data": {
+    "HoleLocation2_ctor_used": "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)",
+    "HoleLocation2_ctors": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "HoleLocation_ctor_used": "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)",
+    "HoleLocation_ctors": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "ctors_HoleLocation": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "hole_opts_default": {
+     "DepthMeasurement": "None",
+     "DrillSize": "None",
+     "FastenerName": "None",
+     "HoleDepth": "None",
+     "HoleFit": "None",
+     "HoleRadius": "0.0",
+     "SeriesName": "None",
+     "Tapped": "False"
+    },
+    "hole_opts_members": ["CosmeticThread", "CounterboreDepth", "CounterboreRadius", "CountersinkAngle", "CountersinkRadius", "Default", "DepthMeasurement", "DrillPointAngle", "DrillSize", "Equals", "FastenerName", "GetHashCode", "GetStandardHoleOptions", "GetType", "HoleDepth", "HoleFit", "HoleRadius", "MemberwiseClone", "ReferenceEquals", "SeriesName", "TapDepth", "Tapped", "ToString"],
+    "hole_result": ["CreatedEdges", "CreatedFaces", "CreatedHoles", "Equals", "GetCreated", "GetHashCode", "GetModified", "GetType", "IsActiveDoc", "MemberwiseClone", "ReferenceEquals", "Success", "ToString"],
+    "intent_checks": [
+     ["volume_mm3", "23717.3", "23717.3", true]
+    ],
+    "standard_hole_errors": ["CreateStandardHoles expects secondarySelection to be null, or a SINGLE INominalFace.\r\n参数名: secondarySelection"],
+    "standard_hole_form": 1,
+    "type_HoleLocation": ["SpaceClaim.Api.V18.Scripting.Commands.HoleLocation", "SpaceClaim.Api.V19.Scripting.Commands.HoleLocation", "SpaceClaim.Api.V17.Scripting.Commands.HoleLocation"]
+   },
+   "elapsed_s": 2.39,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "hole_standard",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:51+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads",
+   "params": {
+    "d_mm": 6,
+    "depth_mm": 10
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_simple_001_d6_depth10.scdoc",
+   "scdoc_size": "37191",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_simple_001_d6_depth10.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:48+08:00",
+   "status": "ok",
+   "title": "Standard holes (simple, counterbore, countersink, tapped, cosmetic thread): 001_d6_depth10"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Cbore_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "14_hole_cbore_001_M6",
+   "category": "14_holes_threads",
+   "commands": ["StandardHoles.Create(nomFaceToLocations, StandardHolesOptions)", "StandardHoles.Modify*", "StandardHoles.Find/Convert", "(raw API) Hole.Create"],
+   "data": {
+    "HoleLocation2_ctor_used": "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)",
+    "HoleLocation2_ctors": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "HoleLocation_ctor_used": "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)",
+    "HoleLocation_ctors": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "ctors_HoleLocation": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "hole_opts_default": {
+     "DepthMeasurement": "None",
+     "DrillSize": "None",
+     "FastenerName": "None",
+     "HoleDepth": "None",
+     "HoleFit": "None",
+     "HoleRadius": "0.0",
+     "SeriesName": "None",
+     "Tapped": "False"
+    },
+    "hole_opts_members": ["CosmeticThread", "CounterboreDepth", "CounterboreRadius", "CountersinkAngle", "CountersinkRadius", "Default", "DepthMeasurement", "DrillPointAngle", "DrillSize", "Equals", "FastenerName", "GetHashCode", "GetStandardHoleOptions", "GetType", "HoleDepth", "HoleFit", "HoleRadius", "MemberwiseClone", "ReferenceEquals", "SeriesName", "TapDepth", "Tapped", "ToString"],
+    "intent_checks": [],
+    "standard_hole_errors": ["CreateStandardHoles expects secondarySelection to be null, or a SINGLE INominalFace.\r\n参数名: secondarySelection", "Length must be positive.\r\n参数名: radius"],
+    "type_HoleLocation": ["SpaceClaim.Api.V18.Scripting.Commands.HoleLocation", "SpaceClaim.Api.V19.Scripting.Commands.HoleLocation", "SpaceClaim.Api.V17.Scripting.Commands.HoleLocation"]
+   },
+   "elapsed_s": 0.60999999999999999,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_cbore_001_M6.py\", line 49, in build\n    std_hole(ctx, b, 20, 15, o)\n  File \"D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_cbore_001_M6.py\", line 39, in std_hole\n    r = first_ok(ctx, \"standard_hole\", [by_auto, by_auto2])\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 833, in first_ok\n    raise Exception(\"%s: all %d forms failed: %s\" % (key, len(fns), errs))\nException: standard_hole: all 2 forms failed: [u'CreateStandardHoles expects secondarySelection to be null, or a SINGLE INominalFace.\\r\\n\\u53c2\\u6570\\u540d: secondarySelection', u'Length must be positive.\\r\\n\\u53c2\\u6570\\u540d: radius']\n",
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "hole_standard",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:52+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads",
+   "params": {
+    "counterbore": true,
+    "fastener": "M6",
+    "series": "ISO"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_cbore_001_M6.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:51+08:00",
+   "status": "failed",
+   "title": "Standard holes (simple, counterbore, countersink, tapped, cosmetic thread): 001_M6"
+  },
+  {
+   "actual": {
+    "area_mm2": 5404.780841,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5404.780841,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 15,
+      "faces": 9,
+      "manifold": true,
+      "name": "Csink_Block",
+      "path": "",
+      "vertices": 11,
+      "volume_mm3": 23547.610658
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 3,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 15,
+    "faces": 9,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cone": 1,
+     "Cylinder": 1,
+     "Plane": 7
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 11,
+    "view_mode": "Solid",
+    "volume_mm3": 23547.610658
+   },
+   "case_id": "14_hole_csink_001_90deg",
+   "category": "14_holes_threads",
+   "commands": ["StandardHoles.Create(nomFaceToLocations, StandardHolesOptions)", "StandardHoles.Modify*", "StandardHoles.Find/Convert", "(raw API) Hole.Create"],
+   "data": {
+    "HoleLocation2_ctor_used": "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)",
+    "HoleLocation2_ctors": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "HoleLocation_ctor_used": "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)",
+    "HoleLocation_ctors": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "ctors_HoleLocation": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "hole_opts_default": {
+     "DepthMeasurement": "None",
+     "DrillSize": "None",
+     "FastenerName": "None",
+     "HoleDepth": "None",
+     "HoleFit": "None",
+     "HoleRadius": "0.0",
+     "SeriesName": "None",
+     "Tapped": "False"
+    },
+    "hole_opts_members": ["CosmeticThread", "CounterboreDepth", "CounterboreRadius", "CountersinkAngle", "CountersinkRadius", "Default", "DepthMeasurement", "DrillPointAngle", "DrillSize", "Equals", "FastenerName", "GetHashCode", "GetStandardHoleOptions", "GetType", "HoleDepth", "HoleFit", "HoleRadius", "MemberwiseClone", "ReferenceEquals", "SeriesName", "TapDepth", "Tapped", "ToString"],
+    "hole_result": ["CreatedEdges", "CreatedFaces", "CreatedHoles", "Equals", "GetCreated", "GetHashCode", "GetModified", "GetType", "IsActiveDoc", "MemberwiseClone", "ReferenceEquals", "Success", "ToString"],
+    "intent_checks": [
+     ["volume_removed_mm3", "452.389342000", "[300, 1500]", true]
+    ],
+    "standard_hole_errors": ["CreateStandardHoles expects secondarySelection to be null, or a SINGLE INominalFace.\r\n参数名: secondarySelection"],
+    "standard_hole_form": 1,
+    "type_HoleLocation": ["SpaceClaim.Api.V18.Scripting.Commands.HoleLocation", "SpaceClaim.Api.V19.Scripting.Commands.HoleLocation", "SpaceClaim.Api.V17.Scripting.Commands.HoleLocation"]
+   },
+   "elapsed_s": 0.52000000000000002,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "hole_standard",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:53+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads",
+   "params": {
+    "csink_angle_deg": 90
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_csink_001_90deg.scdoc",
+   "scdoc_size": "45563",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_csink_001_90deg.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:52+08:00",
+   "status": "ok",
+   "title": "Standard holes (simple, counterbore, countersink, tapped, cosmetic thread): 001_90deg"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Tapped_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "14_hole_tapped_001_M8_cosmetic",
+   "category": "14_holes_threads",
+   "commands": ["StandardHoles.Create(nomFaceToLocations, StandardHolesOptions)", "StandardHoles.Modify*", "StandardHoles.Find/Convert", "(raw API) Hole.Create"],
+   "data": {
+    "HoleLocation2_ctor_used": "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)",
+    "HoleLocation2_ctors": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "HoleLocation_ctor_used": "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)",
+    "HoleLocation_ctors": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "ctors_HoleLocation": ["(ISelection selection, PointUV point, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Point location, Nullable`1 direction, Nullable`1 overridePoint)", "(ISelection selection, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)", "(IDesignFace face, Double uParam, Double vParam, Nullable`1 direction, Nullable`1 overridePoint)"],
+    "hole_opts_default": {
+     "DepthMeasurement": "None",
+     "DrillSize": "None",
+     "FastenerName": "None",
+     "HoleDepth": "None",
+     "HoleFit": "None",
+     "HoleRadius": "0.0",
+     "SeriesName": "None",
+     "Tapped": "False"
+    },
+    "hole_opts_members": ["CosmeticThread", "CounterboreDepth", "CounterboreRadius", "CountersinkAngle", "CountersinkRadius", "Default", "DepthMeasurement", "DrillPointAngle", "DrillSize", "Equals", "FastenerName", "GetHashCode", "GetStandardHoleOptions", "GetType", "HoleDepth", "HoleFit", "HoleRadius", "MemberwiseClone", "ReferenceEquals", "SeriesName", "TapDepth", "Tapped", "ToString"],
+    "intent_checks": [],
+    "standard_hole_errors": ["CreateStandardHoles expects secondarySelection to be null, or a SINGLE INominalFace.\r\n参数名: secondarySelection", "Length must be positive.\r\n参数名: radius"],
+    "type_HoleLocation": ["SpaceClaim.Api.V18.Scripting.Commands.HoleLocation", "SpaceClaim.Api.V19.Scripting.Commands.HoleLocation", "SpaceClaim.Api.V17.Scripting.Commands.HoleLocation"]
+   },
+   "elapsed_s": 0.51000000000000001,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_tapped_001_M8_cosmetic.py\", line 48, in build\n    r = std_hole(ctx, b, 20, 15, o)\n  File \"D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_tapped_001_M8_cosmetic.py\", line 39, in std_hole\n    r = first_ok(ctx, \"standard_hole\", [by_auto, by_auto2])\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 833, in first_ok\n    raise Exception(\"%s: all %d forms failed: %s\" % (key, len(fns), errs))\nException: standard_hole: all 2 forms failed: [u'CreateStandardHoles expects secondarySelection to be null, or a SINGLE INominalFace.\\r\\n\\u53c2\\u6570\\u540d: secondarySelection', u'Length must be positive.\\r\\n\\u53c2\\u6570\\u540d: radius']\n",
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "hole_standard",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:55+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads",
+   "params": {
+    "cosmetic": true,
+    "tap": true
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\14_holes_threads\\14_hole_tapped_001_M8_cosmetic.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:54+08:00",
+   "status": "failed",
+   "title": "Standard holes (simple, counterbore, countersink, tapped, cosmetic thread): 001_M8_cosmetic"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 1,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "15_mesh_convert_001_block",
+   "category": "15_mesh_facet",
+   "commands": ["FacetConvert.Create", "FacetReduce/FacetSmooth/FacetRemesh/FacetMerge/FacetSubtract/FacetThicken", "STLFile.Import/Insert"],
+   "data": {
+    "facet_convert_form": 0,
+    "facets": null,
+    "fc_opts_members": ["Angle", "AspectRatio", "Deviation", "Equals", "GetHashCode", "GetType", "KeepOriginal", "MaxEdgeLength", "MemberwiseClone", "ReferenceEquals", "ToString"],
+    "intent_checks": []
+   },
+   "elapsed_s": 0.29999999999999999,
+   "expect": {
+    "meshes": 1
+   },
+   "expect_mismatch": {},
+   "feature": "mesh_facet",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:56+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet\\15_mesh_convert_001_block.scdoc",
+   "scdoc_size": "20194",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet\\15_mesh_convert_001_block.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:55+08:00",
+   "status": "ok",
+   "title": "Facet (mesh) bodies: convert solid->mesh, reduce, smooth, thicken, boolean: 001_block"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 0,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "15_mesh_stl_import_001",
+   "category": "15_mesh_facet",
+   "commands": ["FacetConvert.Create", "FacetReduce/FacetSmooth/FacetRemesh/FacetMerge/FacetSubtract/FacetThicken", "STLFile.Import/Insert"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"]
+    ],
+    "export_stl_form": 0,
+    "insert_stl_form": 0,
+    "intent_checks": [],
+    "stl_bytes": "3484",
+    "stl_opts_members": ["Equals", "GetCurrent", "GetHashCode", "GetType", "ImportStlUnits", "ImportType", "MemberwiseClone", "MergeFaces", "ReferenceEquals", "ToString", "WriteToUserSettings"]
+   },
+   "elapsed_s": 0.83999999999999997,
+   "expect": {
+    "meshes": 1
+   },
+   "expect_mismatch": {
+    "meshes": {
+     "actual": 0,
+     "expected": 1
+    }
+   },
+   "feature": "mesh_facet",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:28:58+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet",
+   "params": {
+    "file": "exported STL of cylinder"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet\\15_mesh_stl_import_001.scdoc",
+   "scdoc_size": "36224",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet\\15_mesh_stl_import_001.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:57+08:00",
+   "status": "mismatch",
+   "title": "Facet (mesh) bodies: convert solid->mesh, reduce, smooth, thicken, boolean: import_001"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 1,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "15_mesh_reduce_001_50pct",
+   "category": "15_mesh_facet",
+   "commands": ["FacetConvert.Create", "FacetReduce/FacetSmooth/FacetRemesh/FacetMerge/FacetSubtract/FacetThicken", "STLFile.Import/Insert"],
+   "data": {
+    "facets": [null, null],
+    "fr_opts_members": ["DefaultMaxError", "DefaultTriangleReduction", "Equals", "GetHashCode", "GetType", "MaxError", "MemberwiseClone", "ReferenceEquals", "ToString", "TriangleReduction"],
+    "intent_checks": [
+     ["reduced", "False", "True", false]
+    ],
+    "reduce_form": 0
+   },
+   "elapsed_s": 388.04,
+   "expect": {
+    "meshes": 1
+   },
+   "expect_mismatch": {
+    "intent:reduced": {
+     "actual": false,
+     "expected": true
+    }
+   },
+   "feature": "mesh_facet",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:35:27+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet\\15_mesh_reduce_001_50pct.scdoc",
+   "scdoc_size": "311639337",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\15_mesh_facet\\15_mesh_reduce_001_50pct.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:28:59+08:00",
+   "status": "mismatch",
+   "title": "Facet (mesh) bodies: convert solid->mesh, reduce, smooth, thicken, boolean: 001_50pct"
+  }
+ ],
+ "elapsed_s": 421.02,
+ "finished_at": "2026-09-26T08:35:28+08:00",
+ "framework": "1.3",
+ "mode": "headless",
+ "spaceclaim_version": "2019.3.38912",
+ "stage": "done",
+ "started_at": "2026-09-26T08:28:27+08:00",
+ "summary": {
+  "failed": 4,
+  "mismatch": 5,
+  "ok": 19
+ }
+}

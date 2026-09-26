@@ -1,0 +1,2122 @@
+{
+ "batch": "B02_sketch",
+ "cases": [
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_line_001_single_50",
+   "category": "02_sketch",
+   "commands": ["SketchLine.Create", "SketchLine.CreateChain"],
+   "data": {
+    "sketch_result": {
+     "curve_types": ["Line"],
+     "new_bodies": 0,
+     "root_curves": 1
+    }
+   },
+   "elapsed_s": 3.25,
+   "expect": {
+    "bodies": 0,
+    "root_curves": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_line",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:13+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "p0": [0, 0],
+    "p1": [50, 0]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_line_001_single_50.scdoc",
+   "scdoc_size": "13765",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_line_001_single_50.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:10+08:00",
+   "status": "ok",
+   "title": "Sketch line / polyline: 001_single_50"
+  },
+  {
+   "actual": {
+    "area_mm2": 600.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 600.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 3,
+      "faces": 1,
+      "manifold": true,
+      "name": "Triangle",
+      "path": "",
+      "vertices": 3,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 3
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 3,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 3,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_line_002_chain_closed_tri",
+   "category": "02_sketch",
+   "commands": ["SketchLine.Create", "SketchLine.CreateChain"],
+   "data": {
+    "sketch_result": {
+     "curve_types": [],
+     "new_bodies": 1,
+     "root_curves": 0
+    }
+   },
+   "elapsed_s": 0.91000000000000003,
+   "expect": {
+    "area_mm2": 600.0,
+    "bodies": 1,
+    "faces": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_line",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:14+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "close": true,
+    "pts": [
+     [0, 0],
+     [40, 0],
+     [20, 30]
+    ]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_line_002_chain_closed_tri.scdoc",
+   "scdoc_size": "18496",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_line_002_chain_closed_tri.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:13+08:00",
+   "status": "ok",
+   "title": "Sketch line / polyline: 002_chain_closed_tri"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 2,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_line_003_construction",
+   "category": "02_sketch",
+   "commands": ["SketchLine.Create", "SketchLine.CreateChain"],
+   "data": {
+    "sketch_result": {
+     "curve_types": ["Line", "Line"],
+     "new_bodies": 0,
+     "root_curves": 2
+    }
+   },
+   "elapsed_s": 0.14000000000000001,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sk_line",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:14+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "isConstruction": true,
+    "p0": [0, 0],
+    "p1": [0, 40]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_line_003_construction.scdoc",
+   "scdoc_size": "14017",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_line_003_construction.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:14+08:00",
+   "status": "ok",
+   "title": "Sketch line / polyline: 003_construction"
+  },
+  {
+   "actual": {
+    "area_mm2": 800.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 800.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 20.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Rect_40x20",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_rect_001_40x20",
+   "category": "02_sketch",
+   "commands": ["SketchRectangle.Create(p1,p2,p3)"],
+   "data": {
+    "sketch_result": {
+     "curve_types": [],
+     "new_bodies": 1,
+     "root_curves": 0
+    }
+   },
+   "elapsed_s": 0.13,
+   "expect": {
+    "area_mm2": 800.0,
+    "bodies": 1,
+    "faces": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_rect",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:15+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "p": [
+     [0, 0],
+     [40, 0],
+     [40, 20]
+    ]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_rect_001_40x20.scdoc",
+   "scdoc_size": "17614",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_rect_001_40x20.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:14+08:00",
+   "status": "ok",
+   "title": "Sketch rectangle: 001_40x20"
+  },
+  {
+   "actual": {
+    "area_mm2": 800.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 800.0,
+      "bbox_mm": [
+       [-10.0, -0.0, 0.0],
+       [34.641016, 37.320508, 0.0]
+      ],
+      "closed": false,
+      "edges": 4,
+      "faces": 1,
+      "manifold": true,
+      "name": "Rect_Rot30",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_rect_002_rotated_30deg",
+   "category": "02_sketch",
+   "commands": ["SketchRectangle.Create(p1,p2,p3)"],
+   "data": {
+    "sketch_result": {
+     "curve_types": [],
+     "new_bodies": 1,
+     "root_curves": 0
+    }
+   },
+   "elapsed_s": 0.14999999999999999,
+   "expect": {
+    "area_mm2": 800.0,
+    "bodies": 1,
+    "faces": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_rect",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:15+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "p": "3-point rotated 30deg"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_rect_002_rotated_30deg.scdoc",
+   "scdoc_size": "18914",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_rect_002_rotated_30deg.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:15+08:00",
+   "status": "ok",
+   "title": "Sketch rectangle: 002_rotated_30deg"
+  },
+  {
+   "actual": {
+    "area_mm2": 314.159265,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 314.159265,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 1,
+      "faces": 1,
+      "manifold": true,
+      "name": "Circle_R10",
+      "path": "",
+      "vertices": 1,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 1
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 1,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 1,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_circle_001_r10",
+   "category": "02_sketch",
+   "commands": ["SketchCircle.Create(Point2D,radius)"],
+   "data": {
+    "sketch_result": {
+     "curve_types": [],
+     "new_bodies": 1,
+     "root_curves": 0
+    }
+   },
+   "elapsed_s": 0.14000000000000001,
+   "expect": {
+    "area_mm2": 314.159265,
+    "bodies": 1,
+    "faces": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_circle",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:15+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "c": [0, 0],
+    "r_mm": 10
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_circle_001_r10.scdoc",
+   "scdoc_size": "21884",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_circle_001_r10.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:15+08:00",
+   "status": "ok",
+   "title": "Sketch circle: 001_r10"
+  },
+  {
+   "actual": {
+    "area_mm2": 314.159265,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 314.159265,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 2,
+      "faces": 2,
+      "manifold": true,
+      "name": "Concentric",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 2,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_circle_002_two_concentric_r5_r10",
+   "category": "02_sketch",
+   "commands": ["SketchCircle.Create(Point2D,radius)"],
+   "data": {
+    "sketch_result": {
+     "curve_types": [],
+     "new_bodies": 1,
+     "root_curves": 0
+    }
+   },
+   "elapsed_s": 0.17999999999999999,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sk_circle",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:16+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "r_mm": [5, 10]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_circle_002_two_concentric_r5_r10.scdoc",
+   "scdoc_size": "29398",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_circle_002_two_concentric_r5_r10.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:15+08:00",
+   "status": "ok",
+   "title": "Sketch circle: 002_two_concentric_r5_r10"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_arc_001_center_r20_90deg",
+   "category": "02_sketch",
+   "commands": ["SketchArc.Create", "SketchArc.Create3PointArc", "SketchArc.CreateSweepArc", "SketchArc.CreateTangentArc"],
+   "data": {
+    "sketch_result": {
+     "curve_types": ["Circle"],
+     "new_bodies": 0,
+     "root_curves": 1
+    }
+   },
+   "elapsed_s": 0.13,
+   "expect": {
+    "bodies": 0,
+    "root_curves": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_arc",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:16+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "c": [0, 0],
+    "end": [0, 20],
+    "start": [20, 0]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_arc_001_center_r20_90deg.scdoc",
+   "scdoc_size": "16428",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_arc_001_center_r20_90deg.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:16+08:00",
+   "status": "ok",
+   "title": "Sketch arc (center/3-point/tangent/sweep): 001_center_r20_90deg"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_arc_002_3point",
+   "category": "02_sketch",
+   "commands": ["SketchArc.Create", "SketchArc.Create3PointArc", "SketchArc.CreateSweepArc", "SketchArc.CreateTangentArc"],
+   "data": {
+    "sketch_result": {
+     "curve_types": ["Circle"],
+     "new_bodies": 0,
+     "root_curves": 1
+    }
+   },
+   "elapsed_s": 0.12,
+   "expect": {
+    "bodies": 0,
+    "root_curves": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_arc",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:16+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "pts": [
+     [0, 0],
+     [10, 5],
+     [20, 0]
+    ]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_arc_002_3point.scdoc",
+   "scdoc_size": "17775",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_arc_002_3point.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:16+08:00",
+   "status": "ok",
+   "title": "Sketch arc (center/3-point/tangent/sweep): 002_3point"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 2,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_arc_003_tangent_after_line",
+   "category": "02_sketch",
+   "commands": ["SketchArc.Create", "SketchArc.Create3PointArc", "SketchArc.CreateSweepArc", "SketchArc.CreateTangentArc"],
+   "data": {
+    "sketch_result": {
+     "curve_types": ["Line", "Circle"],
+     "new_bodies": 0,
+     "root_curves": 2
+    },
+    "tangent_arc_errors": ["Input selection is not a valid one"],
+    "tangent_arc_form": 1
+   },
+   "elapsed_s": 0.25,
+   "expect": {
+    "bodies": 0,
+    "root_curves": 2
+   },
+   "expect_mismatch": {},
+   "feature": "sk_arc",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:17+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "end": [30, 10],
+    "line": [
+     [0, 0],
+     [20, 0]
+    ]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_arc_003_tangent_after_line.scdoc",
+   "scdoc_size": "14526",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_arc_003_tangent_after_line.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:16+08:00",
+   "status": "ok",
+   "title": "Sketch arc (center/3-point/tangent/sweep): 003_tangent_after_line"
+  },
+  {
+   "actual": {
+    "area_mm2": 628.318531,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 628.318531,
+      "bbox_mm": [
+       [-20.0, -10.0, 0.0],
+       [20.0, 10.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 1,
+      "faces": 1,
+      "manifold": true,
+      "name": "Ellipse_20x10",
+      "path": "",
+      "vertices": 1,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Ellipse": 1
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 1,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 1,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_ellipse_001_a20_b10",
+   "category": "02_sketch",
+   "commands": ["SketchEllipse.Create"],
+   "data": {
+    "sketch_result": {
+     "curve_types": [],
+     "new_bodies": 1,
+     "root_curves": 0
+    }
+   },
+   "elapsed_s": 0.14000000000000001,
+   "expect": {
+    "area_mm2": 628.318531,
+    "bodies": 1,
+    "faces": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_ellipse",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:17+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "a_mm": 20,
+    "b_mm": 10
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_ellipse_001_a20_b10.scdoc",
+   "scdoc_size": "23385",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_ellipse_001_a20_b10.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:17+08:00",
+   "status": "ok",
+   "title": "Sketch ellipse: 001_a20_b10"
+  },
+  {
+   "actual": {
+    "area_mm2": 235.619449,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 235.619449,
+      "bbox_mm": [
+       [-11.18034, -11.18034, 0.0],
+       [11.18034, 11.18034, 0.0]
+      ],
+      "closed": false,
+      "edges": 1,
+      "faces": 1,
+      "manifold": true,
+      "name": "Ellipse_Rot45",
+      "path": "",
+      "vertices": 1,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Ellipse": 1
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 1,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 1,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_ellipse_002_rotated_45",
+   "category": "02_sketch",
+   "commands": ["SketchEllipse.Create"],
+   "data": {
+    "sketch_result": {
+     "curve_types": [],
+     "new_bodies": 1,
+     "root_curves": 0
+    }
+   },
+   "elapsed_s": 0.12,
+   "expect": {
+    "area_mm2": 235.619449,
+    "bodies": 1,
+    "faces": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_ellipse",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:18+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "a_mm": 15,
+    "b_mm": 5,
+    "major_dir_deg": 45
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_ellipse_002_rotated_45.scdoc",
+   "scdoc_size": "22784",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_ellipse_002_rotated_45.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:17+08:00",
+   "status": "ok",
+   "title": "Sketch ellipse: 002_rotated_45"
+  },
+  {
+   "actual": {
+    "area_mm2": 346.410162,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 346.410162,
+      "bbox_mm": [
+       [-11.547005, -10.0, 0.0],
+       [11.547005, 10.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 6,
+      "faces": 1,
+      "manifold": true,
+      "name": "Hexagon",
+      "path": "",
+      "vertices": 6,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 6
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 6,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 6,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_polygon_001_hex_r10",
+   "category": "02_sketch",
+   "commands": ["SketchPolygon.Create(Point2D,dirX,dirY,internalRadius,n)"],
+   "data": {
+    "sketch_result": {
+     "curve_types": [],
+     "new_bodies": 1,
+     "root_curves": 0
+    }
+   },
+   "elapsed_s": 0.20000000000000001,
+   "expect": {
+    "bodies": 1,
+    "faces": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_polygon",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:18+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "n": 6,
+    "r_mm": 10
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_polygon_001_hex_r10.scdoc",
+   "scdoc_size": "20895",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_polygon_001_hex_r10.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:18+08:00",
+   "status": "ok",
+   "title": "Sketch polygon: 001_hex_r10"
+  },
+  {
+   "actual": {
+    "area_mm2": 232.493609,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 232.493609,
+      "bbox_mm": [
+       [-8.0, -9.404564000000001, 0.0],
+       [9.888544, 9.404564000000001, 0.0]
+      ],
+      "closed": false,
+      "edges": 5,
+      "faces": 1,
+      "manifold": true,
+      "name": "Pentagon",
+      "path": "",
+      "vertices": 5,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 5
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 5,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 5,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_polygon_002_pent_r8",
+   "category": "02_sketch",
+   "commands": ["SketchPolygon.Create(Point2D,dirX,dirY,internalRadius,n)"],
+   "data": {
+    "sketch_result": {
+     "curve_types": [],
+     "new_bodies": 1,
+     "root_curves": 0
+    }
+   },
+   "elapsed_s": 0.17999999999999999,
+   "expect": {
+    "bodies": 1,
+    "faces": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_polygon",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:19+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "n": 5,
+    "r_mm": 8
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_polygon_002_pent_r8.scdoc",
+   "scdoc_size": "19584",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_polygon_002_pent_r8.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:18+08:00",
+   "status": "ok",
+   "title": "Sketch polygon: 002_pent_r8"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_spline_001_open_5pts",
+   "category": "02_sketch",
+   "commands": ["SketchNurbs.CreateFrom2DPoints(periodic, points)"],
+   "data": {
+    "sketch_result": {
+     "curve_types": ["NurbsCurve"],
+     "new_bodies": 0,
+     "root_curves": 1
+    }
+   },
+   "elapsed_s": 0.26000000000000001,
+   "expect": {
+    "bodies": 0,
+    "root_curves": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_spline",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:19+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "periodic": false,
+    "pts": [
+     [0, 0],
+     [10, 8],
+     [20, -4],
+     [30, 6],
+     [40, 0]
+    ]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_spline_001_open_5pts.scdoc",
+   "scdoc_size": "15881",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_spline_001_open_5pts.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:19+08:00",
+   "status": "ok",
+   "title": "Sketch spline (NURBS through points): 001_open_5pts"
+  },
+  {
+   "actual": {
+    "area_mm2": 454.662008,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 454.662008,
+      "bbox_mm": [
+       [-10.0, -17.320508, 0.0],
+       [15.0, 17.320508, 0.0]
+      ],
+      "closed": false,
+      "edges": 1,
+      "faces": 1,
+      "manifold": true,
+      "name": "Spline_Periodic",
+      "path": "",
+      "vertices": 1,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "NurbsCurve": 1
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 1,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 1,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_spline_002_periodic_6pts",
+   "category": "02_sketch",
+   "commands": ["SketchNurbs.CreateFrom2DPoints(periodic, points)"],
+   "data": {
+    "sketch_result": {
+     "curve_types": [],
+     "new_bodies": 1,
+     "root_curves": 0
+    }
+   },
+   "elapsed_s": 0.16,
+   "expect": {
+    "bodies": 1,
+    "faces": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_spline",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:20+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "n": 6,
+    "periodic": true
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_spline_002_periodic_6pts.scdoc",
+   "scdoc_size": "23063",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_spline_002_periodic_6pts.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:20+08:00",
+   "status": "ok",
+   "title": "Sketch spline (NURBS through points): 002_periodic_6pts"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_spline_003_end_tangents",
+   "category": "02_sketch",
+   "commands": ["SketchNurbs.CreateFrom2DPoints(periodic, points)"],
+   "data": {
+    "sketch_result": {
+     "curve_types": ["NurbsCurve"],
+     "new_bodies": 0,
+     "root_curves": 1
+    }
+   },
+   "elapsed_s": 0.12,
+   "expect": {
+    "bodies": 0,
+    "root_curves": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_spline",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:21+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "endVector": [1, -1],
+    "n": 4,
+    "startVector": [1, 1]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_spline_003_end_tangents.scdoc",
+   "scdoc_size": "14989",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_spline_003_end_tangents.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:20+08:00",
+   "status": "ok",
+   "title": "Sketch spline (NURBS through points): 003_end_tangents"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_point_001",
+   "category": "02_sketch",
+   "commands": ["SketchPoint.Create", "SketchOffsetCurve.Create", "SketchCorner.Create", "Sketch2DRound.Create", "TrimSketchCurve.Execute", "SplitSketchCurve.Execute"],
+   "data": {
+    "root_points": 0,
+    "sketch_result": {
+     "curve_types": ["PointCurve"],
+     "new_bodies": 0,
+     "root_curves": 1
+    }
+   },
+   "elapsed_s": 0.17999999999999999,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sk_point_offset",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:21+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "p": [5, 5]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_point_001.scdoc",
+   "scdoc_size": "10934",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_point_001.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:21+08:00",
+   "status": "ok",
+   "title": "Sketch point / offset curve / corner / 2D round / trim / split: 001"
+  },
+  {
+   "actual": {
+    "area_mm2": 1196.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1196.0,
+      "bbox_mm": [
+       [-3.0, -3.0, 0.0],
+       [43.0, 23.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 8,
+      "faces": 2,
+      "manifold": true,
+      "name": "Rect_Offset3",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 8
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 8,
+    "faces": 2,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_offset_001_rect_offset3",
+   "category": "02_sketch",
+   "commands": ["SketchPoint.Create", "SketchOffsetCurve.Create", "SketchCorner.Create", "Sketch2DRound.Create", "TrimSketchCurve.Execute", "SplitSketchCurve.Execute"],
+   "data": {
+    "offset_errors": ["错误"],
+    "offset_form": 1,
+    "rect_curves": 4,
+    "sketch_result": {
+     "curve_types": [],
+     "new_bodies": 1,
+     "root_curves": 0
+    }
+   },
+   "elapsed_s": 0.23999999999999999,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sk_point_offset",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:22+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "offset_mm": 3,
+    "rect": [40, 20]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_offset_001_rect_offset3.scdoc",
+   "scdoc_size": "22266",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_offset_001_rect_offset3.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:21+08:00",
+   "status": "ok",
+   "title": "Sketch point / offset curve / corner / 2D round / trim / split: 001_rect_offset3"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 4,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_round2d_001_rect_corner_r4",
+   "category": "02_sketch",
+   "commands": ["SketchPoint.Create", "SketchOffsetCurve.Create", "SketchCorner.Create", "Sketch2DRound.Create", "TrimSketchCurve.Execute", "SplitSketchCurve.Execute"],
+   "data": {
+    "auto_renamed": [
+     ["线", "Curve_1"],
+     ["线", "Curve_2"],
+     ["线", "Curve_3"],
+     ["线", "Curve_4"]
+    ]
+   },
+   "elapsed_s": 0.44,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 785, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_round2d_001_rect_corner_r4.py\", line 27, in build\n    Sketch2DRound.Create(sel(cl), sel(cb), MM(4))\nValueError: Parameter \"selection\" must contain a single curve.\n",
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sk_point_offset",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:23+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "r_mm": 4,
+    "rect": [40, 20]
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_round2d_001_rect_corner_r4.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:22+08:00",
+   "status": "failed",
+   "title": "Sketch point / offset curve / corner / 2D round / trim / split: 001_rect_corner_r4"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 4,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_constraint_001_hv_rect",
+   "category": "02_sketch",
+   "commands": ["Constraint.Create*", "SketchHelper.StartConstraintSketching", "ConstraintHelper.ModelWellDefined"],
+   "data": {
+    "satisfied": true,
+    "sketch_result": {
+     "curve_types": ["Line", "Line", "Line", "Line"],
+     "new_bodies": 0,
+     "root_curves": 4
+    }
+   },
+   "elapsed_s": 0.60999999999999999,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sk_constraints",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:24+08:00",
+   "items": {
+    "StartConstraintSketching": {
+     "ok": true,
+     "result": "True",
+     "s": 0.22
+    },
+    "horizontal_c1": {
+     "ok": true,
+     "result": "True",
+     "s": 0.070000000000000007
+    },
+    "horizontal_c3": {
+     "ok": true,
+     "result": "True",
+     "s": 0.0
+    },
+    "vertical_c2": {
+     "ok": true,
+     "result": "True",
+     "s": 0.01
+    },
+    "vertical_c4": {
+     "ok": true,
+     "result": "True",
+     "s": 0.01
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "constraints": ["Horizontal", "Vertical"]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_constraint_001_hv_rect.scdoc",
+   "scdoc_size": "15955",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_constraint_001_hv_rect.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:23+08:00",
+   "status": "ok",
+   "title": "Sketch constraints (horizontal, vertical, coincident, tangent, parallel, perpendicular, concentric, equal, midpoint, symmetric, fixed): 001_hv_rect"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 2,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_constraint_002_tangent_line_arc",
+   "category": "02_sketch",
+   "commands": ["Constraint.Create*", "SketchHelper.StartConstraintSketching", "ConstraintHelper.ModelWellDefined"],
+   "data": {
+    "satisfied": true,
+    "sketch_result": {
+     "curve_types": ["Line", "Circle"],
+     "new_bodies": 0,
+     "root_curves": 2
+    },
+    "tangent_form": 0
+   },
+   "elapsed_s": 0.17999999999999999,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sk_constraints",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:25+08:00",
+   "items": {
+    "StartConstraintSketching": {
+     "ok": true,
+     "result": "True",
+     "s": 0.01
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "constraints": ["Tangent"]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_constraint_002_tangent_line_arc.scdoc",
+   "scdoc_size": "14728",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_constraint_002_tangent_line_arc.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:24+08:00",
+   "status": "ok",
+   "title": "Sketch constraints (horizontal, vertical, coincident, tangent, parallel, perpendicular, concentric, equal, midpoint, symmetric, fixed): 002_tangent_line_arc"
+  },
+  {
+   "actual": {
+    "area_mm2": 153.93804,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 153.93804,
+      "bbox_mm": [
+       [-6.0, -6.0, 0.0],
+       [8.0, 8.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 1,
+      "faces": 1,
+      "manifold": true,
+      "name": "Concentric_Equal",
+      "path": "",
+      "vertices": 1,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 1
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 1,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 1,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_constraint_003_concentric_equal",
+   "category": "02_sketch",
+   "commands": ["Constraint.Create*", "SketchHelper.StartConstraintSketching", "ConstraintHelper.ModelWellDefined"],
+   "data": {
+    "satisfied": true,
+    "sketch_result": {
+     "curve_types": [],
+     "new_bodies": 1,
+     "root_curves": 0
+    }
+   },
+   "elapsed_s": 0.17999999999999999,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sk_constraints",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:26+08:00",
+   "items": {
+    "StartConstraintSketching": {
+     "ok": true,
+     "result": "True",
+     "s": 0.01
+    },
+    "concentric": {
+     "ok": true,
+     "result": "True",
+     "s": 0.01
+    },
+    "equal_radius": {
+     "ok": true,
+     "result": "True",
+     "s": 0.02
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "constraints": ["Concentric", "EqualRadius"]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_constraint_003_concentric_equal.scdoc",
+   "scdoc_size": "21880",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_constraint_003_concentric_equal.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:25+08:00",
+   "status": "ok",
+   "title": "Sketch constraints (horizontal, vertical, coincident, tangent, parallel, perpendicular, concentric, equal, midpoint, symmetric, fixed): 003_concentric_equal"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_dim_001_length_40",
+   "category": "02_sketch",
+   "commands": ["Dimension.CreateLength", "Dimension.CreateRadial", "Dimension.CreateDiameter", "Dimension.CreateAngle", "Dimension.CreateDistance", "Dimension.Modify"],
+   "data": {
+    "curve_lengths_mm": [40.0],
+    "sketch_result": {
+     "curve_types": ["Line"],
+     "new_bodies": 0,
+     "root_curves": 1
+    }
+   },
+   "elapsed_s": 0.57999999999999996,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sk_dimensions",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:27+08:00",
+   "items": {
+    "StartConstraintSketching": {
+     "ok": true,
+     "result": "True",
+     "s": 0.01
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "value_mm": 40
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_dim_001_length_40.scdoc",
+   "scdoc_size": "13766",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_dim_001_length_40.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:26+08:00",
+   "status": "ok",
+   "title": "Sketch dimensions (length/radial/diameter/angle/distance): 001_length_40"
+  },
+  {
+   "actual": {
+    "area_mm2": 314.159265,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 314.159265,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 0.0]
+      ],
+      "closed": false,
+      "edges": 1,
+      "faces": 1,
+      "manifold": true,
+      "name": "Dim_Radius10",
+      "path": "",
+      "vertices": 1,
+      "volume_mm3": 0.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 1
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 1,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 1,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_dim_002_radius_10",
+   "category": "02_sketch",
+   "commands": ["Dimension.CreateLength", "Dimension.CreateRadial", "Dimension.CreateDiameter", "Dimension.CreateAngle", "Dimension.CreateDistance", "Dimension.Modify"],
+   "data": {
+    "sketch_result": {
+     "curve_types": [],
+     "new_bodies": 1,
+     "root_curves": 0
+    }
+   },
+   "elapsed_s": 0.22,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sk_dimensions",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:28+08:00",
+   "items": {
+    "StartConstraintSketching": {
+     "ok": true,
+     "result": "True",
+     "s": 0.01
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "value_mm": 10
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_dim_002_radius_10.scdoc",
+   "scdoc_size": "21886",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_dim_002_radius_10.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:27+08:00",
+   "status": "ok",
+   "title": "Sketch dimensions (length/radial/diameter/angle/distance): 002_radius_10"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 2,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Solid",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_dim_003_angle_30",
+   "category": "02_sketch",
+   "commands": ["Dimension.CreateLength", "Dimension.CreateRadial", "Dimension.CreateDiameter", "Dimension.CreateAngle", "Dimension.CreateDistance", "Dimension.Modify"],
+   "data": {
+    "angle_dim_form": 0,
+    "sketch_result": {
+     "curve_types": ["Line", "Line"],
+     "new_bodies": 0,
+     "root_curves": 2
+    }
+   },
+   "elapsed_s": 0.26000000000000001,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sk_dimensions",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:29+08:00",
+   "items": {
+    "StartConstraintSketching": {
+     "ok": true,
+     "result": "True",
+     "s": 0.01
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "value_deg": 30
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_dim_003_angle_30.scdoc",
+   "scdoc_size": "15020",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_dim_003_angle_30.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:28+08:00",
+   "status": "ok",
+   "title": "Sketch dimensions (length/radial/diameter/angle/distance): 003_angle_30"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_designcurve_001_3d_line",
+   "category": "02_sketch",
+   "commands": ["DesignCurve.Create (API)", "SketchCurve.Create", "ProjectToSketch.Create"],
+   "data": {},
+   "elapsed_s": 0.27000000000000002,
+   "expect": {
+    "bodies": 0,
+    "root_curves": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_datum_curve",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:30+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "p0": [0, 0, 0],
+    "p1": [10, 20, 30]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_designcurve_001_3d_line.scdoc",
+   "scdoc_size": "70117",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_designcurve_001_3d_line.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:29+08:00",
+   "status": "ok",
+   "title": "3D design curve (line/arc/spline outside sketch): 001_3d_line"
+  },
+  {
+   "actual": {
+    "area_mm2": 0.0,
+    "beams": 0,
+    "bodies": 0,
+    "body_list": [],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 0,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {},
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Sketch",
+    "volume_mm3": 0.0
+   },
+   "case_id": "02_sketch_designcurve_002_helix_spline",
+   "category": "02_sketch",
+   "commands": ["DesignCurve.Create (API)", "SketchCurve.Create", "ProjectToSketch.Create"],
+   "data": {},
+   "elapsed_s": 0.63,
+   "expect": {
+    "bodies": 0,
+    "root_curves": 1
+   },
+   "expect_mismatch": {},
+   "feature": "sk_datum_curve",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:55:31+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\02_sketch",
+   "params": {
+    "type": "NurbsCurve.CreateThroughPoints helix 3 turns"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_designcurve_002_helix_spline.scdoc",
+   "scdoc_size": "77960",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\02_sketch\\02_sketch_designcurve_002_helix_spline.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:55:30+08:00",
+   "status": "ok",
+   "title": "3D design curve (line/arc/spline outside sketch): 002_helix_spline"
+  }
+ ],
+ "elapsed_s": 22.14,
+ "finished_at": "2026-09-26T07:55:31+08:00",
+ "framework": "1.2.2",
+ "mode": "headless",
+ "spaceclaim_version": "2019.3.38912",
+ "stage": "done",
+ "started_at": "2026-09-26T07:55:09+08:00",
+ "summary": {
+  "failed": 1,
+  "ok": 27
+ }
+}

@@ -739,9 +739,52 @@ class SabModel:
         if straight and c.t0 is not None and c.t1 is not None:
             return (vadd(c.origin, vscale(c.direction, c.t0)),
                     vadd(c.origin, vscale(c.direction, c.t1)))
+        # Circular / elliptical edges: evaluate the major-axis frame at the
+        # trimmed parameter range (full circle when |pend-pstart| ~= 2pi).
+        if (c is not None and c.kind == 'ellipse'
+                and c.origin is not None and c.xdir is not None
+                and c.normal is not None and t0 is not None and t1 is not None):
+            ydir = vcross(c.normal, c.xdir)
+            major = vlen(c.xdir)
+            ratio = c.ratio if c.ratio is not None else 1.0
+            if major > 0 and vlen(ydir) > 0:
+                ydir = vscale(ydir, (major * ratio) / vlen(ydir))
+
+                def _eval(t):
+                    return vadd(c.origin,
+                                vadd(vscale(c.xdir, math.cos(t)),
+                                     vscale(ydir, math.sin(t))))
+
+                return _eval(t0), _eval(t1)
         return None
 
+    def ellipse_radius(self, edge: Ent) -> Optional[float]:
+        """Major radius of an elliptical/circular edge, or None."""
+        c = (self.e(edge.curve)
+             if getattr(edge, 'curve', None) is not None and edge.curve >= 0
+             else None)
+        if c is None or c.kind != 'ellipse' or c.xdir is None:
+            return None
+        return vlen(c.xdir)
+
     def edge_length(self, edge: Ent) -> Optional[float]:
+        c = (self.e(edge.curve)
+             if getattr(edge, 'curve', None) is not None and edge.curve >= 0
+             else None)
+        t0 = getattr(edge, 'pstart', None)
+        t1 = getattr(edge, 'pend', None)
+        if (c is not None and c.kind == 'ellipse' and c.xdir is not None
+                and t0 is not None and t1 is not None):
+            major = vlen(c.xdir)
+            ratio = c.ratio if c.ratio is not None else 1.0
+            sweep = abs(t1 - t0)
+            if abs(ratio - 1.0) < 1e-9:
+                return major * sweep
+            minor = major * ratio
+            h = ((major - minor) / (major + minor)) ** 2 if (major + minor) else 0.0
+            peri = math.pi * (major + minor) * (
+                1.0 + 3.0 * h / (10.0 + math.sqrt(max(0.0, 4.0 - 3.0 * h))))
+            return peri * (sweep / (2.0 * math.pi))
         ep = self.edge_endpoints(edge)
         return vlen(vsub(ep[1], ep[0])) if ep else None
 
@@ -885,29 +928,116 @@ class SabModel:
         return s / 2.0
 
     def face_metrics(self, face: Ent):
-        """Signed area, |area|, contribution to volume, plane description."""
+        """Signed area, |area|, contribution to volume, plane description.
+
+        Planar faces use polygon (or circular-loop) area with an orthonormal
+        UV frame — xdir must be normalised because scaled bodies keep a
+        non-unit plane xdir in the SAB.  Cone / sphere / torus faces use
+        closed-form surface formulas so cylinder/sphere/torus volumes work
+        without requiring OCCT.
+        """
         surf = self.e(face.surface)
-        polys = self.face_loops_polygons(face)
-        if not polys or surf is None or surf.kind != 'plane':
+        if surf is None:
             return None
-        n = vscale(surf.normal, 1.0 / max(vlen(surf.normal), 1e-30))
+
+        if surf.kind == 'plane':
+            return self._plane_face_metrics(face, surf)
+        if surf.kind == 'cone':
+            return self._cone_face_metrics(face, surf)
+        if surf.kind == 'sphere':
+            return self._sphere_face_metrics(face, surf)
+        if surf.kind == 'torus':
+            return self._torus_face_metrics(face, surf)
+        return None
+
+    def _plane_face_metrics(self, face: Ent, surf: Ent):
+        n_raw = surf.normal
+        if n_raw is None or surf.xdir is None or surf.origin is None:
+            return None
+        n = vscale(n_raw, 1.0 / max(vlen(n_raw), 1e-30))
         if face.sense == 'flag_a':  # face reversed wrt surface normal
             n = vscale(n, -1.0)
-        ydir = vcross(n, surf.xdir)
+        # Orthonormal UV: scaled bodies store |xdir| != 1 on the plane.
+        x_len = vlen(surf.xdir)
+        if x_len < 1e-30:
+            return None
+        xdir = vscale(surf.xdir, 1.0 / x_len)
+        ydir = vcross(n, xdir)
+        y_len = vlen(ydir)
+        if y_len < 1e-30:
+            return None
+        ydir = vscale(ydir, 1.0 / y_len)
+
+        polys = self.face_loops_polygons(face)
         total_signed = 0.0
         centroid_acc = (0.0, 0.0, 0.0)
         total_w = 0.0
+        used_polygon = False
         for poly in polys:
+            # Degenerate single-point "polygon" from a full-circle edge: the
+            # coedge walk collapses because v1==v2 on a periodic ellipse.
+            if len(poly) < 3:
+                continue
+            used_polygon = True
             pts2d = []
             for p in poly:
                 d = vsub(p, surf.origin)
-                pts2d.append((vdot(d, surf.xdir), vdot(d, ydir)))
+                pts2d.append((vdot(d, xdir), vdot(d, ydir)))
             a = self.polygon_area_2d(pts2d)
             total_signed += a
             w = abs(a)
             for p in poly:
                 centroid_acc = vadd(centroid_acc, vscale(p, w / len(poly)))
             total_w += w
+
+        if not used_polygon:
+            # Circular planar face: sum pi*r^2 over elliptical loops.
+            circ_area = 0.0
+            circ_centroid = None
+            n_loops = 0
+            for loop in self.loops_of_face(face):
+                coedges = self.coedges_of_loop(loop)
+                if len(coedges) != 1:
+                    continue
+                ed = self.e(coedges[0].edge)
+                r = self.ellipse_radius(ed) if ed is not None else None
+                if r is None:
+                    continue
+                c = self.e(ed.curve)
+                a = math.pi * r * r
+                # Outer loop positive, subsequent (holes) negative by area sign
+                # via coedge sense: flag_a => hole.
+                sign = -1.0 if coedges[0].sense == 'flag_a' and n_loops > 0 else 1.0
+                if n_loops == 0:
+                    sign = 1.0
+                else:
+                    # holes subtract
+                    sign = -1.0
+                circ_area += sign * a
+                if c is not None and c.origin is not None and circ_centroid is None:
+                    circ_centroid = c.origin
+                n_loops += 1
+            if n_loops == 0:
+                return None
+            total_signed = circ_area
+            # Align sign with face normal orientation for volume contrib.
+            centroid = circ_centroid
+            area = abs(total_signed)
+            vol_contrib = 0.0
+            if centroid is not None:
+                # Use positive area with face normal for divergence theorem.
+                vol_contrib = vdot(centroid, n) * area / 3.0
+                # Cap facing -n (e.g. bottom) should use the face's outward
+                # orientation already baked into n via sense.
+            offset = vdot(surf.origin, n)
+            return {
+                'area_signed': total_signed if face.sense != 'flag_a' else -total_signed,
+                'area': area,
+                'volume_contrib': vol_contrib,
+                'normal': n,
+                'offset': offset,
+            }
+
         centroid = vscale(centroid_acc, 1.0 / total_w) if total_w > 0 else None
         area = abs(total_signed)
         vol_contrib = 0.0
@@ -922,6 +1052,124 @@ class SabModel:
             'offset': offset,
         }
 
+    def _circle_edges_of_face(self, face: Ent):
+        """Distinct circular edges on a face with (center, radius, curve)."""
+        seen = set()
+        out = []
+        for loop in self.loops_of_face(face):
+            for ce in self.coedges_of_loop(loop):
+                ed = self.e(ce.edge)
+                if ed is None or ed.idx in seen:
+                    continue
+                r = self.ellipse_radius(ed)
+                c = self.e(ed.curve) if ed.curve >= 0 else None
+                if r is None or c is None or c.origin is None:
+                    continue
+                seen.add(ed.idx)
+                out.append((ed, c, r))
+        return out
+
+    def _cone_face_metrics(self, face: Ent, surf: Ent):
+        """Cylinder / cone / frustum lateral face via circular edges."""
+        if surf.radius is None or surf.normal is None or surf.origin is None:
+            return None
+        axis = vscale(surf.normal, 1.0 / max(vlen(surf.normal), 1e-30))
+        circles = self._circle_edges_of_face(face)
+        semi = surf.semangle if surf.semangle is not None else 0.0
+        is_cyl = abs(semi) < 1e-12
+        sign = -1.0 if face.sense == 'flag_a' else 1.0
+
+        if is_cyl:
+            R = abs(surf.radius)
+            if len(circles) >= 2:
+                c0, c1 = circles[0][1].origin, circles[1][1].origin
+                H = abs(vdot(vsub(c1, c0), axis))
+            elif face.uv_range and len(face.uv_range) >= 4:
+                H = abs(face.uv_range[3] - face.uv_range[2])
+            else:
+                return None
+            area = 2.0 * math.pi * R * H
+            # Divergence on the wall: x·n = R (outward) => V contrib = R*A/3.
+            vol_contrib = sign * R * area / 3.0
+            return {
+                'area_signed': sign * area,
+                'area': area,
+                'volume_contrib': vol_contrib,
+                'normal': axis,
+                'offset': None,
+            }
+
+        # True cone / frustum.
+        if len(circles) >= 2:
+            c_by_r = sorted(circles, key=lambda t: t[2])
+            r1, r2 = c_by_r[0][2], c_by_r[-1][2]
+            H = vlen(vsub(c_by_r[-1][1].origin, c_by_r[0][1].origin))
+            slant = math.sqrt(H * H + (r2 - r1) * (r2 - r1))
+            area = math.pi * (r1 + r2) * slant
+            V = (1.0 / 3.0) * math.pi * H * (r1 * r1 + r1 * r2 + r2 * r2)
+            z1 = vdot(c_by_r[0][1].origin, axis)
+            z2 = vdot(c_by_r[-1][1].origin, axis)
+            cap_part = (z2 * math.pi * r2 * r2 - z1 * math.pi * r1 * r1) / 3.0
+            vol_contrib = sign * (V - cap_part)
+            return {
+                'area_signed': sign * area,
+                'area': area,
+                'volume_contrib': vol_contrib,
+                'normal': axis,
+                'offset': None,
+            }
+
+        if len(circles) == 1 and abs(math.tan(semi)) > 1e-15:
+            r2 = circles[0][2]
+            H = r2 / abs(math.tan(semi))
+            slant = math.sqrt(H * H + r2 * r2)
+            area = math.pi * r2 * slant
+            V = (1.0 / 3.0) * math.pi * r2 * r2 * H
+            z_base = vdot(circles[0][1].origin, axis)
+            cap_part = z_base * math.pi * r2 * r2 / 3.0
+            vol_contrib = sign * (V - cap_part)
+            return {
+                'area_signed': sign * area,
+                'area': area,
+                'volume_contrib': vol_contrib,
+                'normal': axis,
+                'offset': None,
+            }
+        return None
+
+    def _sphere_face_metrics(self, face: Ent, surf: Ent):
+        if surf.radius is None or surf.origin is None:
+            return None
+        R = abs(surf.radius)
+        # Full sphere (single closed face, no edges): 4 pi R^2 / 4/3 pi R^3.
+        area = 4.0 * math.pi * R * R
+        vol_contrib = R * area / 3.0  # = 4/3 pi R^3
+        sign = -1.0 if face.sense == 'flag_a' else 1.0
+        return {
+            'area_signed': sign * area,
+            'area': area,
+            'volume_contrib': sign * vol_contrib,
+            'normal': surf.normal,
+            'offset': None,
+        }
+
+    def _torus_face_metrics(self, face: Ent, surf: Ent):
+        if surf.major is None or surf.minor is None:
+            return None
+        R, r = abs(surf.major), abs(surf.minor)
+        area = 4.0 * math.pi * math.pi * R * r
+        # Torus volume = 2 pi^2 R r^2; divergence on the surface gives it
+        # directly as the sole face of a solid torus.
+        vol = 2.0 * math.pi * math.pi * R * r * r
+        sign = -1.0 if face.sense == 'flag_a' else 1.0
+        return {
+            'area_signed': sign * area,
+            'area': area,
+            'volume_contrib': sign * vol,
+            'normal': surf.normal,
+            'offset': None,
+        }
+
     def body_metrics(self, body: Ent):
         faces = self.body_faces(body)
         volume = 0.0
@@ -932,6 +1180,24 @@ class SabModel:
                 volume += m['volume_contrib']
                 area += m['area']
         return {'faces': faces, 'volume': abs(volume), 'area': area}
+
+    def surface_kind_label(self, face: Ent) -> Optional[str]:
+        """SpaceClaim-style surface type name for a face."""
+        surf = self.e(face.surface)
+        if surf is None:
+            return None
+        if surf.kind == 'plane':
+            return 'Plane'
+        if surf.kind == 'sphere':
+            return 'Sphere'
+        if surf.kind == 'torus':
+            return 'Torus'
+        if surf.kind == 'spline':
+            return 'Spline'
+        if surf.kind == 'cone':
+            semi = surf.semangle if surf.semangle is not None else 0.0
+            return 'Cylinder' if abs(semi) < 1e-12 else 'Cone'
+        return surf.kind.capitalize() if surf.kind else None
 
     # -- human-readable plane description ------------------------------------
     @staticmethod
@@ -953,9 +1219,11 @@ class SabModel:
 # -- model-level summary -----------------------------------------------------
 def model_summary(model: SabModel, scale: float) -> Dict:
     """JSON-ready summary of the whole SAB model with validation checks."""
-    counts = {k: len(model.of_kind(k)) for k in (
+    count_kinds = (
         'body', 'lump', 'shell', 'face', 'loop', 'coedge', 'edge',
-        'vertex', 'point', 'plane', 'straight', 'string_attrib', 'rgb_color')}
+        'vertex', 'point', 'plane', 'straight', 'cone', 'sphere', 'torus',
+        'ellipse', 'spline', 'string_attrib', 'rgb_color')
+    counts = {k: len(model.of_kind(k)) for k in count_kinds}
 
     checks: List[Dict] = []
 
@@ -970,41 +1238,65 @@ def model_summary(model: SabModel, scale: float) -> Dict:
         for f in m['faces']:
             fm = model.face_metrics(f)
             surf = model.e(f.surface)
+            plane_info = None
+            if surf is not None and surf.kind == 'plane' and fm is not None:
+                plane_info = {
+                    'origin_m': list(surf.origin) if surf.origin else None,
+                    'normal': list(fm['normal']) if fm is not None else list(surf.normal),
+                    'xdir': list(surf.xdir) if surf.xdir else None,
+                    'uv_range': f.uv_range,
+                    'description': (model.describe_plane(fm['normal'], fm['offset'], scale)
+                                     if fm is not None and fm.get('offset') is not None else None),
+                }
             faces.append({
                 'acis_index': f.idx,
                 'doc_id': model.doc_id_of(f),
-                'plane': {
-                    'origin_m': list(surf.origin),
-                    'normal': list(fm['normal']) if fm is not None else list(surf.normal),
-                    'xdir': list(surf.xdir),
-                    'uv_range': f.uv_range,
-                    'description': (model.describe_plane(fm['normal'], fm['offset'], scale)
-                                     if fm is not None else None),
-                } if surf is not None and surf.kind == 'plane' else None,
+                'surface_kind': model.surface_kind_label(f),
+                'plane': plane_info,
                 'area_mm2': round(fm['area'] * scale * scale, 9) if fm else None,
                 'loops': len(model.loops_of_face(f)),
                 'rgb': model.rgb_of(f),
             })
+        body_edge_idxs = set()
+        for f in m['faces']:
+            for loop in model.loops_of_face(f):
+                for ce in model.coedges_of_loop(loop):
+                    if ce.edge >= 0:
+                        body_edge_idxs.add(ce.edge)
         edges = []
-        for ed in model.of_kind('edge'):
+        for eidx in sorted(body_edge_idxs):
+            ed = model.e(eidx)
+            if ed is None:
+                continue
             ep = model.edge_endpoints(ed)
             edges.append({
                 'acis_index': ed.idx,
                 'doc_id': model.doc_id_of(ed),
                 'start_m': list(ep[0]) if ep else None,
                 'end_m': list(ep[1]) if ep else None,
-                'length_mm': round(model.edge_length(ed) * scale, 9),
+                'length_mm': (round(model.edge_length(ed) * scale, 9)
+                              if model.edge_length(ed) is not None else None),
             })
+        body_vert_idxs = set()
+        for eidx in body_edge_idxs:
+            ed = model.e(eidx)
+            if ed is None:
+                continue
+            if ed.v1 >= 0:
+                body_vert_idxs.add(ed.v1)
+            if ed.v2 >= 0:
+                body_vert_idxs.add(ed.v2)
         vertices = []
-        for vt in model.of_kind('vertex'):
+        for vidx in sorted(body_vert_idxs):
+            vt = model.e(vidx)
+            if vt is None:
+                continue
             p = model.point_of_vertex(vt)
             vertices.append({
                 'acis_index': vt.idx,
                 'point_m': list(p) if p else None,
             })
-        # bbox from vertices
-        pts = [model.point_of_vertex(v) for v in model.of_kind('vertex')]
-        pts = [p for p in pts if p]
+        pts = [v['point_m'] for v in vertices if v['point_m']]
         if pts:
             bbox_min = [min(p[i] for p in pts) for i in range(3)]
             bbox_max = [max(p[i] for p in pts) for i in range(3)]
@@ -1025,38 +1317,52 @@ def model_summary(model: SabModel, scale: float) -> Dict:
 
     # ---- validation ---------------------------------------------------------
     check('entity_counts', True,
-          ', '.join(f'{k}={v}' for k, v in counts.items()))
-    check('face_count', counts['face'] == 6, f"faces={counts['face']} (expect 6)")
-    check('edge_count', counts['edge'] == 12, f"edges={counts['edge']} (expect 12)")
-    check('vertex_count', counts['vertex'] == 8, f"vertices={counts['vertex']} (expect 8)")
-    check('coedge_count', counts['coedge'] == 24, f"coedges={counts['coedge']} (expect 24)")
+          ', '.join(f'{k}={v}' for k, v in counts.items() if v))
 
-    lengths = [l * scale for l in (model.edge_length(e) for e in model.of_kind('edge'))
-              if l is not None]
-    check('edge_lengths_10mm',
-          lengths and all(abs(l - 10.0) < 1e-6 for l in lengths),
-          f'{len(lengths)} edges, min={min(lengths):.9g} max={max(lengths):.9g} mm (expect 10)')
+    # Golden 10 mm cube checks (legacy box.scdoc / write_scdoc round-trip).
+    # Only asserted when the model matches that reference shape so other
+    # corpus files do not fail validation on dimension-specific checks.
+    is_ref_box = (counts.get('face') == 6 and counts.get('edge') == 12
+                  and counts.get('vertex') == 8 and len(bodies) == 1)
+    ref_dims = None
+    if is_ref_box and bodies[0]['bbox_min_m'] and bodies[0]['bbox_max_m']:
+        ref_dims = [(hi - lo) * scale
+                    for lo, hi in zip(bodies[0]['bbox_min_m'], bodies[0]['bbox_max_m'])]
+    is_10mm_cube = (ref_dims is not None
+                    and all(abs(d - 10.0) < 1e-6 for d in ref_dims))
 
-    areas = []
-    for b in bodies:
-        for f in b['faces']:
-            if f['area_mm2'] is not None:
-                areas.append(f['area_mm2'])
-    check('face_areas_100mm2',
-          areas and all(abs(a - 100.0) < 1e-6 for a in areas),
-          f'{len(areas)} faces, min={min(areas):.9g} max={max(areas):.9g} mm2 (expect 100)')
+    if is_10mm_cube:
+        check('face_count', counts['face'] == 6, f"faces={counts['face']} (expect 6)")
+        check('edge_count', counts['edge'] == 12, f"edges={counts['edge']} (expect 12)")
+        check('vertex_count', counts['vertex'] == 8, f"vertices={counts['vertex']} (expect 8)")
+        check('coedge_count', counts['coedge'] == 24, f"coedges={counts['coedge']} (expect 24)")
 
-    vols = [b['volume_mm3'] for b in bodies]
-    check('volume_1000mm3',
-          vols and all(abs(v - 1000.0) < 1e-6 for v in vols),
-          f'volume={vols} mm3 (expect [1000])')
+        lengths = [l * scale for l in (model.edge_length(e) for e in model.of_kind('edge'))
+                   if l is not None]
+        check('edge_lengths_10mm',
+              lengths and all(abs(l - 10.0) < 1e-6 for l in lengths),
+              (f'{len(lengths)} edges, min={min(lengths):.9g} max={max(lengths):.9g} mm (expect 10)'
+               if lengths else 'no measurable edge lengths'))
 
-    for b in bodies:
-        if b['bbox_min_m'] and b['bbox_max_m']:
-            dims = [(hi - lo) * scale for lo, hi in zip(b['bbox_min_m'], b['bbox_max_m'])]
-            check('bbox_10mm_cube',
-                  all(abs(d - 10.0) < 1e-6 for d in dims),
-                  f'dimensions={["%.9g" % d for d in dims]} mm (expect [10, 10, 10])')
+        areas = [f['area_mm2'] for b in bodies for f in b['faces']
+                 if f['area_mm2'] is not None]
+        check('face_areas_100mm2',
+              areas and all(abs(a - 100.0) < 1e-6 for a in areas),
+              (f'{len(areas)} faces, min={min(areas):.9g} max={max(areas):.9g} mm2 (expect 100)'
+               if areas else 'no face areas'))
+
+        vols = [b['volume_mm3'] for b in bodies]
+        check('volume_1000mm3',
+              vols and all(abs(v - 1000.0) < 1e-6 for v in vols),
+              f'volume={vols} mm3 (expect [1000])')
+        check('bbox_10mm_cube',
+              all(abs(d - 10.0) < 1e-6 for d in ref_dims),
+              f'dimensions={["%.9g" % d for d in ref_dims]} mm (expect [10, 10, 10])')
+    else:
+        check('face_count', True, f"faces={counts['face']}")
+        check('edge_count', True, f"edges={counts['edge']}")
+        check('vertex_count', True, f"vertices={counts['vertex']}")
+        check('coedge_count', True, f"coedges={counts['coedge']}")
 
     # topology integrity
     ok_partner = all(
@@ -1069,7 +1375,10 @@ def model_summary(model: SabModel, scale: float) -> Dict:
     for lp in model.of_kind('loop'):
         ring = model.coedges_of_loop(lp)
         ring_sizes.append(len(ring))
-        if len(ring) < 3 or model.loop_polygon(lp) is None:
+        # Circular loops (1 coedge) are valid; polygon walk may still fail.
+        if len(ring) == 0:
+            ok_rings = False
+        elif len(ring) >= 3 and model.loop_polygon(lp) is None:
             ok_rings = False
     check('loop_rings_closed', ok_rings, f'ring sizes={ring_sizes}')
 
@@ -1077,7 +1386,7 @@ def model_summary(model: SabModel, scale: float) -> Dict:
     for ce in model.of_kind('coedge'):
         coedge_per_edge[ce.edge] = coedge_per_edge.get(ce.edge, 0) + 1
     check('two_coedges_per_edge',
-          coedge_per_edge and all(v == 2 for v in coedge_per_edge.values()),
+          (not coedge_per_edge) or all(v == 2 for v in coedge_per_edge.values()),
           f'{len(coedge_per_edge)} edges referenced (all exactly 2 coedges)')
 
     degree: Dict[int, int] = {}
@@ -1085,13 +1394,22 @@ def model_summary(model: SabModel, scale: float) -> Dict:
         for vi in (ed.v1, ed.v2):
             if vi >= 0:
                 degree[vi] = degree.get(vi, 0) + 1
-    check('vertex_degree_3',
-          degree and all(v == 3 for v in degree.values()),
-          f'{len(degree)} vertices, degrees={sorted(set(degree.values()))}')
+    # Box vertices have degree 3; curved solids vary — informational unless box.
+    if is_10mm_cube:
+        check('vertex_degree_3',
+              degree and all(v == 3 for v in degree.values()),
+              f'{len(degree)} vertices, degrees={sorted(set(degree.values()))}')
+    else:
+        check('vertex_degree', True,
+              f'{len(degree)} vertices, degrees={sorted(set(degree.values())) or [0]}')
 
-    # vertex points match curve endpoints
+    # vertex points match curve endpoints (straight edges only)
     ok_vertex = True
+    checked = 0
     for ed in model.of_kind('edge'):
+        c = model.e(ed.curve) if ed.curve >= 0 else None
+        if c is None or c.kind != 'straight':
+            continue
         ep = model.edge_endpoints(ed)
         v1, v2 = model.e(ed.v1), model.e(ed.v2)
         if not ep or v1 is None or v2 is None:
@@ -1101,14 +1419,16 @@ def model_summary(model: SabModel, scale: float) -> Dict:
         if not (vclose(p1, ep[0]) and vclose(p2, ep[1])):
             ok_vertex = False
             break
-    check('vertex_points_match_curves', ok_vertex,
-          'edge vertex points coincide with straight-curve endpoints')
+        checked += 1
+    check('vertex_points_match_curves', ok_vertex or checked == 0,
+          f'{checked} straight edges: vertex points coincide with curve endpoints')
 
     # doc id linkage
     linked = sum(1 for e in model.of_kind('body') + model.of_kind('face') + model.of_kind('edge')
                  if model.doc_id_of(e) is not None)
-    check('doc_id_links', linked == 1 + counts['face'] + counts['edge'],
-          f'{linked}/{1 + counts["face"] + counts["edge"]} body/face/edge entities carry XACIS_NAME doc ids')
+    expect_linked = counts['body'] + counts['face'] + counts['edge']
+    check('doc_id_links', linked == expect_linked or expect_linked == 0,
+          f'{linked}/{expect_linked} body/face/edge entities carry XACIS_NAME doc ids')
 
     return {
         'acis': {

@@ -1,0 +1,624 @@
+TYPE SpaceClaim.Api.V19.AlignCondition base=GeometricCondition
+  M GetOccurrence(IList`1 instancePath) -> IAlignCondition
+  M GetOccurrence(Instance instance) -> IAlignCondition
+  M GetOccurrence(IDocObject companionOcc) -> IAlignCondition
+  SM Create(Part parent, IHasShape geometricA, IHasShape geometricB) -> AlignCondition
+  SM Create(IPart parent, IHasShape geometricA, IHasShape geometricB) -> IAlignCondition
+  P Moniker: Moniker`1
+  P Offset: Double [set]
+TYPE SpaceClaim.Api.V19.AnchorCondition base=MatingCondition
+  M GetOccurrence(IList`1 instancePath) -> IAnchorCondition
+  M GetOccurrence(Instance instance) -> IAnchorCondition
+  M GetOccurrence(IDocObject companionOcc) -> IAnchorCondition
+  SM Create(Part parent, Component component) -> AnchorCondition
+  SM Create(IPart parent, IComponent component) -> IAnchorCondition
+  P Moniker: Moniker`1
+  P Component: Component
+TYPE SpaceClaim.Api.V19.Beam base=DocObject
+  M GetOccurrence(IList`1 instancePath) -> IBeam
+  M GetOccurrence(Instance instance) -> IBeam
+  M GetOccurrence(IDocObject companionOcc) -> IBeam
+  SM Create(Part profilePart, DesignCurve desCurve) -> Beam
+  M GetVisibility(IAppearanceContext context) -> Nullable`1
+  M SetVisibility(IAppearanceContext context, Nullable`1 visible) -> Void
+  M IsVisible(IAppearanceContext context) -> Boolean
+  M GetColor(IAppearanceContext context) -> Nullable`1
+  M SetColor(IAppearanceContext context, Nullable`1 color) -> Void
+  P Moniker: Moniker`1
+  P SectionSource: DocObject
+  P SectionAngle: Double [set]
+  P SectionAnchor: SectionAnchor [set]
+  P AnchorLocation: PointUV [set]
+  P SectionProfile: IList`1
+  P SectionProperties: SectionProperties
+  P IsReversed: Boolean [set]
+  P IsRigid: Boolean [set]
+  P Parent: Part
+  P ShapeSource: ICollection`1
+  P SectionFrame: Frame
+  P Type: BeamType [set]
+  P Shape: ITrimmedCurve
+  P Layer: Layer [set]
+  P DefaultVisibility: Nullable`1
+  P Name: String [set]
+  P Material: DocumentMaterial [set]
+  P CanSuppress: Boolean
+  P IsSuppressed: Boolean [set]
+TYPE SpaceClaim.Api.V19.Component base=Instance
+  M GetOccurrence(IList`1 instancePath) -> IComponent
+  M GetOccurrence(Instance instance) -> IComponent
+  M GetOccurrence(IDocObject companionOcc) -> IComponent
+  SM Create(Part parent, Part template) -> Component
+  SM CreateFromFile(Part parent, String path, ImportOptions options) -> Component
+  M ReplaceFromFile(String path) -> Void
+  M Transform(Matrix trans) -> Void
+  P Moniker: Moniker`1
+  P Parent: Part
+  P Content: IPart
+  P Components: ICollection`1
+  P Template: Part [set]
+  P Placement: Matrix [set]
+  P Name: String [set]
+TYPE SpaceClaim.Api.V19.CoordinateSystem base=DocObject
+  M GetOccurrence(IList`1 instancePath) -> ICoordinateSystem
+  M GetOccurrence(Instance instance) -> ICoordinateSystem
+  M GetOccurrence(IDocObject companionOcc) -> ICoordinateSystem
+  SM Create(Part parent, String name, Frame frame) -> CoordinateSystem
+  SM Create(IPart parent, String name, Frame frame) -> ICoordinateSystem
+  M GetAxis(AxisType axisType) -> CoordinateAxis
+  M Transform(Matrix trans) -> Void
+  M GetVisibility(IAppearanceContext context) -> Nullable`1
+  M SetVisibility(IAppearanceContext context, Nullable`1 visible) -> Void
+  M IsVisible(IAppearanceContext context) -> Boolean
+  P Moniker: Moniker`1
+  P Parent: Part
+  P IsReadOnly: Boolean
+  P Axes: ICollection`1
+  P IsLeftHanded: Boolean [set]
+  P Layer: Layer [set]
+  P DefaultVisibility: Nullable`1
+  P Name: String [set]
+  P Frame: Frame
+  P Shape: ICurveShape`1
+  P CanSuppress: Boolean
+  P IsSuppressed: Boolean [set]
+TYPE SpaceClaim.Api.V19.DatumPlane base=DocObject
+  M GetOccurrence(IList`1 instancePath) -> IDatumPlane
+  M GetOccurrence(Instance instance) -> IDatumPlane
+  M GetOccurrence(IDocObject companionOcc) -> IDatumPlane
+  SM Create(Part parent, String name, Plane plane) -> DatumPlane
+  SM Create(IPart parent, String name, Plane plane) -> IDatumPlane
+  SM Create(Part parent, String name, ICollection`1 determinants) -> DatumPlane
+  SM GetPlane(ICollection`1 determinants) -> Plane
+  M Transform(Matrix trans) -> Void
+  M GetVisibility(IAppearanceContext context) -> Nullable`1
+  M SetVisibility(IAppearanceContext context, Nullable`1 visible) -> Void
+  M IsVisible(IAppearanceContext context) -> Boolean
+  P Moniker: Moniker`1
+  P Parent: Part
+  P Pinned: Boolean
+  P Determinants: ICollection`1
+  P IsReference: Boolean
+  P Notes: ICollection`1
+  P Barcodes: ICollection`1
+  P SurfaceFinishes: ICollection`1
+  P Tables: ICollection`1
+  P DatumFeatureSymbols: ICollection`1
+  P SymbolInserts: ICollection`1
+  P AnnotationPlane: Plane
+  P Curves: ICollection`1
+  P CurveGroups: ICollection`1
+  P Layer: Layer [set]
+  P DefaultVisibility: Nullable`1
+  P CanSuppress: Boolean
+  P IsSuppressed: Boolean [set]
+  P Name: String [set]
+  P Shape: ISurfaceShape`1
+TYPE SpaceClaim.Api.V19.DesignBody base=DocObject
+  M GetOccurrence(IList`1 instancePath) -> IDesignBody
+  M GetOccurrence(Instance instance) -> IDesignBody
+  M GetOccurrence(IDocObject companionOcc) -> IDesignBody
+  SM Create(Part parent, String name, Body modelerBody) -> DesignBody
+  M GetTessellation(ICollection`1 faces) -> IDictionary`2
+  M GetTessellationBoundingBox(Matrix trans, Boolean tight) -> Box
+  M GetEdgeTessellation(ICollection`1 edges) -> IDictionary`2
+  M Save(BodySaveFormat format, String path) -> Void
+  M IdentifyHoles(IdentifyHoleOptions options) -> ICollection`1
+  M GetDesignFace(Face modelerFace) -> DesignFace
+  M GetDesignEdge(Edge modelerEdge) -> DesignEdge
+  SM GetDesignBody(Body modelerBody) -> DesignBody
+  M Transform(Matrix trans) -> Void
+  M Scale(Frame frame, Double scaleX, Double scaleY, Double scaleZ) -> Void
+  M GetColor(IAppearanceContext context) -> Nullable`1
+  M SetColor(IAppearanceContext context, Nullable`1 color) -> Void
+  M GetVisibility(IAppearanceContext context) -> Nullable`1
+  M SetVisibility(IAppearanceContext context, Nullable`1 visible) -> Void
+  M IsVisible(IAppearanceContext context) -> Boolean
+  P Moniker: Moniker`1
+  P IsLocked: Boolean [set]
+  P MidSurface: MidSurfaceAspect
+  P VolumeExtraction: VolumeExtractionAspect
+  P Enclosure: EnclosureAspect
+  P Parent: Part
+  P Faces: ICollection`1
+  P Edges: ICollection`1
+  P Style: BodyStyle [set]
+  P Material: DocumentMaterial [set]
+  P Name: String [set]
+  P Shape: Body
+  P Layer: Layer [set]
+  P DefaultVisibility: Nullable`1
+  P SurfaceMaterial: SurfaceMaterial
+  P MassProperties: MassProperties
+  P CanSuppress: Boolean
+  P IsSuppressed: Boolean [set]
+TYPE SpaceClaim.Api.V19.DesignEdge base=DocObject
+  M GetOccurrence(IList`1 instancePath) -> IDesignEdge
+  M GetOccurrence(Instance instance) -> IDesignEdge
+  M GetOccurrence(IDocObject companionOcc) -> IDesignEdge
+  P Moniker: Moniker`1
+  P Parent: DesignBody
+  P Faces: ICollection`1
+  P Shape: Edge
+  P ExportIdentifier: String
+TYPE SpaceClaim.Api.V19.DesignFace base=DocObject
+  M GetOccurrence(IList`1 instancePath) -> IDesignFace
+  M GetOccurrence(Instance instance) -> IDesignFace
+  M GetOccurrence(IDocObject companionOcc) -> IDesignFace
+  M GetColor(IAppearanceContext context) -> Nullable`1
+  M SetColor(IAppearanceContext context, Nullable`1 color) -> Void
+  P Moniker: Moniker`1
+  P Parent: DesignBody
+  P Edges: ICollection`1
+  P AdjacentFaces: ICollection`1
+  P Shape: Face
+  P ExportIdentifier: String
+  P Area: Double
+  P Perimeter: Double
+  P SurfaceMaterial: SurfaceMaterial
+TYPE SpaceClaim.Api.V19.Document base=Object
+  M Equals(Document other) -> Boolean
+  M Equals(Object other) -> Boolean
+  M GetHashCode() -> Int32
+  SM Create() -> Document
+  SM Open(String path, ImportOptions options) -> ICollection`1
+  SM Load(String path) -> Document
+  M Save() -> Void
+  M SaveAs(String path) -> Void
+  M SaveAsSnapshot(String path) -> Void
+  M GetReferencedDocuments(Boolean recursive) -> ICollection`1
+  SM GetDocument(String path) -> Document
+  M GetLayer(String name) -> Layer
+  SM DeleteObjects(ICollection`1 objects) -> Void
+  M InternalizeParts(ICollection`1 parts, Boolean deep) -> IDictionary`2
+  M ExternalizeParts(ICollection`1 parts, String directory) -> IDictionary`2
+  M PurgeUndo(Int32 nStepsToKeep) -> Void
+  M ApplyReplayParameters() -> Boolean
+  P IsModified: Boolean [set]
+  P IsComplete: Boolean
+  P IsRemoved: Boolean
+  P Path: String [set]
+  P Parts: ICollection`1
+  P MainPart: Part
+  P MainPartDisplaysFileName: Boolean [set]
+  P Symbols: ICollection`1
+  P DrawingSheets: ICollection`1
+  P Layers: ICollection`1
+  P DefaultLayer: Layer
+  P CoreProperties: CoreProperties
+  P CustomProperties: CustomPropertyDictionary
+  P Materials: DocumentMaterialDictionary
+  P IsLocked: Boolean [set]
+  P ReplayParameters: ICollection`1
+  P Units: Units
+  P LifetimeLease: ILease
+TYPE SpaceClaim.Api.V19.DocumentMaterial base=Material
+  SM Create(Document doc, String name, Double density) -> DocumentMaterial
+  SM Copy(Document doc, Material material) -> DocumentMaterial
+  M SetProperty(MaterialProperty property) -> Void
+  M RemoveProperty(String id) -> Boolean
+  M Delete() -> Void
+  P Name: String [set]
+  P IsFluid: Boolean [set]
+  P Density: Double [set]
+  P Properties: MaterialPropertyDictionary
+  P Document: Document
+  P IsDeleted: Boolean
+TYPE SpaceClaim.Api.V19.DrawingSheet base=DocObject
+  M GetOccurrence(IList`1 instancePath) -> IDrawingSheet
+  M GetOccurrence(Instance instance) -> IDrawingSheet
+  M GetOccurrence(IDocObject companionOcc) -> IDrawingSheet
+  SM Create(Document doc, Double width, Double height) -> DrawingSheet
+  SM Create(Document doc, DrawingSheet format, DrawingSheetContents contents) -> DrawingSheet
+  M SetFormat(DrawingSheet format, DrawingSheetContents contents) -> Void
+  M TranslateViews(ICollection`1 views, VectorUV translation) -> Void
+  P Moniker: Moniker`1
+  P Format: DrawingSheet
+  P ViewScale: DrawingViewScale [set]
+  P Style: DrawingViewStyle [set]
+  P IsThirdAngle: Boolean
+  P Views: ICollection`1
+  P Width: Double [set]
+  P Height: Double [set]
+  P Notes: ICollection`1
+  P Barcodes: ICollection`1
+  P Tables: ICollection`1
+  P DatumFeatureSymbols: ICollection`1
+  P SymbolInserts: ICollection`1
+  P AnnotationPlane: Plane
+  P Curves: ICollection`1
+  P CurveGroups: ICollection`1
+  P Images: ICollection`1
+  P CustomObjects: ICollection`1
+  P Shape: ITrimmedSurface`1
+  P Units: Units
+  P Name: String [set]
+TYPE SpaceClaim.Api.V19.DrawingView base=Instance
+  M GetOccurrence(IList`1 instancePath) -> IDrawingView
+  M GetOccurrence(Instance instance) -> IDrawingView
+  M GetOccurrence(IDocObject companionOcc) -> IDrawingView
+  SM CreateGeneralView(DrawingSheet parent, Part part, Matrix projection, PointUV location) -> DrawingView
+  SM CreateProjectedView(DrawingView sourceView, PointUV location) -> DrawingView
+  SM CreateDetailView(DrawingView sourceView, PointUV location) -> DrawingView
+  M Reverse() -> Void
+  M GetRendering(DrawingViewStyle styleWhenShaded) -> DrawingViewRendering
+  M GetColorRendering(DrawingViewStyle styleWhenShaded) -> DrawingViewColorRendering
+  P Moniker: Moniker`1
+  P AlignedView: AlignedViewAspect
+  P DetailView: DetailViewAspect
+  P IsOrientable: Boolean
+  P Projection: Matrix [set]
+  P Extent: BoxUV
+  P ViewScale: DrawingViewScale [set]
+  P Style: Nullable`1 [set]
+  P Boundary: DrawingViewBoundary [set]
+  P Section: DrawingViewSection [set]
+  P LayoutGrid: LayoutGrid
+  P ViewNumber: Int32
+  P LongName: String
+  P ShortName: String
+  P DisplayName: DrawingViewDisplayName [set]
+  P Template: Part
+  P Parent: DrawingSheet
+  P Content: IPart
+  P Layer: Layer [set]
+  P IsVisible: Boolean
+  P Visibility: Nullable`1 [set]
+TYPE SpaceClaim.Api.V19.Layer base=DocObject
+  M GetOccurrence(IList`1 instancePath) -> ILayer
+  M GetOccurrence(Instance instance) -> ILayer
+  M GetOccurrence(IDocObject companionOcc) -> ILayer
+  SM Create(Document doc, String name, Color color) -> Layer
+  SM Copy(Document doc, String name, Layer layer) -> Layer
+  M IsVisible(IAppearanceContext context) -> Boolean
+  M SetVisible(IAppearanceContext context, Boolean visible) -> Void
+  M GetColor(IAppearanceContext context) -> Color
+  M SetColor(IAppearanceContext context, Color color) -> Void
+  M GetLineWeight(IAppearanceContext context) -> LineWeight
+  M SetLineWeight(IAppearanceContext context, LineWeight weight) -> Void
+  M GetLineStyle(IAppearanceContext context) -> LineStyle
+  M SetLineStyle(IAppearanceContext context, LineStyle style) -> Void
+  M Delete() -> Void
+  P Moniker: Moniker`1
+  P Name: String [set]
+TYPE SpaceClaim.Api.V19.LibraryMaterial base=Material
+  P Library: LibraryMaterialDictionary
+  P Properties: MaterialPropertyDictionary
+TYPE SpaceClaim.Api.V19.Material base=Base
+  P Name: String
+  P Properties: MaterialPropertyDictionary
+TYPE SpaceClaim.Api.V19.MaterialProperty base=ValueType
+  P Id: String
+  P DisplayName: String [set]
+  P Value: Double [set]
+  P Units: String [set]
+TYPE SpaceClaim.Api.V19.MaterialPropertyId base=Object
+TYPE SpaceClaim.Api.V19.Note base=DocObject
+  M GetOccurrence(IList`1 instancePath) -> INote
+  M GetOccurrence(Instance instance) -> INote
+  M GetOccurrence(IDocObject companionOcc) -> INote
+  SM Create(IAnnotationParentMaster parent, PointUV anchorLocation, LocationPoint anchorPoint, Double fontSize, String text) -> Note
+  SM Create(IAnnotationParent parent, PointUV anchorLocation, LocationPoint anchorPoint, Double fontSize, String text) -> INote
+  M Copy() -> Note
+  M GetLocation(LocationPoint locationPoint) -> PointUV
+  M SetLocation(PointUV anchorLocation, LocationPoint anchorPoint) -> Void
+  M DeleteText(Int32 index, Int32 length) -> Void
+  M InsertText(Int32 index, String text) -> Void
+  M ReplaceText(Int32 index, Int32 length, String text) -> Void
+  M ReplaceText(String text) -> Void
+  M SetFontName(String fontName) -> Void
+  M SetFontName(String fontName, Int32 index, Int32 length) -> Void
+  M SetFontSize(Double fontSize) -> Void
+  M SetFontSize(Double fontSize, Int32 index, Int32 length) -> Void
+  M SetBold(Boolean bold) -> Void
+  M SetBold(Boolean bold, Int32 index, Int32 length) -> Void
+  M SetItalic(Boolean italic) -> Void
+  M SetItalic(Boolean italic, Int32 index, Int32 length) -> Void
+  M SetUnderline(Boolean underline) -> Void
+  M SetUnderline(Boolean underline, Int32 index, Int32 length) -> Void
+  M SetStrikethrough(Boolean strikethrough) -> Void
+  M SetStrikethrough(Boolean strikethrough, Int32 index, Int32 length) -> Void
+  M SetCharacterSpacing(Double spacing) -> Void
+  M SetCharacterSpacing(Double spacing, Int32 index, Int32 length) -> Void
+  M GetTextPolylines(Double curveDeviation, Double angleDeviation) -> ICollection`1
+  M GetColor(IAppearanceContext context) -> Nullable`1
+  M SetColor(IAppearanceContext context, Nullable`1 color) -> Void
+  M GetVisibility(IAppearanceContext context) -> Nullable`1
+  M SetVisibility(IAppearanceContext context, Nullable`1 visible) -> Void
+  M IsVisible(IAppearanceContext context) -> Boolean
+  P Moniker: Moniker`1
+  P Parent: IAnnotationParentMaster
+  P AnnotationSpace: AnnotationSpace [set]
+  P Curvature: NoteCurvature [set]
+  P IsMirrored: Boolean [set]
+  P LineSpacing: Double [set]
+  P AnchorPoint: LocationPoint [set]
+  P Width: Double [set]
+  P Height: Double [set]
+  P TextFit: TextFit [set]
+  P Angle: Double [set]
+  P HorizontalAlignment: HorizontalAlignment [set]
+  P Callouts: IList`1
+  P EndIndex: Int32
+  P Text: String
+  P Plane: Plane
+  P TextOutline: ICollection`1
+  P Layer: Layer [set]
+  P DefaultVisibility: Nullable`1
+  P Name: String [set]
+TYPE SpaceClaim.Api.V19.OrientCondition base=GeometricCondition
+  M GetOccurrence(IList`1 instancePath) -> IOrientCondition
+  M GetOccurrence(Instance instance) -> IOrientCondition
+  M GetOccurrence(IDocObject companionOcc) -> IOrientCondition
+  SM Create(Part parent, IHasShape geometricA, IHasShape geometricB) -> OrientCondition
+  SM Create(IPart parent, IHasShape geometricA, IHasShape geometricB) -> IOrientCondition
+  P Moniker: Moniker`1
+  P Offset: Double [set]
+TYPE SpaceClaim.Api.V19.Part base=DocObject
+  M GetOccurrence(IList`1 instancePath) -> IPart
+  M GetOccurrence(Instance instance) -> IPart
+  M GetOccurrence(IDocObject companionOcc) -> IPart
+  SM Create(Document doc, String name) -> Part
+  SM CreateBeamProfile(Document doc, String name, Profile profile) -> Part
+  M Export(PartExportFormat format, String path, Boolean deepExport, ExportOptions options) -> Void
+  M ConvertToSheetMetal() -> Void
+  M ConvertToSheetMetal(ICollection`1 desFaces) -> Void
+  M TryGetCollision(ICollection`1 desFacesA, ICollection`1 desFacesB, IDesignFace& desFaceA, IDesignFace& desFaceB) -> Boolean
+  M GetDesignCurvesInPlane(Plane plane) -> ICollection`1
+  M IsSketchCurve(DesignCurve desCurve) -> Boolean
+  M SetSketchCurve(DesignCurve desCurve, Boolean isSketchCurve) -> Void
+  M Find(String id) -> IDocObject
+  M Delete() -> Void
+  P Moniker: Moniker`1
+  P Type: PartType
+  P SheetMetal: SheetMetalAspect
+  P IsSheetMetalSuspended: Boolean [set]
+  P FlatPattern: FlatPatternAspect
+  P Analysis: AnalysisAspect
+  P DisplayName: String
+  P Parent: IInstance
+  P Components: ICollection`1
+  P Bodies: ICollection`1
+  P Meshes: ICollection`1
+  P DatumPlanes: ICollection`1
+  P DatumLines: ICollection`1
+  P DatumPoints: ICollection`1
+  P DatumFeatures: ICollection`1
+  P CoordinateSystems: ICollection`1
+  P SpotWeldJoints: ICollection`1
+  P Beams: ICollection`1
+  P MatingConditions: ICollection`1
+  P AppearanceStates: ICollection`1
+  P ShareTopology: ShareTopology [set]
+  P IsEmpty: Boolean
+  P CustomProperties: CustomPartPropertyDictionary
+  P Material: DocumentMaterial [set]
+  P Name: String [set]
+  P Curves: ICollection`1
+  P CurveGroups: ICollection`1
+  P Images: ICollection`1
+  P CustomObjects: ICollection`1
+TYPE SpaceClaim.Api.V19.RigidCondition base=MatingCondition
+  M GetOccurrence(IList`1 instancePath) -> IRigidCondition
+  M GetOccurrence(Instance instance) -> IRigidCondition
+  M GetOccurrence(IDocObject companionOcc) -> IRigidCondition
+  SM Create(Part parent, Component componentA, Component componentB) -> RigidCondition
+  SM Create(IPart parent, IComponent componentA, IComponent componentB) -> IRigidCondition
+  P Moniker: Moniker`1
+  P ComponentA: Component
+  P ComponentB: Component
+TYPE SpaceClaim.Api.V19.Section base=DocObject
+  M GetOccurrence(IList`1 instancePath) -> ISection
+  M GetOccurrence(Instance instance) -> ISection
+  M GetOccurrence(IDocObject companionOcc) -> ISection
+  M GetCurves(DesignFace desFace) -> ICollection`1
+  M GetCurves(IDesignFace desFace) -> ICollection`1
+  M GetBoundingBox(Matrix trans) -> Box
+  M GetBoundingBox(Matrix trans, Boolean tight) -> Box
+  M GetExtremePoint(Direction dirA, Direction dirB, Direction dirC) -> Point
+  P Moniker: Moniker`1
+  P Body: DesignBody
+  P Curves: ICollection`1
+  P Shape: ISurfaceShape`1
+TYPE SpaceClaim.Api.V19.TangentCondition base=GeometricCondition
+  M GetOccurrence(IList`1 instancePath) -> ITangentCondition
+  M GetOccurrence(Instance instance) -> ITangentCondition
+  M GetOccurrence(IDocObject companionOcc) -> ITangentCondition
+  SM Create(Part parent, IHasShape geometricA, IHasShape geometricB) -> TangentCondition
+  SM Create(IPart parent, IHasShape geometricA, IHasShape geometricB) -> ITangentCondition
+  P Moniker: Moniker`1
+  P Offset: Double [set]
+TYPE SpaceClaim.Api.V19.Units base=DocObject
+  SM Create(DrawingSheet parent) -> Units
+  M GetMeasurementUnit(DimensionType dimensionType) -> MeasurementUnit
+  M Delete() -> Void
+  P Moniker: Moniker`1
+  P MetricUnits: MetricUnits [set]
+  P ImperialUnits: ImperialUnits [set]
+  P ActiveUnitsSystem: UnitsSystemType [set]
+  P GridSettings: GridSettings [set]
+  P Length: MeasurementUnit
+  P Area: MeasurementUnit
+  P Volume: MeasurementUnit
+  P Angle: MeasurementUnit
+  P Mass: MeasurementUnit
+  P UseWorkbenchUnits: Boolean
+  P IsSmallUnitType: Boolean
+TYPE SpaceClaim.Api.V19.Window base=Object
+  M Equals(Window other) -> Boolean
+  M Equals(Object other) -> Boolean
+  M GetHashCode() -> Int32
+  SM Create(Part scene, Boolean visible) -> Window
+  SM Create(DrawingSheet scene) -> Window
+  SM CreateEmbedded(Part scene, EmbeddedWindowHandler handler) -> Window
+  SM GetWindows(Document doc) -> ICollection`1
+  SM GetWindows(Part scene) -> ICollection`1
+  SM GetWindows(DrawingSheet scene) -> ICollection`1
+  M Copy() -> Window
+  M ZoomExtents() -> Void
+  M ZoomSelection() -> Void
+  M SetProjection(Matrix projection, Boolean zoomExtents, Boolean animate) -> Void
+  M SetProjection(Frame viewPlane, Double viewSize) -> Void
+  M DeleteLayers(String name) -> Void
+  M CreateBitmap(Size size) -> Bitmap
+  M CreateBitmap(Size size, Boolean hideGrid, Boolean hideDrawingMatte, Matrix projection) -> Bitmap
+  M Export(WindowExportFormat format, String path) -> Void
+  M ExportPart(PartWindowExportFormat format, String path) -> Void
+  M ExportDrawingSheet(DrawingSheetWindowExportFormat format, DrawingSheetBatch batch, String path) -> Void
+  M SetTool(Tool tool) -> Void
+  M GetContext(IDocObject sceneSpaceRoot) -> InteractionContext
+  M SetClipVolume(ClipViewShape shape, Frame frame, Double radius) -> Void
+  M ClearClipVolume() -> Void
+  M Close() -> Void
+  M Delete() -> Void
+  M RefreshRendering() -> Void
+  P Split: WindowSplit [set]
+  P IsVisible: Boolean [set]
+  P AllowDragDrop: Boolean [set]
+  P IsViewProjectionLocked: Boolean [set]
+  P AllWindows: ICollection`1
+  P Document: Document
+  P ActiveWindow: Window [set]
+  P SelectionFilter: SelectionFilterType [set]
+  P HomeProjection: Matrix [set]
+  P Projection: Matrix
+  P Scene: DocObject
+  P SceneBox: Box
+  P Camera: Camera
+  P ActiveLayer: Layer [set]
+  P Groups: ICollection`1
+  P ActiveTool: Tool
+  P SceneContext: InteractionContext
+  P ActiveContext: InteractionContext
+  P InteractionMode: InteractionMode [set]
+  P Size: Size
+  P CursorPosition: Point
+  P Command: Command [set]
+  P Rendering: Graphic [set]
+  P IsSketchConversionEnabled: Boolean [set]
+  P ExtendConstructionLines: Boolean [set]
+  P Units: Units
+  P IsDeleted: Boolean
+  P LifetimeLease: ILease
+TYPE SpaceClaim.Api.V19.Unsupported.Internal.WriteBlock base=Object
+  SM ExecuteTaskOnMainThread(String text, Task task) -> Void
+  SM ExecuteWithoutTracking(String text, Task task) -> Void
+TYPE SpaceClaim.Api.V19.WriteBlock base=Object
+  SM ExecuteTask(String text, Task task) -> Void
+  SM AppendTask(Task task) -> Void
+  P IsAvailable: Boolean
+  P IsActive: Boolean
+  P IsInterrupted: Boolean
+SETTER SpaceClaim.Api.V19.ObjImportOptions.Units: SpaceClaim.Api.V19.UnitsSystem
+SETTER SpaceClaim.Api.V19.StlImportOptions.Units: SpaceClaim.Api.V19.UnitsSystem
+SETTER SpaceClaim.Api.V19.Units.MetricUnits: SpaceClaim.Api.V19.MetricUnits
+SETTER SpaceClaim.Api.V19.Units.ImperialUnits: SpaceClaim.Api.V19.ImperialUnits
+SETTER SpaceClaim.Api.V19.Units.ActiveUnitsSystem: SpaceClaim.Api.V19.UnitsSystemType
+SETTER SpaceClaim.Api.V19.AcisExportOptions.Units: SpaceClaim.Api.V19.AcisUnits
+SETTER SpaceClaim.Api.V19.LayoutGrid.UnitSpacing: System.Double
+SETTER SpaceClaim.Api.V19.LayoutGrid.UnitsPerGridLine: System.Int32
+SETTER SpaceClaim.Api.V19.MaterialProperty.Units: System.String
+T SpaceClaim.Api.V19.MaterialCondition
+T SpaceClaim.Api.V19.NoteCurvature
+T SpaceClaim.Api.V19.MetricLengthUnit
+T SpaceClaim.Api.V19.MetricMassUnit
+T SpaceClaim.Api.V19.ImperialLengthUnit
+T SpaceClaim.Api.V19.ImperialMassUnit
+T SpaceClaim.Api.V19.UnitsSystemType
+T SpaceClaim.Api.V19.UnitsSystem
+T SpaceClaim.Api.V19.MetricUnits
+T SpaceClaim.Api.V19.ImperialUnits
+T SpaceClaim.Api.V19.AngleUnit
+T SpaceClaim.Api.V19.SurfaceMaterial
+T SpaceClaim.Api.V19.KeyShotSurfaceMaterial
+T SpaceClaim.Api.V19.TextureSurfaceMaterial
+T SpaceClaim.Api.V19.DrawingWindowOptions
+T SpaceClaim.Api.V19.LightweightNote
+T SpaceClaim.Api.V19.ILightweightNote
+T SpaceClaim.Api.V19.Units
+T SpaceClaim.Api.V19.MeasurementUnit
+T SpaceClaim.Api.V19.DrawingViewScale
+T SpaceClaim.Api.V19.OptionsPageSection
+T SpaceClaim.Api.V19.AlignCondition
+T SpaceClaim.Api.V19.IAlignCondition
+T SpaceClaim.Api.V19.AnchorCondition
+T SpaceClaim.Api.V19.IAnchorCondition
+T SpaceClaim.Api.V19.FrameCondition
+T SpaceClaim.Api.V19.IFrameCondition
+T SpaceClaim.Api.V19.GearCondition
+T SpaceClaim.Api.V19.IGearCondition
+T SpaceClaim.Api.V19.GeometricCondition
+T SpaceClaim.Api.V19.IGeometricCondition
+T SpaceClaim.Api.V19.MatingCondition
+T SpaceClaim.Api.V19.IMatingCondition
+T SpaceClaim.Api.V19.OrientCondition
+T SpaceClaim.Api.V19.IOrientCondition
+T SpaceClaim.Api.V19.RigidCondition
+T SpaceClaim.Api.V19.IRigidCondition
+T SpaceClaim.Api.V19.TangentCondition
+T SpaceClaim.Api.V19.ITangentCondition
+T SpaceClaim.Api.V19.DrawingViewDisplayName
+T SpaceClaim.Api.V19.AcisUnits
+T SpaceClaim.Api.V19.SectionAnchor
+T SpaceClaim.Api.V19.SectionProperties
+T SpaceClaim.Api.V19.Section
+T SpaceClaim.Api.V19.ISection
+T SpaceClaim.Api.V19.SectionCurve
+T SpaceClaim.Api.V19.ISectionCurve
+T SpaceClaim.Api.V19.DrawingViewAspect
+T SpaceClaim.Api.V19.DrawingViewBoundary
+T SpaceClaim.Api.V19.DrawingViewSectionType
+T SpaceClaim.Api.V19.DrawingViewSection
+T SpaceClaim.Api.V19.DrawingViewStyle
+T SpaceClaim.Api.V19.DocumentMaterial
+T SpaceClaim.Api.V19.IHasMaterial
+T SpaceClaim.Api.V19.LibraryMaterial
+T SpaceClaim.Api.V19.LibraryMaterialDictionary
+T SpaceClaim.Api.V19.Material
+T SpaceClaim.Api.V19.DocumentMaterialDictionary
+T SpaceClaim.Api.V19.MaterialProperty
+T SpaceClaim.Api.V19.MaterialPropertyDictionary
+T SpaceClaim.Api.V19.IHasUnits
+T SpaceClaim.Api.V19.DrawingSheet
+T SpaceClaim.Api.V19.IDrawingSheet
+T SpaceClaim.Api.V19.DrawingSheetContents
+T SpaceClaim.Api.V19.DrawingView
+T SpaceClaim.Api.V19.IDrawingView
+T SpaceClaim.Api.V19.DrawingViewRendering
+T SpaceClaim.Api.V19.DrawingViewColorRendering
+T SpaceClaim.Api.V19.MaterialPropertyId
+T SpaceClaim.Api.V19.Note
+T SpaceClaim.Api.V19.INote
+T SpaceClaim.Api.V19.DrawingSheetWindowExportFormat
+T SpaceClaim.Api.V19.DrawingSheetBatch
+T SpaceClaim.Api.V19.Modeler.BodyIntersection
+T SpaceClaim.Api.V19.Display.NotePrimitive
+T SpaceClaim.Api.V19.Unsupported.NoteMethods
+T SpaceClaim.Api.V19.Unsupported.Live.BoundaryCondition
+T SpaceClaim.Api.V19.Unsupported.Live.BoundaryConditionType
+T SpaceClaim.Api.V19.Unsupported.Live.FullConvectionBoundaryCondition
+T SpaceClaim.Api.V19.Unsupported.Live.MassBoundaryCondition
+T SpaceClaim.Api.V19.Unsupported.Live.RemoteForceBoundaryCondition
+T SpaceClaim.Api.V19.Unsupported.Live.RotationalVelocityBoundaryCondition
+T SpaceClaim.Api.V19.Unsupported.Live.SupportBoundaryCondition
+T SpaceClaim.Api.V19.Geometry.SurfaceSurfaceIntersection

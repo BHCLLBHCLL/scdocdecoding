@@ -1,0 +1,88 @@
+{
+ "actual": {
+  "area_mm2": 5144.632726,
+  "beams": 0,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 5144.632726,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [40.0, 30.0, 20.0]
+    ],
+    "closed": true,
+    "edges": 15,
+    "faces": 7,
+    "manifold": true,
+    "name": "Block_A",
+    "path": "",
+    "vertices": 10,
+    "volume_mm3": 23922.750307
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Circle": 2,
+   "Line": 13
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 15,
+  "faces": 7,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Cylinder": 1,
+   "Plane": 6
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 10,
+  "view_mode": "Solid",
+  "volume_mm3": 23922.750307
+ },
+ "case_id": "04_edge_round_901_pilot_block_edge_r3",
+ "category": "04_edge",
+ "commands": ["BlockBody.Create", "ConstantRound.Execute"],
+ "data": {
+  "cylinder_faces": 1,
+  "picked_edge_mid_mm": [20.0, 30.0, 20.0],
+  "success": true
+ },
+ "elapsed_s": 5.27,
+ "expect": {
+  "bodies": 1,
+  "edges": 15,
+  "faces": 7,
+  "vertices": 10,
+  "volume_mm3": 23922.743317
+ },
+ "expect_mismatch": {},
+ "feature": "edge_round",
+ "framework": "1.1",
+ "generated_at": "2026-09-26T07:25:50+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\_pilot\\out",
+ "params": {
+  "block_mm": [40, 30, 20],
+  "edge": "line edge nearest (20,30,20)",
+  "r_mm": 3
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\_pilot\\out\\04_edge_round_901_pilot_block_edge_r3.scdoc",
+ "scdoc_size": "33717",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\_pilot\\cases\\04_edge_round_901_pilot_block_edge_r3.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T07:25:44+08:00",
+ "status": "ok",
+ "title": "Round one selected edge (selection-by-geometry check)"
+}

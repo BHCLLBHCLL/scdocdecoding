@@ -1,0 +1,79 @@
+{
+ "actual": {
+  "area_mm2": 5200.0,
+  "beams": 0,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 5200.0,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [40.0, 30.0, 20.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Datum_Block",
+    "path": "",
+    "vertices": 8,
+    "volume_mm3": 24000.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Line": 12
+  },
+  "datum_planes": 1,
+  "drawing_sheets": 0,
+  "edges": 12,
+  "faces": 6,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Plane": 6
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 8,
+  "view_mode": "Solid",
+  "volume_mm3": 24000.0
+ },
+ "case_id": "11_doc_datum_001_plane_offset_z10",
+ "category": "11_doc_attrs",
+ "commands": ["DatumPlaneCreator.Create", "DatumLineCreator.Create", "DatumPointCreator.Create", "DatumOriginCreator.Create"],
+ "data": {
+  "intent_checks": []
+ },
+ "elapsed_s": 0.13,
+ "expect": {
+  "datum_planes": 1
+ },
+ "expect_mismatch": {},
+ "feature": "doc_datum",
+ "framework": "1.3",
+ "generated_at": "2026-09-26T08:21:28+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+ "params": {
+  "normal": [0, 0, 1],
+  "origin": [0, 0, 10]
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_datum_001_plane_offset_z10.scdoc",
+ "scdoc_size": "29406",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_datum_001_plane_offset_z10.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:21:28+08:00",
+ "status": "ok",
+ "title": "Datum plane / axis / point / origin (coordinate system): 001_plane_offset_z10"
+}

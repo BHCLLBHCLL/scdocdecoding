@@ -1,0 +1,4319 @@
+{
+ "batch": "L1_B08_B10",
+ "cases": [
+  {
+   "actual": {
+    "area_mm2": 2985.398163,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 2200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [30.0, 20.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Base_Block",
+      "path": "Component_1",
+      "vertices": 8,
+      "volume_mm3": 6000.0
+     },
+     {
+      "area_mm2": 785.398163,
+      "bbox_mm": [
+       [45.0, 5.0, 0.0],
+       [55.0, 15.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Boss_Cyl",
+      "path": "Component_2",
+      "vertices": 2,
+      "volume_mm3": 1570.796327
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     },
+     {
+      "name": "Component_2",
+      "path": ""
+     }
+    ],
+    "components": 2,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 9,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 2,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 7570.796327
+   },
+   "case_id": "10_assembly_component_001_two_bodies_two_comps",
+   "category": "10_assembly",
+   "commands": ["ComponentHelper.CreateAtRoot", "ComponentHelper.MoveBodiesToComponent", "ComponentHelper.CreateSeparateComponents", "ComponentHelper.SetName"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"],
+     ["", "Component_2"]
+    ],
+    "component_names": ["", ""],
+    "intent_checks": []
+   },
+   "elapsed_s": 4.23,
+   "expect": {
+    "bodies": 2,
+    "components": 2
+   },
+   "expect_mismatch": {},
+   "feature": "asm_component",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:12+08:00",
+   "items": {
+    "setname_Base_Block": {
+     "ok": true,
+     "result": "True",
+     "s": 0.01
+    },
+    "setname_Boss_Cyl": {
+     "ok": true,
+     "result": "True",
+     "s": 0.0
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\10_assembly",
+   "params": {
+    "bodies": ["block", "cyl"]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_component_001_two_bodies_two_comps.scdoc",
+   "scdoc_size": "44192",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_component_001_two_bodies_two_comps.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:07+08:00",
+   "status": "ok",
+   "title": "Create component / move bodies to component: 001_two_bodies_two_comps"
+  },
+  {
+   "actual": {
+    "area_mm2": 2400.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2400.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [20.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Nested_Block",
+      "path": "Component_1/Component_2",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     },
+     {
+      "name": "Component_2",
+      "path": "Component_1"
+     }
+    ],
+    "components": 2,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 2,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 8000.0
+   },
+   "case_id": "10_assembly_component_002_nested_2levels",
+   "category": "10_assembly",
+   "commands": ["ComponentHelper.CreateAtRoot", "ComponentHelper.MoveBodiesToComponent", "ComponentHelper.CreateSeparateComponents", "ComponentHelper.SetName"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"],
+     ["", "Component_2"]
+    ],
+    "intent_checks": [],
+    "level2_form": 0,
+    "paths": [
+     {
+      "name": "",
+      "path": ""
+     },
+     {
+      "name": "",
+      "path": ""
+     }
+    ]
+   },
+   "elapsed_s": 0.23000000000000001,
+   "expect": {
+    "bodies": 1,
+    "components": 2
+   },
+   "expect_mismatch": {},
+   "feature": "asm_component",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:12+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\10_assembly",
+   "params": {
+    "levels": 2
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_component_002_nested_2levels.scdoc",
+   "scdoc_size": "27826",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_component_002_nested_2levels.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:12+08:00",
+   "status": "ok",
+   "title": "Create component / move bodies to component: 002_nested_2levels"
+  },
+  {
+   "actual": {
+    "area_mm2": 8800.0,
+    "beams": 0,
+    "bodies": 4,
+    "body_list": [
+     {
+      "area_mm2": 1600.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [20.0, 20.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Part_1",
+      "path": "Component_1",
+      "vertices": 8,
+      "volume_mm3": 4000.0
+     },
+     {
+      "area_mm2": 2000.0,
+      "bbox_mm": [
+       [30.0, 0.0, 0.0],
+       [50.0, 20.0, 15.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Part_2",
+      "path": "Component_2",
+      "vertices": 8,
+      "volume_mm3": 6000.0
+     },
+     {
+      "area_mm2": 2400.0,
+      "bbox_mm": [
+       [60.0, 0.0, 0.0],
+       [80.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Part_3",
+      "path": "Component_3",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     },
+     {
+      "area_mm2": 2800.0,
+      "bbox_mm": [
+       [90.0, 0.0, 0.0],
+       [110.0, 20.0, 25.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Part_4",
+      "path": "Component_4",
+      "vertices": 8,
+      "volume_mm3": 10000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     },
+     {
+      "name": "Component_2",
+      "path": ""
+     },
+     {
+      "name": "Component_3",
+      "path": ""
+     },
+     {
+      "name": "Component_4",
+      "path": ""
+     }
+    ],
+    "components": 4,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 48
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 48,
+    "faces": 24,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 4,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 24
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 32,
+    "view_mode": "Solid",
+    "volume_mm3": 28000.0
+   },
+   "case_id": "10_assembly_component_003_separate_components_4",
+   "category": "10_assembly",
+   "commands": ["ComponentHelper.CreateAtRoot", "ComponentHelper.MoveBodiesToComponent", "ComponentHelper.CreateSeparateComponents", "ComponentHelper.SetName"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"],
+     ["", "Component_2"],
+     ["", "Component_3"],
+     ["", "Component_4"]
+    ],
+    "component_names": ["", "", "", ""],
+    "intent_checks": []
+   },
+   "elapsed_s": 0.20999999999999999,
+   "expect": {
+    "bodies": 4,
+    "components": 4
+   },
+   "expect_mismatch": {},
+   "feature": "asm_component",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:13+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\10_assembly",
+   "params": {
+    "bodies": 4
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_component_003_separate_components_4.scdoc",
+   "scdoc_size": "61147",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_component_003_separate_components_4.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:12+08:00",
+   "status": "ok",
+   "title": "Create component / move bodies to component: 003_separate_components_4"
+  },
+  {
+   "actual": {
+    "area_mm2": 2563.539606,
+    "beams": 0,
+    "bodies": 3,
+    "body_list": [
+     {
+      "area_mm2": 854.513202,
+      "bbox_mm": [
+       [-4.0, -4.0, 0.0],
+       [4.0, 4.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Bolt_Body",
+      "path": "Component_1",
+      "vertices": 2,
+      "volume_mm3": 1507.964474
+     },
+     {
+      "area_mm2": 854.513202,
+      "bbox_mm": [
+       [46.0, -4.0, 0.0],
+       [54.0, 4.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Bolt_Body",
+      "path": "Component_2",
+      "vertices": 2,
+      "volume_mm3": 1507.964474
+     },
+     {
+      "area_mm2": 854.513202,
+      "bbox_mm": [
+       [96.0, -4.0, 0.0],
+       [104.0, 4.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Bolt_Body",
+      "path": "Component_3",
+      "vertices": 2,
+      "volume_mm3": 1507.964474
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     },
+     {
+      "name": "Component_2",
+      "path": ""
+     },
+     {
+      "name": "Component_3",
+      "path": ""
+     }
+    ],
+    "components": 3,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 6
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 6,
+    "faces": 9,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 3,
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 6,
+    "view_mode": "Solid",
+    "volume_mm3": 4523.893422
+   },
+   "case_id": "10_assembly_instance_001_3_instances_translated",
+   "category": "10_assembly",
+   "commands": ["Copy.ToClipboard/Paste.FromClipboard", "ComponentHelper.CopyToComponent", "Move.Translate on component", "ComponentHelper.MakeIndependent"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"],
+     ["", "Component_2"],
+     ["", "Component_3"]
+    ],
+    "intent_checks": [
+     ["instance_x_max_mm", "104.0", "104.0", true]
+    ]
+   },
+   "elapsed_s": 0.29999999999999999,
+   "expect": {
+    "bodies": 3,
+    "components": 3,
+    "part_defs": 1
+   },
+   "expect_mismatch": {},
+   "feature": "asm_instance",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:13+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\10_assembly",
+   "params": {
+    "n": 3,
+    "pitch_mm": 50
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_instance_001_3_instances_translated.scdoc",
+   "scdoc_size": "29942",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_instance_001_3_instances_translated.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:13+08:00",
+   "status": "ok",
+   "title": "Component instances (copy/paste component, transform): 001_3_instances_translated"
+  },
+  {
+   "actual": {
+    "area_mm2": 1344.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 672.0,
+      "bbox_mm": [
+       [0.0, -2.0, 0.0],
+       [40.0, 2.0, 4.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Arm_Body",
+      "path": "Component_1",
+      "vertices": 8,
+      "volume_mm3": 640.0
+     },
+     {
+      "area_mm2": 672.0,
+      "bbox_mm": [
+       [-2.0, -0.0, 0.0],
+       [2.0, 40.0, 4.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Arm_Body",
+      "path": "Component_2",
+      "vertices": 8,
+      "volume_mm3": 640.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     },
+     {
+      "name": "Component_2",
+      "path": ""
+     }
+    ],
+    "components": 2,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 1280.0
+   },
+   "case_id": "10_assembly_instance_002_rotated_instance",
+   "category": "10_assembly",
+   "commands": ["Copy.ToClipboard/Paste.FromClipboard", "ComponentHelper.CopyToComponent", "Move.Translate on component", "ComponentHelper.MakeIndependent"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"],
+     ["", "Component_2"]
+    ],
+    "bboxes": [
+     [
+      [0.0, -2.0, 0.0],
+      [40.0, 2.0, 4.0]
+     ],
+     [
+      [-2.0, -0.0, 0.0],
+      [2.0, 40.0, 4.0]
+     ]
+    ],
+    "intent_checks": [
+     ["rotated_y_max_mm", "40.0", "40.0", true]
+    ]
+   },
+   "elapsed_s": 0.14999999999999999,
+   "expect": {
+    "bodies": 2,
+    "components": 2,
+    "part_defs": 1
+   },
+   "expect_mismatch": {},
+   "feature": "asm_instance",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:13+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\10_assembly",
+   "params": {
+    "deg": 90
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_instance_002_rotated_instance.scdoc",
+   "scdoc_size": "27049",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_instance_002_rotated_instance.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:13+08:00",
+   "status": "ok",
+   "title": "Component instances (copy/paste component, transform): 002_rotated_instance"
+  },
+  {
+   "actual": {
+    "area_mm2": 867.079572,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 433.539786,
+      "bbox_mm": [
+       [-3.0, -3.0, 0.0],
+       [3.0, 3.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Pin_Body",
+      "path": "Component_1",
+      "vertices": 2,
+      "volume_mm3": 565.486678
+     },
+     {
+      "area_mm2": 433.539786,
+      "bbox_mm": [
+       [27.0, -3.0, 0.0],
+       [33.0, 3.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Pin_Body",
+      "path": "Component_2",
+      "vertices": 2,
+      "volume_mm3": 565.486678
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     },
+     {
+      "name": "Component_2",
+      "path": ""
+     }
+    ],
+    "components": 2,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 2,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 4
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Solid",
+    "volume_mm3": 1130.973356
+   },
+   "case_id": "10_assembly_instance_003_make_independent",
+   "category": "10_assembly",
+   "commands": ["Copy.ToClipboard/Paste.FromClipboard", "ComponentHelper.CopyToComponent", "Move.Translate on component", "ComponentHelper.MakeIndependent"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"],
+     ["", "Component_2"]
+    ],
+    "intent_checks": [],
+    "make_independent_form": 0,
+    "part_defs_before": 1
+   },
+   "elapsed_s": 0.68999999999999995,
+   "expect": {
+    "bodies": 2,
+    "components": 2,
+    "part_defs": 2
+   },
+   "expect_mismatch": {},
+   "feature": "asm_instance",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:14+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\10_assembly",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_instance_003_make_independent.scdoc",
+   "scdoc_size": "44850",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_instance_003_make_independent.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:14+08:00",
+   "status": "ok",
+   "title": "Component instances (copy/paste component, transform): 003_make_independent"
+  },
+  {
+   "actual": {
+    "area_mm2": 1400.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 700.0,
+      "bbox_mm": [
+       [10.0, 0.0, 0.0],
+       [30.0, 10.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Wing_Body",
+      "path": "Component_1",
+      "vertices": 8,
+      "volume_mm3": 1000.0
+     },
+     {
+      "area_mm2": 700.0,
+      "bbox_mm": [
+       [-30.0, 0.0, 0.0],
+       [-10.0, 10.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Wing_Body",
+      "path": "Component_2",
+      "vertices": 8,
+      "volume_mm3": 1000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     },
+     {
+      "name": "Component_2",
+      "path": ""
+     }
+    ],
+    "components": 2,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 1,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 2000.0
+   },
+   "case_id": "10_assembly_mirrorcomp_001",
+   "category": "10_assembly",
+   "commands": ["MirrorComponents.Execute"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"],
+     ["", "Component_2"]
+    ],
+    "bboxes": [
+     [
+      [10.0, 0.0, 0.0],
+      [30.0, 10.0, 5.0]
+     ],
+     [
+      [-30.0, 0.0, 0.0],
+      [-10.0, 10.0, 5.0]
+     ]
+    ],
+    "intent_checks": [
+     ["mirrored_x_min_mm", "-30.0", "-30.0", true]
+    ]
+   },
+   "elapsed_s": 0.29999999999999999,
+   "expect": {
+    "components": 2
+   },
+   "expect_mismatch": {},
+   "feature": "asm_mirror_components",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:15+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\10_assembly",
+   "params": {
+    "plane": "YZ"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_mirrorcomp_001.scdoc",
+   "scdoc_size": "28522",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_mirrorcomp_001.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:14+08:00",
+   "status": "ok",
+   "title": "Mirror components: 001"
+  },
+  {
+   "actual": {
+    "area_mm2": 8760.353815,
+    "beams": 0,
+    "bodies": 4,
+    "body_list": [
+     {
+      "area_mm2": 6950.796447,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [60.0, 40.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 14,
+      "faces": 7,
+      "manifold": true,
+      "name": "Plate_Body",
+      "path": "Component_1",
+      "vertices": 10,
+      "volume_mm3": 23497.345175
+     },
+     {
+      "area_mm2": 603.185789,
+      "bbox_mm": [
+       [26.0, 16.0, -5.0],
+       [34.0, 24.0, 15.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Hole_Cutter",
+      "path": "Component_1",
+      "vertices": 2,
+      "volume_mm3": 1005.309649
+     },
+     {
+      "area_mm2": 351.858377,
+      "bbox_mm": [
+       [26.0, 16.0, 0.0],
+       [34.0, 24.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Body_3",
+      "path": "Component_1",
+      "vertices": 2,
+      "volume_mm3": 502.654825
+     },
+     {
+      "area_mm2": 854.513202,
+      "bbox_mm": [
+       [96.0, 16.0, 5.0],
+       [104.0, 24.0, 35.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Pin_Body",
+      "path": "Component_2",
+      "vertices": 2,
+      "volume_mm3": 1507.964474
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     },
+     {
+      "name": "Component_2",
+      "path": ""
+     }
+    ],
+    "components": 2,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 8,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 20,
+    "faces": 16,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 2,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 4,
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 26513.274123
+   },
+   "case_id": "10_assembly_align_001_axis_axis",
+   "category": "10_assembly",
+   "commands": ["(raw API) AlignCondition.Create / TangentCondition.Create / OrientCondition.Create / AnchorCondition.Create / RigidCondition.Create / GearCondition.Create (SpaceClaim.Api.V19)"],
+   "data": {
+    "auto_renamed": [
+     ["实体", "Body_3"],
+     ["", "Component_1"],
+     ["", "Component_2"]
+    ],
+    "intent_checks": [],
+    "regions_after_intersect": []
+   },
+   "elapsed_s": 0.56000000000000005,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_align_001_axis_axis.py\", line 24, in build\n    subtract(ctx, pb, cut)\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 958, in subtract\n    keep = [largest(bs)]\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 731, in largest\n    return max(bs, key=lambda b: vol(b) or 0.0)\nValueError:  max() arg is an empty sequence\n",
+   "expect": {
+    "components": 2,
+    "mating_conditions": 1
+   },
+   "expect_mismatch": {
+    "mating_conditions": {
+     "actual": 0,
+     "expected": 1
+    }
+   },
+   "feature": "asm_conditions",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:16+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\10_assembly",
+   "params": {
+    "a": "plate hole axis",
+    "b": "pin axis"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_align_001_axis_axis.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:15+08:00",
+   "status": "failed",
+   "title": "Assembly conditions (align, tangent, orient, anchor, rigid, gear): 001_axis_axis"
+  },
+  {
+   "actual": {
+    "area_mm2": 6400.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 4800.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 40.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Lower_Body",
+      "path": "Component_1",
+      "vertices": 8,
+      "volume_mm3": 16000.0
+     },
+     {
+      "area_mm2": 1600.0,
+      "bbox_mm": [
+       [0.0, 0.0, 20.0],
+       [20.0, 20.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Upper_Body",
+      "path": "Component_2",
+      "vertices": 8,
+      "volume_mm3": 4000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     },
+     {
+      "name": "Component_2",
+      "path": ""
+     }
+    ],
+    "components": 2,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 1,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 2,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 20000.0
+   },
+   "case_id": "10_assembly_tangent_001_face_face",
+   "category": "10_assembly",
+   "commands": ["(raw API) AlignCondition.Create / TangentCondition.Create / OrientCondition.Create / AnchorCondition.Create / RigidCondition.Create / GearCondition.Create (SpaceClaim.Api.V19)"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"],
+     ["", "Component_2"]
+    ],
+    "intent_checks": []
+   },
+   "elapsed_s": 0.38,
+   "expect": {
+    "components": 2,
+    "mating_conditions": 1
+   },
+   "expect_mismatch": {},
+   "feature": "asm_conditions",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:17+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\10_assembly",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_tangent_001_face_face.scdoc",
+   "scdoc_size": "39694",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_tangent_001_face_face.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:16+08:00",
+   "status": "ok",
+   "title": "Assembly conditions (align, tangent, orient, anchor, rigid, gear): 001_face_face"
+  },
+  {
+   "actual": {
+    "area_mm2": 5800.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5800.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [60.0, 40.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Plate_Body",
+      "path": "Component_1",
+      "vertices": 8,
+      "volume_mm3": 12000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 1,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 12000.0
+   },
+   "case_id": "10_assembly_anchor_001_plate",
+   "category": "10_assembly",
+   "commands": ["(raw API) AlignCondition.Create / TangentCondition.Create / OrientCondition.Create / AnchorCondition.Create / RigidCondition.Create / GearCondition.Create (SpaceClaim.Api.V19)"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"]
+    ],
+    "intent_checks": []
+   },
+   "elapsed_s": 0.14000000000000001,
+   "expect": {
+    "components": 1,
+    "mating_conditions": 1
+   },
+   "expect_mismatch": {},
+   "feature": "asm_conditions",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:17+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\10_assembly",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_anchor_001_plate.scdoc",
+   "scdoc_size": "26482",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_anchor_001_plate.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:17+08:00",
+   "status": "ok",
+   "title": "Assembly conditions (align, tangent, orient, anchor, rigid, gear): 001_plate"
+  },
+  {
+   "actual": {
+    "area_mm2": 6000.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 3000.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [30.0, 30.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Body_A",
+      "path": "Component_1",
+      "vertices": 8,
+      "volume_mm3": 9000.0
+     },
+     {
+      "area_mm2": 3000.0,
+      "bbox_mm": [
+       [40.0, 0.0, 0.0],
+       [70.0, 30.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Body_B",
+      "path": "Component_2",
+      "vertices": 8,
+      "volume_mm3": 9000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     },
+     {
+      "name": "Component_2",
+      "path": ""
+     }
+    ],
+    "components": 2,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 1,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 2,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 18000.0
+   },
+   "case_id": "10_assembly_rigid_001",
+   "category": "10_assembly",
+   "commands": ["(raw API) AlignCondition.Create / TangentCondition.Create / OrientCondition.Create / AnchorCondition.Create / RigidCondition.Create / GearCondition.Create (SpaceClaim.Api.V19)"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"],
+     ["", "Component_2"]
+    ],
+    "intent_checks": []
+   },
+   "elapsed_s": 0.17000000000000001,
+   "expect": {
+    "components": 2,
+    "mating_conditions": 1
+   },
+   "expect_mismatch": {},
+   "feature": "asm_conditions",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:18+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\10_assembly",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_rigid_001.scdoc",
+   "scdoc_size": "38580",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_rigid_001.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:17+08:00",
+   "status": "ok",
+   "title": "Assembly conditions (align, tangent, orient, anchor, rigid, gear): 001"
+  },
+  {
+   "actual": {
+    "area_mm2": 1400.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 700.0,
+      "bbox_mm": [
+       [40.0, 0.0, 0.0],
+       [60.0, 10.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Native_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 1000.0
+     },
+     {
+      "area_mm2": 700.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [20.0, 10.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "1",
+      "path": "Component_1",
+      "vertices": 8,
+      "volume_mm3": 1000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0", "\\X2\\56FE5C42\\X0\\0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 2000.0
+   },
+   "case_id": "10_assembly_insert_001_step_block",
+   "category": "10_assembly",
+   "commands": ["DocumentInsert.Execute(filename)"],
+   "data": {
+    "auto_renamed": [
+     ["", "Component_1"]
+    ],
+    "bodies_after_insert": ["Native_Block", "1"],
+    "export_step_form": 0,
+    "intent_checks": [
+     ["total_volume_mm3", "2000.0", "2000.0", true]
+    ],
+    "step_exists": true
+   },
+   "elapsed_s": 1.83,
+   "expect": {
+    "bodies": 2
+   },
+   "expect_mismatch": {},
+   "feature": "asm_insert_file",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:20+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\10_assembly",
+   "params": {
+    "file": "STEP generated in 01_primitives"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_insert_001_step_block.scdoc",
+   "scdoc_size": "41261",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\10_assembly\\10_assembly_insert_001_step_block.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:18+08:00",
+   "status": "ok",
+   "title": "Insert external file as component: 001_step_block"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Block_A",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_rename_001_body_Block_A",
+   "category": "11_doc_attrs",
+   "commands": ["RenameObject.Execute(sel, name)", "HasNameExtensions.SetName"],
+   "data": {
+    "intent_checks": [
+     ["body_name", "Block_A", "Block_A", true]
+    ]
+   },
+   "elapsed_s": 0.29999999999999999,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_rename",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:21+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "name": "Block_A"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_rename_001_body_Block_A.scdoc",
+   "scdoc_size": "27368",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_rename_001_body_Block_A.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:20+08:00",
+   "status": "ok",
+   "title": "Rename body/component (captions): 001_body_Block_A"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "主体_测试",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_rename_002_unicode_name",
+   "category": "11_doc_attrs",
+   "commands": ["RenameObject.Execute(sel, name)", "HasNameExtensions.SetName"],
+   "data": {
+    "intent_checks": [
+     ["body_name", "主体_测试", "主体_测试", true]
+    ],
+    "keep_unicode_names": true
+   },
+   "elapsed_s": 0.12,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_rename",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:21+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "name": "主体_测试"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_rename_002_unicode_name.scdoc",
+   "scdoc_size": "27381",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_rename_002_unicode_name.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:21+08:00",
+   "status": "ok",
+   "title": "Rename body/component (captions): 002_unicode_name"
+  },
+  {
+   "actual": {
+    "area_mm2": 10400.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Red_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     },
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [60.0, 0.0, 0.0],
+       [100.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Blue_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0", "L_red", "L_blue"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 48000.0
+   },
+   "case_id": "11_doc_layers_001_two_layers_assign",
+   "category": "11_doc_attrs",
+   "commands": ["Layers.Create/AssignLayer/SetColor/SetVisibility/SetLock/Rename"],
+   "data": {
+    "body_layers": ["L_red", "L_blue"],
+    "intent_checks": [
+     ["has_L_red_L_blue", "True", "True", true]
+    ]
+   },
+   "elapsed_s": 0.20999999999999999,
+   "expect": {
+    "bodies": 2
+   },
+   "expect_mismatch": {},
+   "feature": "doc_layers",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:22+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "layers": ["L_red", "L_blue"]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_layers_001_two_layers_assign.scdoc",
+   "scdoc_size": "37646",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_layers_001_two_layers_assign.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:22+08:00",
+   "status": "ok",
+   "title": "Layers (create, assign, color, visibility, lock): 001_two_layers_assign"
+  },
+  {
+   "actual": {
+    "area_mm2": 10400.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Visible_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     },
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [60.0, 0.0, 0.0],
+       [100.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Hidden_Locked_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0", "L_hidden"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 48000.0
+   },
+   "case_id": "11_doc_layers_002_hidden_locked",
+   "category": "11_doc_attrs",
+   "commands": ["Layers.Create/AssignLayer/SetColor/SetVisibility/SetLock/Rename"],
+   "data": {
+    "intent_checks": [],
+    "layer_state": {
+     "locked": "None",
+     "visible": "True"
+    }
+   },
+   "elapsed_s": 0.17999999999999999,
+   "expect": {
+    "bodies": 2
+   },
+   "expect_mismatch": {},
+   "feature": "doc_layers",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:23+08:00",
+   "items": {
+    "lock": {
+     "ok": true,
+     "result": "True",
+     "s": 0.01
+    },
+    "visibility": {
+     "ok": true,
+     "result": "True",
+     "s": 0.029999999999999999
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "locked": true,
+    "visible": false
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_layers_002_hidden_locked.scdoc",
+   "scdoc_size": "37965",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_layers_002_hidden_locked.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:22+08:00",
+   "status": "ok",
+   "title": "Layers (create, assign, color, visibility, lock): 002_hidden_locked"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Red_Body",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_color_001_body_red",
+   "category": "11_doc_attrs",
+   "commands": ["ColorHelper.SetColor(sel, SetColorOptions, Color)", "ColorHelper.SetFillStyle"],
+   "data": {
+    "body_color": "Color [A=255, R=255, G=0, B=0]",
+    "color_opts_members": ["EdgeColorTarget", "Equals", "Exact", "FaceColorTarget", "GetHashCode", "GetType", "MemberwiseClone", "RandomColor", "RandomSeed", "ReferenceEquals", "ToString", "UseAlpha"],
+    "intent_checks": []
+   },
+   "elapsed_s": 0.19,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_colors",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:24+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "rgb": [255, 0, 0],
+    "target": "body"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_color_001_body_red.scdoc",
+   "scdoc_size": "27126",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_color_001_body_red.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:23+08:00",
+   "status": "ok",
+   "title": "Body / face color, fill style: 001_body_red"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Green_Top_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_color_002_face_green",
+   "category": "11_doc_attrs",
+   "commands": ["ColorHelper.SetColor(sel, SetColorOptions, Color)", "ColorHelper.SetFillStyle"],
+   "data": {
+    "intent_checks": [],
+    "top_color": "Color [A=255, R=0, G=200, B=0]"
+   },
+   "elapsed_s": 0.17999999999999999,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_colors",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:24+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "rgb": [0, 200, 0],
+    "target": "face +Z"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_color_002_face_green.scdoc",
+   "scdoc_size": "27341",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_color_002_face_green.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:24+08:00",
+   "status": "ok",
+   "title": "Body / face color, fill style: 002_face_green"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Transparent_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_color_003_transparent_50",
+   "category": "11_doc_attrs",
+   "commands": ["ColorHelper.SetColor(sel, SetColorOptions, Color)", "ColorHelper.SetFillStyle"],
+   "data": {
+    "body_color": "Color [A=128, R=0, G=0, B=255]",
+    "color_opts_members": ["EdgeColorTarget", "Equals", "Exact", "FaceColorTarget", "GetHashCode", "GetType", "MemberwiseClone", "RandomColor", "RandomSeed", "ReferenceEquals", "ToString", "UseAlpha"],
+    "intent_checks": []
+   },
+   "elapsed_s": 0.14000000000000001,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_colors",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:25+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "alpha": 128
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_color_003_transparent_50.scdoc",
+   "scdoc_size": "28673",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_color_003_transparent_50.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:25+08:00",
+   "status": "ok",
+   "title": "Body / face color, fill style: 003_transparent_50"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "NS_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": ["Top_Bottom"],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_ns_001_faces_top_bottom",
+   "category": "11_doc_attrs",
+   "commands": ["NamedSelection.Create(primary, secondary)", "NamedSelection.Rename/Replace/Delete"],
+   "data": {
+    "intent_checks": [
+     ["ns_names", "['Top_Bottom']", "['Top_Bottom']", true]
+    ]
+   },
+   "elapsed_s": 0.27000000000000002,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_named_selection",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:26+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "members": "2 faces"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_ns_001_faces_top_bottom.scdoc",
+   "scdoc_size": "27555",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_ns_001_faces_top_bottom.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:25+08:00",
+   "status": "ok",
+   "title": "Named selections (groups): 001_faces_top_bottom"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "NS_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": ["Top_Edges_And_Body"],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_ns_002_edges_and_body",
+   "category": "11_doc_attrs",
+   "commands": ["NamedSelection.Create(primary, secondary)", "NamedSelection.Rename/Replace/Delete"],
+   "data": {
+    "intent_checks": [
+     ["top_edges", "4", "4", true]
+    ],
+    "member_count": null
+   },
+   "elapsed_s": 0.17000000000000001,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_named_selection",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:27+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "members": "4 edges + body"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_ns_002_edges_and_body.scdoc",
+   "scdoc_size": "27579",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_ns_002_edges_and_body.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:26+08:00",
+   "status": "ok",
+   "title": "Named selections (groups): 002_edges_and_body"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "NS_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": ["Inlet"],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_ns_003_renamed",
+   "category": "11_doc_attrs",
+   "commands": ["NamedSelection.Create(primary, secondary)", "NamedSelection.Rename/Replace/Delete"],
+   "data": {
+    "default_name": "组1",
+    "intent_checks": [
+     ["ns_names", "['Inlet']", "['Inlet']", true]
+    ]
+   },
+   "elapsed_s": 0.13,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_named_selection",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:28+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "rename": ["Group1", "Inlet"]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_ns_003_renamed.scdoc",
+   "scdoc_size": "27555",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_ns_003_renamed.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:27+08:00",
+   "status": "ok",
+   "title": "Named selections (groups): 003_renamed"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Datum_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 1,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_datum_001_plane_offset_z10",
+   "category": "11_doc_attrs",
+   "commands": ["DatumPlaneCreator.Create", "DatumLineCreator.Create", "DatumPointCreator.Create", "DatumOriginCreator.Create"],
+   "data": {
+    "intent_checks": []
+   },
+   "elapsed_s": 0.13,
+   "expect": {
+    "datum_planes": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_datum",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:28+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "normal": [0, 0, 1],
+    "origin": [0, 0, 10]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_datum_001_plane_offset_z10.scdoc",
+   "scdoc_size": "29406",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_datum_001_plane_offset_z10.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:28+08:00",
+   "status": "ok",
+   "title": "Datum plane / axis / point / origin (coordinate system): 001_plane_offset_z10"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Datum_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_datum_002_axis_and_point",
+   "category": "11_doc_attrs",
+   "commands": ["DatumPlaneCreator.Create", "DatumLineCreator.Create", "DatumPointCreator.Create", "DatumOriginCreator.Create"],
+   "data": {
+    "datum_line_form": 0,
+    "datum_lines": 1,
+    "datum_point_form": 0,
+    "datum_points": 1,
+    "intent_checks": []
+   },
+   "elapsed_s": 0.20999999999999999,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_datum",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:29+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_datum_002_axis_and_point.scdoc",
+   "scdoc_size": "28165",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_datum_002_axis_and_point.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:29+08:00",
+   "status": "ok",
+   "title": "Datum plane / axis / point / origin (coordinate system): 002_axis_and_point"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Datum_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 2,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_datum_003_origin_rotated",
+   "category": "11_doc_attrs",
+   "commands": ["DatumPlaneCreator.Create", "DatumLineCreator.Create", "DatumPointCreator.Create", "DatumOriginCreator.Create"],
+   "data": {
+    "intent_checks": []
+   },
+   "elapsed_s": 0.26000000000000001,
+   "expect": {
+    "coordinate_systems": 1
+   },
+   "expect_mismatch": {
+    "coordinate_systems": {
+     "actual": 2,
+     "expected": 1
+    }
+   },
+   "feature": "doc_datum",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:30+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "rot_deg": 30
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_datum_003_origin_rotated.scdoc",
+   "scdoc_size": "28623",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_datum_003_origin_rotated.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:30+08:00",
+   "status": "mismatch",
+   "title": "Datum plane / axis / point / origin (coordinate system): 003_origin_rotated"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "View_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_view_001_named_iso",
+   "category": "11_doc_attrs",
+   "commands": ["ViewHelper.CreateNamedView", "ViewHelper.SetProjection", "ViewHelper.SetSectionPlane"],
+   "data": {
+    "intent_checks": [
+     ["activate_Iso1", "True", "True", true]
+    ]
+   },
+   "elapsed_s": 0.17999999999999999,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_named_view",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:31+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "name": "Iso1"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_view_001_named_iso.scdoc",
+   "scdoc_size": "28505",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_view_001_named_iso.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:31+08:00",
+   "status": "ok",
+   "title": "Named views / section plane: 001_named_iso"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "View_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_view_002_two_views",
+   "category": "11_doc_attrs",
+   "commands": ["ViewHelper.CreateNamedView", "ViewHelper.SetProjection", "ViewHelper.SetSectionPlane"],
+   "data": {
+    "intent_checks": [
+     ["activate_Front", "True", "True", true]
+    ]
+   },
+   "elapsed_s": 0.14000000000000001,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_named_view",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:32+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "names": ["Front", "Top"]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_view_002_two_views.scdoc",
+   "scdoc_size": "27644",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_view_002_two_views.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:32+08:00",
+   "status": "ok",
+   "title": "Named views / section plane: 002_two_views"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "CS_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 2,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_coordsys_001_translated_rotated",
+   "category": "11_doc_attrs",
+   "commands": ["(raw API) CoordinateSystem.Create", "DatumOriginCreator.Create"],
+   "data": {
+    "coordsys_form": 0,
+    "intent_checks": []
+   },
+   "elapsed_s": 0.13,
+   "expect": {
+    "coordinate_systems": 1
+   },
+   "expect_mismatch": {
+    "coordinate_systems": {
+     "actual": 2,
+     "expected": 1
+    }
+   },
+   "feature": "doc_coordsys",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:33+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "origin": [10, 0, 0],
+    "rot_deg": 30
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_coordsys_001_translated_rotated.scdoc",
+   "scdoc_size": "29153",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_coordsys_001_translated_rotated.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:33+08:00",
+   "status": "mismatch",
+   "title": "Coordinate system: 001_translated_rotated"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Note_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 1,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_note_001_text_on_face",
+   "category": "11_doc_attrs",
+   "commands": ["(raw API) Note.Create"],
+   "data": {
+    "intent_checks": [],
+    "note_errors": ["expected IAnnotationParentMaster, got DesignFace", "expected IAnnotationParentMaster, got DesignFace", "expected IAnnotationParentMaster, got DesignFace"],
+    "note_form": 3,
+    "note_parent": "DatumPlane",
+    "note_text": "HELLO",
+    "uv": "PointUV: (0, 0.02)"
+   },
+   "elapsed_s": 0.46000000000000002,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_notes",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:34+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "text": "HELLO"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_note_001_text_on_face.scdoc",
+   "scdoc_size": "31449",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_note_001_text_on_face.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:34+08:00",
+   "status": "ok",
+   "title": "3D notes / annotations: 001_text_on_face"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Drawing_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 1,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_drawing_001_A3_3views",
+   "category": "11_doc_attrs",
+   "commands": ["(raw API) DrawingSheet.Create", "DrawingView.CreateGeneralView/CreateProjectedView"],
+   "data": {
+    "intent_checks": [
+     ["views", "3", "3", true]
+    ]
+   },
+   "elapsed_s": 0.5,
+   "expect": {
+    "drawing_sheets": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_drawing_sheet",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:36+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "format": "A3",
+    "views": ["front", "top", "right"]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_drawing_001_A3_3views.scdoc",
+   "scdoc_size": "28863",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_drawing_001_A3_3views.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:35+08:00",
+   "status": "ok",
+   "title": "Drawing sheet with general/projected views: 001_A3_3views"
+  },
+  {
+   "actual": {
+    "area_mm2": 10400.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Shown_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     },
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [60.0, 0.0, 0.0],
+       [100.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Hidden_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 48000.0
+   },
+   "case_id": "11_doc_visibility_001_hidden_body",
+   "category": "11_doc_attrs",
+   "commands": ["ViewHelper.SetObjectVisibility", "ViewHelper.SetSuppressForPhysics", "ViewHelper.LockBodies"],
+   "data": {
+    "intent_checks": [],
+    "visible": "False"
+   },
+   "elapsed_s": 0.16,
+   "expect": {
+    "bodies": 2
+   },
+   "expect_mismatch": {},
+   "feature": "doc_visibility",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:37+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_visibility_001_hidden_body.scdoc",
+   "scdoc_size": "37629",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_visibility_001_hidden_body.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:36+08:00",
+   "status": "ok",
+   "title": "Visibility / suppress for physics / lock: 001_hidden_body"
+  },
+  {
+   "actual": {
+    "area_mm2": 10400.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Active_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     },
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [60.0, 0.0, 0.0],
+       [100.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Suppressed_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 48000.0
+   },
+   "case_id": "11_doc_suppress_001",
+   "category": "11_doc_attrs",
+   "commands": ["ViewHelper.SetObjectVisibility", "ViewHelper.SetSuppressForPhysics", "ViewHelper.LockBodies"],
+   "data": {
+    "intent_checks": [],
+    "suppressed": "True"
+   },
+   "elapsed_s": 0.16,
+   "expect": {
+    "bodies": 2
+   },
+   "expect_mismatch": {},
+   "feature": "doc_visibility",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:38+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_suppress_001.scdoc",
+   "scdoc_size": "37744",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_suppress_001.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:37+08:00",
+   "status": "ok",
+   "title": "Visibility / suppress for physics / lock: 001"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Locked_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_lock_001",
+   "category": "11_doc_attrs",
+   "commands": ["ViewHelper.SetObjectVisibility", "ViewHelper.SetSuppressForPhysics", "ViewHelper.LockBodies"],
+   "data": {
+    "intent_checks": [],
+    "locked": "True"
+   },
+   "elapsed_s": 0.13,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_visibility",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:39+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_lock_001.scdoc",
+   "scdoc_size": "27356",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_lock_001.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:38+08:00",
+   "status": "ok",
+   "title": "Visibility / suppress for physics / lock: 001"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Steel_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {
+     "Steel_Block": "Steel"
+    },
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料", "Steel"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_material_001_steel",
+   "category": "11_doc_attrs",
+   "commands": ["(raw API) DocumentMaterial.Create / LibraryMaterial -> DesignBody.Material"],
+   "data": {
+    "intent_checks": [
+     ["body_material", "Steel", "Steel", true],
+     ["mass_kg", "0.0", "0.1884", false]
+    ]
+   },
+   "elapsed_s": 0.16,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {
+    "intent:mass_kg": {
+     "actual": 0.0,
+     "expected": 0.18840000000000001
+    }
+   },
+   "feature": "doc_material",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:40+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "material": "Steel"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_material_001_steel.scdoc",
+   "scdoc_size": "27443",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_material_001_steel.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:40+08:00",
+   "status": "mismatch",
+   "title": "Material assignment: 001_steel"
+  },
+  {
+   "actual": {
+    "area_mm2": 14193.52,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 14193.52,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [25.4, 50.8, 76.2]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Inch_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 98322.384
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "in",
+    "units_system": "Imperial",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 98322.384
+   },
+   "case_id": "11_doc_units_001_inch",
+   "category": "11_doc_attrs",
+   "commands": ["(raw API) Units / Document units setter (to locate); UnitsHelper.GetDocumentUnits is read-only"],
+   "data": {
+    "imperial_units_form": 0,
+    "intent_checks": [
+     ["units_system", "Imperial", "Imperial", true],
+     ["length_is_inch", "True", "True", true]
+    ],
+    "units_after": ["Imperial", "<SpaceClaim.Api.V18.MeasurementUnit object at 0x000000000000002B [SpaceClaim.Api.V18.MeasurementUnit]>"]
+   },
+   "elapsed_s": 0.16,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_units",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:41+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "units": "IN"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_units_001_inch.scdoc",
+   "scdoc_size": "27781",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_units_001_inch.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:41+08:00",
+   "status": "ok",
+   "title": "Document units (mm / m / inch): 001_inch"
+  },
+  {
+   "actual": {
+    "area_mm2": 5200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 5200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [40.0, 30.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Meter_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 24000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "m",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 24000.0
+   },
+   "case_id": "11_doc_units_002_meter",
+   "category": "11_doc_attrs",
+   "commands": ["(raw API) Units / Document units setter (to locate); UnitsHelper.GetDocumentUnits is read-only"],
+   "data": {
+    "after": ["Metric", "<SpaceClaim.Api.V18.MeasurementUnit object at 0x000000000000002D [SpaceClaim.Api.V18.MeasurementUnit]>", "Meters"],
+    "before": "<SpaceClaim.Api.V18.MeasurementUnit object at 0x000000000000002C [SpaceClaim.Api.V18.MeasurementUnit]>",
+    "intent_checks": [
+     ["metric_length_meters", "Meters", "Meters", true]
+    ]
+   },
+   "elapsed_s": 0.14999999999999999,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "doc_units",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:42+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs",
+   "params": {
+    "units": "M"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_units_002_meter.scdoc",
+   "scdoc_size": "27512",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\11_doc_attrs\\11_doc_units_002_meter.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:42+08:00",
+   "status": "ok",
+   "title": "Document units (mm / m / inch): 002_meter"
+  },
+  {
+   "actual": {
+    "area_mm2": 41440.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 41440.0,
+      "bbox_mm": [
+       [-25.0, 0.0, -100.0],
+       [25.0, 100.0, 0.0]
+      ],
+      "closed": true,
+      "edges": 36,
+      "faces": 14,
+      "manifold": true,
+      "name": "Body_1",
+      "path": "Component_1",
+      "vertices": 24,
+      "volume_mm3": 122000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 36
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 36,
+    "faces": 14,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 14
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 24,
+    "view_mode": "Sketch",
+    "volume_mm3": 122000.0
+   },
+   "case_id": "09_beam_profile_001_I_100x50",
+   "category": "09_beam",
+   "commands": ["BeamProfile.CreateI/CreateL/CreateT/CreateChannel/CreateRectangular/CreateCircular/CreateDisk/CreateFlatBar/CreateHat/CreateZ/CreateCustom", "BeamProfile.CreateFromLibrary"],
+   "data": {
+    "auto_renamed": [
+     ["实体", "Body_1"],
+     ["", "Component_1"]
+    ],
+    "intent_checks": [],
+    "profile": ["None", "None"],
+    "profile_form": 0
+   },
+   "elapsed_s": 0.27000000000000002,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_profile_001_I_100x50.py\", line 22, in build\n    Beam.Create(sel(curves_now()), prof)\nSystemError: 未将对象引用设置到对象的实例。\n",
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "beam_profile",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:44+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\09_beam",
+   "params": {
+    "baseWidth": 50,
+    "depth": 100,
+    "tf": 8,
+    "tw": 5,
+    "type": "I"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_profile_001_I_100x50.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:43+08:00",
+   "status": "failed",
+   "title": "Beam profile creation (I/L/T/channel/rect/circular/...): 001_I_100x50"
+  },
+  {
+   "actual": {
+    "area_mm2": 38728.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 38728.0,
+      "bbox_mm": [
+       [-60.0, 0.0, -100.0],
+       [0.0, 40.0, 0.0]
+      ],
+      "closed": true,
+      "edges": 24,
+      "faces": 10,
+      "manifold": true,
+      "name": "Body_1",
+      "path": "Component_1",
+      "vertices": 16,
+      "volume_mm3": 56400.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 10,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 10
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Sketch",
+    "volume_mm3": 56400.0
+   },
+   "case_id": "09_beam_profile_002_rect_tube_60x40x3",
+   "category": "09_beam",
+   "commands": ["BeamProfile.CreateI/CreateL/CreateT/CreateChannel/CreateRectangular/CreateCircular/CreateDisk/CreateFlatBar/CreateHat/CreateZ/CreateCustom", "BeamProfile.CreateFromLibrary"],
+   "data": {
+    "auto_renamed": [
+     ["实体", "Body_1"],
+     ["", "Component_1"]
+    ],
+    "intent_checks": [],
+    "profile_form": 0
+   },
+   "elapsed_s": 0.13,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_profile_002_rect_tube_60x40x3.py\", line 21, in build\n    Beam.Create(sel(curves_now()), prof)\nSystemError: 未将对象引用设置到对象的实例。\n",
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "beam_profile",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:45+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\09_beam",
+   "params": {
+    "d": 40,
+    "t": 3,
+    "type": "Rectangular",
+    "w": 60
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_profile_002_rect_tube_60x40x3.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:44+08:00",
+   "status": "failed",
+   "title": "Beam profile creation (I/L/T/channel/rect/circular/...): 002_rect_tube_60x40x3"
+  },
+  {
+   "actual": {
+    "area_mm2": 23945.219206,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 23945.219206,
+      "bbox_mm": [
+       [-20.0, -20.0, -100.0],
+       [20.0, 20.0, 0.0]
+      ],
+      "closed": true,
+      "edges": 4,
+      "faces": 4,
+      "manifold": true,
+      "name": "Body_1",
+      "path": "Component_1",
+      "vertices": 4,
+      "volume_mm3": 34870.41556
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 4,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 1,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Sketch",
+    "volume_mm3": 34870.41556
+   },
+   "case_id": "09_beam_profile_003_circular_d40_d34",
+   "category": "09_beam",
+   "commands": ["BeamProfile.CreateI/CreateL/CreateT/CreateChannel/CreateRectangular/CreateCircular/CreateDisk/CreateFlatBar/CreateHat/CreateZ/CreateCustom", "BeamProfile.CreateFromLibrary"],
+   "data": {
+    "auto_renamed": [
+     ["实体", "Body_1"],
+     ["", "Component_1"]
+    ],
+    "intent_checks": [],
+    "profile_form": 0
+   },
+   "elapsed_s": 0.11,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_profile_003_circular_d40_d34.py\", line 21, in build\n    Beam.Create(sel(curves_now()), prof)\nSystemError: 未将对象引用设置到对象的实例。\n",
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "beam_profile",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:46+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\09_beam",
+   "params": {
+    "id": 34,
+    "od": 40,
+    "type": "Circular"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_profile_003_circular_d40_d34.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:46+08:00",
+   "status": "failed",
+   "title": "Beam profile creation (I/L/T/channel/rect/circular/...): 003_circular_d40_d34"
+  },
+  {
+   "actual": {
+    "area_mm2": 41440.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 41440.0,
+      "bbox_mm": [
+       [-25.0, 0.0, -100.0],
+       [25.0, 100.0, 0.0]
+      ],
+      "closed": true,
+      "edges": 36,
+      "faces": 14,
+      "manifold": true,
+      "name": "Body_1",
+      "path": "Component_1",
+      "vertices": 24,
+      "volume_mm3": 122000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 36
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 36,
+    "faces": 14,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 14
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 24,
+    "view_mode": "Sketch",
+    "volume_mm3": 122000.0
+   },
+   "case_id": "09_beam_create_001_line_I",
+   "category": "09_beam",
+   "commands": ["Beam.Create(sel curves, profile)", "Beam.SetOrientation/SetPosition/SetType/ReverseBeam", "Beam.ExtractProfile"],
+   "data": {
+    "auto_renamed": [
+     ["实体", "Body_1"],
+     ["", "Component_1"]
+    ],
+    "intent_checks": []
+   },
+   "elapsed_s": 0.12,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_create_001_line_I.py\", line 21, in build\n    r = Beam.Create(sel(curves_now()), prof)\nSystemError: 未将对象引用设置到对象的实例。\n",
+   "expect": {
+    "beams": 1
+   },
+   "expect_mismatch": {
+    "beams": {
+     "actual": 0,
+     "expected": 1
+    }
+   },
+   "feature": "beam_create",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:48+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\09_beam",
+   "params": {
+    "curve": "line 1000mm",
+    "profile": "I"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_create_001_line_I.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:47+08:00",
+   "status": "failed",
+   "title": "Beam along curve: 001_line_I"
+  },
+  {
+   "actual": {
+    "area_mm2": 38728.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 38728.0,
+      "bbox_mm": [
+       [-60.0, 0.0, -100.0],
+       [0.0, 40.0, 0.0]
+      ],
+      "closed": true,
+      "edges": 24,
+      "faces": 10,
+      "manifold": true,
+      "name": "Body_1",
+      "path": "Component_1",
+      "vertices": 16,
+      "volume_mm3": 56400.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 10,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 4,
+    "surface_types": {
+     "Plane": 10
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Sketch",
+    "volume_mm3": 56400.0
+   },
+   "case_id": "09_beam_create_002_frame_4lines_rect",
+   "category": "09_beam",
+   "commands": ["Beam.Create(sel curves, profile)", "Beam.SetOrientation/SetPosition/SetType/ReverseBeam", "Beam.ExtractProfile"],
+   "data": {
+    "auto_renamed": [
+     ["实体", "Body_1"],
+     ["", "Component_1"]
+    ],
+    "intent_checks": []
+   },
+   "elapsed_s": 0.14000000000000001,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_create_002_frame_4lines_rect.py\", line 23, in build\n    Beam.Create(sel(curves_now()), prof)\nSystemError: 未将对象引用设置到对象的实例。\n",
+   "expect": {
+    "beams": 4
+   },
+   "expect_mismatch": {
+    "beams": {
+     "actual": 0,
+     "expected": 4
+    }
+   },
+   "feature": "beam_create",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:49+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\09_beam",
+   "params": {
+    "curve": "rect frame 1000x500",
+    "profile": "Rectangular"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_create_002_frame_4lines_rect.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:48+08:00",
+   "status": "failed",
+   "title": "Beam along curve: 002_frame_4lines_rect"
+  },
+  {
+   "actual": {
+    "area_mm2": 41440.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 41440.0,
+      "bbox_mm": [
+       [-25.0, 0.0, -100.0],
+       [25.0, 100.0, 0.0]
+      ],
+      "closed": true,
+      "edges": 36,
+      "faces": 14,
+      "manifold": true,
+      "name": "Body_1",
+      "path": "Component_1",
+      "vertices": 24,
+      "volume_mm3": 122000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 36
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 36,
+    "faces": 14,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 14
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 24,
+    "view_mode": "Sketch",
+    "volume_mm3": 122000.0
+   },
+   "case_id": "09_beam_create_003_orient30_centroid",
+   "category": "09_beam",
+   "commands": ["Beam.Create(sel curves, profile)", "Beam.SetOrientation/SetPosition/SetType/ReverseBeam", "Beam.ExtractProfile"],
+   "data": {
+    "auto_renamed": [
+     ["实体", "Body_1"],
+     ["", "Component_1"]
+    ],
+    "intent_checks": []
+   },
+   "elapsed_s": 0.26000000000000001,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 1282, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_create_003_orient30_centroid.py\", line 21, in build\n    r = Beam.Create(sel(curves_now()), prof)\nSystemError: 未将对象引用设置到对象的实例。\n",
+   "expect": {
+    "beams": 1
+   },
+   "expect_mismatch": {
+    "beams": {
+     "actual": 0,
+     "expected": 1
+    }
+   },
+   "feature": "beam_create",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:50+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\09_beam",
+   "params": {
+    "anchor": "Centroid",
+    "orientation_deg": 30
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_create_003_orient30_centroid.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:49+08:00",
+   "status": "failed",
+   "title": "Beam along curve: 003_orient30_centroid"
+  },
+  {
+   "actual": {
+    "area_mm2": 10600.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 10600.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [100.0, 50.0, 2.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Sheet_Plate_T2",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 10000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 10000.0
+   },
+   "case_id": "08_sheetmetal_convert_001_block_t2",
+   "category": "08_sheetmetal",
+   "commands": ["NONE in SpaceClaim.Api.V19.Scripting; raw API SheetMetalAspect/Bend are read-only (no Create)"],
+   "data": {
+    "intent_checks": [
+     ["part_type", "SheetMetal", "SheetMetal", true]
+    ]
+   },
+   "elapsed_s": 0.51000000000000001,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 10000.0
+   },
+   "expect_mismatch": {},
+   "feature": "sm_all",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:52+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal",
+   "params": {
+    "base": "block 100x50x2",
+    "thickness_mm": 2
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal\\08_sheetmetal_convert_001_block_t2.scdoc",
+   "scdoc_size": "26014",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal\\08_sheetmetal_convert_001_block_t2.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:51+08:00",
+   "status": "ok",
+   "title": "Sheet metal (convert, flange, bend, unfold, junction, relief): 001_block_t2"
+  },
+  {
+   "actual": {
+    "area_mm2": 12590.725636,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 12590.725636,
+      "bbox_mm": [
+       [0.0, 0.0, -0.0],
+       [100.0, 50.0, 22.0]
+      ],
+      "closed": true,
+      "edges": 24,
+      "faces": 10,
+      "manifold": true,
+      "name": "Flange_Part",
+      "path": "",
+      "vertices": 16,
+      "volume_mm3": 11914.165902
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4,
+     "Line": 20
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 10,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 8
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 11914.165902
+   },
+   "case_id": "08_sheetmetal_flange_001_90deg_l20",
+   "category": "08_sheetmetal",
+   "commands": ["NONE in SpaceClaim.Api.V19.Scripting; raw API SheetMetalAspect/Bend are read-only (no Create)"],
+   "data": {
+    "aspect_members": ["Beads", "BendTable", "Bends", "Corners", "CreateBends", "CreateHem", "CreateInternalBead", "CreateJoggle", "CreateMarker", "CreateMissingBends", "CreateObjRef", "CreatePartitionBead", "CreateRips", "CrossBreaks", "Delete", "Equals", "ExecuteCommand", "Forms", "GetCreaseEdges", "GetFeature", "GetHashCode", "GetLifetimeService", "GetOppositeFace", "GetType", "Gussets", "Hems", "IdentifyForms", "InitializeLifetimeService", "InnerRadius", "InnerRadiusDefinition", "KFactor", "LifetimeLease", "LightweightNotes", "Markers", "MemberwiseClone", "Owner", "ReferenceEquals", "RepairBends", "Thickness", "ToString", "TryApplyNote", "Unfold"],
+    "bends_form": 0,
+    "ctors_BendSpecification": [],
+    "faces_after": 10,
+    "intent_checks": [
+     ["faces_after_bend", "10", "[12, 40]", false]
+    ]
+   },
+   "elapsed_s": 1.54,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {
+    "intent:faces_after_bend": {
+     "actual": 10,
+     "expected": [12, 40]
+    }
+   },
+   "feature": "sm_all",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:55+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal",
+   "params": {
+    "angle_deg": 90,
+    "bend_r_mm": 1,
+    "length_mm": 20
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal\\08_sheetmetal_flange_001_90deg_l20.scdoc",
+   "scdoc_size": "39626",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal\\08_sheetmetal_flange_001_90deg_l20.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:53+08:00",
+   "status": "mismatch",
+   "title": "Sheet metal (convert, flange, bend, unfold, junction, relief): 001_90deg_l20"
+  },
+  {
+   "actual": {
+    "area_mm2": 25462.725636,
+    "beams": 0,
+    "bodies": 4,
+    "body_list": [
+     {
+      "area_mm2": 12590.725636,
+      "bbox_mm": [
+       [0.0, 0.0, -0.0],
+       [100.0, 50.0, 22.0]
+      ],
+      "closed": true,
+      "edges": 24,
+      "faces": 10,
+      "manifold": true,
+      "name": "Bracket",
+      "path": "",
+      "vertices": 16,
+      "volume_mm3": 11914.165902
+     },
+     {
+      "area_mm2": 10288.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [97.0, 50.0, 2.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Body_2",
+      "path": "Component_1",
+      "vertices": 8,
+      "volume_mm3": 9700.0
+     },
+     {
+      "area_mm2": 2176.0,
+      "bbox_mm": [
+       [99.0, 0.0, 0.0],
+       [118.0, 50.0, 2.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Body_3",
+      "path": "Component_1",
+      "vertices": 8,
+      "volume_mm3": 1900.0
+     },
+     {
+      "area_mm2": 408.0,
+      "bbox_mm": [
+       [97.0, 0.0, -0.0],
+       [99.0, 50.0, 2.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Body_4",
+      "path": "Component_1",
+      "vertices": 8,
+      "volume_mm3": 200.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [
+     {
+      "name": "Component_1",
+      "path": ""
+     }
+    ],
+    "components": 1,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4,
+     "Line": 56
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 60,
+    "faces": 28,
+    "layers": ["图层0", "尺寸", "向上弯曲线", "向下弯曲线", "弯曲尺寸", "形状", "标记"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 1,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 26
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 40,
+    "view_mode": "Solid",
+    "volume_mm3": 23714.165902
+   },
+   "case_id": "08_sheetmetal_unfold_001",
+   "category": "08_sheetmetal",
+   "commands": ["NONE in SpaceClaim.Api.V19.Scripting; raw API SheetMetalAspect/Bend are read-only (no Create)"],
+   "data": {
+    "auto_renamed": [
+     ["实体", "Body_2"],
+     ["实体", "Body_3"],
+     ["折弯", "Body_4"],
+     ["", "Component_1"]
+    ],
+    "bboxes": [
+     [
+      [0.0, 0.0, -0.0],
+      [100.0, 50.0, 22.0]
+     ],
+     [
+      [0.0, 0.0, 0.0],
+      [97.0, 50.0, 2.0]
+     ],
+     [
+      [99.0, 0.0, 0.0],
+      [118.0, 50.0, 2.0]
+     ],
+     [
+      [97.0, 0.0, -0.0],
+      [99.0, 50.0, 2.0]
+     ]
+    ],
+    "flat_pattern": "None",
+    "intent_checks": [],
+    "unfold_form": 0,
+    "unfold_result": "DesignFace"
+   },
+   "elapsed_s": 1.52,
+   "expect": {},
+   "expect_mismatch": {},
+   "feature": "sm_all",
+   "framework": "1.3",
+   "generated_at": "2026-09-26T08:21:58+08:00",
+   "items": {
+    "bends": {
+     "ok": true,
+     "result": "Array[CylindricalBend]((<SpaceClaim.Api.V18.CylindricalBend object at 0x000000000000002E [SpaceClaim.Api.V18.CylindricalBend]>))",
+     "s": 0.089999999999999997
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal",
+   "params": {},
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal\\08_sheetmetal_unfold_001.scdoc",
+   "scdoc_size": "81395",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\08_sheetmetal\\08_sheetmetal_unfold_001.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T08:21:56+08:00",
+   "status": "ok",
+   "title": "Sheet metal (convert, flange, bend, unfold, junction, relief): 001"
+  }
+ ],
+ "elapsed_s": 51.1,
+ "finished_at": "2026-09-26T08:21:58+08:00",
+ "framework": "1.3",
+ "mode": "headless",
+ "spaceclaim_version": "2019.3.38912",
+ "stage": "done",
+ "started_at": "2026-09-26T08:21:07+08:00",
+ "summary": {
+  "failed": 7,
+  "mismatch": 4,
+  "ok": 34
+ }
+}

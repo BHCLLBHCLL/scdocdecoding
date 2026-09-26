@@ -5,6 +5,20 @@ on:
   pull_request:
 
 jobs:
+  # Isolated from the pre-existing Windows segfault in the sketch/GUI suite
+  # (also red on main). Gives a clean pass/fail for the SpaceClaim corpus gate.
+  corpus:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: environment.yml
+          auto-activate-base: false
+      - name: Manifest-driven scdm_cases corpus gate
+        shell: bash -l {0}
+        run: python -m pytest tests/test_scdm_cases_corpus.py -q --tb=line
+
   test:
     runs-on: windows-latest
     steps:
@@ -25,4 +39,4 @@ jobs:
         shell: bash -l {0}
         run: |
           set QT_QPA_PLATFORM=offscreen
-          python -m pytest tests/ -m "not official" -q
+          python -m pytest tests/ -m "not official" --ignore=tests/test_scdm_cases_corpus.py -q --tb=line

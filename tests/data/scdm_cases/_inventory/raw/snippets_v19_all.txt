@@ -1,0 +1,1227 @@
+##### Constructing Geometry\BuildingAHelicalSplineCurve.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Example Building a Helical Spline Curve</Title>
+			<Description>Build a helical spline curve that follow a torus</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[  
+import math
+
+ptList = List[Point]()
+
+def x_comp(R,r,w,t):
+	return (R + r * math.cos(w * t)) * math.cos(t)
+
+def y_comp(R,r,w,t):
+	return (R + r * math.cos(w * t)) * math.sin(t)
+	
+def z_comp(r,w,t):
+	return r * math.sin(w * t)
+	
+R = IN(14) 
+r = IN(4)
+w = IN(2.072)
+
+t = 0
+while t <= math.pi*2.0*19.0:
+	ptList.Add(Point.Create(x_comp(R,r,w,t), y_comp(R,r,w,t), z_comp(r,w,t)))
+	t = t + 0.01
+
+ncurve = NurbsCurve.CreateThroughPoints(False, ptList, 0.0001)
+curveSegment = CurveSegment.Create(ncurve)
+designCurve = DesignCurve.Create(GetRootPart(), curveSegment)
+
+mode = InteractionMode.Solid
+result = ViewHelper.SetViewMode(mode)
+
+Selection.Clear()
+ViewHelper.ZoomToEntity()
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+
+##### Constructing Geometry\BuildingAHypocycloid Curve.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Example Building Hypocycloid Spline Curve</Title>
+			<Description>Builds a Hypocycloid cure based on radius and amount of cusps</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[  
+import math
+
+def x_comp(k,r,t):
+	return r * (k -1) * math.cos(t) + r * math.cos( (k - 1) * t)
+
+def y_comp(k,r,t):
+	return r * (k -1) * math.sin(t) - r * math.sin( (k - 1) * t)
+	
+def z_comp(k,r,t):
+	return 0
+	
+k = 4 
+r = IN(1)
+i = math.pi*2.0 / k / 10.0
+ 
+def GenerateHypocycloidSegment(t,n, i):
+	ptList = List[Point]()
+	while t <= n:
+		ptList.Add(Point.Create(x_comp(k,r,t), y_comp(k,r,t), z_comp(k,r,t)))
+		t = t + i 
+	ncurve = NurbsCurve.CreateThroughPoints(False, ptList, 0.0001)
+	curveSegment = CurveSegment.Create(ncurve)
+	designCurve = DesignCurve.Create(GetRootPart(), curveSegment)
+
+index = 0
+segment = math.pi*2.0 / k
+while index < k:
+	GenerateHypocycloidSegment(index*segment, (index+1)*segment, i)
+	index = index + 1
+	
+mode = InteractionMode.Solid
+result = ViewHelper.SetViewMode(mode)	
+
+Selection.Clear()
+ViewHelper.ZoomToEntity()
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+
+##### Constructing Geometry\BuildingAPyramidOfSpheres.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Example Building a Pyramid of Spheres</Title>
+			<Description>Builds a pyramid of spheres based on given parameters</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[  
+#PARAMETERS
+numLayers = 10
+r = 0.5 
+ 
+def CreateBallInComponent(radius):
+	ballComp = ComponentHelper.CreateAtRoot("Ball")
+	ComponentHelper.SetActive(ballComp)
+	s = Sphere.Create(Frame.World, MM(r))
+	result = SurfaceBody.Create(s, BoxUV.Empty)
+	ComponentHelper.SetRootActive()
+	return ballComp
+
+def CopyComponent(comp, x, y, z):
+	matrix = Matrix.CreateTranslation(Vector.Create(MM(x),MM(y),MM(z)))
+	comp = ComponentHelper.CopyToRoot(comp)
+	comp.Transform(matrix)
+
+#create a ball in a component for copying
+ballComp = CreateBallInComponent(r)
+
+# run nested while loops to create balls in x and y and all layers
+layer = 0
+while layer < numLayers:
+	x = 0
+	while x <= layer:
+		y = 0
+		while y <= layer:
+			if layer%2 == 0:
+				CopyComponent(ballComp, 2*r*x -r*layer, 2*r*y -r*layer, -1.414*r*layer)
+			if layer%2 == 1:
+				CopyComponent(ballComp, 2*r*x  -r*layer, 2*r*y  -r*layer, -1.414*r*layer)
+			y = y+1
+		x = x + 1
+	layer = layer + 1
+  
+
+# delete the template ball
+ballComp.Delete()
+
+mode = InteractionMode.Solid
+result = ViewHelper.SetViewMode(mode)
+
+Selection.Clear()
+ViewHelper.ZoomToEntity()
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+
+##### Constructing Geometry\BuildingASimpleGear.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Example Building a Simple Gear</Title>
+			<Description>Builds a simple gear with profile generation and extrude</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[  
+import math
+
+outerRadius = 20
+innerRadius = 18
+outsideCircle = Circle.Create(Frame.World, MM(outerRadius))
+insideCircle = Circle.Create(Frame.World, MM(innerRadius))
+
+boundary = List[ITrimmedCurve]();
+inwardLine = Line.Create(Point.Origin, -Direction.DirX);
+outwardLine = Line.Create(Point.Origin, Direction.DirX);
+axis = outsideCircle.Axis;
+nTeeth = 20
+repeatAngle = 2 * math.pi / nTeeth
+toothAngle = 0.6 * repeatAngle
+gapAngle = repeatAngle - toothAngle
+
+i = 0
+while i < nTeeth:
+	startTooth = i * repeatAngle;
+	endTooth = startTooth + toothAngle;
+	boundary.Add(CurveSegment.Create(outsideCircle, Interval.Create(startTooth, endTooth)))
+
+	# rotate 'inwardLine' about the circle axis
+	rotatedInwardLine = Matrix.CreateRotation(axis, endTooth) * inwardLine
+	
+	# a line segment is just a parameter interval of an unbounded line
+	boundary.Add(CurveSegment.Create(rotatedInwardLine, Interval.Create(MM(-outerRadius), MM(-innerRadius))))
+
+	startGap = endTooth
+	endGap = startGap + gapAngle
+	boundary.Add(CurveSegment.Create(insideCircle, Interval.Create(startGap, endGap)))
+
+	rotatedOutwardLine = Matrix.CreateRotation(axis, endGap) * outwardLine
+	boundary.Add(CurveSegment.Create(rotatedOutwardLine, Interval.Create(MM(innerRadius), MM(outerRadius))))
+	i = i + 1
+	
+hole = Circle.Create(Frame.Create(Point.Origin, Direction.DirX, Direction.DirY), MM(5))
+boundary.Add(CurveSegment.Create(hole))
+
+designResult = PlanarBody.Create(Plane.PlaneXY, boundary)
+designBody = designResult.CreatedBody
+
+selection = Selection.Create(designBody.Faces[0])
+options = ExtrudeFaceOptions()
+options.ExtrudeType = ExtrudeType.Add
+ExtrudeFaces.Execute(selection,Direction.Create(0,0,1), MM(1.7), options)
+
+mode = InteractionMode.Solid
+result = ViewHelper.SetViewMode(mode)
+
+Selection.Clear()
+ViewHelper.ZoomToEntity()
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+
+##### Constructing Geometry\BuildingASimpleStairCase.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Example Building a Simple Stair Case</Title>
+			<Description>Builds a simple staircase showing copy / paste and translate</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[  
+import math
+
+numSteps = 7
+stepDepth = 20
+stepHeight = 5
+stepWidth = 30
+
+# Make a basic profile
+curves = List[ITrimmedCurve]()
+curveSegment = CurveSegment.Create(Point.Create(MM(0),MM(0),MM(0)), Point.Create(MM(stepDepth),MM(0),MM(0)))
+curves.Add(curveSegment)
+
+curveSegment = CurveSegment.Create(Point.Create(MM(stepDepth),MM(0),MM(0)), Point.Create(MM(stepDepth),MM(stepWidth),MM(0)))
+curves.Add(curveSegment)
+
+curveSegment = CurveSegment.Create(Point.Create(MM(stepDepth),MM(stepWidth),MM(0)), Point.Create(MM(0),MM(stepWidth),MM(0)))
+curves.Add(curveSegment)
+
+curveSegment = CurveSegment.Create(Point.Create(MM(0),MM(stepWidth),MM(0)), Point.Create(MM(0),MM(0),MM(0)))
+curves.Add(curveSegment)
+
+designResult = PlanarBody.Create(Plane.PlaneXY, curves)
+designBody = designResult.CreatedBody
+
+# Extrude this basic profile
+ExtrudeFaces.Execute(Selection.Create(designBody.Faces[0]), Direction.Create(0,0,1), MM(stepHeight), ExtrudeFaceOptions())
+baseBody = GetRootPart().Bodies[0]
+
+# Make a body list for the stairs
+bodyList = List[IDocObject]()
+bodyList.Add(baseBody)
+
+# Declare a function to copy and translate the base step 
+def CopyAndTranslate(body, translation):
+    Copy.ToClipboard(Selection.Create(body))
+    result = Paste.FromClipboard()
+    if (result.Success == True):
+        newBody = result.CreatedObjects[0]
+        Move.Translate(Selection.Create(newBody), translation, MoveOptions())
+        return newBody
+
+# Run a loop ToolCommand make the steps 
+t = 0
+while t < numSteps:
+    translation = Vector.Create(MM(t*stepDepth),MM(0),MM(t*stepHeight))
+    newBody = CopyAndTranslate(baseBody, translation)
+    bodyList.Add(newBody)
+    t = t + 1
+    
+print bodyList
+
+mode = InteractionMode.Solid
+result = ViewHelper.SetViewMode(mode)
+
+Selection.Clear()
+ViewHelper.ZoomToEntity()
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+
+##### Constructing Geometry\BuildingCurvesToBody.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Example Building Curves into a Body</Title>
+			<Description>Creates curve segments and a planar body from given segments</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[  
+curves = List[ITrimmedCurve]()
+curveSegment = CurveSegment.Create(Point.Create(MM(0),MM(0),MM(0)), Point.Create(MM(10),MM(0),MM(0)))
+curves.Add(curveSegment)
+
+curveSegment = CurveSegment.Create(Point.Create(MM(10),MM(0),MM(0)), Point.Create(MM(10),MM(10),MM(0)))
+curves.Add(curveSegment)
+
+curveSegment = CurveSegment.Create(Point.Create(MM(10),MM(10),MM(0)), Point.Create(MM(0),MM(10),MM(0)))
+curves.Add(curveSegment)
+
+curveSegment = CurveSegment.Create(Point.Create(MM(0),MM(10),MM(0)), Point.Create(MM(0),MM(0),MM(0)))
+curves.Add(curveSegment)
+
+designResult = PlanarBody.Create(Plane.PlaneXY, curves)
+designBody = designResult.CreatedBody
+
+mode = InteractionMode.Solid
+result = ViewHelper.SetViewMode(mode)
+
+Selection.Clear()
+ViewHelper.ZoomToEntity()
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+
+##### Evaluating Geometry\EvaluatingEdgesAndFaces.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Evaluating Edges and Faces</Title>
+			<Description>Builds geometry and evaluates edge and faces building datum points and datum lines</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Code Language="python">
+<![CDATA[  
+
+# Make geometry
+result = BlockBody.Create(Point.Create(MM(-10), MM(-10), MM(0)), Point.Create(MM(10), MM(10), MM(20)), ExtrudeType.ForceAdd)
+body = result.CreatedBody
+result = ConstantRound.Execute(Selection.Create(body.Edges), MM(2.5))
+
+# Get the first edge on the body
+faces = body.Faces
+edge = faces[0].Edges[0]
+
+# Walk the edge place on a DatumPoints at equal intervals
+t = 0
+while t <= 1:
+    point = edge.EvalProportion(t).Point
+    DatumPoint.Create(GetRootPart(), "pt", point) 
+    t = t + 0.1
+    
+# Get the second face on the body and make DatumPoints at equal intervals
+face = faces[1]
+u = 0
+while u <= 1.0:
+    v = 0
+    while v <= 1.0:
+        point = face.EvalProportion(u,v).Point
+        DatumPoint.Create(GetRootPart(), "pt", point) 
+        v = v + 0.1
+    u = u + 0.1
+
+    
+# Get the seventh face on the body and make DatumPoints at equal intervals
+# Because we call GetFaceNormal the orientation is based on the solid  
+face = faces[6]
+u = 0
+while u <= 1.0:
+    v = 0
+    while v <= 1.0:
+        point = face.GetFacePoint(u,v)
+        normal = face.GetFaceNormal(u,v)
+        secondPoint = Point.Create(point.X + normal.X, point.Y + normal.Y, point.Z + normal.Z)
+        line = Line.CreateThroughPoints(point, secondPoint)
+        DatumLine.Create(GetRootPart(), "line", line)
+        v = v + 0.2
+    u = u + 0.2
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+
+##### Evaluating Geometry\SelectingFacesBasedOnShape.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Example Selecting Faces Based on Shape</Title>
+			<Description>Defines a function to find all faces with a given shape type, then uses the function to filter
+				faces in a part with a torus, block, and sphere.</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Code Language="python">
+<![CDATA[  
+  
+def SelectFacesWithType(type):
+	'''Loop through all faces in the root part 
+	   and return list of faces whos shape equals 
+	   provided type'''
+	
+	# Get all bodies
+	bodies = GetRootPart().GetChildren[IDesignBody]()
+	faces = List[IDesignFace]()
+
+	for body in bodies:
+		for desFace in body.Faces:
+			surface = desFace.Shape.Geometry
+			if isinstance(surface, type):
+				faces.Add(desFace)
+
+	return faces
+
+# Create torus
+circle = CircularSurface.Create(MM(2), Direction.DirY, Point.Create(MM(10), MM(0), MM(20)))
+selection = Selection.Create(circle.CreatedBody.Faces[0])
+RevolveFaces.Execute(selection, Line.Create(Point.Origin, Direction.DirZ), DEG(360), RevolveFaceOptions())
+
+# Create block
+result = BlockBody.Create(Point.Create(MM(-10), MM(-10), MM(-10)), Point.Create(MM(10), MM(10), MM(10)))
+
+# Round edges on block
+selection = Selection.Create(result.CreatedBody.Edges)
+result = ConstantRound.Execute(selection, MM(2))
+
+# Create sphere
+SphereBody.Create(Point.Create(MM(0), MM(0), MM(-25)), Point.Create(MM(0), MM(0), MM(-15)))
+
+# Create hole through block and sphere
+circle = CircularSurface.Create(MM(2), Direction.DirZ, Point.Origin)
+selection = Selection.Create(circle.CreatedBody.Faces[0])
+
+# Pull surface to create hole
+options = ThickenFaceOptions()
+options.PullSymmetric = True
+options.ExtrudeType = ExtrudeType.ForceCut
+pullResult = ThickenFaces.Execute(selection, Direction.DirZ, MM(35), options)
+
+# Find faces based on shape type
+cylinders = SelectFacesWithType(Cylinder)
+spheres = SelectFacesWithType(Sphere)
+planes = SelectFacesWithType(Plane)
+tori = SelectFacesWithType(Torus)
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+
+##### Evaluating Geometry\SplittingRounds.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <CodeSnippet Format="1.0.0">
+    <Header>
+      <Title>Example Splitting Rounds</Title>
+      <Description>Defines a function that splits rounds</Description>
+      <SnippetTypes>
+        <SnippetType>Expansion</SnippetType>
+        <SnippetType>SurroundsWith</SnippetType>
+      </SnippetTypes>
+    </Header>
+    <Snippet>
+      <Declarations>
+        <Literal>
+          <ID>index</ID>
+          <Default>index</Default>
+          <ToolTip>Index</ToolTip>
+        </Literal>
+        <Literal>
+          <ID>count</ID>
+          <Default>count</Default>
+          <ToolTip>Iteration count</ToolTip>
+        </Literal>
+      </Declarations>
+      <Code Language="csharp">
+        <![CDATA[  
+def SplitRounds(desBody, maxRadius):
+    if not type(desBody) is DesignBody:
+        raise Exception("Could not get a design body") 
+    
+    rounds = List[IDesignFace]()
+    curves = List[ITrimmedCurve]()
+    for desFace in desBody.Faces:
+        roundInfo = RoundInfo.Create(desFace)
+        if roundInfo.Success:
+            if roundInfo.Radius <= maxRadius:
+                rounds.Add(desFace)
+                for curve in desFace.GetIsoCurves(roundInfo.AlongU, 0.5):
+                    if curve is not None:
+                        curves.Add(curve)
+
+    if not any(rounds):
+        raise Exception("No rounds found")
+        
+    SplitFace.ByCurves(Selection.Create(rounds), curves)
+    
+
+result = BlockBody.Create(Point.Create(MM(-10),MM(-10),MM(-10)), Point.Create(MM(10),MM(10),MM(10)))
+selection = Selection.Create(GetRootPart().Bodies[0].Edges)
+result = ConstantRound.Execute(selection, MM(2.0))
+
+SplitRounds(GetRootPart().Bodies[0], 0.005)
+]]>
+      </Code>
+    </Snippet>
+  </CodeSnippet>
+</CodeSnippets>
+
+##### Examples\PowerSelectionFull.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Enumerate Power Relations</Title>
+			<Description>Loop through all power relations based on seed selection.</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[  
+# Use PowerSearchOptions to define search bodies, 
+# by default all bodies are searched.
+options = PowerSelectOptions()
+
+# Find all power relations based on "seed", searching bodies
+# defined in "options"
+pSel = PowerSelection.All(Selection.GetActive(), options)
+
+# Loop through each power relation and print category
+# and type
+for sel in pSel:
+	print sel.Category
+	print sel.Type.Description
+	
+# Reset enumerator after loop
+pSel.Reset()
+
+# Only look at power relations in the same size category
+pSel.FilterCategory(RelationCategory.SameSize)
+
+maxCount = 0
+maxSel = None
+
+# Find the power relation with the most items
+for sel in pSel:	
+	if (maxCount < sel.Items.Count):
+		maxCount = sel.Items.Count
+		maxSel = sel
+
+# Print name and select. 
+if maxSel != None:
+	print "MaxSel:"
+	print maxSel.FullName
+	maxSel.SetActive()
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+##### Python Language Constructs\Array.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Array</Title>
+			<Description>Python array construct</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[myArray=[1,2,3,4,5,6]]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+##### Python Language Constructs\Class.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Class</Title>
+			<Description>Python class construction</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[
+class SampleClass:
+	# Class data
+	data1 = 0
+	data2 = 'fred'
+	
+	# Constructor
+	def __init__(self, data1, data2):
+		self.data1 = data1
+		self.data2 = data2
+		
+	def Foo1(self):
+		print "Foo1 has been called"
+
+	def Foo2(self):
+		print "Data: ", self.data1, " and ", self.data2
+
+object = SampleClass(2,"Bob")
+object.Foo1()
+object.Foo2()
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+##### Python Language Constructs\Exception.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Exception</Title>
+			<Description>Python raise exception construct</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[
+raise Exception("Something is bad")
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+##### Python Language Constructs\ForLoop.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>For Loop</Title>
+			<Description>Python For Loop construct</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[
+list = [1, 2, 3]
+for num in list:
+	print num
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+##### Python Language Constructs\Function.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Function</Title>
+			<Description>Python function construct</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[
+def foo(x):
+	print x
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+##### Python Language Constructs\IfElse.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>if / else</Title>
+			<Description>Python if / else construct</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[
+x = 4
+if (x == 1):
+	print "x is one"
+else:
+	print "x is not one"
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+##### Python Language Constructs\List.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>List</Title>
+			<Description>Python List construct</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[
+myList = List[IDocObject]()
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+##### Python Language Constructs\TypeChecking.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Type Checking</Title>
+			<Description>Python type checking construct</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[
+print type(variable)
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+##### Python Language Constructs\WhileLoop.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>While Loop</Title>
+			<Description>Python while construct</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[
+t = 0
+while t <= 10:
+	t = t + 1
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+##### Reading From Files\ReadingFromCVSFile.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Reading From a CSV File</Title>
+			<Description>Reads a point cloud from a comma-separated-value file</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[ 
+import csv
+dialog = OpenFileDialog()
+dialog.Filter = "csv data files (*.csv)|*.csv|All files (*.*)|*.*" ;
+dialog.Title = "Open Data File"
+
+result = dialog.Show()
+	
+if result:
+	with open(dialog.FileName) as csvDataFile:
+		csvReader = csv.reader(csvDataFile)
+		for row in csvReader:
+			DatumPointCreator.Create(Point.Create(float(row[0]), float(row[1]), float(row[2])))
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+##### Walking the Structure Tree\WalkingTheStructureTree.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Walking the Structure Tree</Title>
+			<Description>Walks the tree getting all bodies, components, groups, and datum objects</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[  
+# Get the root part
+part = GetRootPart()
+print part.GetName()
+
+# Get the bodies directly under the root part
+bodies = part.GetBodies()
+
+ # Loop through the bodies
+for body in bodies:
+	print body.Name
+
+# Get the components directly under the root part
+components = part.GetComponents()
+
+# Loop through the components
+for comp in components:
+	print comp.GetName()
+	
+# Get the datum planes
+planes = part.DatumPlanes
+for plane in planes:
+	print plane.Name
+
+# Get the datum lines
+lines = part.DatumLines
+for line in lines:
+	print line.Name
+
+# Get the datum points
+points = part.DatumPoints
+for point in points:
+	print point.Name
+
+# Get the datum coord systems
+coordSystems = part.CoordinateSystems
+for coordSystem in coordSystems:
+	print coordSystem.Name
+
+# Get the groups
+groups = WindowHelper.GetGroups()
+for group in groups:
+	print group.Name
+	
+# Get all the bodies in the entire part
+allBodies = part.GetAllBodies()
+
+for body in allBodies:
+	print body.Name
+
+print "Finished"
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+
+##### Walking the Structure Tree\WorkingWithComponentsAndInstances.snippet
+<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Working with Components and Instances</Title>
+			<Description>Builds various components and instances</Description>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+				<SnippetType>SurroundsWith</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>index</ID>
+					<Default>index</Default>
+					<ToolTip>Index</ToolTip>
+				</Literal>
+				<Literal>
+					<ID>count</ID>
+					<Default>count</Default>
+					<ToolTip>Iteration count</ToolTip>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+<![CDATA[
+document = DocumentHelper.CreateNewDocument()
+
+# Make some components
+comp1 = ComponentHelper.CreateAtRoot("A")
+comp2 = ComponentHelper.CreateAtRoot("B")
+subcomp1 = ComponentHelper.CreateAtComponent(comp2, "A sub B")
+
+# Set active component
+ComponentHelper.SetActive(comp2)
+
+# Build a car base in the active component
+result = BlockBody.Create(Point.Create(MM(0), MM(0), MM(0)), Point.Create(MM(10), MM(20), MM(5)), ExtrudeType.ForceAdd)
+
+# Set active component
+ComponentHelper.SetActive(subcomp1.CreatedComponents[0])
+
+# Build a car wheel in the active component
+result = CylinderBody.Create(Point.Create(MM(0), MM(0), MM(0)), Point.Create(MM(-5), MM(0), MM(0)), Point.Create(MM(-5), MM(0), MM(5)))
+
+# Make four three more wheels
+ComponentHelper.SetActive(comp2)
+
+result = Copy.ToClipboard(Selection.Create(subcomp1.CreatedComponents[0]))
+result = Paste.FromClipboard()
+selection = Selection.Create(subcomp1.CreatedComponents[0])
+direction = Move.GetDirection(selection, HandleAxis.X)
+options = MoveOptions()
+result = Move.Translate(selection, direction, MM(15), options)
+
+result = Copy.ToClipboard(Selection.Create(subcomp1.CreatedComponents[0]))
+result = Paste.FromClipboard()
+selection = Selection.Create(subcomp1.CreatedComponents[0])
+direction = Move.GetDirection(selection, HandleAxis.Y)
+options = MoveOptions()
+result = Move.Translate(selection, direction, MM(20), options)
+
+result = Copy.ToClipboard(Selection.Create(subcomp1.CreatedComponents[0]))
+result = Paste.FromClipboard()
+selection = Selection.Create(subcomp1.CreatedComponents[0])
+direction = Move.GetDirection(selection, HandleAxis.X)
+options = MoveOptions()
+result = Move.Translate(selection, direction, MM(-15), options)
+
+# Make top of car
+ComponentHelper.SetActive(comp1)
+result = BlockBody.Create(Point.Create(MM(0), MM(5), MM(5)), Point.Create(MM(10), MM(10), MM(10)), ExtrudeType.ForceAdd)
+
+Selection.Clear()
+ViewHelper.ZoomToEntity()
+
+]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>

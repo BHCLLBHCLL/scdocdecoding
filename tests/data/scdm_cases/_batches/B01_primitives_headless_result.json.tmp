@@ -1,0 +1,920 @@
+{
+ "batch": "B01_primitives",
+ "cases": [
+  {
+   "actual": {
+    "area_mm2": 2200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [10.0, 20.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Block_10x20x30",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 6000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 6000.0
+   },
+   "case_id": "01_primitives_block_001_10x20x30",
+   "category": "01_primitives",
+   "commands": ["BlockBody.Create(Point,Point,ExtrudeType)"],
+   "data": {},
+   "elapsed_s": 4.72,
+   "expect": {
+    "bodies": 1,
+    "edges": 12,
+    "faces": 6,
+    "vertices": 8,
+    "volume_mm3": 6000.0
+   },
+   "expect_mismatch": {},
+   "feature": "prim_block",
+   "framework": "1.2",
+   "generated_at": "2026-09-26T07:39:36+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\01_primitives",
+   "params": {
+    "p0_mm": [0, 0, 0],
+    "p1_mm": [10, 20, 30]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_block_001_10x20x30.scdoc",
+   "scdoc_size": "27637",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_block_001_10x20x30.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:39:31+08:00",
+   "status": "ok",
+   "title": "Block: 001_10x20x30"
+  },
+  {
+   "actual": {
+    "area_mm2": 1000.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1000.0,
+      "bbox_mm": [
+       [-15.0, -5.0, -2.5],
+       [15.0, 5.0, 2.5]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Block_Offset_Neg",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 1500.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 1500.0
+   },
+   "case_id": "01_primitives_block_002_offset_neg",
+   "category": "01_primitives",
+   "commands": ["BlockBody.Create(Point,Point,ExtrudeType)"],
+   "data": {},
+   "elapsed_s": 0.42999999999999999,
+   "expect": {
+    "bodies": 1,
+    "faces": 6,
+    "volume_mm3": 1500.0
+   },
+   "expect_mismatch": {},
+   "feature": "prim_block",
+   "framework": "1.2",
+   "generated_at": "2026-09-26T07:39:38+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\01_primitives",
+   "params": {
+    "p0_mm": [-15, -5, -2.5],
+    "p1_mm": [15, 5, 2.5]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_block_002_offset_neg.scdoc",
+   "scdoc_size": "27085",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_block_002_offset_neg.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:39:37+08:00",
+   "status": "ok",
+   "title": "Block: 002_offset_neg"
+  },
+  {
+   "actual": {
+    "area_mm2": 20200.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 20200.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [100.0, 100.0, 0.5]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Thin_Plate",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 5000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 5000.0
+   },
+   "case_id": "01_primitives_block_003_thin_100x100x0p5",
+   "category": "01_primitives",
+   "commands": ["BlockBody.Create(Point,Point,ExtrudeType)"],
+   "data": {},
+   "elapsed_s": 0.17000000000000001,
+   "expect": {
+    "bodies": 1,
+    "faces": 6,
+    "volume_mm3": 5000.0
+   },
+   "expect_mismatch": {},
+   "feature": "prim_block",
+   "framework": "1.2",
+   "generated_at": "2026-09-26T07:39:38+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\01_primitives",
+   "params": {
+    "p0_mm": [0, 0, 0],
+    "p1_mm": [100, 100, 0.5]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_block_003_thin_100x100x0p5.scdoc",
+   "scdoc_size": "25588",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_block_003_thin_100x100x0p5.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:39:38+08:00",
+   "status": "ok",
+   "title": "Block: 003_thin_100x100x0p5"
+  },
+  {
+   "actual": {
+    "area_mm2": 1884.955592,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1884.955592,
+      "bbox_mm": [
+       [-10.0, -10.0, 0.0],
+       [10.0, 10.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Cyl_Z",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 6283.185307
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 6283.185307
+   },
+   "case_id": "01_primitives_cylinder_001_r10_h20_z",
+   "category": "01_primitives",
+   "commands": ["CylinderBody.Create(center,start,end,ExtrudeType)"],
+   "data": {
+    "cylinder_arg_order": "base,top,rtop"
+   },
+   "elapsed_s": 1.41,
+   "expect": {
+    "bodies": 1,
+    "faces": 3,
+    "volume_mm3": 6283.185307
+   },
+   "expect_mismatch": {},
+   "feature": "prim_cylinder",
+   "framework": "1.2",
+   "generated_at": "2026-09-26T07:39:40+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\01_primitives",
+   "params": {
+    "axis": "Z",
+    "h_mm": 20,
+    "r_mm": 10
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_cylinder_001_r10_h20_z.scdoc",
+   "scdoc_size": "102429",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_cylinder_001_r10_h20_z.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:39:38+08:00",
+   "status": "ok",
+   "title": "Cylinder: 001_r10_h20_z"
+  },
+  {
+   "actual": {
+    "area_mm2": 1727.875959,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1727.875959,
+      "bbox_mm": [
+       [0.0, -5.0, -5.0],
+       [50.0, 5.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Cyl_X",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 3926.990817
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 3926.990817
+   },
+   "case_id": "01_primitives_cylinder_002_r5_h50_x",
+   "category": "01_primitives",
+   "commands": ["CylinderBody.Create(center,start,end,ExtrudeType)"],
+   "data": {
+    "cylinder_arg_order": "base,top,rtop"
+   },
+   "elapsed_s": 0.20999999999999999,
+   "expect": {
+    "bodies": 1,
+    "faces": 3,
+    "volume_mm3": 3926.990817
+   },
+   "expect_mismatch": {},
+   "feature": "prim_cylinder",
+   "framework": "1.2",
+   "generated_at": "2026-09-26T07:39:40+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\01_primitives",
+   "params": {
+    "axis": "X",
+    "h_mm": 50,
+    "r_mm": 5
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_cylinder_002_r5_h50_x.scdoc",
+   "scdoc_size": "92484",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_cylinder_002_r5_h50_x.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:39:40+08:00",
+   "status": "ok",
+   "title": "Cylinder: 002_r5_h50_x"
+  },
+  {
+   "actual": {
+    "area_mm2": 37.699112,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 37.699112,
+      "bbox_mm": [
+       [-1.632993, -1.632993, -1.632993],
+       [2.210343, 2.210343, 2.210343]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Cyl_Oblique",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 12.566371
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 12.566371
+   },
+   "case_id": "01_primitives_cylinder_003_r2_h1_oblique",
+   "category": "01_primitives",
+   "commands": ["CylinderBody.Create(center,start,end,ExtrudeType)"],
+   "data": {
+    "cylinder_arg_order": "base,top,rtop"
+   },
+   "elapsed_s": 0.23999999999999999,
+   "expect": {
+    "bodies": 1,
+    "faces": 3,
+    "volume_mm3": 12.566371
+   },
+   "expect_mismatch": {},
+   "feature": "prim_cylinder",
+   "framework": "1.2",
+   "generated_at": "2026-09-26T07:39:41+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\01_primitives",
+   "params": {
+    "axis": [1, 1, 1],
+    "h_mm": 1,
+    "r_mm": 2
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_cylinder_003_r2_h1_oblique.scdoc",
+   "scdoc_size": "53011",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_cylinder_003_r2_h1_oblique.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:39:40+08:00",
+   "status": "ok",
+   "title": "Cylinder: 003_r2_h1_oblique"
+  },
+  {
+   "actual": {
+    "area_mm2": 1256.637061,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1256.637061,
+      "bbox_mm": [
+       [-10.0, -10.0, -10.0],
+       [10.0, 10.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 0,
+      "faces": 1,
+      "manifold": true,
+      "name": "Sphere_R10",
+      "path": "",
+      "vertices": 0,
+      "volume_mm3": 4188.790205
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Sphere": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Sketch",
+    "volume_mm3": 4188.790205
+   },
+   "case_id": "01_primitives_sphere_001_r10",
+   "category": "01_primitives",
+   "commands": ["SphereBody.Create(center,endPoint,ExtrudeType)"],
+   "data": {},
+   "elapsed_s": 0.32000000000000001,
+   "expect": {
+    "bodies": 1,
+    "faces": 1,
+    "volume_mm3": 4188.790205
+   },
+   "expect_mismatch": {},
+   "feature": "prim_sphere",
+   "framework": "1.2",
+   "generated_at": "2026-09-26T07:39:41+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\01_primitives",
+   "params": {
+    "c_mm": [0, 0, 0],
+    "r_mm": 10
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_sphere_001_r10.scdoc",
+   "scdoc_size": "219377",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_sphere_001_r10.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:39:41+08:00",
+   "status": "ok",
+   "title": "Sphere: 001_r10"
+  },
+  {
+   "actual": {
+    "area_mm2": 113.097336,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 113.097336,
+      "bbox_mm": [
+       [2.0, -10.0, -1.0],
+       [8.0, -4.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 0,
+      "faces": 1,
+      "manifold": true,
+      "name": "Sphere_R3_Off",
+      "path": "",
+      "vertices": 0,
+      "volume_mm3": 113.097336
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {},
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 0,
+    "faces": 1,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Sphere": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 0,
+    "view_mode": "Sketch",
+    "volume_mm3": 113.097336
+   },
+   "case_id": "01_primitives_sphere_002_r3_offcenter",
+   "category": "01_primitives",
+   "commands": ["SphereBody.Create(center,endPoint,ExtrudeType)"],
+   "data": {},
+   "elapsed_s": 0.23999999999999999,
+   "expect": {
+    "bodies": 1,
+    "faces": 1,
+    "volume_mm3": 113.097336
+   },
+   "expect_mismatch": {},
+   "feature": "prim_sphere",
+   "framework": "1.2",
+   "generated_at": "2026-09-26T07:39:42+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\01_primitives",
+   "params": {
+    "c_mm": [5, -7, 2],
+    "r_mm": 3
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_sphere_002_r3_offcenter.scdoc",
+   "scdoc_size": "177498",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_sphere_002_r3_offcenter.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:39:42+08:00",
+   "status": "ok",
+   "title": "Sphere: 002_r3_offcenter"
+  },
+  {
+   "actual": {
+    "area_mm2": 653.451272,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 653.451272,
+      "bbox_mm": [
+       [0.0, -2.0, -2.0],
+       [50.0, 2.0, 2.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Tube_Line",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 628.318531
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 628.318531
+   },
+   "case_id": "01_primitives_tube_001_line_r2_l50",
+   "category": "01_primitives",
+   "commands": ["TubeBody.Create(ISelection curve, radius, ExtrudeType)"],
+   "data": {
+    "tube_volume_mm3": 628.318531
+   },
+   "elapsed_s": 1.02,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "prim_tube",
+   "framework": "1.2",
+   "generated_at": "2026-09-26T07:39:44+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\01_primitives",
+   "params": {
+    "path": "line 50mm",
+    "r_mm": 2
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_tube_001_line_r2_l50.scdoc",
+   "scdoc_size": "89369",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_tube_001_line_r2_l50.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:39:42+08:00",
+   "status": "ok",
+   "title": "Tube around curve: 001_line_r2_l50"
+  },
+  {
+   "actual": {
+    "area_mm2": 944.813064,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 944.813064,
+      "bbox_mm": [
+       [0.0, 0.0, -3.0],
+       [33.0, 33.0, 3.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Tube_Arc",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 1332.396594
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 2,
+     "Torus": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 1332.396594
+   },
+   "case_id": "01_primitives_tube_002_arc_r3",
+   "category": "01_primitives",
+   "commands": ["TubeBody.Create(ISelection curve, radius, ExtrudeType)"],
+   "data": {
+    "tube_volume_mm3": 1332.396594
+   },
+   "elapsed_s": 0.33000000000000002,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "prim_tube",
+   "framework": "1.2",
+   "generated_at": "2026-09-26T07:39:44+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\01_primitives",
+   "params": {
+    "path": "arc R30 90deg",
+    "r_mm": 3
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_tube_002_arc_r3.scdoc",
+   "scdoc_size": "113486",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_tube_002_arc_r3.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:39:44+08:00",
+   "status": "ok",
+   "title": "Tube around curve: 002_arc_r3"
+  },
+  {
+   "actual": {
+    "area_mm2": 241.611395,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 241.611395,
+      "bbox_mm": [
+       [-0.72723499999999996, -1.271336, -1.04411],
+       [30.727239, 6.174333, 16.04411]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Tube_Spline",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 117.66789
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 2,
+     "ProceduralSurface": 1
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 117.66789
+   },
+   "case_id": "01_primitives_tube_003_spline_r1",
+   "category": "01_primitives",
+   "commands": ["TubeBody.Create(ISelection curve, radius, ExtrudeType)"],
+   "data": {},
+   "elapsed_s": 0.66000000000000003,
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "prim_tube",
+   "framework": "1.2",
+   "generated_at": "2026-09-26T07:39:45+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\01_primitives",
+   "params": {
+    "path": "3D spline 4pts",
+    "r_mm": 1
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_tube_003_spline_r1.scdoc",
+   "scdoc_size": "183777",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_tube_003_spline_r1.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:39:44+08:00",
+   "status": "ok",
+   "title": "Tube around curve: 003_spline_r1"
+  },
+  {
+   "case_id": "01_primitives_cone_001_r10_h20",
+   "category": "01_primitives",
+   "commands": ["PlanarBody.Create (triangle in XZ)", "RevolveFaces.Execute(360deg about Z)"],
+   "data": {},
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 2094.395102
+   },
+   "feature": "prim_cone_revolve",
+   "framework": "1.2",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\01_primitives",
+   "params": {
+    "h_mm": 20,
+    "r_base_mm": 10
+   },
+   "script": "D:\\training\\caedecoder\\scdm_cases\\01_primitives\\01_primitives_cone_001_r10_h20.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:39:46+08:00",
+   "status": "running",
+   "title": "Cone / frustum (revolve of triangle/trapezoid): 001_r10_h20"
+  }
+ ],
+ "elapsed_s": 15.05,
+ "framework": "1.2",
+ "mode": "headless",
+ "spaceclaim_version": "2019.3.38912",
+ "stage": "running",
+ "started_at": "2026-09-26T07:39:31+08:00",
+ "summary": {
+  "ok": 11,
+  "running": 1
+ }
+}

@@ -1,0 +1,831 @@
+{
+ "SpaceClaim.Api.V18.AngleUnit": {
+  "enum": ["Radians", "Degrees", "DegreesMinutes", "DegreesMinutesSeconds"]
+ },
+ "SpaceClaim.Api.V18.Beam": {
+  "ctors": [],
+  "inst": ["GetColor(IAppearanceContext context) -> Nullable[Color]", "GetOccurrence(IDocObject companionOcc) -> IBeam", "GetOccurrence(IList[Instance] instancePath) -> IBeam", "GetOccurrence(Instance instance) -> IBeam", "GetVisibility(IAppearanceContext context) -> Nullable[Boolean]", "IsVisible(IAppearanceContext context) -> Boolean", "SetColor(IAppearanceContext context, Nullable[Color] color) -> Void", "SetVisibility(IAppearanceContext context, Nullable[Boolean] visible) -> Void"],
+  "props": ["AnchorLocation: PointUV", "CanSuppress: Boolean", "DefaultVisibility: Nullable[Boolean]", "Document: Document", "IsDeleted: Boolean", "IsReversed: Boolean", "IsRigid: Boolean", "IsSuppressed: Boolean", "Layer: Layer", "LifetimeLease: ILease", "Material: DocumentMaterial", "Moniker: Moniker[Beam]", "Moniker: Moniker[DocObject]", "Name: String", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Parent: Part", "Root: DocObject", "SectionAnchor: SectionAnchor", "SectionAngle: Double", "SectionFrame: Frame", "SectionProfile: IList[ICollection[ITrimmedCurve]]", "SectionProperties: SectionProperties", "SectionSource: DocObject", "Shape: ITrimmedCurve", "ShapeSource: ICollection[IDocObject]", "TextAttributes: IDictionary[String,String]", "Type: BeamType", "UpdateState: UpdateState"],
+  "static": ["Create(Part profilePart, DesignCurve desCurve) -> Beam"]
+ },
+ "SpaceClaim.Api.V18.CoordinateSystem": {
+  "ctors": [],
+  "inst": ["GetAxis(AxisType axisType) -> CoordinateAxis", "GetOccurrence(IDocObject companionOcc) -> ICoordinateSystem", "GetOccurrence(IList[Instance] instancePath) -> ICoordinateSystem", "GetOccurrence(Instance instance) -> ICoordinateSystem", "GetVisibility(IAppearanceContext context) -> Nullable[Boolean]", "IsVisible(IAppearanceContext context) -> Boolean", "SetVisibility(IAppearanceContext context, Nullable[Boolean] visible) -> Void", "Transform(Matrix trans) -> Void"],
+  "props": ["Axes: ICollection[CoordinateAxis]", "CanSuppress: Boolean", "DefaultVisibility: Nullable[Boolean]", "Document: Document", "Frame: Frame", "IsDeleted: Boolean", "IsLeftHanded: Boolean", "IsReadOnly: Boolean", "IsSuppressed: Boolean", "Layer: Layer", "LifetimeLease: ILease", "Moniker: Moniker[CoordinateSystem]", "Moniker: Moniker[DocObject]", "Name: String", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Parent: Part", "Root: DocObject", "Shape: ICurveShape[PointCurve]", "TextAttributes: IDictionary[String,String]", "UpdateState: UpdateState"],
+  "static": ["Create(IPart parent, String name, Frame frame) -> ICoordinateSystem", "Create(Part parent, String name, Frame frame) -> CoordinateSystem"]
+ },
+ "SpaceClaim.Api.V18.DesignMesh": {
+  "ctors": [],
+  "inst": ["GetColor(IAppearanceContext context) -> Nullable[Color]", "GetDesignMeshRegion(ICollection[MeshFace] meshRegion) -> DesignMeshRegion", "GetDesignMeshTopology(MeshTopology meshTopology) -> DesignMeshTopology", "GetFaceColor(MeshFace meshFace) -> Nullable[Color]", "GetOccurrence(IDocObject companionOcc) -> IDesignMesh", "GetOccurrence(IList[Instance] instancePath) -> IDesignMesh", "GetOccurrence(Instance instance) -> IDesignMesh", "GetVisibility(IAppearanceContext context) -> Nullable[Boolean]", "IsVisible(IAppearanceContext context) -> Boolean", "SetColor(IAppearanceContext context, Nullable[Color] color) -> Void", "SetFaceColor(ICollection[MeshFace] meshFaces, Nullable[Color] color) -> Void", "SetFaceColor(MeshFace meshFace, Nullable[Color] color) -> Void", "SetVisibility(IAppearanceContext context, Nullable[Boolean] visible) -> Void", "Transform(Matrix trans) -> Void"],
+  "props": ["CanSuppress: Boolean", "DefaultVisibility: Nullable[Boolean]", "Document: Document", "IsDeleted: Boolean", "IsSuppressed: Boolean", "Layer: Layer", "LifetimeLease: ILease", "Material: DocumentMaterial", "Moniker: Moniker[DesignMesh]", "Moniker: Moniker[DocObject]", "Name: String", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Parent: Part", "Root: DocObject", "Shape: Mesh", "SurfaceMaterial: SurfaceMaterial", "TextAttributes: IDictionary[String,String]", "UpdateState: UpdateState"],
+  "static": ["Create(Part parent, String name, IList[PointF] vertices, IList[Facet] facets) -> DesignMesh", "Create(Part parent, String name, IList[Point] vertices, IList[Facet] facets) -> DesignMesh", "Create(Part parent, String name, Single[] vertices, Int32[] facets) -> DesignMesh"]
+ },
+ "SpaceClaim.Api.V18.DrawingSheet": {
+  "ctors": [],
+  "inst": ["GetOccurrence(IDocObject companionOcc) -> IDrawingSheet", "GetOccurrence(IList[Instance] instancePath) -> IDrawingSheet", "GetOccurrence(Instance instance) -> IDrawingSheet", "SetFormat(DrawingSheet format, DrawingSheetContents contents) -> Void", "TranslateViews(ICollection[DrawingView] views, VectorUV translation) -> Void"],
+  "props": ["AnnotationPlane: Plane", "Barcodes: ICollection[Barcode]", "CurveGroups: ICollection[DesignCurveGroup]", "Curves: ICollection[DesignCurve]", "CustomObjects: ICollection[CustomObject]", "DatumFeatureSymbols: ICollection[DatumFeatureSymbol]", "Document: Document", "Format: DrawingSheet", "Height: Double", "Images: ICollection[Image]", "IsDeleted: Boolean", "IsThirdAngle: Boolean", "LifetimeLease: ILease", "Moniker: Moniker[DocObject]", "Moniker: Moniker[DrawingSheet]", "Name: String", "Notes: ICollection[Note]", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Root: DocObject", "Shape: ITrimmedSurface[Plane]", "Style: DrawingViewStyle", "SymbolInserts: ICollection[SymbolInsert]", "Tables: ICollection[Table]", "TextAttributes: IDictionary[String,String]", "Units: Units", "UpdateState: UpdateState", "ViewScale: DrawingViewScale", "Views: ICollection[DrawingView]", "Width: Double"],
+  "static": ["Create(Document doc, Double width, Double height) -> DrawingSheet", "Create(Document doc, DrawingSheet format, DrawingSheetContents contents) -> DrawingSheet"]
+ },
+ "SpaceClaim.Api.V18.Geometry.BoxUV": {
+  "ctors": [],
+  "inst": ["ContainsParam(PointUV param) -> Boolean", "Equals(BoxUV other) -> Boolean", "Equals(Object obj) -> Boolean", "GetHashCode() -> Int32"],
+  "props": ["Center: PointUV", "IsEmpty: Boolean", "RangeU: Interval", "RangeV: Interval"],
+  "static": ["Create(ICollection[PointUV] points) -> BoxUV", "Create(Interval rangeU, Interval rangeV) -> BoxUV", "Create(PointUV[] points) -> BoxUV"]
+ },
+ "SpaceClaim.Api.V18.Geometry.CircleProfile": {
+  "ctors": ["(Plane plane, Double radius, PointUV location=opt, Double angle=opt)", "(Plane plane, ICircle circle, IHasPlanarPlacement placement)"],
+  "inst": ["ContainsParam(PointUV param) -> Boolean", "GetBoundingBox(Matrix trans, Boolean tight) -> Box"],
+  "props": ["Angle: Double", "Area: Double", "Boundary: IList[ITrimmedCurve]", "BoxUV: BoxUV", "Location: PointUV", "Perimeter: Double", "Plane: Plane", "Radius: Double"],
+  "static": []
+ },
+ "SpaceClaim.Api.V18.Geometry.Cylinder": {
+  "ctors": [],
+  "inst": ["CreateTransformedCopy(Matrix trans) -> Cylinder", "GetLength(PointUV paramA, PointUV paramB) -> Double", "TryOffsetParam(PointUV start, DirectionUV dir, Double distance, PointUV& result) -> Boolean"],
+  "props": ["Axis: Line", "Frame: Frame", "IsRuled: UV[Boolean]", "IsSingular: UV[Bounds[Boolean]]", "LifetimeLease: ILease", "Parameterization: UV[Parameterization]", "Radius: Double"],
+  "static": ["Create(Frame frame, Double radius) -> Cylinder"]
+ },
+ "SpaceClaim.Api.V18.Geometry.PolygonProfile": {
+  "ctors": ["(Plane plane, IList[Point] points)", "(Plane plane, IList[PointUV] pointsUV)"],
+  "inst": ["ContainsParam(PointUV param) -> Boolean", "GetBoundingBox(Matrix trans, Boolean tight) -> Box", "GetExtremePoint(Direction dirA, Direction dirB, Direction dirC) -> Point"],
+  "props": ["Area: Double", "Boundary: IList[ITrimmedCurve]", "BoxUV: BoxUV", "Perimeter: Double", "Plane: Plane", "Points: IList[Point]", "PointsUV: IList[PointUV]"],
+  "static": []
+ },
+ "SpaceClaim.Api.V18.Geometry.Profile": {
+  "ctors": ["(Plane plane, IList[ITrimmedCurve] boundary)"],
+  "inst": ["ContainsParam(PointUV param) -> Boolean", "ContainsPoint(Point point) -> Boolean", "GetBoundingBox(Matrix trans) -> Box", "GetBoundingBox(Matrix trans, Boolean tight) -> Box", "GetClosestSeparation(ITrimmedGeometry other) -> Separation", "GetExtremePoint(Direction dirA, Direction dirB, Direction dirC) -> Point", "IntersectCurve(ITrimmedCurve segment) -> ICollection[IntPoint[SurfaceEvaluation,CurveEvaluation]]", "ProjectPoint(Point point) -> SurfaceEvaluation"],
+  "props": ["Area: Double", "Boundary: IList[ITrimmedCurve]", "BoxUV: BoxUV", "Perimeter: Double", "Plane: Plane"],
+  "static": []
+ },
+ "SpaceClaim.Api.V18.Geometry.RectangleProfile": {
+  "ctors": ["(Plane plane, Double width, Double height, PointUV location=opt, Double angle=opt)", "(Plane plane, IRectangle rectangle, IHasPlanarPlacement placement)"],
+  "inst": ["ContainsParam(PointUV param) -> Boolean"],
+  "props": ["Angle: Double", "Area: Double", "Boundary: IList[ITrimmedCurve]", "BoxUV: BoxUV", "Height: Double", "Location: PointUV", "Perimeter: Double", "Plane: Plane", "Points: IList[Point]", "PointsUV: IList[PointUV]", "Width: Double"],
+  "static": []
+ },
+ "SpaceClaim.Api.V18.Hole": {
+  "ctors": [],
+  "inst": ["GetOccurrence(IDocObject companionOcc) -> IHole", "GetOccurrence(IList[Instance] instancePath) -> IHole", "GetOccurrence(Instance instance) -> IHole"],
+  "props": ["AlternateReferenceFrame: Nullable[Frame]", "Axis: Line", "CosmeticThread: Boolean", "Counterbore: Boolean", "CounterboreDepth: Nullable[Double]", "CounterboreDiameter: Nullable[Double]", "Countersink: Boolean", "CountersinkAngle: Nullable[Double]", "CountersinkDiameter: Nullable[Double]", "DepthMeasurement: Nullable[HoleDepthMeasurementType]", "Direction: Direction", "Document: Document", "DrillPointAngle: Nullable[Double]", "DrillSize: String", "Faces: ICollection[DesignFace]", "FastenerName: String", "HoleDepth: Nullable[Double]", "HoleDiameter: Double", "HoleFit: Nullable[HoleFit]", "IsDeleted: Boolean", "LifetimeLease: ILease", "Moniker: Moniker[DocObject]", "Moniker: Moniker[Hole]", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Parent: Part", "Point: Point", "ReferenceFace: DesignFace", "Root: DocObject", "SeriesName: String", "TapDepth: Nullable[Double]", "Tapped: Boolean", "TextAttributes: IDictionary[String,String]", "UV: PointUV", "UpdateState: UpdateState"],
+  "static": ["Create(DesignFace referenceFace, Point point, HoleCreationInfo creationInfo) -> Hole", "Create(IDesignFace referenceFace, Point point, HoleCreationInfo creationInfo) -> IHole"]
+ },
+ "SpaceClaim.Api.V18.HoleFit": {
+  "enum": ["Nominal", "Close", "Medium", "Free"]
+ },
+ "SpaceClaim.Api.V18.ImperialLengthUnit": {
+  "enum": ["Feet", "Inches", "FeetAndInches", "Mils"]
+ },
+ "SpaceClaim.Api.V18.ImperialUnits": {
+  "ctors": ["(ImperialLengthUnit length, ImperialMassUnit mass, AngleUnit angle)"],
+  "inst": [],
+  "props": ["Angle: AngleUnit", "Length: ImperialLengthUnit", "Mass: ImperialMassUnit", "Type: UnitsSystemType"],
+  "static": []
+ },
+ "SpaceClaim.Api.V18.InteractionMode": {
+  "enum": ["Sketch", "Section", "Solid"]
+ },
+ "SpaceClaim.Api.V18.Layer": {
+  "ctors": [],
+  "inst": ["Delete() -> Void", "GetColor(IAppearanceContext context) -> Color", "GetLineStyle(IAppearanceContext context) -> LineStyle", "GetLineWeight(IAppearanceContext context) -> LineWeight", "GetOccurrence(IDocObject companionOcc) -> ILayer", "GetOccurrence(IList[Instance] instancePath) -> ILayer", "GetOccurrence(Instance instance) -> ILayer", "IsVisible(IAppearanceContext context) -> Boolean", "SetColor(IAppearanceContext context, Color color) -> Void", "SetLineStyle(IAppearanceContext context, LineStyle style) -> Void", "SetLineWeight(IAppearanceContext context, LineWeight weight) -> Void", "SetVisible(IAppearanceContext context, Boolean visible) -> Void"],
+  "props": ["Document: Document", "IsDeleted: Boolean", "LifetimeLease: ILease", "Moniker: Moniker[DocObject]", "Moniker: Moniker[Layer]", "Name: String", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Root: DocObject", "TextAttributes: IDictionary[String,String]", "UpdateState: UpdateState"],
+  "static": ["Copy(Document doc, String name, Layer layer) -> Layer", "Create(Document doc, String name, Color color) -> Layer"]
+ },
+ "SpaceClaim.Api.V18.LocationPoint": {
+  "enum": ["LeftSide", "TopSide", "RightSide", "BottomSide", "TopLeftCorner", "TopRightCorner", "BottomLeftCorner", "BottomRightCorner", "Center"]
+ },
+ "SpaceClaim.Api.V18.MetricLengthUnit": {
+  "enum": ["Meters", "Centimeters", "Millimeters", "Micrometers", "Nanometers"]
+ },
+ "SpaceClaim.Api.V18.MetricMassUnit": {
+  "enum": ["Kilograms", "Grams"]
+ },
+ "SpaceClaim.Api.V18.MetricUnits": {
+  "ctors": ["(MetricLengthUnit length, MetricMassUnit mass, AngleUnit angle)"],
+  "inst": [],
+  "props": ["Angle: AngleUnit", "Length: MetricLengthUnit", "Mass: MetricMassUnit", "Type: UnitsSystemType"],
+  "static": []
+ },
+ "SpaceClaim.Api.V18.Note": {
+  "ctors": [],
+  "inst": ["Copy() -> Note", "DeleteText(Int32 index, Int32 length) -> Void", "GetColor(IAppearanceContext context) -> Nullable[Color]", "GetLocation(LocationPoint locationPoint) -> PointUV", "GetOccurrence(IDocObject companionOcc) -> INote", "GetOccurrence(IList[Instance] instancePath) -> INote", "GetOccurrence(Instance instance) -> INote", "GetTextPolylines(Double curveDeviation, Double angleDeviation) -> ICollection[Point[]]", "GetVisibility(IAppearanceContext context) -> Nullable[Boolean]", "InsertText(Int32 index, String text) -> Void", "IsVisible(IAppearanceContext context) -> Boolean", "ReplaceText(Int32 index, Int32 length, String text) -> Void", "ReplaceText(String text) -> Void", "SetBold(Boolean bold) -> Void", "SetBold(Boolean bold, Int32 index, Int32 length) -> Void", "SetCharacterSpacing(Double spacing) -> Void", "SetCharacterSpacing(Double spacing, Int32 index, Int32 length) -> Void", "SetColor(IAppearanceContext context, Nullable[Color] color) -> Void", "SetFontName(String fontName) -> Void", "SetFontName(String fontName, Int32 index, Int32 length) -> Void", "SetFontSize(Double fontSize) -> Void", "SetFontSize(Double fontSize, Int32 index, Int32 length) -> Void", "SetItalic(Boolean italic) -> Void", "SetItalic(Boolean italic, Int32 index, Int32 length) -> Void", "SetLocation(PointUV anchorLocation, LocationPoint anchorPoint) -> Void", "SetStrikethrough(Boolean strikethrough) -> Void", "SetStrikethrough(Boolean strikethrough, Int32 index, Int32 length) -> Void", "SetUnderline(Boolean underline) -> Void", "SetUnderline(Boolean underline, Int32 index, Int32 length) -> Void", "SetVisibility(IAppearanceContext context, Nullable[Boolean] visible) -> Void"],
+  "props": ["AnchorPoint: LocationPoint", "Angle: Double", "AnnotationSpace: AnnotationSpace", "Callouts: IList[Callout]", "Curvature: NoteCurvature", "DefaultVisibility: Nullable[Boolean]", "Document: Document", "EndIndex: Int32", "Height: Double", "HorizontalAlignment: HorizontalAlignment", "IsDeleted: Boolean", "IsMirrored: Boolean", "Layer: Layer", "LifetimeLease: ILease", "LineSpacing: Double", "Moniker: Moniker[DocObject]", "Moniker: Moniker[Note]", "Name: String", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Parent: IAnnotationParentMaster", "Plane: Plane", "Root: DocObject", "Text: String", "TextAttributes: IDictionary[String,String]", "TextFit: TextFit", "TextOutline: ICollection[ITrimmedCurve]", "UpdateState: UpdateState", "Width: Double"],
+  "static": ["Create(IAnnotationParent parent, PointUV anchorLocation, LocationPoint anchorPoint, Double fontSize, String text) -> INote", "Create(IAnnotationParentMaster parent, PointUV anchorLocation, LocationPoint anchorPoint, Double fontSize, String text) -> Note"]
+ },
+ "SpaceClaim.Api.V18.PartType": {
+  "enum": ["Normal", "SheetMetal", "FlatPattern", "BeamProfile", "Markup"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.Beam": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Create(ISelection selection, ICommandInfo info=opt) -> BeamResult", "Create(ISelection selection, IPart profile, ICommandInfo info=opt) -> BeamResult", "Create(ISelection selection, ISelection profile, ICommandInfo info=opt) -> BeamResult", "ExtractProfile(ISelection selection, ICommandInfo info=opt) -> ExtractBeamResult", "GetExternal(BeamType type) -> Type", "GetExternal(SectionAnchor position) -> AnchorPosition", "GetInternal(AnchorPosition position) -> SectionAnchor", "GetInternal(Type type) -> BeamType", "GetProperty(IBeam Beam, BeamProperty property) -> Double", "GetProperty(IDesignCurve curveSel, BeamProperty property) -> Double", "GetProperty(ISelection beamSelection, BeamProperty property) -> Double", "ReverseBeam(ICollection[IBeam] beams, Boolean isReversed) -> CommandResult", "ReverseBeam(ICollection[IDesignCurve] curveSel, Boolean isReversed) -> CommandResult", "ReverseBeam(ISelection beamSelection, Boolean isReversed) -> CommandResult", "SetOrientation(ICollection[IBeam] beams, Double orientation) -> CommandResult", "SetOrientation(ICollection[IDesignCurve] curveSel, Double orientation) -> CommandResult", "SetOrientation(ISelection beamSelection, Double orientation) -> CommandResult", "SetPosition(ICollection[IBeam] beams, AnchorPosition position) -> CommandResult", "SetPosition(ICollection[IBeam] beams, Double Xposition, Double Yposition) -> CommandResult", "SetPosition(ICollection[IDesignCurve] curveSel, AnchorPosition position) -> CommandResult", "SetPosition(ICollection[IDesignCurve] curveSel, Double Xposition, Double Yposition) -> CommandResult", "SetPosition(ISelection beamSelection, AnchorPosition position) -> CommandResult", "SetPosition(ISelection beamSelection, Double Xposition, Double Yposition) -> CommandResult", "SetProfile(ICollection[IBeam] beam, IComponent comp) -> CommandResult", "SetProfile(ICollection[IBeam] beams, IPart part) -> CommandResult", "SetProfile(ICollection[IDesignCurve] curveSel, IComponent comp) -> CommandResult", "SetProfile(ICollection[IDesignCurve] curveSel, IPart part) -> CommandResult", "SetProfile(ISelection beamSelection, ISelection profileSel) -> CommandResult", "SetRigidity(ICollection[IBeam] beams, Boolean isRigid) -> CommandResult", "SetRigidity(ICollection[IDesignCurve] curveSel, Boolean isRigid) -> CommandResult", "SetRigidity(ISelection beamSelection, Boolean isRigid) -> CommandResult", "SetType(ICollection[IBeam] beams, Type type) -> CommandResult", "SetType(ICollection[IDesignCurve] curveSel, Type type) -> CommandResult", "SetType(ISelection beamSelection, Type type) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CommandOptions.EnclosureType": {
+  "enum": ["Box", "Cylinder", "Sphere", "CustomShape"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CommandOptions.FaceColorTarget": {
+  "enum": ["Undefined", "Face", "Body"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CommandOptions.FaceEdgeSplitter": {
+  "ctors": ["(SplitterType type)"],
+  "inst": ["AddSplitPoint(IDesignEdge edge, Double paramU) -> Void", "AddSplitPoint(IDesignFace face, Double paramU, Double paramV) -> Void", "AddSplitPoint(IDesignFace face, Point point) -> Void", "AddSplitPoint(ISelection selection, Nullable[Double] paramU=opt, Nullable[Double] paramV=opt) -> Void"],
+  "props": ["SplitPoints: Dictionary[IDocObject,Nullable[Point]]", "Type: SplitterType"],
+  "static": []
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CommandOptions.FaceSplitType": {
+  "enum": ["UV", "Perpendicular"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CommandOptions.FacetQuality": {
+  "enum": ["VeryCoarse", "Coarse", "Medium", "Fine", "VeryFine"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CommandOptions.FillType": {
+  "enum": ["Patch", "Cap"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CommandOptions.IEnclosureCushion": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": []
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CommandOptions.IcepakSimplifyLevelOneOptions": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": ["CleanUp: Boolean", "RandomizeColors: Boolean", "Split: Boolean"],
+  "static": []
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CommandOptions.IcepakSimplifyLevelZeroOptions": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": ["PreserveOriginal: Boolean"],
+  "static": []
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CommandOptions.StlInputOptions": {
+  "enum": ["ConnectedMesh", "GraphicsOnly", "Solid"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CommandOptions.ThickenDirection": {
+  "enum": ["Inward", "Outward", "Both"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CommandOptions.WrapDirections": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": ["BasePlane: Plane", "SourceDirection: Direction", "SourcePoint: Point", "TargetDirection: Direction", "TargetPoint: Point"],
+  "static": []
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.ConvertToSolid": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ISelection selection, Boolean mergeFaces, ICommandInfo info=opt) -> ConvertToSolidResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CreationType": {
+  "enum": ["Standard", "Exact", "Imported"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CrossSectionItemType": {
+  "enum": ["Unknown", "Channel", "Circular", "Disk", "FlatBar", "Hat", "I", "L", "Rectangular", "T", "Z", "UserDefined"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.CylinderBody": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Create(Point centerPoint, Point startPoint, Point endPoint, ExtrudeType extrudeMode=opt, ICommandInfo info=opt) -> CylinderBodyResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.DocumentSave": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ExportOptions exportOptions) -> CommandResult", "Execute(IScriptObject[IFileSettings] settigns) -> CommandResult", "Execute(String fileName, ExportOptions exportOptions) -> CommandResult", "Execute(String fileName, IScriptObject[IFileSettings] settigns) -> CommandResult", "Execute(String filename) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.DraftSide": {
+  "enum": ["NoSplit", "This", "Other", "Both"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.Enclosure": {
+  "ctors": ["(ISelection selection, EnclosureOptions options=opt)"],
+  "inst": ["Execute(ICommandInfo info=opt) -> EnclosureResult"],
+  "props": ["EnclosureCushion: IEnclosureCushion"],
+  "static": ["Create(ISelection selection, EnclosureOptions options, ICommandInfo commandInfo=opt) -> EnclosureResult", "Create(ISelection selection, ICommandInfo commandInfo=opt) -> EnclosureResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.ExtrudeProfile": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(Profile profile, Double distance, Part parent=opt, String name=opt) -> ExtrudeSolidBodyResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.FacetConvert": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Create(ISelection selection, FacetConvertOptions options=opt, ICommandInfo info=opt) -> FacetConvertResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.FacetReduce": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Create(FacetReduceOptions options=opt, ICommandInfo info=opt) -> FacetReduceResult", "Create(ISelection selection, FacetReduceOptions options=opt, ICommandInfo info=opt) -> FacetReduceResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.FacetRemesh": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Create(FacetRemeshOptions options=opt, ICommandInfo info=opt) -> FacetRemeshResult", "Create(ISelection selection, FacetRemeshOptions options=opt, ICommandInfo info=opt) -> FacetRemeshResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.FacetSmooth": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Create(FacetSmoothOptions options=opt, ICommandInfo info=opt) -> FacetSmoothResult", "Create(ISelection selection, FacetSmoothOptions options=opt, ICommandInfo info=opt) -> FacetSmoothResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.FacetThicken": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ISelection selection, FacetThickenOptions options=opt, ICommandInfo info=opt) -> FacetThickenResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.Fill": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ISelection selection, ISelection secondarySelection=opt, FillOptions options=opt, FillMode mode=opt, ICommandInfo info=opt) -> FillResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.FillMode": {
+  "enum": ["Sketch", "Section", "Layout", "ThreeD"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.FixExtraEdges": {
+  "ctors": ["(ISelection selectObject)", "()"],
+  "inst": ["FindProblemAreas() -> IList[ProblemArea]", "Fix(ICommandInfo commandInfo=opt) -> CommandResult"],
+  "props": ["ProblemAreas: IList[ProblemArea]"],
+  "static": ["FindAndFix(ICommandInfo commandInfo=opt) -> CommandResult", "FindAndFix(ISelection selectObject, ICommandInfo commandInfo=opt) -> CommandResult", "FixSpecific(ISelection selectObject, ICommandInfo commandInfo=opt) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.FixMissingFaces": {
+  "ctors": ["(ISelection selectObject, FixMissingFacesOptions options=opt)", "(FixMissingFacesOptions options=opt)"],
+  "inst": ["FindProblemAreas() -> IList[ProblemArea]", "Fix(ICommandInfo info=opt) -> CommandResult"],
+  "props": ["ProblemAreas: IList[ProblemArea]"],
+  "static": ["FindAndFix(FixMissingFacesOptions options, ICommandInfo info=opt) -> CommandResult", "FindAndFix(ICommandInfo info=opt) -> CommandResult", "FindAndFix(ISelection selectObject, FixMissingFacesOptions options, ICommandInfo info=opt) -> CommandResult", "FindAndFix(ISelection selectObject, ICommandInfo info=opt) -> CommandResult", "FixSpecific(ISelection specifics, FixMissingFacesOptions options, ICommandInfo info=opt) -> CommandResult", "FixSpecific(ISelection specifics, ICommandInfo info=opt) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.ForceShareTopology": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ISelection targetEntitiesSel, Double tolerance, ICommandInfo commandInfo=opt) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.HoleFit": {
+  "enum": ["Nominal", "Close", "Medium", "Free"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.IcepakSimplify": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["ExecuteLevelOne(ISelection targetSel, IcepakSimplifyLevelZeroOptions options0, IcepakSimplifyLevelOneOptions options1, ICommandInfo info=opt) -> IcepakSimplifyResult", "ExecuteLevelThree(ISelection targetSel, FacetQuality facetQuality, ICommandInfo info=opt) -> IcepakSimplifyResult", "ExecuteLevelTwo(ISelection targetSel, IcepakSimplifyLevelZeroOptions options0, IcepakSimplifyLevelOneOptions options1, IcepakSimplifyLevelTwoOptions options2, ICommandInfo info=opt) -> IcepakSimplifyResult", "ExecuteLevelZero(ISelection targetSel, IcepakSimplifyLevelZeroOptions options, ICommandInfo info=opt) -> IcepakSimplifyResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.Midsurface": {
+  "ctors": ["(MidsurfaceOptions options=opt)"],
+  "inst": ["AddFacePairsByRange(IDesignFace face, Double min, Double max) -> Void", "AddFacePairsByRange(ISelection selection, Double min, Double max) -> Void", "AddMatchingFacePairs(IDesignFace face1, IDesignFace face2, Double thicknessTolerance=opt) -> Void", "AddMatchingFacePairs(ISelection selection, Double thicknessTolerance=opt) -> Void", "AddMatchingFacePairs(MidsurfaceOffsetFaces pair, Double thicknessTolerance=opt) -> Void", "AddMatchingFacePairs(SmartVariableWrapper face1, SmartVariableWrapper face2, Double thicknessTolerance=opt) -> Void", "Execute(ICommandInfo info=opt) -> MidsurfaceResult", "FlipFacePair(IDesignFace face) -> Void", "FlipFacePair(ISelection selection) -> Void", "FlipFacePair(MidsurfaceOffsetFaces pair) -> Void", "RemoveFacePair(IDesignFace face) -> Void", "RemoveFacePair(ISelection selection) -> Void", "RemoveFacePair(MidsurfaceOffsetFaces pair) -> Void"],
+  "props": ["FacePairs: ICollection[MidsurfaceOffsetFaces]", "Options: MidsurfaceOptions"],
+  "static": ["Convert(ISelection bodies, Double thickness, ICommandInfo info=opt) -> MidsurfaceResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.MirrorComponents": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ISelection selection, ISelection mirrorPlane, ICommandInfo info=opt) -> MirrorComponentsCommandResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.ProjectToSolid": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ISelection selection, ISelection targetFaces, ISelection directionSelection, ProjectToSolidOptions options=opt, ICommandInfo info=opt) -> ProjectToSolidResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.RenameObject": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ISelection selection, String name) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.ReplaceFacesWithFace": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ICollection faces, ReplaceFacesWithFaceOptions options=opt) -> ReplaceFacesWithFaceResult", "Execute(ISelection selection, ReplaceFacesWithFaceOptions options=opt, ICommandInfo info=opt) -> ReplaceFacesWithFaceResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.STLFile": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Export(STLExportOptions options) -> CommandResult", "Export(String fileName) -> CommandResult", "Export(String fileName, ISelection meshes, STLExportOptions options=opt) -> CommandResult", "Export(String fileName, STLExportOptions options) -> CommandResult", "Import(String fileName, ICommandBinaryData maps=opt) -> CommandResult", "Import(String fileName, STLImportOptions options, ICommandBinaryData maps=opt) -> CommandResult", "Insert(String fileName, STLImportOptions options, ICommandBinaryData maps=opt) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.ShareTopology": {
+  "ctors": ["(ISelection selectObject, ShareTopologyOptions opts=opt)", "(ShareTopologyOptions opts=opt)"],
+  "inst": ["ExcludeProblemArea(ISelection selectObject) -> Void", "FindProblemAreas() -> IList[ProblemArea]", "Fix(ICommandInfo commandInfo=opt) -> CommandResult"],
+  "props": ["ProblemAreas: IList[ProblemArea]"],
+  "static": ["FindAndFix(ICommandInfo commandInfo=opt) -> CommandResult", "FindAndFix(ISelection selectObject, ShareTopologyOptions opts=opt) -> CommandResult", "FindAndFix(ShareTopologyOptions opts, ICommandInfo commandInfo=opt) -> CommandResult", "FindProblemAreasConsideringInstancing(Pair[ICollection[INominalBody],HashSet[IBeam]] bodyBeamPair, Double tolerance, Boolean preserveInstances) -> List[ICoincidentProblemArea]", "FixSpecific(ISelection targetSelections, ShareTopologyOptions options=opt, ICommandInfo info=opt) -> CommandResult", "UpgradeLegacy(ICommandInfo commandInfo=opt) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.Sketch2DRound": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Create(ISelection selection1, ISelection selection2, Double radius, Sketch2DRoundOptions options=opt) -> SketchCurveResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.SplitEdge": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["ByCount(ISelection edges, Int32 count, ICommandInfo info=opt) -> SplitEdgeResult", "ByLength(ISelection edge, ISelection referencePoint, Double length, ICommandInfo info=opt) -> SplitEdgeResult", "ByPoint(ISelection edge, Point targetPoint, ICommandInfo info=opt) -> SplitEdgeResult", "ByProportion(ISelection edge, ISelection referencePoint, Double proportion, ICommandInfo info=opt) -> SplitEdgeResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.SplitFace": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["ByCurves(ISelection target, ICollection[CurveSegment] splitCurves, ICommandInfo info=opt) -> SplitFaceResult", "ByCurves(ISelection target, ICollection[CurveSegment] splitCurves, SplitFaceOptions opts=opt, ICommandInfo info=opt) -> SplitFaceResult", "ByCurves(ISelection target, ICollection[ITrimmedCurve] splitCurves, ICommandInfo info=opt) -> SplitFaceResult", "ByCurves(ISelection target, ICollection[ITrimmedCurve] splitCurves, SplitFaceOptions opts, ICommandInfo info=opt) -> SplitFaceResult", "ByCutter(ISelection target, ISelection cutter, SplitFaceOptions opts=opt, ICommandInfo info=opt) -> SplitFaceResult", "ByParametric(ISelection target, Point point, FaceSplitType faceSplitType, SplitFaceOptions opts=opt, ICommandInfo info=opt) -> SplitFaceResult", "ByTwoPoints(ISelection target, Point pointStart, Point pointEnd, SplitFaceOptions opts=opt, ICommandInfo info=opt) -> SplitFaceResult", "Execute(ISelection faces, FaceEdgeSplitter faceEdgeSplitter, ICommandInfo info=opt) -> SplitFaceResult", "Execute(ISelection faces, FaceEdgeSplitter faceEdgeSplitter, SplitFaceOptions opts, ICommandInfo info=opt) -> SplitFaceResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.StandardHoles": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Convert(ICollection[IdentifiedHole] holes, ICommandInfo info=opt) -> ConvertStandardHolesResult", "ConvertByFaces(ICollection[IDesignFace] faces, ICommandInfo info=opt) -> ConvertStandardHolesResult", "ConvertByFaces(ISelection selection, ICommandInfo info=opt) -> ConvertStandardHolesResult", "Create(IList[HoleLocation] nomFaceToLocations, ISelection secondarySelection=opt, StandardHolesOptions options=opt, ICommandInfo info=opt) -> CreateStandardHolesResult", "Create(IList[HoleLocation] nomFaceToLocations, StandardHolesOptions options, ICommandInfo info=opt) -> CreateStandardHolesResult", "Find(FindStandardHoleOptions options, ICommandInfo info=opt) -> ICollection[IdentifiedHole]", "Find(ICollection[IDesignBody] selBodies, FindStandardHoleOptions options, ICommandInfo info=opt) -> ICollection[IdentifiedHole]", "Find(ISelection selection, FindStandardHoleOptions options, ICommandInfo info=opt) -> ICollection[IdentifiedHole]", "GetHoleFaces() -> ICollection[IDesignFace]", "GetHoleFaces(FindStandardHoleOptions options) -> ICollection[IDesignFace]", "GetHoleFaces(ICollection[IDesignBody] selBodies) -> ICollection[IDesignFace]", "GetHoleFaces(ICollection[IdentifiedHole] holes) -> ICollection[IDesignFace]", "GetHoleFaces(ISelection selection, FindStandardHoleOptions options) -> ICollection[IDesignFace]", "Modify(ICollection[IHole] holes, StandardHolesOptions options, ICommandInfo info=opt) -> ModifyStandardHolesResult", "Modify(ISelection selection, StandardHolesOptions options, ICommandInfo info=opt) -> ModifyStandardHolesResult", "ModifyCosmeticThread(ICollection[IHole] selHoles, Boolean cosmeticThread, ICommandInfo info=opt) -> Void", "ModifyCosmeticThread(ISelection selection, Boolean cosmeticThread, ICommandInfo info=opt) -> Void", "ModifyCounterboreDepth(ICollection[IHole] selHoles, Nullable[Double] counterboreDepth, ICommandInfo info=opt) -> Void", "ModifyCounterboreDepth(ISelection selection, Nullable[Double] counterboreDepth, ICommandInfo info=opt) -> Void", "ModifyCounterboreRadius(ICollection[IHole] selHoles, Nullable[Double] counterboreRadius, ICommandInfo info=opt) -> Void", "ModifyCounterboreRadius(ISelection selection, Nullable[Double] counterboreRadius, ICommandInfo info=opt) -> Void", "ModifyCountersinkAngle(ICollection[IHole] selHoles, Nullable[Double] countersinkAngle, ICommandInfo info=opt) -> Void", "ModifyCountersinkAngle(ISelection selection, Nullable[Double] countersinkAngle, ICommandInfo info=opt) -> Void", "ModifyCountersinkRadius(ICollection[IHole] selHoles, Nullable[Double] countersinkRadius, ICommandInfo info=opt) -> Void", "ModifyCountersinkRadius(ISelection selection, Nullable[Double] countersinkRadius, ICommandInfo info=opt) -> Void", "ModifyDrillPointAngle(ICollection[IHole] selHoles, Double drillPointAngle, ICommandInfo info=opt) -> Void", "ModifyDrillPointAngle(ISelection selection, Double drillPointAngle, ICommandInfo info=opt) -> Void", "ModifyDrillSize(ICollection[IHole] selHoles, String drillSize, ICommandInfo info=opt) -> Void", "ModifyDrillSize(ISelection selection, String drillSize, ICommandInfo info=opt) -> Void", "ModifyFastenerName(ICollection[IHole] selHoles, String fastenerName, ICommandInfo info=opt) -> Void", "ModifyFastenerName(ISelection selection, String fastenerName, ICommandInfo info=opt) -> Void", "ModifyHoleDepth(ICollection[IHole] selHoles, Nullable[Double] holeDepth, ICommandInfo info=opt) -> Void", "ModifyHoleDepth(ISelection selection, Nullable[Double] holeDepth, ICommandInfo info=opt) -> Void", "ModifyHoleDepthMeasurement(ICollection[IHole] selHoles, Nullable[HoleDepthMeasurementType] depthMeasurement, ICommandInfo info=opt) -> Void", "ModifyHoleDepthMeasurement(ISelection selection, Nullable[HoleDepthMeasurementType] depthMeasurement, ICommandInfo info=opt) -> Void", "ModifyHoleFit(ICollection[IHole] selHoles, Nullable[HoleFit] fit, ICommandInfo info=opt) -> Void", "ModifyHoleFit(ISelection selection, Nullable[HoleFit] fit, ICommandInfo info=opt) -> Void", "ModifyHoleRadius(ICollection[IHole] selHoles, Double holeRadius, ICommandInfo info=opt) -> Void", "ModifyHoleRadius(ISelection selection, Double holeRadius, ICommandInfo info=opt) -> Void", "ModifySeriesName(ICollection[IHole] selHoles, String seriesName, ICommandInfo info=opt) -> Void", "ModifySeriesName(ISelection selection, String seriesName, ICommandInfo info=opt) -> Void", "ModifyTap(ICollection[IHole] selHoles, Boolean tapped, ICommandInfo info=opt) -> Void", "ModifyTap(ISelection selection, Boolean tapped, ICommandInfo info=opt) -> Void", "ModifyTapDepth(ICollection[IHole] selHoles, Double tapDepth, ICommandInfo info=opt) -> Void", "ModifyTapDepth(ISelection selection, Double tapDepth, ICommandInfo info=opt) -> Void", "RemoveAssociations(ICollection[IHole] holes, ICommandInfo info=opt) -> RemoveStandardHoleAssociationsResult", "RemoveAssociations(ISelection selection, ICommandInfo info=opt) -> RemoveStandardHoleAssociationsResult", "Reverse(ICollection[INominalHole] holes, ICommandInfo info=opt) -> ReverseStandardHolesCommandResult", "Reverse(ISelection selection, ICommandInfo info=opt) -> ReverseStandardHolesCommandResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.StitchFaces": {
+  "ctors": ["(ISelection selectObject, StitchOptions opts=opt)", "(StitchOptions opts=opt)"],
+  "inst": ["FindProblemAreas() -> IList[ProblemArea]", "Fix(ICommandInfo commandInfo=opt) -> CommandResult"],
+  "props": ["ProblemAreas: IList[ProblemArea]"],
+  "static": ["FindAndFix(ICommandInfo commandInfo=opt) -> CommandResult", "FindAndFix(ISelection selectObject, StitchOptions opts=opt, ICommandInfo commandInfo=opt) -> CommandResult", "FindAndFix(StitchOptions opts, ICommandInfo commandInfo=opt) -> CommandResult", "FixSpecific(ISelection selectObject, ICommandInfo commandInfo=opt) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.SurfaceBody": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Create(Surface surface, BoxUV region, Part parent=opt, String name=opt) -> SurfaceBodyResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.VolumeExtract": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Create(ISelection selectObject, ISelection secondarySelection, ICommandInfo commandInfo=opt) -> VolumeExtractResult", "Create(ISelection selectObject, ISelection secondarySelection, VolumeExtractOptions options, ICommandInfo info=opt) -> VolumeExtractResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.Workpiece": {
+  "ctors": ["(ISelection selection, WorkpieceOptions options=opt)"],
+  "inst": ["Execute(ICommandInfo info=opt) -> WorkpieceResult"],
+  "props": ["WorkpieceCushion: IWorkpieceCushion"],
+  "static": ["Create(ISelection selection, ICommandInfo commandInfo=opt) -> WorkpieceResult", "Create(ISelection selection, WorkpieceOptions options, ICommandInfo commandInfo=opt) -> WorkpieceResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Commands.Wrap": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Create(ISelection selectObject, ISelection secondarySelection, WrapDirections directions, WrapOptions opts=opt, ICommandInfo info=opt) -> WrapResult", "Create(ISelection selectObject, ISelection secondarySelection, WrapOptions opts=opt, ICommandInfo info=opt) -> WrapResult"]
+ },
+ "SpaceClaim.Api.V18.Scripting.Helpers.Units": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["CM(Double inValue) -> Double", "CM2(Double inValue) -> Double", "CM3(Double inValue) -> Double", "DEG(Double invalue) -> Double", "FT(Double inValue) -> Double", "FT2(Double inValue) -> Double", "FT3(Double inValue) -> Double", "IN(Double inValue) -> Double", "IN2(Double inValue) -> Double", "IN3(Double inValue) -> Double", "M(Double inValue) -> Double", "M2(Double inValue) -> Double", "M3(Double inValue) -> Double", "MIL(Double inValue) -> Double", "MIL2(Double inValue) -> Double", "MIL3(Double inValue) -> Double", "MM(Double inValue) -> Double", "MM2(Double inValue) -> Double", "MM3(Double inValue) -> Double", "NM(Double inValue) -> Double", "NM2(Double inValue) -> Double", "NM3(Double inValue) -> Double", "PERCENT(Double invalue) -> Double", "RAD(Double inValue) -> Double", "UM(Double inValue) -> Double", "UM2(Double inValue) -> Double", "UM3(Double inValue) -> Double"]
+ },
+ "SpaceClaim.Api.V18.Scripting.PowerSelection.RelationType+Hole": {
+  "ctors": [],
+  "inst": [],
+  "props": ["SameHoleDimensions: RelationType"],
+  "static": []
+ },
+ "SpaceClaim.Api.V18.Scripting.Selection.SelectionPoint": {
+  "ctors": [],
+  "inst": ["AddToActive() -> Void", "Filter() -> ISelection", "GetItems() -> ICollection[T]", "GetParams() -> Nullable`1[]", "IsValid() -> Boolean", "SetActive() -> Void"],
+  "props": ["HasPoint: Boolean", "Items: ICollection[IDocObject]", "Point: Point"],
+  "static": ["Create(IDocObject obj, Double[] parameters) -> SelectionPoint", "Create(IEvaluation eval, Point3D point) -> SelectionPoint", "Create(IScriptSmartVariable smartVariable, Double[] parameters) -> SelectionPoint", "Create(ISelection selection, Double[] parameters) -> SelectionPoint", "Create(PythonTuple tuple) -> SelectionPoint", "CreateCurve(IWireCurve curve, Nullable[Double] uParameter) -> CurveSelectionPoint", "CreateDatumLine(IDatumLine line, Nullable[Double] uParameter) -> DatumLineSelectionPoint", "CreateDatumPlane(IDatumPlane plane, Nullable[Double] uParameter, Nullable[Double] vParameter) -> DatumPlaneSelectionPoint", "CreateDatumPoint(IDatumPoint point) -> DatumPointSelectionPoint", "CreateDesignAxis(IDesignAxis axis, Nullable[Double] uParameter) -> DesignAxisSelectionPoint", "CreateEdge(IDesignEdge edge, Nullable[Double] uParameter) -> EdgeSelectionPoint", "CreateFace(IDesignFace face, Nullable[Double] uParameter, Nullable[Double] vParameter) -> FaceSelectionPoint", "CreateList(PythonTuple[] tuples) -> IList[SelectionPoint]", "CreatePoint(ICurvePoint point) -> PointSelectionPoint", "CreateSelectionList(PythonTuple[] tuples) -> IList[ISelection]"]
+ },
+ "SpaceClaim.Api.V18.ShareTopology": {
+  "ctors": [],
+  "enum": ["None", "Share", "Merge", "Groups"],
+  "inst": [],
+  "props": [],
+  "static": []
+ },
+ "SpaceClaim.Api.V18.SheetMetalAspect": {
+  "ctors": [],
+  "inst": ["CreateBends(DesignFace face, Point anchorPoint, ICollection[BendSpecification] bendSpecs, ICollection[DesignCurve] desCurvesToMove) -> IDictionary[BendSpecification,CylindricalBend]", "CreateHem(DesignEdge edge, HemStyle style) -> HemBend", "CreateHem(DesignEdge edge, HemStyle style, Interval bounds) -> HemBend", "CreateInternalBead(DesignFace substrate, ICollection[ITrimmedCurve] path, Double beadRadius, Double edgeRadius) -> Bead", "CreateJoggle(CylindricalBend bendA, CylindricalBend bendB) -> JoggleBend", "CreateMarker(DesignFace face, PointUV location) -> Marker", "CreateMissingBends(ICollection[DesignEdge] creaseEdges, Double innerRadius) -> ICollection[CylindricalBend]", "CreatePartitionBead(DesignFace substrate, Point pointInFace, Direction dir, Double beadRadius, Double edgeRadius) -> Bead", "CreateRips(ICollection[DesignEdge] creaseEdges) -> ICollection[DesignFace]", "Delete() -> Void", "GetCreaseEdges(DesignBody desBody) -> ICollection[DesignEdge]", "GetFeature(DesignFace desFace) -> SheetMetalFeature", "GetOppositeFace(DesignFace desFace) -> DesignFace", "IdentifyForms(Boolean ignoreCutouts) -> ICollection[SheetMetalForm]", "RepairBends(ICollection[DesignFace] bendFaces) -> ICollection[AxialBend]", "TryApplyNote(Note note, Lettering type, DesignFace& substrate) -> Boolean", "Unfold(DesignFace anchorFace) -> DesignFace"],
+  "props": ["Beads: ICollection[Bead]", "BendTable: String", "Bends: ICollection[Bend]", "Corners: ICollection[SheetMetalCorner]", "CrossBreaks: ICollection[CrossBreak]", "Forms: ICollection[SheetMetalForm]", "Gussets: ICollection[Gusset]", "Hems: ICollection[HemBend]", "InnerRadius: Double", "InnerRadiusDefinition: ValueDefinition", "KFactor: Double", "LifetimeLease: ILease", "LightweightNotes: ICollection[ILightweightNote]", "Markers: ICollection[Marker]", "Owner: Part", "Thickness: Double"],
+  "static": []
+ },
+ "SpaceClaim.Api.V18.Units": {
+  "ctors": [],
+  "inst": ["Delete() -> Void", "GetMeasurementUnit(DimensionType dimensionType) -> MeasurementUnit"],
+  "props": ["ActiveUnitsSystem: UnitsSystemType", "Angle: MeasurementUnit", "Area: MeasurementUnit", "Document: Document", "GridSettings: GridSettings", "ImperialUnits: ImperialUnits", "IsDeleted: Boolean", "IsSmallUnitType: Boolean", "Length: MeasurementUnit", "LifetimeLease: ILease", "Mass: MeasurementUnit", "MetricUnits: MetricUnits", "Moniker: Moniker[DocObject]", "Moniker: Moniker[Units]", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Root: DocObject", "TextAttributes: IDictionary[String,String]", "UpdateState: UpdateState", "UseWorkbenchUnits: Boolean", "Volume: MeasurementUnit"],
+  "static": ["Create(DrawingSheet parent) -> Units"]
+ },
+ "SpaceClaim.Api.V18.UnitsSystemType": {
+  "enum": ["Metric", "Imperial"]
+ },
+ "SpaceClaim.Api.V19.AngleUnit": {
+  "enum": ["Radians", "Degrees", "DegreesMinutes", "DegreesMinutesSeconds"]
+ },
+ "SpaceClaim.Api.V19.Beam": {
+  "ctors": [],
+  "inst": ["GetColor(IAppearanceContext context) -> Nullable[Color]", "GetOccurrence(IDocObject companionOcc) -> IBeam", "GetOccurrence(IList[Instance] instancePath) -> IBeam", "GetOccurrence(Instance instance) -> IBeam", "GetVisibility(IAppearanceContext context) -> Nullable[Boolean]", "IsVisible(IAppearanceContext context) -> Boolean", "SetColor(IAppearanceContext context, Nullable[Color] color) -> Void", "SetVisibility(IAppearanceContext context, Nullable[Boolean] visible) -> Void"],
+  "props": ["AnchorLocation: PointUV", "CanSuppress: Boolean", "DefaultVisibility: Nullable[Boolean]", "Document: Document", "IsDeleted: Boolean", "IsReversed: Boolean", "IsRigid: Boolean", "IsSuppressed: Boolean", "Layer: Layer", "LifetimeLease: ILease", "Material: DocumentMaterial", "Moniker: Moniker[Beam]", "Moniker: Moniker[DocObject]", "Name: String", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Parent: Part", "Root: DocObject", "SectionAnchor: SectionAnchor", "SectionAngle: Double", "SectionFrame: Frame", "SectionProfile: IList[ICollection[ITrimmedCurve]]", "SectionProperties: SectionProperties", "SectionSource: DocObject", "Shape: ITrimmedCurve", "ShapeSource: ICollection[IDocObject]", "TextAttributes: IDictionary[String,String]", "Type: BeamType", "UpdateState: UpdateState"],
+  "static": ["Create(Part profilePart, DesignCurve desCurve) -> Beam"]
+ },
+ "SpaceClaim.Api.V19.CoordinateSystem": {
+  "ctors": [],
+  "inst": ["GetAxis(AxisType axisType) -> CoordinateAxis", "GetOccurrence(IDocObject companionOcc) -> ICoordinateSystem", "GetOccurrence(IList[Instance] instancePath) -> ICoordinateSystem", "GetOccurrence(Instance instance) -> ICoordinateSystem", "GetVisibility(IAppearanceContext context) -> Nullable[Boolean]", "IsVisible(IAppearanceContext context) -> Boolean", "SetVisibility(IAppearanceContext context, Nullable[Boolean] visible) -> Void", "Transform(Matrix trans) -> Void"],
+  "props": ["Axes: ICollection[CoordinateAxis]", "CanSuppress: Boolean", "DefaultVisibility: Nullable[Boolean]", "Document: Document", "Frame: Frame", "IsDeleted: Boolean", "IsLeftHanded: Boolean", "IsReadOnly: Boolean", "IsSuppressed: Boolean", "Layer: Layer", "LifetimeLease: ILease", "Moniker: Moniker[CoordinateSystem]", "Moniker: Moniker[DocObject]", "Name: String", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Parent: Part", "Root: DocObject", "Shape: ICurveShape[PointCurve]", "TextAttributes: IDictionary[String,String]", "UpdateState: UpdateState"],
+  "static": ["Create(IPart parent, String name, Frame frame) -> ICoordinateSystem", "Create(Part parent, String name, Frame frame) -> CoordinateSystem"]
+ },
+ "SpaceClaim.Api.V19.DesignMesh": {
+  "ctors": [],
+  "inst": ["GetColor(IAppearanceContext context) -> Nullable[Color]", "GetDesignMeshRegion(ICollection[MeshFace] meshRegion) -> DesignMeshRegion", "GetDesignMeshTopology(MeshTopology meshTopology) -> DesignMeshTopology", "GetFaceColor(MeshFace meshFace) -> Nullable[Color]", "GetOccurrence(IDocObject companionOcc) -> IDesignMesh", "GetOccurrence(IList[Instance] instancePath) -> IDesignMesh", "GetOccurrence(Instance instance) -> IDesignMesh", "GetVisibility(IAppearanceContext context) -> Nullable[Boolean]", "IsVisible(IAppearanceContext context) -> Boolean", "SetColor(IAppearanceContext context, Nullable[Color] color) -> Void", "SetFaceColor(ICollection[MeshFace] meshFaces, Nullable[Color] color) -> Void", "SetFaceColor(MeshFace meshFace, Nullable[Color] color) -> Void", "SetVisibility(IAppearanceContext context, Nullable[Boolean] visible) -> Void", "Transform(Matrix trans) -> Void"],
+  "props": ["CanSuppress: Boolean", "DefaultVisibility: Nullable[Boolean]", "Document: Document", "IsDeleted: Boolean", "IsSuppressed: Boolean", "Layer: Layer", "LifetimeLease: ILease", "Material: DocumentMaterial", "Moniker: Moniker[DesignMesh]", "Moniker: Moniker[DocObject]", "Name: String", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Parent: Part", "Root: DocObject", "Shape: Mesh", "SurfaceMaterial: SurfaceMaterial", "TextAttributes: IDictionary[String,String]", "UpdateState: UpdateState"],
+  "static": ["Create(Part parent, String name, IList[PointF] vertices, IList[Facet] facets) -> DesignMesh", "Create(Part parent, String name, IList[Point] vertices, IList[Facet] facets) -> DesignMesh", "Create(Part parent, String name, Single[] vertices, Int32[] facets) -> DesignMesh"]
+ },
+ "SpaceClaim.Api.V19.DrawingSheet": {
+  "ctors": [],
+  "inst": ["GetOccurrence(IDocObject companionOcc) -> IDrawingSheet", "GetOccurrence(IList[Instance] instancePath) -> IDrawingSheet", "GetOccurrence(Instance instance) -> IDrawingSheet", "SetFormat(DrawingSheet format, DrawingSheetContents contents) -> Void", "TranslateViews(ICollection[DrawingView] views, VectorUV translation) -> Void"],
+  "props": ["AnnotationPlane: Plane", "Barcodes: ICollection[Barcode]", "CurveGroups: ICollection[DesignCurveGroup]", "Curves: ICollection[DesignCurve]", "CustomObjects: ICollection[CustomObject]", "DatumFeatureSymbols: ICollection[DatumFeatureSymbol]", "Document: Document", "Format: DrawingSheet", "Height: Double", "Images: ICollection[Image]", "IsDeleted: Boolean", "IsThirdAngle: Boolean", "LifetimeLease: ILease", "Moniker: Moniker[DocObject]", "Moniker: Moniker[DrawingSheet]", "Name: String", "Notes: ICollection[Note]", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Root: DocObject", "Shape: ITrimmedSurface[Plane]", "Style: DrawingViewStyle", "SymbolInserts: ICollection[SymbolInsert]", "Tables: ICollection[Table]", "TextAttributes: IDictionary[String,String]", "Units: Units", "UpdateState: UpdateState", "ViewScale: DrawingViewScale", "Views: ICollection[DrawingView]", "Width: Double"],
+  "static": ["Create(Document doc, Double width, Double height) -> DrawingSheet", "Create(Document doc, DrawingSheet format, DrawingSheetContents contents) -> DrawingSheet"]
+ },
+ "SpaceClaim.Api.V19.Geometry.BoxUV": {
+  "ctors": [],
+  "inst": ["ContainsParam(PointUV param) -> Boolean", "Equals(BoxUV other) -> Boolean", "Equals(Object obj) -> Boolean", "GetHashCode() -> Int32"],
+  "props": ["Center: PointUV", "IsEmpty: Boolean", "RangeU: Interval", "RangeV: Interval"],
+  "static": ["Create(ICollection[PointUV] points) -> BoxUV", "Create(Interval rangeU, Interval rangeV) -> BoxUV", "Create(PointUV[] points) -> BoxUV"]
+ },
+ "SpaceClaim.Api.V19.Geometry.CircleProfile": {
+  "ctors": ["(Plane plane, Double radius, PointUV location=opt, Double angle=opt)", "(Plane plane, ICircle circle, IHasPlanarPlacement placement)"],
+  "inst": ["ContainsParam(PointUV param) -> Boolean", "GetBoundingBox(Matrix trans, Boolean tight) -> Box"],
+  "props": ["Angle: Double", "Area: Double", "Boundary: IList[ITrimmedCurve]", "BoxUV: BoxUV", "Location: PointUV", "Perimeter: Double", "Plane: Plane", "Radius: Double"],
+  "static": []
+ },
+ "SpaceClaim.Api.V19.Geometry.Cylinder": {
+  "ctors": [],
+  "inst": ["CreateTransformedCopy(Matrix trans) -> Cylinder", "GetLength(PointUV paramA, PointUV paramB) -> Double", "TryOffsetParam(PointUV start, DirectionUV dir, Double distance, PointUV& result) -> Boolean"],
+  "props": ["Axis: Line", "Frame: Frame", "IsRuled: UV[Boolean]", "IsSingular: UV[Bounds[Boolean]]", "LifetimeLease: ILease", "Parameterization: UV[Parameterization]", "Radius: Double"],
+  "static": ["Create(Frame frame, Double radius) -> Cylinder"]
+ },
+ "SpaceClaim.Api.V19.Geometry.PolygonProfile": {
+  "ctors": ["(Plane plane, IList[Point] points)", "(Plane plane, IList[PointUV] pointsUV)"],
+  "inst": ["ContainsParam(PointUV param) -> Boolean", "GetBoundingBox(Matrix trans, Boolean tight) -> Box", "GetExtremePoint(Direction dirA, Direction dirB, Direction dirC) -> Point"],
+  "props": ["Area: Double", "Boundary: IList[ITrimmedCurve]", "BoxUV: BoxUV", "Perimeter: Double", "Plane: Plane", "Points: IList[Point]", "PointsUV: IList[PointUV]"],
+  "static": []
+ },
+ "SpaceClaim.Api.V19.Geometry.Profile": {
+  "ctors": ["(Plane plane, IList[ITrimmedCurve] boundary)"],
+  "inst": ["ContainsParam(PointUV param) -> Boolean", "ContainsPoint(Point point) -> Boolean", "GetBoundingBox(Matrix trans) -> Box", "GetBoundingBox(Matrix trans, Boolean tight) -> Box", "GetClosestSeparation(ITrimmedGeometry other) -> Separation", "GetExtremePoint(Direction dirA, Direction dirB, Direction dirC) -> Point", "IntersectCurve(ITrimmedCurve segment) -> ICollection[IntPoint[SurfaceEvaluation,CurveEvaluation]]", "ProjectPoint(Point point) -> SurfaceEvaluation"],
+  "props": ["Area: Double", "Boundary: IList[ITrimmedCurve]", "BoxUV: BoxUV", "Perimeter: Double", "Plane: Plane"],
+  "static": []
+ },
+ "SpaceClaim.Api.V19.Geometry.RectangleProfile": {
+  "ctors": ["(Plane plane, Double width, Double height, PointUV location=opt, Double angle=opt)", "(Plane plane, IRectangle rectangle, IHasPlanarPlacement placement)"],
+  "inst": ["ContainsParam(PointUV param) -> Boolean"],
+  "props": ["Angle: Double", "Area: Double", "Boundary: IList[ITrimmedCurve]", "BoxUV: BoxUV", "Height: Double", "Location: PointUV", "Perimeter: Double", "Plane: Plane", "Points: IList[Point]", "PointsUV: IList[PointUV]", "Width: Double"],
+  "static": []
+ },
+ "SpaceClaim.Api.V19.Hole": {
+  "ctors": [],
+  "inst": ["GetOccurrence(IDocObject companionOcc) -> IHole", "GetOccurrence(IList[Instance] instancePath) -> IHole", "GetOccurrence(Instance instance) -> IHole"],
+  "props": ["AlternateReferenceFrame: Nullable[Frame]", "Axis: Line", "CosmeticThread: Boolean", "Counterbore: Boolean", "CounterboreDepth: Nullable[Double]", "CounterboreDiameter: Nullable[Double]", "Countersink: Boolean", "CountersinkAngle: Nullable[Double]", "CountersinkDiameter: Nullable[Double]", "DepthMeasurement: Nullable[HoleDepthMeasurementType]", "Direction: Direction", "Document: Document", "DrillPointAngle: Nullable[Double]", "DrillSize: String", "Faces: ICollection[DesignFace]", "FastenerName: String", "HoleDepth: Nullable[Double]", "HoleDiameter: Double", "HoleFit: Nullable[HoleFit]", "IsDeleted: Boolean", "LifetimeLease: ILease", "Moniker: Moniker[DocObject]", "Moniker: Moniker[Hole]", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Parent: Part", "Point: Point", "ReferenceFace: DesignFace", "Root: DocObject", "SeriesName: String", "TapDepth: Nullable[Double]", "Tapped: Boolean", "TextAttributes: IDictionary[String,String]", "UV: PointUV", "UpdateState: UpdateState"],
+  "static": ["Create(DesignFace referenceFace, Point point, HoleCreationInfo creationInfo) -> Hole", "Create(IDesignFace referenceFace, Point point, HoleCreationInfo creationInfo) -> IHole"]
+ },
+ "SpaceClaim.Api.V19.HoleFit": {
+  "enum": ["Nominal", "Close", "Medium", "Free"]
+ },
+ "SpaceClaim.Api.V19.ImperialLengthUnit": {
+  "enum": ["Feet", "Inches", "FeetAndInches", "Mils"]
+ },
+ "SpaceClaim.Api.V19.ImperialUnits": {
+  "ctors": ["(ImperialLengthUnit length, ImperialMassUnit mass, AngleUnit angle)"],
+  "inst": [],
+  "props": ["Angle: AngleUnit", "Length: ImperialLengthUnit", "Mass: ImperialMassUnit", "Type: UnitsSystemType"],
+  "static": []
+ },
+ "SpaceClaim.Api.V19.InteractionMode": {
+  "enum": ["Sketch", "Section", "Solid"]
+ },
+ "SpaceClaim.Api.V19.Layer": {
+  "ctors": [],
+  "inst": ["Delete() -> Void", "GetColor(IAppearanceContext context) -> Color", "GetLineStyle(IAppearanceContext context) -> LineStyle", "GetLineWeight(IAppearanceContext context) -> LineWeight", "GetOccurrence(IDocObject companionOcc) -> ILayer", "GetOccurrence(IList[Instance] instancePath) -> ILayer", "GetOccurrence(Instance instance) -> ILayer", "IsVisible(IAppearanceContext context) -> Boolean", "SetColor(IAppearanceContext context, Color color) -> Void", "SetLineStyle(IAppearanceContext context, LineStyle style) -> Void", "SetLineWeight(IAppearanceContext context, LineWeight weight) -> Void", "SetVisible(IAppearanceContext context, Boolean visible) -> Void"],
+  "props": ["Document: Document", "IsDeleted: Boolean", "LifetimeLease: ILease", "Moniker: Moniker[DocObject]", "Moniker: Moniker[Layer]", "Name: String", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Root: DocObject", "TextAttributes: IDictionary[String,String]", "UpdateState: UpdateState"],
+  "static": ["Copy(Document doc, String name, Layer layer) -> Layer", "Create(Document doc, String name, Color color) -> Layer"]
+ },
+ "SpaceClaim.Api.V19.LocationPoint": {
+  "enum": ["LeftSide", "TopSide", "RightSide", "BottomSide", "TopLeftCorner", "TopRightCorner", "BottomLeftCorner", "BottomRightCorner", "Center"]
+ },
+ "SpaceClaim.Api.V19.MetricLengthUnit": {
+  "enum": ["Meters", "Centimeters", "Millimeters", "Micrometers", "Nanometers"]
+ },
+ "SpaceClaim.Api.V19.MetricMassUnit": {
+  "enum": ["Kilograms", "Grams"]
+ },
+ "SpaceClaim.Api.V19.MetricUnits": {
+  "ctors": ["(MetricLengthUnit length, MetricMassUnit mass, AngleUnit angle)"],
+  "inst": [],
+  "props": ["Angle: AngleUnit", "Length: MetricLengthUnit", "Mass: MetricMassUnit", "Type: UnitsSystemType"],
+  "static": []
+ },
+ "SpaceClaim.Api.V19.Note": {
+  "ctors": [],
+  "inst": ["Copy() -> Note", "DeleteText(Int32 index, Int32 length) -> Void", "GetColor(IAppearanceContext context) -> Nullable[Color]", "GetLocation(LocationPoint locationPoint) -> PointUV", "GetOccurrence(IDocObject companionOcc) -> INote", "GetOccurrence(IList[Instance] instancePath) -> INote", "GetOccurrence(Instance instance) -> INote", "GetTextPolylines(Double curveDeviation, Double angleDeviation) -> ICollection[Point[]]", "GetVisibility(IAppearanceContext context) -> Nullable[Boolean]", "InsertText(Int32 index, String text) -> Void", "IsVisible(IAppearanceContext context) -> Boolean", "ReplaceText(Int32 index, Int32 length, String text) -> Void", "ReplaceText(String text) -> Void", "SetBold(Boolean bold) -> Void", "SetBold(Boolean bold, Int32 index, Int32 length) -> Void", "SetCharacterSpacing(Double spacing) -> Void", "SetCharacterSpacing(Double spacing, Int32 index, Int32 length) -> Void", "SetColor(IAppearanceContext context, Nullable[Color] color) -> Void", "SetFontName(String fontName) -> Void", "SetFontName(String fontName, Int32 index, Int32 length) -> Void", "SetFontSize(Double fontSize) -> Void", "SetFontSize(Double fontSize, Int32 index, Int32 length) -> Void", "SetItalic(Boolean italic) -> Void", "SetItalic(Boolean italic, Int32 index, Int32 length) -> Void", "SetLocation(PointUV anchorLocation, LocationPoint anchorPoint) -> Void", "SetStrikethrough(Boolean strikethrough) -> Void", "SetStrikethrough(Boolean strikethrough, Int32 index, Int32 length) -> Void", "SetUnderline(Boolean underline) -> Void", "SetUnderline(Boolean underline, Int32 index, Int32 length) -> Void", "SetVisibility(IAppearanceContext context, Nullable[Boolean] visible) -> Void"],
+  "props": ["AnchorPoint: LocationPoint", "Angle: Double", "AnnotationSpace: AnnotationSpace", "Callouts: IList[Callout]", "Curvature: NoteCurvature", "DefaultVisibility: Nullable[Boolean]", "Document: Document", "EndIndex: Int32", "Height: Double", "HorizontalAlignment: HorizontalAlignment", "IsDeleted: Boolean", "IsMirrored: Boolean", "Layer: Layer", "LifetimeLease: ILease", "LineSpacing: Double", "Moniker: Moniker[DocObject]", "Moniker: Moniker[Note]", "Name: String", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Parent: IAnnotationParentMaster", "Plane: Plane", "Root: DocObject", "Text: String", "TextAttributes: IDictionary[String,String]", "TextFit: TextFit", "TextOutline: ICollection[ITrimmedCurve]", "UpdateState: UpdateState", "Width: Double"],
+  "static": ["Create(IAnnotationParent parent, PointUV anchorLocation, LocationPoint anchorPoint, Double fontSize, String text) -> INote", "Create(IAnnotationParentMaster parent, PointUV anchorLocation, LocationPoint anchorPoint, Double fontSize, String text) -> Note"]
+ },
+ "SpaceClaim.Api.V19.PartType": {
+  "enum": ["Normal", "SheetMetal", "FlatPattern", "BeamProfile", "Markup"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.Beam": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Create(ISelection selection, ICommandInfo info=opt) -> BeamResult", "Create(ISelection selection, IPart profile, ICommandInfo info=opt) -> BeamResult", "Create(ISelection selection, ISelection profile, ICommandInfo info=opt) -> BeamResult", "ExtractProfile(ISelection selection, ICommandInfo info=opt) -> ExtractBeamResult", "GetExternal(BeamType type) -> Type", "GetExternal(SectionAnchor position) -> AnchorPosition", "GetInternal(AnchorPosition position) -> SectionAnchor", "GetInternal(Type type) -> BeamType", "GetProperty(IBeam Beam, BeamProperty property) -> Double", "GetProperty(IDesignCurve curveSel, BeamProperty property) -> Double", "GetProperty(ISelection beamSelection, BeamProperty property) -> Double", "ReverseBeam(ICollection[IBeam] beams, Boolean isReversed) -> CommandResult", "ReverseBeam(ICollection[IDesignCurve] curveSel, Boolean isReversed) -> CommandResult", "ReverseBeam(ISelection beamSelection, Boolean isReversed) -> CommandResult", "SetOrientation(ICollection[IBeam] beams, Double orientation) -> CommandResult", "SetOrientation(ICollection[IDesignCurve] curveSel, Double orientation) -> CommandResult", "SetOrientation(ISelection beamSelection, Double orientation) -> CommandResult", "SetPosition(ICollection[IBeam] beams, AnchorPosition position) -> CommandResult", "SetPosition(ICollection[IBeam] beams, Double Xposition, Double Yposition) -> CommandResult", "SetPosition(ICollection[IDesignCurve] curveSel, AnchorPosition position) -> CommandResult", "SetPosition(ICollection[IDesignCurve] curveSel, Double Xposition, Double Yposition) -> CommandResult", "SetPosition(ISelection beamSelection, AnchorPosition position) -> CommandResult", "SetPosition(ISelection beamSelection, Double Xposition, Double Yposition) -> CommandResult", "SetProfile(ICollection[IBeam] beam, IComponent comp) -> CommandResult", "SetProfile(ICollection[IBeam] beams, IPart part) -> CommandResult", "SetProfile(ICollection[IDesignCurve] curveSel, IComponent comp) -> CommandResult", "SetProfile(ICollection[IDesignCurve] curveSel, IPart part) -> CommandResult", "SetProfile(ISelection beamSelection, ISelection profileSel) -> CommandResult", "SetRigidity(ICollection[IBeam] beams, Boolean isRigid) -> CommandResult", "SetRigidity(ICollection[IDesignCurve] curveSel, Boolean isRigid) -> CommandResult", "SetRigidity(ISelection beamSelection, Boolean isRigid) -> CommandResult", "SetType(ICollection[IBeam] beams, Type type) -> CommandResult", "SetType(ICollection[IDesignCurve] curveSel, Type type) -> CommandResult", "SetType(ISelection beamSelection, Type type) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CommandOptions.EnclosureType": {
+  "enum": ["Box", "Cylinder", "Sphere", "CustomShape"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CommandOptions.FaceColorTarget": {
+  "enum": ["Undefined", "Face", "Body"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CommandOptions.FaceEdgeSplitter": {
+  "ctors": ["(SplitterType type)"],
+  "inst": ["AddSplitPoint(IDesignEdge edge, Double paramU) -> Void", "AddSplitPoint(IDesignFace face, Double paramU, Double paramV) -> Void", "AddSplitPoint(IDesignFace face, Point point) -> Void", "AddSplitPoint(ISelection selection, Nullable[Double] paramU=opt, Nullable[Double] paramV=opt) -> Void"],
+  "props": ["SplitPoints: Dictionary[IDocObject,Nullable[Point]]", "Type: SplitterType"],
+  "static": []
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CommandOptions.FaceSplitType": {
+  "enum": ["UV", "Perpendicular"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CommandOptions.FacetQuality": {
+  "enum": ["VeryCoarse", "Coarse", "Medium", "Fine", "VeryFine"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CommandOptions.FillType": {
+  "enum": ["Patch", "Cap"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CommandOptions.IEnclosureCushion": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": []
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CommandOptions.IcepakSimplifyLevelOneOptions": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": ["CleanUp: Boolean", "RandomizeColors: Boolean", "Split: Boolean"],
+  "static": []
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CommandOptions.IcepakSimplifyLevelZeroOptions": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": ["PreserveOriginal: Boolean"],
+  "static": []
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CommandOptions.StlInputOptions": {
+  "enum": ["ConnectedMesh", "GraphicsOnly", "Solid"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CommandOptions.ThickenDirection": {
+  "enum": ["Inward", "Outward", "Both"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CommandOptions.WrapDirections": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": ["BasePlane: Plane", "SourceDirection: Direction", "SourcePoint: Point", "TargetDirection: Direction", "TargetPoint: Point"],
+  "static": []
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.ConvertToSolid": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ISelection selection, Boolean mergeFaces, ICommandInfo info=opt) -> ConvertToSolidResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CreationType": {
+  "enum": ["Standard", "Exact", "Imported"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CrossSectionItemType": {
+  "enum": ["Unknown", "Channel", "Circular", "Disk", "FlatBar", "Hat", "I", "L", "Rectangular", "T", "Z", "UserDefined"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.CylinderBody": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Create(Point centerPoint, Point startPoint, Point endPoint, ExtrudeType extrudeMode=opt, ICommandInfo info=opt) -> CylinderBodyResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.DocumentSave": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ExportOptions exportOptions) -> CommandResult", "Execute(IScriptObject[IFileSettings] settigns) -> CommandResult", "Execute(String fileName, ExportOptions exportOptions) -> CommandResult", "Execute(String fileName, IScriptObject[IFileSettings] settigns) -> CommandResult", "Execute(String filename) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.DraftSide": {
+  "enum": ["NoSplit", "This", "Other", "Both"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.Enclosure": {
+  "ctors": ["(ISelection selection, EnclosureOptions options=opt)"],
+  "inst": ["Execute(ICommandInfo info=opt) -> EnclosureResult"],
+  "props": ["EnclosureCushion: IEnclosureCushion"],
+  "static": ["Create(ISelection selection, EnclosureOptions options, ICommandInfo commandInfo=opt) -> EnclosureResult", "Create(ISelection selection, ICommandInfo commandInfo=opt) -> EnclosureResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.ExtrudeProfile": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(Profile profile, Double distance, Part parent=opt, String name=opt) -> ExtrudeSolidBodyResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.FacetConvert": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Create(ISelection selection, FacetConvertOptions options=opt, ICommandInfo info=opt) -> FacetConvertResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.FacetReduce": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Create(FacetReduceOptions options=opt, ICommandInfo info=opt) -> FacetReduceResult", "Create(ISelection selection, FacetReduceOptions options=opt, ICommandInfo info=opt) -> FacetReduceResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.FacetRemesh": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Create(FacetRemeshOptions options=opt, ICommandInfo info=opt) -> FacetRemeshResult", "Create(ISelection selection, FacetRemeshOptions options=opt, ICommandInfo info=opt) -> FacetRemeshResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.FacetSmooth": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Create(FacetSmoothOptions options=opt, ICommandInfo info=opt) -> FacetSmoothResult", "Create(ISelection selection, FacetSmoothOptions options=opt, ICommandInfo info=opt) -> FacetSmoothResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.FacetThicken": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ISelection selection, FacetThickenOptions options=opt, ICommandInfo info=opt) -> FacetThickenResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.Fill": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ISelection selection, ISelection secondarySelection=opt, FillOptions options=opt, FillMode mode=opt, ICommandInfo info=opt) -> FillResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.FillMode": {
+  "enum": ["Sketch", "Section", "Layout", "ThreeD"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.FixExtraEdges": {
+  "ctors": ["(ISelection selectObject)", "()"],
+  "inst": ["FindProblemAreas() -> IList[ProblemArea]", "Fix(ICommandInfo commandInfo=opt) -> CommandResult"],
+  "props": ["ProblemAreas: IList[ProblemArea]"],
+  "static": ["FindAndFix(ICommandInfo commandInfo=opt) -> CommandResult", "FindAndFix(ISelection selectObject, ICommandInfo commandInfo=opt) -> CommandResult", "FixSpecific(ISelection selectObject, ICommandInfo commandInfo=opt) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.FixMissingFaces": {
+  "ctors": ["(ISelection selectObject, FixMissingFacesOptions options=opt)", "(FixMissingFacesOptions options=opt)"],
+  "inst": ["FindProblemAreas() -> IList[ProblemArea]", "Fix(ICommandInfo info=opt) -> CommandResult"],
+  "props": ["ProblemAreas: IList[ProblemArea]"],
+  "static": ["FindAndFix(FixMissingFacesOptions options, ICommandInfo info=opt) -> CommandResult", "FindAndFix(ICommandInfo info=opt) -> CommandResult", "FindAndFix(ISelection selectObject, FixMissingFacesOptions options, ICommandInfo info=opt) -> CommandResult", "FindAndFix(ISelection selectObject, ICommandInfo info=opt) -> CommandResult", "FixSpecific(ISelection specifics, FixMissingFacesOptions options, ICommandInfo info=opt) -> CommandResult", "FixSpecific(ISelection specifics, ICommandInfo info=opt) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.ForceShareTopology": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ISelection targetEntitiesSel, Double tolerance, ICommandInfo commandInfo=opt) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.HoleFit": {
+  "enum": ["Nominal", "Close", "Medium", "Free"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.IcepakSimplify": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["ExecuteLevelOne(ISelection targetSel, IcepakSimplifyLevelZeroOptions options0, IcepakSimplifyLevelOneOptions options1, ICommandInfo info=opt) -> IcepakSimplifyResult", "ExecuteLevelThree(ISelection targetSel, FacetQuality facetQuality, ICommandInfo info=opt) -> IcepakSimplifyResult", "ExecuteLevelTwo(ISelection targetSel, IcepakSimplifyLevelZeroOptions options0, IcepakSimplifyLevelOneOptions options1, IcepakSimplifyLevelTwoOptions options2, ICommandInfo info=opt) -> IcepakSimplifyResult", "ExecuteLevelZero(ISelection targetSel, IcepakSimplifyLevelZeroOptions options, ICommandInfo info=opt) -> IcepakSimplifyResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.Midsurface": {
+  "ctors": ["(MidsurfaceOptions options=opt)"],
+  "inst": ["AddFacePairsByRange(IDesignFace face, Double min, Double max) -> Void", "AddFacePairsByRange(ISelection selection, Double min, Double max) -> Void", "AddMatchingFacePairs(IDesignFace face1, IDesignFace face2, Double thicknessTolerance=opt) -> Void", "AddMatchingFacePairs(ISelection selection, Double thicknessTolerance=opt) -> Void", "AddMatchingFacePairs(MidsurfaceOffsetFaces pair, Double thicknessTolerance=opt) -> Void", "AddMatchingFacePairs(SmartVariableWrapper face1, SmartVariableWrapper face2, Double thicknessTolerance=opt) -> Void", "Execute(ICommandInfo info=opt) -> MidsurfaceResult", "FlipFacePair(IDesignFace face) -> Void", "FlipFacePair(ISelection selection) -> Void", "FlipFacePair(MidsurfaceOffsetFaces pair) -> Void", "RemoveFacePair(IDesignFace face) -> Void", "RemoveFacePair(ISelection selection) -> Void", "RemoveFacePair(MidsurfaceOffsetFaces pair) -> Void"],
+  "props": ["FacePairs: ICollection[MidsurfaceOffsetFaces]", "Options: MidsurfaceOptions"],
+  "static": ["Convert(ISelection bodies, Double thickness, ICommandInfo info=opt) -> MidsurfaceResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.MirrorComponents": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ISelection selection, ISelection mirrorPlane, ICommandInfo info=opt) -> MirrorComponentsCommandResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.ProjectToSolid": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ISelection selection, ISelection targetFaces, ISelection directionSelection, ProjectToSolidOptions options=opt, ICommandInfo info=opt) -> ProjectToSolidResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.RenameObject": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ISelection selection, String name) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.ReplaceFacesWithFace": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Execute(ICollection faces, ReplaceFacesWithFaceOptions options=opt) -> ReplaceFacesWithFaceResult", "Execute(ISelection selection, ReplaceFacesWithFaceOptions options=opt, ICommandInfo info=opt) -> ReplaceFacesWithFaceResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.STLFile": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Export(STLExportOptions options) -> CommandResult", "Export(String fileName) -> CommandResult", "Export(String fileName, ISelection meshes, STLExportOptions options=opt) -> CommandResult", "Export(String fileName, STLExportOptions options) -> CommandResult", "Import(String fileName, ICommandBinaryData maps=opt) -> CommandResult", "Import(String fileName, STLImportOptions options, ICommandBinaryData maps=opt) -> CommandResult", "Insert(String fileName, STLImportOptions options, ICommandBinaryData maps=opt) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.ShareTopology": {
+  "ctors": ["(ISelection selectObject, ShareTopologyOptions opts=opt)", "(ShareTopologyOptions opts=opt)"],
+  "inst": ["ExcludeProblemArea(ISelection selectObject) -> Void", "FindProblemAreas() -> IList[ProblemArea]", "Fix(ICommandInfo commandInfo=opt) -> CommandResult"],
+  "props": ["ProblemAreas: IList[ProblemArea]"],
+  "static": ["FindAndFix(ICommandInfo commandInfo=opt) -> CommandResult", "FindAndFix(ISelection selectObject, ShareTopologyOptions opts=opt) -> CommandResult", "FindAndFix(ShareTopologyOptions opts, ICommandInfo commandInfo=opt) -> CommandResult", "FindProblemAreasConsideringInstancing(Pair[ICollection[INominalBody],HashSet[IBeam]] bodyBeamPair, Double tolerance, Boolean preserveInstances) -> List[ICoincidentProblemArea]", "FixSpecific(ISelection targetSelections, ShareTopologyOptions options=opt, ICommandInfo info=opt) -> CommandResult", "UpgradeLegacy(ICommandInfo commandInfo=opt) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.Sketch2DRound": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Create(ISelection selection1, ISelection selection2, Double radius, Sketch2DRoundOptions options=opt) -> SketchCurveResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.SplitEdge": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["ByCount(ISelection edges, Int32 count, ICommandInfo info=opt) -> SplitEdgeResult", "ByLength(ISelection edge, ISelection referencePoint, Double length, ICommandInfo info=opt) -> SplitEdgeResult", "ByPoint(ISelection edge, Point targetPoint, ICommandInfo info=opt) -> SplitEdgeResult", "ByProportion(ISelection edge, ISelection referencePoint, Double proportion, ICommandInfo info=opt) -> SplitEdgeResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.SplitFace": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["ByCurves(ISelection target, ICollection[CurveSegment] splitCurves, ICommandInfo info=opt) -> SplitFaceResult", "ByCurves(ISelection target, ICollection[CurveSegment] splitCurves, SplitFaceOptions opts=opt, ICommandInfo info=opt) -> SplitFaceResult", "ByCurves(ISelection target, ICollection[ITrimmedCurve] splitCurves, ICommandInfo info=opt) -> SplitFaceResult", "ByCurves(ISelection target, ICollection[ITrimmedCurve] splitCurves, SplitFaceOptions opts, ICommandInfo info=opt) -> SplitFaceResult", "ByCutter(ISelection target, ISelection cutter, SplitFaceOptions opts=opt, ICommandInfo info=opt) -> SplitFaceResult", "ByParametric(ISelection target, Point point, FaceSplitType faceSplitType, SplitFaceOptions opts=opt, ICommandInfo info=opt) -> SplitFaceResult", "ByTwoPoints(ISelection target, Point pointStart, Point pointEnd, SplitFaceOptions opts=opt, ICommandInfo info=opt) -> SplitFaceResult", "Execute(ISelection faces, FaceEdgeSplitter faceEdgeSplitter, ICommandInfo info=opt) -> SplitFaceResult", "Execute(ISelection faces, FaceEdgeSplitter faceEdgeSplitter, SplitFaceOptions opts, ICommandInfo info=opt) -> SplitFaceResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.StandardHoles": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Convert(ICollection[IdentifiedHole] holes, ICommandInfo info=opt) -> ConvertStandardHolesResult", "ConvertByFaces(ICollection[IDesignFace] faces, ICommandInfo info=opt) -> ConvertStandardHolesResult", "ConvertByFaces(ISelection selection, ICommandInfo info=opt) -> ConvertStandardHolesResult", "Create(IList[HoleLocation] nomFaceToLocations, ISelection secondarySelection=opt, StandardHolesOptions options=opt, ICommandInfo info=opt) -> CreateStandardHolesResult", "Create(IList[HoleLocation] nomFaceToLocations, StandardHolesOptions options, ICommandInfo info=opt) -> CreateStandardHolesResult", "Find(FindStandardHoleOptions options, ICommandInfo info=opt) -> ICollection[IdentifiedHole]", "Find(ICollection[IDesignBody] selBodies, FindStandardHoleOptions options, ICommandInfo info=opt) -> ICollection[IdentifiedHole]", "Find(ISelection selection, FindStandardHoleOptions options, ICommandInfo info=opt) -> ICollection[IdentifiedHole]", "GetHoleFaces() -> ICollection[IDesignFace]", "GetHoleFaces(FindStandardHoleOptions options) -> ICollection[IDesignFace]", "GetHoleFaces(ICollection[IDesignBody] selBodies) -> ICollection[IDesignFace]", "GetHoleFaces(ICollection[IdentifiedHole] holes) -> ICollection[IDesignFace]", "GetHoleFaces(ISelection selection, FindStandardHoleOptions options) -> ICollection[IDesignFace]", "Modify(ICollection[IHole] holes, StandardHolesOptions options, ICommandInfo info=opt) -> ModifyStandardHolesResult", "Modify(ISelection selection, StandardHolesOptions options, ICommandInfo info=opt) -> ModifyStandardHolesResult", "ModifyCosmeticThread(ICollection[IHole] selHoles, Boolean cosmeticThread, ICommandInfo info=opt) -> Void", "ModifyCosmeticThread(ISelection selection, Boolean cosmeticThread, ICommandInfo info=opt) -> Void", "ModifyCounterboreDepth(ICollection[IHole] selHoles, Nullable[Double] counterboreDepth, ICommandInfo info=opt) -> Void", "ModifyCounterboreDepth(ISelection selection, Nullable[Double] counterboreDepth, ICommandInfo info=opt) -> Void", "ModifyCounterboreRadius(ICollection[IHole] selHoles, Nullable[Double] counterboreRadius, ICommandInfo info=opt) -> Void", "ModifyCounterboreRadius(ISelection selection, Nullable[Double] counterboreRadius, ICommandInfo info=opt) -> Void", "ModifyCountersinkAngle(ICollection[IHole] selHoles, Nullable[Double] countersinkAngle, ICommandInfo info=opt) -> Void", "ModifyCountersinkAngle(ISelection selection, Nullable[Double] countersinkAngle, ICommandInfo info=opt) -> Void", "ModifyCountersinkRadius(ICollection[IHole] selHoles, Nullable[Double] countersinkRadius, ICommandInfo info=opt) -> Void", "ModifyCountersinkRadius(ISelection selection, Nullable[Double] countersinkRadius, ICommandInfo info=opt) -> Void", "ModifyDrillPointAngle(ICollection[IHole] selHoles, Double drillPointAngle, ICommandInfo info=opt) -> Void", "ModifyDrillPointAngle(ISelection selection, Double drillPointAngle, ICommandInfo info=opt) -> Void", "ModifyDrillSize(ICollection[IHole] selHoles, String drillSize, ICommandInfo info=opt) -> Void", "ModifyDrillSize(ISelection selection, String drillSize, ICommandInfo info=opt) -> Void", "ModifyFastenerName(ICollection[IHole] selHoles, String fastenerName, ICommandInfo info=opt) -> Void", "ModifyFastenerName(ISelection selection, String fastenerName, ICommandInfo info=opt) -> Void", "ModifyHoleDepth(ICollection[IHole] selHoles, Nullable[Double] holeDepth, ICommandInfo info=opt) -> Void", "ModifyHoleDepth(ISelection selection, Nullable[Double] holeDepth, ICommandInfo info=opt) -> Void", "ModifyHoleDepthMeasurement(ICollection[IHole] selHoles, Nullable[HoleDepthMeasurementType] depthMeasurement, ICommandInfo info=opt) -> Void", "ModifyHoleDepthMeasurement(ISelection selection, Nullable[HoleDepthMeasurementType] depthMeasurement, ICommandInfo info=opt) -> Void", "ModifyHoleFit(ICollection[IHole] selHoles, Nullable[HoleFit] fit, ICommandInfo info=opt) -> Void", "ModifyHoleFit(ISelection selection, Nullable[HoleFit] fit, ICommandInfo info=opt) -> Void", "ModifyHoleRadius(ICollection[IHole] selHoles, Double holeRadius, ICommandInfo info=opt) -> Void", "ModifyHoleRadius(ISelection selection, Double holeRadius, ICommandInfo info=opt) -> Void", "ModifySeriesName(ICollection[IHole] selHoles, String seriesName, ICommandInfo info=opt) -> Void", "ModifySeriesName(ISelection selection, String seriesName, ICommandInfo info=opt) -> Void", "ModifyTap(ICollection[IHole] selHoles, Boolean tapped, ICommandInfo info=opt) -> Void", "ModifyTap(ISelection selection, Boolean tapped, ICommandInfo info=opt) -> Void", "ModifyTapDepth(ICollection[IHole] selHoles, Double tapDepth, ICommandInfo info=opt) -> Void", "ModifyTapDepth(ISelection selection, Double tapDepth, ICommandInfo info=opt) -> Void", "RemoveAssociations(ICollection[IHole] holes, ICommandInfo info=opt) -> RemoveStandardHoleAssociationsResult", "RemoveAssociations(ISelection selection, ICommandInfo info=opt) -> RemoveStandardHoleAssociationsResult", "Reverse(ICollection[INominalHole] holes, ICommandInfo info=opt) -> ReverseStandardHolesCommandResult", "Reverse(ISelection selection, ICommandInfo info=opt) -> ReverseStandardHolesCommandResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.StitchFaces": {
+  "ctors": ["(ISelection selectObject, StitchOptions opts=opt)", "(StitchOptions opts=opt)"],
+  "inst": ["FindProblemAreas() -> IList[ProblemArea]", "Fix(ICommandInfo commandInfo=opt) -> CommandResult"],
+  "props": ["ProblemAreas: IList[ProblemArea]"],
+  "static": ["FindAndFix(ICommandInfo commandInfo=opt) -> CommandResult", "FindAndFix(ISelection selectObject, StitchOptions opts=opt, ICommandInfo commandInfo=opt) -> CommandResult", "FindAndFix(StitchOptions opts, ICommandInfo commandInfo=opt) -> CommandResult", "FixSpecific(ISelection selectObject, ICommandInfo commandInfo=opt) -> CommandResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.SurfaceBody": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["Create(Surface surface, BoxUV region, Part parent=opt, String name=opt) -> SurfaceBodyResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.VolumeExtract": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Create(ISelection selectObject, ISelection secondarySelection, ICommandInfo commandInfo=opt) -> VolumeExtractResult", "Create(ISelection selectObject, ISelection secondarySelection, VolumeExtractOptions options, ICommandInfo info=opt) -> VolumeExtractResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.Workpiece": {
+  "ctors": ["(ISelection selection, WorkpieceOptions options=opt)"],
+  "inst": ["Execute(ICommandInfo info=opt) -> WorkpieceResult"],
+  "props": ["WorkpieceCushion: IWorkpieceCushion"],
+  "static": ["Create(ISelection selection, ICommandInfo commandInfo=opt) -> WorkpieceResult", "Create(ISelection selection, WorkpieceOptions options, ICommandInfo commandInfo=opt) -> WorkpieceResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Commands.Wrap": {
+  "ctors": ["()"],
+  "inst": [],
+  "props": [],
+  "static": ["Create(ISelection selectObject, ISelection secondarySelection, WrapDirections directions, WrapOptions opts=opt, ICommandInfo info=opt) -> WrapResult", "Create(ISelection selectObject, ISelection secondarySelection, WrapOptions opts=opt, ICommandInfo info=opt) -> WrapResult"]
+ },
+ "SpaceClaim.Api.V19.Scripting.Helpers.Units": {
+  "ctors": [],
+  "inst": [],
+  "props": [],
+  "static": ["CM(Double inValue) -> Double", "CM2(Double inValue) -> Double", "CM3(Double inValue) -> Double", "DEG(Double invalue) -> Double", "FT(Double inValue) -> Double", "FT2(Double inValue) -> Double", "FT3(Double inValue) -> Double", "IN(Double inValue) -> Double", "IN2(Double inValue) -> Double", "IN3(Double inValue) -> Double", "M(Double inValue) -> Double", "M2(Double inValue) -> Double", "M3(Double inValue) -> Double", "MIL(Double inValue) -> Double", "MIL2(Double inValue) -> Double", "MIL3(Double inValue) -> Double", "MM(Double inValue) -> Double", "MM2(Double inValue) -> Double", "MM3(Double inValue) -> Double", "NM(Double inValue) -> Double", "NM2(Double inValue) -> Double", "NM3(Double inValue) -> Double", "PERCENT(Double invalue) -> Double", "RAD(Double inValue) -> Double", "UM(Double inValue) -> Double", "UM2(Double inValue) -> Double", "UM3(Double inValue) -> Double"]
+ },
+ "SpaceClaim.Api.V19.Scripting.PowerSelection.RelationType+Hole": {
+  "ctors": [],
+  "inst": [],
+  "props": ["SameHoleDimensions: RelationType"],
+  "static": []
+ },
+ "SpaceClaim.Api.V19.Scripting.Selection.SelectionPoint": {
+  "ctors": [],
+  "inst": ["AddToActive() -> Void", "ConvertByShape(GeometryType geometryType) -> ISelection", "ConvertToAdjacent() -> ISelection", "ConvertToBodies() -> IBodySelection", "ConvertToComponents() -> IComponentSelection", "ConvertToEdges() -> ICurveSelection", "ConvertToFaces() -> IFaceSelection", "ConvertToLoops() -> ILoopSelection", "ConvertToParts() -> IPartSelection", "ConvertToPoints() -> IPointSelection", "Filter() -> ISelection", "FilterBodies() -> IBodySelection", "FilterComponents() -> IComponentSelection", "FilterEdges() -> ICurveSelection", "FilterFaces() -> IFaceSelection", "FilterParts() -> IPartSelection", "GetItems() -> ICollection[T]", "GetParams() -> Nullable`1[]", "IsValid() -> Boolean", "SetActive() -> Void"],
+  "props": ["HasPoint: Boolean", "Items: ICollection[IDocObject]", "Point: Point"],
+  "static": ["Create(IDocObject obj, Double[] parameters) -> SelectionPoint", "Create(IEvaluation eval, Point3D point) -> SelectionPoint", "Create(IScriptSmartVariable smartVariable, Double[] parameters) -> SelectionPoint", "Create(ISelection selection, Double[] parameters) -> SelectionPoint", "Create(PythonTuple tuple) -> SelectionPoint", "CreateCurve(IWireCurve curve, Nullable[Double] uParameter) -> CurveSelectionPoint", "CreateDatumLine(IDatumLine line, Nullable[Double] uParameter) -> DatumLineSelectionPoint", "CreateDatumPlane(IDatumPlane plane, Nullable[Double] uParameter, Nullable[Double] vParameter) -> DatumPlaneSelectionPoint", "CreateDatumPoint(IDatumPoint point) -> DatumPointSelectionPoint", "CreateDesignAxis(IDesignAxis axis, Nullable[Double] uParameter) -> DesignAxisSelectionPoint", "CreateEdge(IDesignEdge edge, Nullable[Double] uParameter) -> EdgeSelectionPoint", "CreateFace(IDesignFace face, Nullable[Double] uParameter, Nullable[Double] vParameter) -> FaceSelectionPoint", "CreateList(PythonTuple[] tuples) -> IList[SelectionPoint]", "CreatePoint(ICurvePoint point) -> PointSelectionPoint", "CreateSelectionList(PythonTuple[] tuples) -> IList[ISelection]"]
+ },
+ "SpaceClaim.Api.V19.ShareTopology": {
+  "ctors": [],
+  "enum": ["None", "Share", "Merge", "Groups"],
+  "inst": [],
+  "props": [],
+  "static": []
+ },
+ "SpaceClaim.Api.V19.SheetMetalAspect": {
+  "ctors": [],
+  "inst": ["CreateBends(DesignFace face, Point anchorPoint, ICollection[BendSpecification] bendSpecs, ICollection[DesignCurve] desCurvesToMove) -> IDictionary[BendSpecification,CylindricalBend]", "CreateHem(DesignEdge edge, HemStyle style) -> HemBend", "CreateHem(DesignEdge edge, HemStyle style, Interval bounds) -> HemBend", "CreateInternalBead(DesignFace substrate, ICollection[ITrimmedCurve] path, Double beadRadius, Double edgeRadius) -> Bead", "CreateJoggle(CylindricalBend bendA, CylindricalBend bendB) -> JoggleBend", "CreateMarker(DesignFace face, PointUV location) -> Marker", "CreateMissingBends(ICollection[DesignEdge] creaseEdges, Double innerRadius) -> ICollection[CylindricalBend]", "CreatePartitionBead(DesignFace substrate, Point pointInFace, Direction dir, Double beadRadius, Double edgeRadius) -> Bead", "CreateRips(ICollection[DesignEdge] creaseEdges) -> ICollection[DesignFace]", "Delete() -> Void", "GetCreaseEdges(DesignBody desBody) -> ICollection[DesignEdge]", "GetFeature(DesignFace desFace) -> SheetMetalFeature", "GetOppositeFace(DesignFace desFace) -> DesignFace", "IdentifyForms(Boolean ignoreCutouts) -> ICollection[SheetMetalForm]", "RepairBends(ICollection[DesignFace] bendFaces) -> ICollection[AxialBend]", "TryApplyNote(Note note, Lettering type, DesignFace& substrate) -> Boolean", "Unfold(DesignFace anchorFace) -> DesignFace"],
+  "props": ["Beads: ICollection[Bead]", "BendTable: String", "Bends: ICollection[Bend]", "Corners: ICollection[SheetMetalCorner]", "CrossBreaks: ICollection[CrossBreak]", "Forms: ICollection[SheetMetalForm]", "Gussets: ICollection[Gusset]", "Hems: ICollection[HemBend]", "InnerRadius: Double", "InnerRadiusDefinition: ValueDefinition", "KFactor: Double", "LifetimeLease: ILease", "LightweightNotes: ICollection[ILightweightNote]", "Markers: ICollection[Marker]", "Owner: Part", "Thickness: Double"],
+  "static": []
+ },
+ "SpaceClaim.Api.V19.Units": {
+  "ctors": [],
+  "inst": ["Delete() -> Void", "GetMeasurementUnit(DimensionType dimensionType) -> MeasurementUnit"],
+  "props": ["ActiveUnitsSystem: UnitsSystemType", "Angle: MeasurementUnit", "Area: MeasurementUnit", "Document: Document", "GridSettings: GridSettings", "ImperialUnits: ImperialUnits", "IsDeleted: Boolean", "IsSmallUnitType: Boolean", "Length: MeasurementUnit", "LifetimeLease: ILease", "Mass: MeasurementUnit", "MetricUnits: MetricUnits", "Moniker: Moniker[DocObject]", "Moniker: Moniker[Units]", "NumberAttributes: IDictionary[String,Double]", "Parent: DocObject", "Root: DocObject", "TextAttributes: IDictionary[String,String]", "UpdateState: UpdateState", "UseWorkbenchUnits: Boolean", "Volume: MeasurementUnit"],
+  "static": ["Create(DrawingSheet parent) -> Units"]
+ },
+ "SpaceClaim.Api.V19.UnitsSystemType": {
+  "enum": ["Metric", "Imperial"]
+ },
+ "_designbody_members": ["CanSuppress", "Children", "Create", "CreateObjRef", "DefaultVisibility", "Delete", "Document", "Edges", "Enclosure", "Equals", "ExecuteCommand", "Faces", "GetAncestor", "GetChildren", "GetColor", "GetDescendants", "GetDesignBody", "GetDesignEdge", "GetDesignFace", "GetEdgeTessellation", "GetHashCode", "GetLifetimeService", "GetOccurrence", "GetTessellation", "GetTessellationBoundingBox", "GetType", "GetVisibility", "IdentifyHoles", "InitializeLifetimeService", "Instance", "IsDeleted", "IsLocked", "IsSuppressed", "IsVisible", "Layer", "LifetimeLease", "MassProperties", "Master", "Material", "MemberwiseClone", "MidSurface", "Moniker", "Name", "NumberAttributes", "Original", "Parent", "PathToMaster", "ReferenceEquals", "RemoveNumberAttribute", "RemoveTextAttribute", "Root", "Save", "Scale", "SetColor", "SetNumberAttribute", "SetTextAttribute", "SetVisibility", "Shape", "Style", "SurfaceMaterial", "TextAttributes", "ToString", "Transform", "TransformToMaster", "TryGetNumberAttribute", "TryGetTextAttribute", "UpdateState", "VolumeExtraction"],
+ "_doc_members": ["ApplyReplayParameters", "CoreProperties", "Create", "CustomProperties", "CustomPropertiesChanged", "DefaultLayer", "DeleteObjects", "DocumentAdded", "DocumentChanged", "DocumentCloseAgreed", "DocumentCloseProposed", "DocumentClosed", "DocumentCompleted", "DocumentDeepSaveAgreed", "DocumentDeepSaveProposed", "DocumentDeepSaved", "DocumentOpened", "DocumentRemoved", "DocumentSaved", "DocumentSaving", "DrawingSheets", "Equals", "ExternalizeParts", "GetDocument", "GetHashCode", "GetLayer", "GetReferencedDocuments", "GetType", "InternalizeParts", "IsComplete", "IsLocked", "IsModified", "IsRemoved", "Layers", "LifetimeLease", "Load", "MainPart", "MainPartDisplaysFileName", "Materials", "MemberwiseClone", "Open", "Parts", "Path", "PurgeUndo", "ReferenceEquals", "ReplayParameters", "Save", "SaveAs", "SaveAsSnapshot", "Symbols", "ToString", "Units"],
+ "_part_members": ["Analysis", "AppearanceStates", "Beams", "Bodies", "Children", "Components", "ConvertToSheetMetal", "CoordinateSystems", "Create", "CreateBeamProfile", "CreateObjRef", "CurveGroups", "Curves", "CustomObjects", "CustomProperties", "DatumFeatures", "DatumLines", "DatumPlanes", "DatumPoints", "Delete", "DisplayName", "Document", "Equals", "ExecuteCommand", "Export", "Find", "FlatPattern", "GetAncestor", "GetChildren", "GetDescendants", "GetDesignCurvesInPlane", "GetHashCode", "GetLifetimeService", "GetOccurrence", "GetType", "Images", "InitializeLifetimeService", "Instance", "IsDeleted", "IsEmpty", "IsSheetMetalSuspended", "IsSketchCurve", "LifetimeLease", "Master", "Material", "MatingConditions", "MemberwiseClone", "Meshes", "Moniker", "Name", "NumberAttributes", "Original", "Parent", "PathToMaster", "ReferenceEquals", "RemoveNumberAttribute", "RemoveTextAttribute", "Root", "SetNumberAttribute", "SetSketchCurve", "SetTextAttribute", "ShareTopology", "SheetMetal", "SpotWeldJoints", "TextAttributes", "ToString", "TransformToMaster", "TryGetCollision", "TryGetNumberAttribute", "TryGetTextAttribute", "Type", "UpdateState"],
+ "_sheetmetal_types_V18": ["SpaceClaim.Api.V18.AxialBend", "SpaceClaim.Api.V18.Bend", "SpaceClaim.Api.V18.BendOptions", "SpaceClaim.Api.V18.BendOptions+BendDirection", "SpaceClaim.Api.V18.BendSpecification", "SpaceClaim.Api.V18.BendStep", "SpaceClaim.Api.V18.BendTooling", "SpaceClaim.Api.V18.CircularRelief", "SpaceClaim.Api.V18.CircularReliefSetting", "SpaceClaim.Api.V18.ClosedHem", "SpaceClaim.Api.V18.ConicalBend", "SpaceClaim.Api.V18.CornerRelief", "SpaceClaim.Api.V18.CornerReliefPlacement", "SpaceClaim.Api.V18.CornerReliefPosition", "SpaceClaim.Api.V18.CornerReliefSetting", "SpaceClaim.Api.V18.CornerReliefType", "SpaceClaim.Api.V18.CylindricalBend", "SpaceClaim.Api.V18.DiagonalRelief", "SpaceClaim.Api.V18.DiagonalReliefSetting", "SpaceClaim.Api.V18.DiametericReliefSetting", "SpaceClaim.Api.V18.DiametricRelief", "SpaceClaim.Api.V18.FilledReliefSetting", "SpaceClaim.Api.V18.HemBend", "SpaceClaim.Api.V18.HemStyle", "SpaceClaim.Api.V18.IAxialBend", "SpaceClaim.Api.V18.IBend", "SpaceClaim.Api.V18.IConicalBend", "SpaceClaim.Api.V18.ICylindricalBend", "SpaceClaim.Api.V18.IHasBendAngle", "SpaceClaim.Api.V18.IHasBendRadius", "SpaceClaim.Api.V18.IHemBend", "SpaceClaim.Api.V18.IJoggleBend", "SpaceClaim.Api.V18.ISheetMetalAspect", "SpaceClaim.Api.V18.ISheetMetalCorner", "SpaceClaim.Api.V18.ISheetMetalFeature", "SpaceClaim.Api.V18.ISheetMetalForm", "SpaceClaim.Api.V18.JoggleBend", "SpaceClaim.Api.V18.LaserEdgeRelief", "SpaceClaim.Api.V18.LaserEdgeReliefSetting", "SpaceClaim.Api.V18.LaserSymmetricRelief", "SpaceClaim.Api.V18.LaserSymmetricReliefSetting", "SpaceClaim.Api.V18.OblongRelief", "SpaceClaim.Api.V18.OblongReliefSetting", "SpaceClaim.Api.V18.OpenHem", "SpaceClaim.Api.V18.RectangularRelief", "SpaceClaim.Api.V18.RectangularReliefSetting", "SpaceClaim.Api.V18.RolledHem", "SpaceClaim.Api.V18.SheetMetalAspect", "SpaceClaim.Api.V18.SheetMetalBendHandler", "SpaceClaim.Api.V18.SheetMetalBendToolMode", "SpaceClaim.Api.V18.SheetMetalCorner", "SpaceClaim.Api.V18.SheetMetalFeature", "SpaceClaim.Api.V18.SheetMetalForm", "SpaceClaim.Api.V18.SheetMetalFormHandler", "SpaceClaim.Api.V18.SheetMetalFormPreview", "SpaceClaim.Api.V18.SheetMetalOptions", "SpaceClaim.Api.V18.SmoothRelief", "SpaceClaim.Api.V18.SmoothReliefSetting", "SpaceClaim.Api.V18.SquareRelief", "SpaceClaim.Api.V18.SquareReliefSetting", "SpaceClaim.Api.V18.TeardropHem", "SpaceClaim.Api.V18.TriangularRelief", "SpaceClaim.Api.V18.TriangularReliefSetting", "SpaceClaim.Api.V18.WatertightReliefSetting"],
+ "_units_members": ["ActiveUnitsSystem", "Angle", "Area", "Children", "Create", "CreateObjRef", "Delete", "Document", "Equals", "ExecuteCommand", "GetAncestor", "GetChildren", "GetDescendants", "GetHashCode", "GetLifetimeService", "GetMeasurementUnit", "GetOccurrence", "GetType", "GridSettings", "ImperialUnits", "InitializeLifetimeService", "Instance", "IsDeleted", "IsSmallUnitType", "Length", "LifetimeLease", "Mass", "Master", "MemberwiseClone", "MetricUnits", "Moniker", "NumberAttributes", "Original", "Parent", "PathToMaster", "ReferenceEquals", "RemoveNumberAttribute", "RemoveTextAttribute", "Root", "SetNumberAttribute", "SetTextAttribute", "TextAttributes", "ToString", "TransformToMaster", "TryGetNumberAttribute", "TryGetTextAttribute", "UpdateState", "UseWorkbenchUnits", "Volume"]
+}

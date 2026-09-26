@@ -1,0 +1,96 @@
+{
+ "actual": {
+  "area_mm2": 41440.0,
+  "beams": 1,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 41440.0,
+    "bbox_mm": [
+     [-25.0, 0.0, -100.0],
+     [25.0, 100.0, 0.0]
+    ],
+    "closed": true,
+    "edges": 36,
+    "faces": 14,
+    "manifold": true,
+    "name": "Body_1",
+    "path": "Component_1",
+    "vertices": 24,
+    "volume_mm3": 122000.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [
+   {
+    "name": "Component_1",
+    "path": ""
+   }
+  ],
+  "components": 1,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Line": 36
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 36,
+  "faces": 14,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 1,
+  "root_curves": 1,
+  "surface_types": {
+   "Plane": 14
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 24,
+  "view_mode": "Sketch",
+  "volume_mm3": 122000.0
+ },
+ "case_id": "09_beam_profile_001_I_100x50",
+ "category": "09_beam",
+ "commands": ["BeamProfile.CreateI/CreateL/CreateT/CreateChannel/CreateRectangular/CreateCircular/CreateDisk/CreateFlatBar/CreateHat/CreateZ/CreateCustom", "BeamProfile.CreateFromLibrary"],
+ "data": {
+  "auto_renamed": [
+   ["实体", "Body_1"],
+   ["", "Component_1"]
+  ],
+  "beam_form": 0,
+  "intent_checks": [
+   ["beams", "1", "1", true]
+  ],
+  "profile": ["I_100x50_I", "Part"],
+  "profile_part_errors": ["None"],
+  "profile_part_form": 1,
+  "profile_result_members": ["CreatedProfile", "Equals", "GetCreated", "GetHashCode", "GetModified", "GetType", "IsActiveDoc", "MemberwiseClone", "ReferenceEquals", "Success", "ToString"]
+ },
+ "elapsed_s": 0.73999999999999999,
+ "expect": {},
+ "expect_mismatch": {},
+ "feature": "beam_profile",
+ "framework": "1.3",
+ "generated_at": "2026-09-26T08:44:23+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\09_beam",
+ "params": {
+  "baseWidth": 50,
+  "depth": 100,
+  "tf": 8,
+  "tw": 5,
+  "type": "I"
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_profile_001_I_100x50.scdoc",
+ "scdoc_size": "88790",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\09_beam\\09_beam_profile_001_I_100x50.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:44:22+08:00",
+ "status": "ok",
+ "title": "Beam profile creation (I/L/T/channel/rect/circular/...): 001_I_100x50"
+}

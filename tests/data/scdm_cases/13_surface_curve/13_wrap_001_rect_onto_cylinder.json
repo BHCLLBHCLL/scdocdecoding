@@ -1,0 +1,133 @@
+{
+ "actual": {
+  "area_mm2": 3341.624849,
+  "beams": 0,
+  "bodies": 3,
+  "body_list": [
+   {
+    "area_mm2": 3141.592654,
+    "bbox_mm": [
+     [-10.0, -10.0, 0.0],
+     [10.0, 10.0, 40.0]
+    ],
+    "closed": true,
+    "edges": 2,
+    "faces": 3,
+    "manifold": true,
+    "name": "Wrap_Target_Cyl",
+    "path": "",
+    "vertices": 2,
+    "volume_mm3": 12566.370614
+   },
+   {
+    "area_mm2": 100.0,
+    "bbox_mm": [
+     [10.0, -5.0, 15.0],
+     [10.0, 5.0, 25.0]
+    ],
+    "closed": false,
+    "edges": 4,
+    "faces": 1,
+    "manifold": true,
+    "name": "Wrap_Rect",
+    "path": "",
+    "vertices": 4,
+    "volume_mm3": 0.0
+   },
+   {
+    "area_mm2": 100.032195,
+    "bbox_mm": [
+     [8.775054000000001, -4.795668, 15.0],
+     [10.0, 4.795668, 25.0]
+    ],
+    "closed": false,
+    "edges": 4,
+    "faces": 1,
+    "manifold": true,
+    "name": "Wrap_RectWrapped",
+    "path": "",
+    "vertices": 4,
+    "volume_mm3": 0.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Circle": 4,
+   "Line": 6
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 10,
+  "faces": 5,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 5,
+  "surface_types": {
+   "Cylinder": 2,
+   "Plane": 3
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 10,
+  "view_mode": "Sketch",
+  "volume_mm3": 12566.370614
+ },
+ "case_id": "13_wrap_001_rect_onto_cylinder",
+ "category": "13_surface_curve",
+ "commands": ["ProjectToSolid.Execute", "Wrap.Create", "ProjectToSketch.Create", "MoveImprintEdges.Execute"],
+ "data": {
+  "after_wrap": {
+   "bodies": [
+    ["Wrap_Target_Cyl", false, 3],
+    ["Wrap_Rect", true, 1],
+    ["Wrap_RectWrapped", true, 1]
+   ],
+   "curves": 5,
+   "cyl_faces": 3
+  },
+  "auto_renamed": [
+   ["线", "Curve_1"],
+   ["弧", "Curve_2"],
+   ["弧", "Curve_3"],
+   ["线", "Curve_4"],
+   ["弧", "Curve_5"]
+  ],
+  "cyl_faces": 3,
+  "intent_checks": [
+   ["cyl_faces_after_imprint", "3", "[4, 12]", false]
+  ],
+  "wrap_errors": ["no imprint (faces=3)"],
+  "wrap_form": 1,
+  "wrap_opts_members": ["Equals", "Extrude", "GetHashCode", "GetType", "Imprint", "MemberwiseClone", "ReferenceEquals", "ToString"]
+ },
+ "elapsed_s": 9.58,
+ "expect": {},
+ "expect_mismatch": {
+  "intent:cyl_faces_after_imprint": {
+   "actual": 3,
+   "expected": [4, 12]
+  }
+ },
+ "feature": "sc_project_wrap",
+ "framework": "1.3",
+ "generated_at": "2026-09-26T09:15:08+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve",
+ "params": {},
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_wrap_001_rect_onto_cylinder.scdoc",
+ "scdoc_size": "121516",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\13_surface_curve\\13_wrap_001_rect_onto_cylinder.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T09:14:59+08:00",
+ "status": "mismatch",
+ "title": "Project curves to solid / wrap / imprint: rect_onto_cylinder"
+}

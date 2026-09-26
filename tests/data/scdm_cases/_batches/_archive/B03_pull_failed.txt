@@ -1,0 +1,2 @@
+D:\training\caedecoder\scdm_cases\03_pull\03_pull_profile_001_rect_30x10_h5.py
+D:\training\caedecoder\scdm_cases\03_pull\03_pull_profile_002_circle_r6_h12.py

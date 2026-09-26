@@ -1,0 +1,94 @@
+{
+ "actual": {
+  "area_mm2": 11535.928224,
+  "beams": 0,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 11535.928224,
+    "bbox_mm": [
+     [-40.0, -40.0, -0.0],
+     [40.0, 40.0, 5.0]
+    ],
+    "closed": true,
+    "edges": 14,
+    "faces": 9,
+    "manifold": true,
+    "name": "Disk_Holes",
+    "path": "",
+    "vertices": 14,
+    "volume_mm3": 24284.511212
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Circle": 14
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 14,
+  "faces": 9,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Cylinder": 7,
+   "Plane": 2
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 14,
+  "view_mode": "Sketch",
+  "volume_mm3": 24284.511212
+ },
+ "case_id": "06_pattern_circular_001_holes_6_360",
+ "category": "06_move_pattern",
+ "commands": ["Pattern.CreateCircular(sel, CircularPatternData)"],
+ "data": {
+  "circular_members": ["CircularAngle", "CircularAxis", "CircularCount", "Equals", "GetHashCode", "GetType", "LinearCount", "LinearPitch", "MemberwiseClone", "PatternDimension", "RadialDirection", "ReferenceEquals", "ToString"],
+  "cyl_faces": 7,
+  "pattern_success": true,
+  "regions_after_intersect": [
+   ["Disk_Holes", 24990.864402],
+   ["Hole_Cutter", 197.920337],
+   ["实体", 141.371669]
+  ]
+ },
+ "elapsed_s": 0.28000000000000003,
+ "expect": {
+  "bodies": 1
+ },
+ "expect_mismatch": {},
+ "feature": "mp_pattern_circular",
+ "framework": "1.2.3",
+ "generated_at": "2026-09-26T08:06:00+08:00",
+ "items": {
+  "RemoveRegions": {
+   "ok": true,
+   "result": "True",
+   "s": 0.0
+  }
+ },
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+ "params": {
+  "angle_deg": 360,
+  "count": 6,
+  "member": "hole r3 on disk r40"
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_circular_001_holes_6_360.scdoc",
+ "scdoc_size": "131383",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_circular_001_holes_6_360.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:06:00+08:00",
+ "status": "ok",
+ "title": "Circular pattern: 001_holes_6_360"
+}

@@ -1,0 +1,1357 @@
+{
+ "batch": "B06_move_pattern",
+ "cases": [
+  {
+   "actual": {
+    "area_mm2": 600.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 600.0,
+      "bbox_mm": [
+       [25.0, 0.0, 0.0],
+       [35.0, 10.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Moved_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 1000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 1000.0
+   },
+   "case_id": "06_move_translate_001_block_x25",
+   "category": "06_move_pattern",
+   "commands": ["Move.Translate(sel, Direction, distance, MoveOptions)"],
+   "data": {
+    "bbox_after_mm": [
+     [25.0, 0.0, 0.0],
+     [35.0, 10.0, 10.0]
+    ]
+   },
+   "elapsed_s": 3.87,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 1000.0
+   },
+   "expect_mismatch": {},
+   "feature": "mp_translate",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:57:51+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "d_mm": 25,
+    "dir": "X"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_translate_001_block_x25.scdoc",
+   "scdoc_size": "25776",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_translate_001_block_x25.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:47+08:00",
+   "status": "ok",
+   "title": "Move - translate: 001_block_x25"
+  },
+  {
+   "actual": {
+    "area_mm2": 1200.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 600.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [10.0, 10.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Block_Original",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 1000.0
+     },
+     {
+      "area_mm2": 600.0,
+      "bbox_mm": [
+       [0.0, 30.0, 0.0],
+       [10.0, 40.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Block_Copy_Y30",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 1000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 2000.0
+   },
+   "case_id": "06_move_translate_002_copy_y30",
+   "category": "06_move_pattern",
+   "commands": ["Move.Translate(sel, Direction, distance, MoveOptions)"],
+   "data": {
+    "centres_mm": [
+     [5.0, 5.0, 5.0],
+     [5.0, 35.0, 5.0]
+    ]
+   },
+   "elapsed_s": 0.42999999999999999,
+   "expect": {
+    "bodies": 2,
+    "volume_mm3": 2000.0
+   },
+   "expect_mismatch": {},
+   "feature": "mp_translate",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:57:51+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "copy": true,
+    "d_mm": 30,
+    "dir": "Y"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_translate_002_copy_y30.scdoc",
+   "scdoc_size": "38261",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_translate_002_copy_y30.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:51+08:00",
+   "status": "ok",
+   "title": "Move - translate: 002_copy_y30"
+  },
+  {
+   "actual": {
+    "area_mm2": 700.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 700.0,
+      "bbox_mm": [
+       [-7.071068, 0.0, 0.0],
+       [14.142136, 21.213203, 5.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Rotated_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 1000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 1000.0
+   },
+   "case_id": "06_move_rotate_001_block_z45",
+   "category": "06_move_pattern",
+   "commands": ["Move.Rotate(sel, Line axis, angle, MoveOptions)"],
+   "data": {
+    "bbox_after_mm": [
+     [-7.071068, 0.0, 0.0],
+     [14.142136, 21.213203, 5.0]
+    ]
+   },
+   "elapsed_s": 0.14999999999999999,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 1000.0
+   },
+   "expect_mismatch": {},
+   "feature": "mp_rotate",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:57:52+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "axis": "Z",
+    "deg": 45
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_rotate_001_block_z45.scdoc",
+   "scdoc_size": "27800",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_rotate_001_block_z45.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:52+08:00",
+   "status": "ok",
+   "title": "Move - rotate: 001_block_z45"
+  },
+  {
+   "actual": {
+    "area_mm2": 2199.114858,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 1099.557429,
+      "bbox_mm": [
+       [-5.0, -5.0, 0.0],
+       [5.0, 5.0, 30.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Cyl_Original",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 2356.19449
+     },
+     {
+      "area_mm2": 1099.557429,
+      "bbox_mm": [
+       [-5.0, -30.0, -5.0],
+       [5.0, 0.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Cyl_Copy_RotX90",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 2356.19449
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 4
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Sketch",
+    "volume_mm3": 4712.38898
+   },
+   "case_id": "06_move_rotate_002_cyl_x90_copy",
+   "category": "06_move_pattern",
+   "commands": ["Move.Rotate(sel, Line axis, angle, MoveOptions)"],
+   "data": {
+    "bboxes_mm": [
+     [
+      [-5.0, -5.0, 0.0],
+      [5.0, 5.0, 30.0]
+     ],
+     [
+      [-5.0, -30.0, -5.0],
+      [5.0, 0.0, 5.0]
+     ]
+    ]
+   },
+   "elapsed_s": 1.06,
+   "expect": {
+    "bodies": 2
+   },
+   "expect_mismatch": {},
+   "feature": "mp_rotate",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:57:53+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "axis": "X",
+    "copy": true,
+    "deg": 90
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_rotate_002_cyl_x90_copy.scdoc",
+   "scdoc_size": "121736",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_rotate_002_cyl_x90_copy.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:52+08:00",
+   "status": "ok",
+   "title": "Move - rotate: 002_cyl_x90_copy"
+  },
+  {
+   "actual": {
+    "area_mm2": 2400.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 2400.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [20.0, 20.0, 20.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Scaled_2x",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 8000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 8000.0
+   },
+   "case_id": "06_move_scale_001_uniform_2x",
+   "category": "06_move_pattern",
+   "commands": ["Scale.Execute(sel, origin, scale)", "Scale.Execute(sel, frame, Vector scale)"],
+   "data": {},
+   "elapsed_s": 0.17000000000000001,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 8000.0
+   },
+   "expect_mismatch": {},
+   "feature": "mp_scale",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:57:53+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "s": 2
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_scale_001_uniform_2x.scdoc",
+   "scdoc_size": "27576",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_scale_001_uniform_2x.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:53+08:00",
+   "status": "ok",
+   "title": "Scale body (uniform / non-uniform): 001_uniform_2x"
+  },
+  {
+   "actual": {
+    "area_mm2": 700.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 700.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [10.0, 20.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Scaled_NonUniform",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 1000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 1000.0
+   },
+   "case_id": "06_move_scale_002_nonuniform_1x2x0p5",
+   "category": "06_move_pattern",
+   "commands": ["Scale.Execute(sel, origin, scale)", "Scale.Execute(sel, frame, Vector scale)"],
+   "data": {
+    "bbox_after_mm": [
+     [0.0, 0.0, 0.0],
+     [10.0, 20.0, 5.0]
+    ]
+   },
+   "elapsed_s": 0.16,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 1000.0
+   },
+   "expect_mismatch": {},
+   "feature": "mp_scale",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:57:54+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "s": [1, 2, 0.5]
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_scale_002_nonuniform_1x2x0p5.scdoc",
+   "scdoc_size": "27237",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_scale_002_nonuniform_1x2x0p5.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:54+08:00",
+   "status": "ok",
+   "title": "Scale body (uniform / non-uniform): 002_nonuniform_1x2x0p5"
+  },
+  {
+   "actual": {
+    "area_mm2": 1200.0,
+    "beams": 0,
+    "bodies": 2,
+    "body_list": [
+     {
+      "area_mm2": 600.0,
+      "bbox_mm": [
+       [5.0, 0.0, 0.0],
+       [15.0, 10.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Mirror_Source",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 1000.0
+     },
+     {
+      "area_mm2": 600.0,
+      "bbox_mm": [
+       [-15.0, 0.0, 0.0],
+       [-5.0, 10.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Mirror_Copy",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 1000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 24
+    },
+    "datum_planes": 2,
+    "drawing_sheets": 0,
+    "edges": 24,
+    "faces": 12,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 12
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 16,
+    "view_mode": "Solid",
+    "volume_mm3": 2000.0
+   },
+   "case_id": "06_move_mirror_001_block_about_yz",
+   "category": "06_move_pattern",
+   "commands": ["Mirror.Execute(sel, mirrorPlane, MirrorOptions)", "DatumPlaneCreator.Create"],
+   "data": {},
+   "elapsed_s": 0.46999999999999997,
+   "expect": {
+    "bodies": 2,
+    "volume_mm3": 2000.0
+   },
+   "expect_mismatch": {},
+   "feature": "mp_mirror",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:57:54+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "plane": "YZ"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_mirror_001_block_about_yz.scdoc",
+   "scdoc_size": "40817",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_mirror_001_block_about_yz.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:54+08:00",
+   "status": "ok",
+   "title": "Mirror body (and mirror relationship): 001_block_about_yz"
+  },
+  {
+   "actual": {
+    "area_mm2": 1600.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 1600.0,
+      "bbox_mm": [
+       [-10.0, 0.0, 0.0],
+       [10.0, 20.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Mirror_Merged",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 4000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 1,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 4000.0
+   },
+   "case_id": "06_move_mirror_002_merge_halves",
+   "category": "06_move_pattern",
+   "commands": ["Mirror.Execute(sel, mirrorPlane, MirrorOptions)", "DatumPlaneCreator.Create"],
+   "data": {
+    "bbox_mm": [
+     [-10.0, 0.0, 0.0],
+     [10.0, 20.0, 10.0]
+    ]
+   },
+   "elapsed_s": 0.28999999999999998,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 4000.0
+   },
+   "expect_mismatch": {},
+   "feature": "mp_mirror",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:57:55+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "merge": true
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_mirror_002_merge_halves.scdoc",
+   "scdoc_size": "27628",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_mirror_002_merge_halves.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:55+08:00",
+   "status": "ok",
+   "title": "Mirror body (and mirror relationship): 002_merge_halves"
+  },
+  {
+   "actual": {
+    "area_mm2": 87.964594,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 87.964594,
+      "bbox_mm": [
+       [-2.0, -2.0, 0.0],
+       [2.0, 2.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 2,
+      "faces": 3,
+      "manifold": true,
+      "name": "Pattern_Pin",
+      "path": "",
+      "vertices": 2,
+      "volume_mm3": 62.831853
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 2,
+    "faces": 3,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 2,
+    "view_mode": "Sketch",
+    "volume_mm3": 62.831853
+   },
+   "case_id": "06_pattern_linear_001_cyl_1d_5x10",
+   "category": "06_move_pattern",
+   "commands": ["Pattern.CreateLinear(sel, LinearPatternData)", "Pattern.ModifyLinear"],
+   "data": {
+    "linear_failed": [
+     ["LinearDirection", "expected ISelection, got Direction"]
+    ],
+    "linear_members": ["CountX", "CountY", "Equals", "GetHashCode", "GetType", "LinearDirection", "MemberwiseClone", "PatternDimension", "PitchX", "PitchY", "ReferenceEquals", "ToString"]
+   },
+   "elapsed_s": 0.55000000000000004,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 785, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_linear_001_cyl_1d_5x10.py\", line 21, in build\n    r = Pattern.CreateLinear(sel(b), d, None)\nSystemError: 未将对象引用设置到对象的实例。\n",
+   "expect": {
+    "bodies": 5
+   },
+   "expect_mismatch": {
+    "bodies": {
+     "actual": 1,
+     "expected": 5
+    }
+   },
+   "feature": "mp_pattern_linear",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:57:56+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "count": 5,
+    "pitch_mm": 10
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_linear_001_cyl_1d_5x10.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:55+08:00",
+   "status": "failed",
+   "title": "Linear pattern: 001_cyl_1d_5x10"
+  },
+  {
+   "actual": {
+    "area_mm2": 7137.699112,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 7137.699112,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [60.0, 50.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 14,
+      "faces": 7,
+      "manifold": true,
+      "name": "Plate_Holes",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 14937.168147
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 7,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 14937.168147
+   },
+   "case_id": "06_pattern_linear_002_hole_2d_3x4",
+   "category": "06_move_pattern",
+   "commands": ["Pattern.CreateLinear(sel, LinearPatternData)", "Pattern.ModifyLinear"],
+   "data": {
+    "linear_failed": [
+     ["LinearDirection", "expected ISelection, got Direction"]
+    ],
+    "linear_members": ["CountX", "CountY", "Equals", "GetHashCode", "GetType", "LinearDirection", "MemberwiseClone", "PatternDimension", "PitchX", "PitchY", "ReferenceEquals", "ToString"],
+    "regions_after_intersect": [
+     ["Plate_Holes", 14937.168147],
+     ["Hole_Cutter", 87.964594],
+     ["实体", 62.831853]
+    ]
+   },
+   "elapsed_s": 0.29999999999999999,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 785, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_linear_002_hole_2d_3x4.py\", line 26, in build\n    r = Pattern.CreateLinear(sel(hole), d, None)\nSystemError: 未将对象引用设置到对象的实例。\n",
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "mp_pattern_linear",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:57:57+08:00",
+   "items": {
+    "RemoveRegions": {
+     "ok": true,
+     "result": "True",
+     "s": 0.02
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "count": [3, 4],
+    "member": "through hole in plate",
+    "pitch_mm": [12, 10]
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_linear_002_hole_2d_3x4.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:56+08:00",
+   "status": "failed",
+   "title": "Linear pattern: 002_hole_2d_3x4"
+  },
+  {
+   "actual": {
+    "area_mm2": 600.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 600.0,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [10.0, 10.0, 10.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Pattern_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 1000.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 1000.0
+   },
+   "case_id": "06_pattern_linear_003_body_copy_3",
+   "category": "06_move_pattern",
+   "commands": ["Pattern.CreateLinear(sel, LinearPatternData)", "Pattern.ModifyLinear"],
+   "data": {
+    "linear_failed": [
+     ["LinearDirection", "expected ISelection, got Direction"]
+    ],
+    "linear_members": ["CountX", "CountY", "Equals", "GetHashCode", "GetType", "LinearDirection", "MemberwiseClone", "PatternDimension", "PitchX", "PitchY", "ReferenceEquals", "ToString"]
+   },
+   "elapsed_s": 0.11,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 785, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_linear_003_body_copy_3.py\", line 21, in build\n    r = Pattern.CreateLinear(sel(b), d, None)\nSystemError: 未将对象引用设置到对象的实例。\n",
+   "expect": {
+    "bodies": 3
+   },
+   "expect_mismatch": {
+    "bodies": {
+     "actual": 1,
+     "expected": 3
+    }
+   },
+   "feature": "mp_pattern_linear",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:57:57+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "count": 3,
+    "pitch_mm": 25
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_linear_003_body_copy_3.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:57+08:00",
+   "status": "failed",
+   "title": "Linear pattern: 003_body_copy_3"
+  },
+  {
+   "actual": {
+    "area_mm2": 11347.432665,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 11347.432665,
+      "bbox_mm": [
+       [-40.0, -40.0, 0.0],
+       [40.0, 40.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 4,
+      "faces": 4,
+      "manifold": true,
+      "name": "Disk_Holes",
+      "path": "",
+      "vertices": 4,
+      "volume_mm3": 24990.864402
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 4
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 4,
+    "faces": 4,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 2,
+     "Plane": 2
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 4,
+    "view_mode": "Sketch",
+    "volume_mm3": 24990.864402
+   },
+   "case_id": "06_pattern_circular_001_holes_6_360",
+   "category": "06_move_pattern",
+   "commands": ["Pattern.CreateCircular(sel, CircularPatternData)"],
+   "data": {
+    "circular_failed": [
+     ["CircularAxis", "expected ISelection, got Line"]
+    ],
+    "circular_members": ["CircularAngle", "CircularAxis", "CircularCount", "Equals", "GetHashCode", "GetType", "LinearCount", "LinearPitch", "MemberwiseClone", "PatternDimension", "RadialDirection", "ReferenceEquals", "ToString"],
+    "regions_after_intersect": [
+     ["Disk_Holes", 24990.864402],
+     ["Hole_Cutter", 197.920337],
+     ["实体", 141.371669]
+    ]
+   },
+   "elapsed_s": 0.17999999999999999,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 785, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_circular_001_holes_6_360.py\", line 26, in build\n    r = Pattern.CreateCircular(sel(hole), d, None)\nSystemError: 未将对象引用设置到对象的实例。\n",
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "mp_pattern_circular",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:57:58+08:00",
+   "items": {
+    "RemoveRegions": {
+     "ok": true,
+     "result": "True",
+     "s": 0.0
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "angle_deg": 360,
+    "count": 6,
+    "member": "hole r3 on disk r40"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_circular_001_holes_6_360.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:57+08:00",
+   "status": "failed",
+   "title": "Circular pattern: 001_holes_6_360"
+  },
+  {
+   "actual": {
+    "area_mm2": 128.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 128.0,
+      "bbox_mm": [
+       [20.0, -2.0, 0.0],
+       [26.0, 2.0, 4.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Circ_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 96.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 96.0
+   },
+   "case_id": "06_pattern_circular_002_bodies_4_180",
+   "category": "06_move_pattern",
+   "commands": ["Pattern.CreateCircular(sel, CircularPatternData)"],
+   "data": {
+    "circular_failed": [
+     ["CircularAxis", "expected ISelection, got Line"]
+    ],
+    "circular_members": ["CircularAngle", "CircularAxis", "CircularCount", "Equals", "GetHashCode", "GetType", "LinearCount", "LinearPitch", "MemberwiseClone", "PatternDimension", "RadialDirection", "ReferenceEquals", "ToString"]
+   },
+   "elapsed_s": 0.10000000000000001,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 785, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_circular_002_bodies_4_180.py\", line 21, in build\n    r = Pattern.CreateCircular(sel(b), d, None)\nSystemError: 未将对象引用设置到对象的实例。\n",
+   "expect": {
+    "bodies": 4
+   },
+   "expect_mismatch": {
+    "bodies": {
+     "actual": 1,
+     "expected": 4
+    }
+   },
+   "feature": "mp_pattern_circular",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:57:58+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "angle_deg": 180,
+    "count": 4
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_circular_002_bodies_4_180.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:58+08:00",
+   "status": "failed",
+   "title": "Circular pattern: 002_bodies_4_180"
+  },
+  {
+   "actual": {
+    "area_mm2": 11037.699112,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 11037.699112,
+      "bbox_mm": [
+       [0.0, 0.0, 0.0],
+       [80.0, 60.0, 5.0]
+      ],
+      "closed": true,
+      "edges": 14,
+      "faces": 7,
+      "manifold": true,
+      "name": "Plate_Fill",
+      "path": "",
+      "vertices": 10,
+      "volume_mm3": 23937.168147
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Circle": 2,
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 14,
+    "faces": 7,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 0,
+    "surface_types": {
+     "Cylinder": 1,
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 10,
+    "view_mode": "Solid",
+    "volume_mm3": 23937.168147
+   },
+   "case_id": "06_pattern_fill_001_holes_in_plate",
+   "category": "06_move_pattern",
+   "commands": ["Pattern.CreateFill(sel, FillPatternData)"],
+   "data": {
+    "fill_errors": ["未将对象引用设置到对象的实例。", "未将对象引用设置到对象的实例。"],
+    "fill_failed": [
+     ["XDirection", "'FillPatternData' object has no attribute 'XDirection'"]
+    ],
+    "fill_members": ["ColumnXOffset", "ColumnYOffset", "Equals", "FillPatternType", "GetHashCode", "GetType", "LinearDirection", "Margin", "MemberwiseClone", "ReferenceEquals", "RowXOffset", "RowYOffset", "ToString", "XSpacing", "YSpacing"],
+    "regions_after_intersect": [
+     ["Plate_Fill", 23937.168147],
+     ["Hole_Cutter", 87.964594],
+     ["实体", 62.831853]
+    ]
+   },
+   "elapsed_s": 0.20999999999999999,
+   "error": "Traceback (most recent call last):\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 623, in run_case\n    build(Ctx(rec))\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 785, in build_named\n    build(ctx)\n  File \"D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_fill_001_holes_in_plate.py\", line 27, in build\n    first_ok(ctx, \"fill\", [\n  File \"D:\\training\\caedecoder\\scdm_cases\\_framework\\scdm_fw.py\", line 833, in first_ok\n    raise Exception(\"%s: all %d forms failed: %s\" % (key, len(fns), errs))\nException: fill: all 2 forms failed: [u'\\u672a\\u5c06\\u5bf9\\u8c61\\u5f15\\u7528\\u8bbe\\u7f6e\\u5230\\u5bf9\\u8c61\\u7684\\u5b9e\\u4f8b\\u3002', u'\\u672a\\u5c06\\u5bf9\\u8c61\\u5f15\\u7528\\u8bbe\\u7f6e\\u5230\\u5bf9\\u8c61\\u7684\\u5b9e\\u4f8b\\u3002']\n",
+   "expect": {
+    "bodies": 1
+   },
+   "expect_mismatch": {},
+   "feature": "mp_pattern_fill",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:57:59+08:00",
+   "items": {
+    "RemoveRegions": {
+     "ok": true,
+     "result": "True",
+     "s": 0.01
+    }
+   },
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "member": "hole r2",
+    "region": "plate face 80x60"
+   },
+   "scdoc": null,
+   "scdoc_size": null,
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_pattern_fill_001_holes_in_plate.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:58+08:00",
+   "status": "failed",
+   "title": "Fill pattern: 001_holes_in_plate"
+  },
+  {
+   "actual": {
+    "area_mm2": 96.0,
+    "beams": 0,
+    "bodies": 1,
+    "body_list": [
+     {
+      "area_mm2": 96.0,
+      "bbox_mm": [
+       [-2.0, 48.0, -2.0],
+       [2.0, 52.0, 2.0]
+      ],
+      "closed": true,
+      "edges": 12,
+      "faces": 6,
+      "manifold": true,
+      "name": "Traj_Block",
+      "path": "",
+      "vertices": 8,
+      "volume_mm3": 64.0
+     }
+    ],
+    "body_materials": {},
+    "component_list": [],
+    "components": 0,
+    "coordinate_systems": 1,
+    "curve_types": {
+     "Line": 12
+    },
+    "datum_planes": 0,
+    "drawing_sheets": 0,
+    "edges": 12,
+    "faces": 6,
+    "layers": ["图层0"],
+    "materials": ["未知材料"],
+    "mating_conditions": 0,
+    "meshes": 0,
+    "named_selections": [],
+    "part_defs": 0,
+    "root_curves": 1,
+    "surface_types": {
+     "Plane": 6
+    },
+    "units_length": "mm",
+    "units_system": "Metric",
+    "vertices": 8,
+    "view_mode": "Solid",
+    "volume_mm3": 64.0
+   },
+   "case_id": "06_move_trajectory_001_block_along_arc",
+   "category": "06_move_pattern",
+   "commands": ["Move.AlongTrajectory", "Move.OrientTo", "Move.ToCoordinate"],
+   "data": {
+    "along_form": 0,
+    "bbox_after_mm": [
+     [-2.0, 48.0, -2.0],
+     [2.0, 52.0, 2.0]
+    ]
+   },
+   "elapsed_s": 0.52000000000000002,
+   "expect": {
+    "bodies": 1,
+    "volume_mm3": 64.0
+   },
+   "expect_mismatch": {},
+   "feature": "mp_along_trajectory",
+   "framework": "1.2.2",
+   "generated_at": "2026-09-26T07:58:00+08:00",
+   "items": {},
+   "mode": "headless",
+   "notes": [],
+   "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+   "params": {
+    "path": "arc R50 90deg"
+   },
+   "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_trajectory_001_block_along_arc.scdoc",
+   "scdoc_size": "28028",
+   "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_trajectory_001_block_along_arc.py",
+   "spaceclaim_version": "2019.3.38912",
+   "started_at": "2026-09-26T07:57:59+08:00",
+   "status": "ok",
+   "title": "Move along trajectory / orient: 001_block_along_arc"
+  }
+ ],
+ "elapsed_s": 13.64,
+ "finished_at": "2026-09-26T07:58:00+08:00",
+ "framework": "1.2.2",
+ "mode": "headless",
+ "spaceclaim_version": "2019.3.38912",
+ "stage": "done",
+ "started_at": "2026-09-26T07:57:46+08:00",
+ "summary": {
+  "failed": 6,
+  "ok": 9
+ }
+}

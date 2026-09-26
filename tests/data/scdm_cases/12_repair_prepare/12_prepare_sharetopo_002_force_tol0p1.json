@@ -1,0 +1,96 @@
+{
+ "actual": {
+  "area_mm2": 4796.0,
+  "beams": 0,
+  "bodies": 2,
+  "body_list": [
+   {
+    "area_mm2": 2400.0,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [20.0, 20.0, 20.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Left_Block",
+    "path": "",
+    "vertices": 8,
+    "volume_mm3": 8000.0
+   },
+   {
+    "area_mm2": 2396.0,
+    "bbox_mm": [
+     [20.05, 0.0, 0.0],
+     [40.0, 20.0, 20.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Right_Block_Gap_0p05",
+    "path": "",
+    "vertices": 8,
+    "volume_mm3": 7980.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Line": 24
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 24,
+  "faces": 12,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Plane": 12
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 16,
+  "view_mode": "Solid",
+  "volume_mm3": 15980.0
+ },
+ "case_id": "12_prepare_sharetopo_002_force_tol0p1",
+ "category": "12_repair_prepare",
+ "commands": ["ShareTopology.FindAndFix", "ForceShareTopology.Execute", "UnShareTopology.Execute", "SharePrep.Execute"],
+ "data": {
+  "faces_after": 12,
+  "faces_before": 12,
+  "force_share_form": 0,
+  "intent_checks": []
+ },
+ "elapsed_s": 0.20999999999999999,
+ "expect": {
+  "bodies": 2
+ },
+ "expect_mismatch": {},
+ "feature": "rp_share_topology",
+ "framework": "1.3",
+ "generated_at": "2026-09-26T08:28:36+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare",
+ "params": {
+  "tol_mm": 0.10000000000000001
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_sharetopo_002_force_tol0p1.scdoc",
+ "scdoc_size": "38260",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\12_repair_prepare\\12_prepare_sharetopo_002_force_tol0p1.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T08:28:36+08:00",
+ "status": "ok",
+ "title": "Share topology: 002_force_tol0p1"
+}

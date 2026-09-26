@@ -1,0 +1,12 @@
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_merge_001_two_blocks_overlap.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_merge_002_block_plus_cyl.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_merge_003_touching_faces.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_subtract_001_block_minus_cyl.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_subtract_002_block_minus_sphere.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_subtract_003_keep_cutter.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_intersect_001_block_sphere.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_intersect_002_two_cylinders_cross.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_splitbody_001_block_by_plane_mid.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_splitbody_002_cyl_by_oblique_plane.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_splitbody_003_by_face.py
+D:\training\caedecoder\scdm_cases\05_boolean\05_boolean_imprint_001_block_cyl_curves.py

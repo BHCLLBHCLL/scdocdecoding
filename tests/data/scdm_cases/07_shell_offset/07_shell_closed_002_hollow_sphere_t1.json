@@ -1,0 +1,80 @@
+{
+ "actual": {
+  "area_mm2": 2274.513081,
+  "beams": 0,
+  "bodies": 1,
+  "body_list": [
+   {
+    "area_mm2": 2274.513081,
+    "bbox_mm": [
+     [-10.0, -10.0, -10.0],
+     [10.0, 10.0, 10.0]
+    ],
+    "closed": true,
+    "edges": 0,
+    "faces": 2,
+    "manifold": true,
+    "name": "Hollow_Sphere",
+    "path": "",
+    "vertices": 0,
+    "volume_mm3": 1135.162145
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {},
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 0,
+  "faces": 2,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Sphere": 2
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 0,
+  "view_mode": "Sketch",
+  "volume_mm3": 1135.162145
+ },
+ "case_id": "07_shell_closed_002_hollow_sphere_t1",
+ "category": "07_shell_offset",
+ "commands": ["Shell.RemoveFaces(sel faces, thickness)", "Shell.ShellBodies(sel bodies, thickness)"],
+ "data": {
+  "shell_body_form": 0,
+  "volume_after_mm3": 1135.162145
+ },
+ "elapsed_s": 1.06,
+ "expect": {
+  "bodies": 1,
+  "faces": 2,
+  "volume_mm3": 1135.162145
+ },
+ "expect_mismatch": {},
+ "feature": "so_shell",
+ "framework": "1.2.1",
+ "generated_at": "2026-09-26T07:48:00+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset",
+ "params": {
+  "base": "sphere r10",
+  "t_mm": 1
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_shell_closed_002_hollow_sphere_t1.scdoc",
+ "scdoc_size": "346572",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\07_shell_offset\\07_shell_closed_002_hollow_sphere_t1.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T07:47:59+08:00",
+ "status": "ok",
+ "title": "Shell (remove faces / hollow): 002_hollow_sphere_t1"
+}

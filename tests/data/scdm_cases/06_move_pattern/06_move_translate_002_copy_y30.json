@@ -1,0 +1,99 @@
+{
+ "actual": {
+  "area_mm2": 1200.0,
+  "beams": 0,
+  "bodies": 2,
+  "body_list": [
+   {
+    "area_mm2": 600.0,
+    "bbox_mm": [
+     [0.0, 0.0, 0.0],
+     [10.0, 10.0, 10.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Block_Original",
+    "path": "",
+    "vertices": 8,
+    "volume_mm3": 1000.0
+   },
+   {
+    "area_mm2": 600.0,
+    "bbox_mm": [
+     [0.0, 30.0, 0.0],
+     [10.0, 40.0, 10.0]
+    ],
+    "closed": true,
+    "edges": 12,
+    "faces": 6,
+    "manifold": true,
+    "name": "Block_Copy_Y30",
+    "path": "",
+    "vertices": 8,
+    "volume_mm3": 1000.0
+   }
+  ],
+  "body_materials": {},
+  "component_list": [],
+  "components": 0,
+  "coordinate_systems": 1,
+  "curve_types": {
+   "Line": 24
+  },
+  "datum_planes": 0,
+  "drawing_sheets": 0,
+  "edges": 24,
+  "faces": 12,
+  "layers": ["图层0"],
+  "materials": ["未知材料"],
+  "mating_conditions": 0,
+  "meshes": 0,
+  "named_selections": [],
+  "part_defs": 0,
+  "root_curves": 0,
+  "surface_types": {
+   "Plane": 12
+  },
+  "units_length": "mm",
+  "units_system": "Metric",
+  "vertices": 16,
+  "view_mode": "Solid",
+  "volume_mm3": 2000.0
+ },
+ "case_id": "06_move_translate_002_copy_y30",
+ "category": "06_move_pattern",
+ "commands": ["Move.Translate(sel, Direction, distance, MoveOptions)"],
+ "data": {
+  "centres_mm": [
+   [5.0, 5.0, 5.0],
+   [5.0, 35.0, 5.0]
+  ]
+ },
+ "elapsed_s": 0.42999999999999999,
+ "expect": {
+  "bodies": 2,
+  "volume_mm3": 2000.0
+ },
+ "expect_mismatch": {},
+ "feature": "mp_translate",
+ "framework": "1.2.2",
+ "generated_at": "2026-09-26T07:57:51+08:00",
+ "items": {},
+ "mode": "headless",
+ "notes": [],
+ "out_dir": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern",
+ "params": {
+  "copy": true,
+  "d_mm": 30,
+  "dir": "Y"
+ },
+ "scdoc": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_translate_002_copy_y30.scdoc",
+ "scdoc_size": "38261",
+ "script": "D:\\training\\caedecoder\\scdm_cases\\06_move_pattern\\06_move_translate_002_copy_y30.py",
+ "spaceclaim_version": "2019.3.38912",
+ "started_at": "2026-09-26T07:57:51+08:00",
+ "status": "ok",
+ "title": "Move - translate: 002_copy_y30"
+}

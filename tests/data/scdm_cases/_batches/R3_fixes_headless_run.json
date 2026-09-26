@@ -1,0 +1,12 @@
+{
+    "batch":  "R3_fixes",
+    "mode":  "headless",
+    "licence_retries":  0,
+    "cmd":  "\"C:\\Program Files\\ANSYS Inc\\v195\\SCDM\\SpaceClaim.exe\" /RunScript=\"D:\\training\\caedecoder\\scdm_cases\\_batches\\R3_fixes_headless_driver.py\" /ExitAfterScript=True /Splash=False /Welcome=False /Headless=True",
+    "started":  "2026-09-26T09:13:53+08:00",
+    "wall_s":  86.3,
+    "exit":  0,
+    "killed":  null,
+    "sentinel_done_at_s":  81.1941851,
+    "result":  "D:\\training\\caedecoder\\scdm_cases\\_batches\\R3_fixes_headless_result.json"
+}
