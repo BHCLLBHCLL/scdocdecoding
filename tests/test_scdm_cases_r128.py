@@ -42,8 +42,9 @@ PINNED = (
 #: a *new* crash cannot hide behind them
 KNOWN_UNREADABLE = {"15_mesh_stl_import_001", "20_combo_mesh_032_mesh_plus_solid"}
 
-#: agreement measured at R128 (95 of 218); the floor only goes up
-FLOOR = 95
+#: agreement measured at R128 (95 of 218), raised to 106 by the R129 edge fix;
+#: the floor only goes up
+FLOOR = 106
 
 
 def _run(*args, timeout=1800):

@@ -985,16 +985,27 @@ def model_summary(model: SabModel, scale: float) -> Dict:
                 'loops': len(model.loops_of_face(f)),
                 'rgb': model.rgb_of(f),
             })
+        # R129/P-3: the edges of *this* body, not every edge in the model.
+        # The old loop walked model.of_kind('edge') inside the per-body loop, so a
+        # document with N bodies reported each edge N times (the official corpus
+        # caught it: 48 vs 24 on a mirrored pair, 108 vs 36 on a three-body split).
         edges = []
-        for ed in model.of_kind('edge'):
-            ep = model.edge_endpoints(ed)
-            edges.append({
-                'acis_index': ed.idx,
-                'doc_id': model.doc_id_of(ed),
-                'start_m': list(ep[0]) if ep else None,
-                'end_m': list(ep[1]) if ep else None,
-                'length_mm': round(model.edge_length(ed) * scale, 9),
-            })
+        seen_edges = set()
+        for f in m['faces']:
+            for lp in model.loops_of_face(f):
+                for ce in model.coedges_of_loop(lp):
+                    ed = model.e(ce.edge)
+                    if ed is None or ed.idx in seen_edges:
+                        continue
+                    seen_edges.add(ed.idx)
+                    ep = model.edge_endpoints(ed)
+                    edges.append({
+                        'acis_index': ed.idx,
+                        'doc_id': model.doc_id_of(ed),
+                        'start_m': list(ep[0]) if ep else None,
+                        'end_m': list(ep[1]) if ep else None,
+                        'length_mm': round(model.edge_length(ed) * scale, 9),
+                    })
         vertices = []
         for vt in model.of_kind('vertex'):
             p = model.point_of_vertex(vt)
