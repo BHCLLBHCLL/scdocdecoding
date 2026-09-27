@@ -164,6 +164,12 @@ else:
 
             self._build_chrome()
             self._apply_customize(self.settings.value("ribbon/hidden", []) or [])
+            # R128/A-16: the point size is a view setting, so it survives a restart
+            try:
+                self.left.set_spin("mode.sketch", 0, float(
+                    self.settings.value("view/point_scale", 1.0) or 1.0))
+            except (TypeError, ValueError):
+                pass
             self.tools = ToolManager(self._set_status)
             self._new_session(activate=True)
             self._wire_defaults()
@@ -228,6 +234,7 @@ else:
             self.left.group_clicked.connect(self._on_group_click)
             self.left.view_save.connect(self._on_view_save)
             self.left.view_clicked.connect(self._on_view_click)
+            self.left.option_changed.connect(self._on_option_changed)
 
             self._enable_3d = QApplication.instance() is not None and (
                 QApplication.platformName() != "offscreen"
@@ -998,6 +1005,9 @@ else:
             if snap is None:
                 self._set_status("无法撤销")
                 return
+            # R128/A-18: a pending preview describes the state we are leaving, so
+            # it goes with it (a stale translucent body is a lie)
+            self._clear_dim_preview()
             ses.kdoc.restore(snap)
             ses.dirty = True
             self._apply_ui_state(snap, "已撤销（回到草图模式）")   # R109/A-6
@@ -1009,6 +1019,7 @@ else:
             if snap is None:
                 self._set_status("无法重做")
                 return
+            self._clear_dim_preview()
             ses.kdoc.restore(snap)
             self._apply_ui_state(snap, "已重做（回到草图模式）")
             self._rebuild("已重做")
@@ -2530,9 +2541,11 @@ else:
             # user already made is not thrown away
             ids = [str(i) for i in (self._selected_health_ids() or [])]
             if ids != list(getattr(self, "repair_rows_for", []) or []):
+                # R128/A-17: one picker per selected row - for a single row too,
+                # so "which row does this target belong to" never depends on how
+                # many rows happen to be selected
                 self.left.set_row_targets(
-                    "repair.refs", 0,
-                    [(i, entries) for i in ids] if len(ids) > 1 else [])
+                    "repair.refs", 0, [(i, entries) for i in ids])
                 self.repair_rows_for = ids
             return int(n)
 
@@ -2614,6 +2627,10 @@ else:
                 if picked:
                     single = None if isinstance(to, dict) else to
                     to = {str(i): picked.get(str(i), single) for i in ids}
+                    if len(to) == 1:
+                        # one row: the map is just that row's target, and the
+                        # single-row path takes a target, not a map
+                        to = next(iter(to.values()))
             if dry:
                 plan = HEALTH.repair_plan(ses.kdoc, ses.scale, ids=ids,
                                           exclude=ids if skip_sel else None)
@@ -4405,6 +4422,24 @@ else:
                 ses.kdoc = KernelDoc()
                 ses.history.push(ses.kdoc.snapshot())
             return True
+
+        def _on_option_changed(self, cmd, index):
+            """R128/A-16: a live option redraws at once and is remembered.
+
+            点大小 is a view setting, so it is stored with the view and applied to
+            the scene immediately - waiting for the next rebuild would make the
+            number on screen and the number in the box disagree.
+            """
+            if cmd != "mode.sketch" or int(index) != 0:
+                return
+            try:
+                self.settings.setValue("view/point_scale",
+                                       float(self.left.spin_value(cmd, index)))
+            except (TypeError, ValueError):
+                pass
+            if getattr(self, "scene", None) is not None and self._sessions:
+                self._apply_point_scale()
+                self.scene.build(self.session())
 
         def _apply_point_scale(self) -> float:
             """R127/A-8: 点大小 from the sketch option page (1.0 = unchanged)."""

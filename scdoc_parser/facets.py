@@ -357,6 +357,7 @@ def facets_summary(fac: FacetsFile, scale: float = 1000.0) -> Dict:
         })
 
     edges = []
+    skipped = 0
     for eid in sorted(fac.edge_map):
         fis = edge_faces.get(eid, [])
         segs = []
@@ -365,10 +366,18 @@ def facets_summary(fac: FacetsFile, scale: float = 1000.0) -> Dict:
             for r in f.edge_refs:
                 if r.edge_id == eid:
                     seg = f.edge_segment(r)
+                    # R128/A-20: a corner may have no segment on this face (the
+                    # official corpus has such meshes) - that is a fact to report,
+                    # not a crash
+                    if seg is None or len(seg) < 2 or seg[0] is None \
+                            or seg[1] is None:
+                        skipped += 1
+                        continue
                     segs.append({'face_index': fi,
                                  'segment_m': [list(seg[0]), list(seg[1])]})
         edges.append({'edge_id': eid, 'doc_id': fac.edge_map[eid],
-                      'used_by_faces': fis, 'segments': segs})
+                      'used_by_faces': fis, 'segments': segs,
+                      'skipped_segments': skipped})
 
     return {
         'version': fac.version,

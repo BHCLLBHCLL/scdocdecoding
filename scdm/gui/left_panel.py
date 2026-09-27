@@ -38,6 +38,7 @@ class LeftPanel(QWidget):
     group_clicked = pyqtSignal(str)
     view_save = pyqtSignal()
     view_clicked = pyqtSignal(str)
+    option_changed = pyqtSignal(str, int)    # R128/A-16: a live option moved
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -219,6 +220,9 @@ class LeftPanel(QWidget):
                 row.addWidget(sb)
                 f.addLayout(row)
                 sp.append(sb)
+            for i, sb in enumerate(sp):        # R128/A-16: live options redraw
+                sb.valueChanged.connect(
+                    lambda _v, c=cmd, k=i: self.option_changed.emit(c, k))
             ct = []
             for label, default in counts:
                 row = QHBoxLayout()
@@ -385,6 +389,12 @@ class LeftPanel(QWidget):
         if page and len(page) > 2 and 0 <= index < len(page[2]):
             return float(page[2][index].value())
         return None
+
+    def set_spin(self, cmd: str, index: int, value) -> None:
+        """Set a mm spinbox from stored settings (R128/A-16)."""
+        page = self._opt_pages.get(cmd)
+        if page and len(page) > 2 and 0 <= index < len(page[2]):
+            page[2][index].setValue(float(value))
 
     def count_value(self, cmd: str, index: int):
         """Whole-number option (a pattern count), or None when absent (R112)."""

@@ -219,6 +219,12 @@ def test_a_point_size_can_be_scaled_and_is_clamped():
 
 
 def test_the_sketch_page_carries_the_point_size():
+    """R128/A-16: the value is a *view setting* now, so a test that moves it has
+    to put it back - otherwise the next run starts at 2.0."""
+    from PyQt5.QtCore import QSettings
+    settings = QSettings("scdocdecoding", "scdm")
+    old = settings.value("view/point_scale", None)
+    settings.remove("view/point_scale")
     v = _viewer()
     try:
         v.left.show_options("mode.sketch")
@@ -228,6 +234,10 @@ def test_the_sketch_page_carries_the_point_size():
         v.left._opt_pages["mode.sketch"][2][0].setValue(2.0)
         assert v._apply_point_scale() == 2.0
     finally:
+        if old is None:
+            settings.remove("view/point_scale")
+        else:
+            settings.setValue("view/point_scale", old)
         try:
             v.close()
         except RuntimeError:

@@ -29,6 +29,7 @@ tests/test_sketch_anchor_r124.py
 tests/test_sketch_target_r125.py
 tests/test_sketch_preview_r126.py
 tests/test_sketch_points_r127.py
+tests/test_sketch_view_r128.py
 tests/test_sketch_solver.py
 tests/test_features.py
 tests/test_feature_edit_r102.py
@@ -60,3 +61,4 @@ tests/test_trim_cache_r97.py
 tests/test_ref_loss_r95.py
 tests/test_tooling_r125.py
 tests/test_tooling_r126.py
+tests/test_scdm_cases_r128.py

@@ -1033,9 +1033,13 @@ def model_summary(model: SabModel, scale: float) -> Dict:
 
     lengths = [l * scale for l in (model.edge_length(e) for e in model.of_kind('edge'))
               if l is not None]
+    # R128/A-20: a document whose edges have no readable length (spheres, tori,
+    # splines) has an *empty* list - the check must say so, not crash
     check('edge_lengths_10mm',
-          lengths and all(abs(l - 10.0) < 1e-6 for l in lengths),
-          f'{len(lengths)} edges, min={min(lengths):.9g} max={max(lengths):.9g} mm (expect 10)')
+          bool(lengths) and all(abs(l - 10.0) < 1e-6 for l in lengths),
+          (f'{len(lengths)} edges, min={min(lengths):.9g} '
+           f'max={max(lengths):.9g} mm (expect 10)' if lengths
+           else '0 edges with a readable length'))
 
     areas = []
     for b in bodies:
@@ -1043,8 +1047,10 @@ def model_summary(model: SabModel, scale: float) -> Dict:
             if f['area_mm2'] is not None:
                 areas.append(f['area_mm2'])
     check('face_areas_100mm2',
-          areas and all(abs(a - 100.0) < 1e-6 for a in areas),
-          f'{len(areas)} faces, min={min(areas):.9g} max={max(areas):.9g} mm2 (expect 100)')
+          bool(areas) and all(abs(a - 100.0) < 1e-6 for a in areas),
+          (f'{len(areas)} faces, min={min(areas):.9g} '
+           f'max={max(areas):.9g} mm2 (expect 100)' if areas
+           else '0 faces with a readable area'))
 
     vols = [b['volume_mm3'] for b in bodies]
     check('volume_1000mm3',
